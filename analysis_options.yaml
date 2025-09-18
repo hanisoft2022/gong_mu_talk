@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # 개인/팀의 코딩 스타일 규칙을 추가할 수 있습니다.
+    # 예: always_specify_types, avoid_print 등
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/generated_plugin_registrant.dart"
+  errors:
+    invalid_annotation_target: ignore
