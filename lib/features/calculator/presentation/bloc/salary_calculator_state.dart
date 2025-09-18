@@ -8,18 +8,24 @@ class SalaryCalculatorState extends Equatable {
     required this.result,
     required this.status,
     required this.errorMessage,
+    required this.gradeOptions,
+    required this.isReferenceLoading,
   });
 
   final SalaryInput input;
   final SalaryBreakdown result;
   final SalaryCalculatorStatus status;
   final String? errorMessage;
+  final List<SalaryGradeOption> gradeOptions;
+  final bool isReferenceLoading;
 
   factory SalaryCalculatorState.initial() => SalaryCalculatorState(
         input: SalaryInput.initial(),
         result: SalaryBreakdown.empty(),
         status: SalaryCalculatorStatus.initial,
         errorMessage: null,
+        gradeOptions: const [],
+        isReferenceLoading: false,
       );
 
   SalaryCalculatorState copyWith({
@@ -28,6 +34,8 @@ class SalaryCalculatorState extends Equatable {
     SalaryCalculatorStatus? status,
     String? errorMessage,
     bool clearError = false,
+    List<SalaryGradeOption>? gradeOptions,
+    bool? isReferenceLoading,
   }) {
     final String? resolvedError = clearError
         ? null
@@ -38,9 +46,18 @@ class SalaryCalculatorState extends Equatable {
       result: result ?? this.result,
       status: status ?? this.status,
       errorMessage: resolvedError,
+      gradeOptions: gradeOptions ?? this.gradeOptions,
+      isReferenceLoading: isReferenceLoading ?? this.isReferenceLoading,
     );
   }
 
   @override
-  List<Object?> get props => [input, result, status, errorMessage];
+  List<Object?> get props => [
+        input,
+        result,
+        status,
+        errorMessage,
+        gradeOptions,
+        isReferenceLoading,
+      ];
 }

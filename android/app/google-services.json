@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "877880259407",
+    "project_id": "gong-mu-talk",
+    "storage_bucket": "gong-mu-talk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:877880259407:android:9807275eddb4fd8581cb3a",
+        "android_client_info": {
+          "package_name": "com.example.gong_mu_talk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAGyvi8gqPUtdsv1PhDrlxCTNBgJ4_jyc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

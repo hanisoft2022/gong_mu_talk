@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../core/config/app_config.dart';
+import '../core/firebase/firebase_initializer.dart';
 import '../core/observers/app_bloc_observer.dart';
 import '../di/di.dart';
 
@@ -14,6 +15,7 @@ Future<void> bootstrap(AppBuilder builder) async {
   runZonedGuarded(() async {
     Intl.defaultLocale = 'ko_KR';
     AppConfig.initialize();
+    await FirebaseInitializer.ensureInitialized();
     await configureDependencies();
     Bloc.observer = AppBlocObserver();
     runApp(builder());

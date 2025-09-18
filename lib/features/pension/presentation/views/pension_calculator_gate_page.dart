@@ -75,7 +75,9 @@ class _PensionLockedView extends StatelessWidget {
             title: '연금 리포트 이용권 구매',
             description: '월 4,990원으로 연금 계산, 시뮬레이션, PDF 리포트를 제공합니다.',
             trailing: ElevatedButton.icon(
-              onPressed: state.isProcessing ? null : authCubit.purchasePensionAccess,
+              onPressed: state.isProcessing
+                  ? null
+                  : () => authCubit.purchasePensionAccess(context),
               icon: state.isProcessing
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.lock_open_outlined),

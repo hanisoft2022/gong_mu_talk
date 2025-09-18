@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/salary_allowance_type.dart';
 import '../../domain/entities/salary_input.dart';
+import '../../domain/entities/salary_track.dart';
 
 class SalaryInputDto extends Equatable {
   const SalaryInputDto({
@@ -10,6 +11,11 @@ class SalaryInputDto extends Equatable {
     required this.allowances,
     required this.annualBonus,
     required this.pensionContributionRate,
+    required this.appointmentYear,
+    required this.track,
+    required this.gradeId,
+    required this.step,
+    required this.isAutoCalculated,
   });
 
   final double baseMonthlySalary;
@@ -17,6 +23,11 @@ class SalaryInputDto extends Equatable {
   final Map<String, double> allowances;
   final double annualBonus;
   final double pensionContributionRate;
+  final int appointmentYear;
+  final String track;
+  final String gradeId;
+  final int step;
+  final bool isAutoCalculated;
 
   factory SalaryInputDto.fromDomain(SalaryInput input) {
     return SalaryInputDto(
@@ -27,6 +38,11 @@ class SalaryInputDto extends Equatable {
       ),
       annualBonus: input.annualBonus,
       pensionContributionRate: input.pensionContributionRate,
+      appointmentYear: input.appointmentYear,
+      track: input.track.id,
+      gradeId: input.gradeId,
+      step: input.step,
+      isAutoCalculated: input.isAutoCalculated,
     );
   }
 
@@ -39,6 +55,14 @@ class SalaryInputDto extends Equatable {
       ),
       annualBonus: annualBonus,
       pensionContributionRate: pensionContributionRate,
+      appointmentYear: appointmentYear,
+      track: SalaryTrack.values.firstWhere(
+        (element) => element.id == track,
+        orElse: () => SalaryTrack.general,
+      ),
+      gradeId: gradeId,
+      step: step,
+      isAutoCalculated: isAutoCalculated,
     );
   }
 
@@ -48,6 +72,11 @@ class SalaryInputDto extends Equatable {
         'allowances': allowances,
         'annualBonus': annualBonus,
         'pensionContributionRate': pensionContributionRate,
+        'appointmentYear': appointmentYear,
+        'track': track,
+        'gradeId': gradeId,
+        'step': step,
+        'isAutoCalculated': isAutoCalculated,
       };
 
   factory SalaryInputDto.fromJson(Map<String, dynamic> json) {
@@ -63,6 +92,11 @@ class SalaryInputDto extends Equatable {
       annualBonus: (json['annualBonus'] as num).toDouble(),
       pensionContributionRate:
           (json['pensionContributionRate'] as num).toDouble(),
+      appointmentYear: json['appointmentYear'] as int? ?? DateTime.now().year,
+      track: json['track'] as String? ?? SalaryTrack.general.id,
+      gradeId: json['gradeId'] as String? ?? '9',
+      step: json['step'] as int? ?? 1,
+      isAutoCalculated: json['isAutoCalculated'] as bool? ?? false,
     );
   }
 
@@ -82,5 +116,10 @@ class SalaryInputDto extends Equatable {
             .join('|'),
         annualBonus,
         pensionContributionRate,
+        appointmentYear,
+        track,
+        gradeId,
+        step,
+        isAutoCalculated,
       ];
 }
