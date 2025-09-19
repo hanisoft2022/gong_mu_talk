@@ -13,6 +13,7 @@ typedef AppBuilder = Widget Function();
 
 Future<void> bootstrap(AppBuilder builder) async {
   runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
     Intl.defaultLocale = 'ko_KR';
     AppConfig.initialize();
     await FirebaseInitializer.ensureInitialized();

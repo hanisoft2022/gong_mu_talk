@@ -62,4 +62,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'gong-mu-talk.firebasestorage.app',
     iosBundleId: 'com.example.gongMuTalk',
   );
+
 }

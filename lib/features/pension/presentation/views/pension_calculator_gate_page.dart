@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/widgets/auth_dialog.dart';
 
 class PensionCalculatorGatePage extends StatelessWidget {
   const PensionCalculatorGatePage({super.key});
@@ -31,6 +32,9 @@ class _PensionLockedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AuthCubit authCubit = context.read<AuthCubit>();
+    final String loginDescription = state.isLoggedIn && state.email != null
+        ? '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.\n현재 로그인 계정: ${state.email}'
+        : '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -50,11 +54,19 @@ class _PensionLockedView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('연금 계산 서비스', style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                Text(
+                  '연금 계산 서비스',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const Gap(12),
                 Text(
                   '공무원 연금 예상액, 생애소득 시뮬레이션, 휴직·전보 시나리오 등 맞춤 리포트를 확인하려면 인증과 이용권이 필요합니다.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white70,
+                  ),
                 ),
               ],
             ),
@@ -63,10 +75,12 @@ class _PensionLockedView extends StatelessWidget {
           _StepTile(
             index: 1,
             title: '간편 로그인',
-            description: '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.',
+            description: loginDescription,
             trailing: OutlinedButton(
-              onPressed: state.isLoggedIn ? null : authCubit.logIn,
-              child: const Text('로그인'),
+              onPressed: state.isLoggedIn
+                  ? null
+                  : () => _showAuthDialog(context),
+              child: Text(state.isLoggedIn ? '로그인됨' : '로그인'),
             ),
           ),
           const Gap(16),
@@ -79,7 +93,11 @@ class _PensionLockedView extends StatelessWidget {
                   ? null
                   : () => authCubit.purchasePensionAccess(context),
               icon: state.isProcessing
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.lock_open_outlined),
               label: const Text('4,990원 결제'),
             ),
@@ -101,7 +119,10 @@ class _PensionLockedView extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  Icon(Icons.notifications_active_outlined, color: theme.colorScheme.secondary),
+                  Icon(
+                    Icons.notifications_active_outlined,
+                    color: theme.colorScheme.secondary,
+                  ),
                   const Gap(12),
                   Expanded(
                     child: Text(
@@ -119,6 +140,20 @@ class _PensionLockedView extends StatelessWidget {
   }
 }
 
+void _showAuthDialog(BuildContext context) {
+  final AuthCubit authCubit = context.read<AuthCubit>();
+
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      return BlocProvider<AuthCubit>.value(
+        value: authCubit,
+        child: const AuthDialog(),
+      );
+    },
+  );
+}
+
 class _PensionComingSoon extends StatelessWidget {
   const _PensionComingSoon();
 
@@ -131,7 +166,12 @@ class _PensionComingSoon extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('연금 계산 리포트가 곧 도착합니다!', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            '연금 계산 리포트가 곧 도착합니다!',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const Gap(16),
           Text(
             '현재 엑셀 시뮬레이터 로직을 앱에 이식하고 있습니다. 곧 월별 납입액, 퇴직금, 연금 개시 연령별 수령액을 확인할 수 있어요.',
@@ -144,7 +184,12 @@ class _PensionComingSoon extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('다음 업데이트 미리보기', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    '다음 업데이트 미리보기',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const Gap(12),
                   const _PreviewBullet(text: '엑셀 로직 기반 연금 예상액 자동 계산'),
                   const _PreviewBullet(text: '휴직·복직·전보 시나리오 비교 리포트'),
@@ -177,7 +222,11 @@ class _PreviewBullet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline, size: 18, color: theme.colorScheme.primary),
+          Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
           const Gap(8),
           Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
         ],
@@ -210,7 +259,9 @@ class _StepTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+              backgroundColor: theme.colorScheme.primary.withValues(
+                alpha: 0.15,
+              ),
               foregroundColor: theme.colorScheme.primary,
               child: Text('$index'),
             ),
@@ -219,7 +270,12 @@ class _StepTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const Gap(8),
                   Text(description, style: theme.textTheme.bodyMedium),
                 ],

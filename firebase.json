@@ -1,1 +1,74 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"gong-mu-talk","appId":"1:877880259407:android:9807275eddb4fd8581cb3a","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"gong-mu-talk","appId":"1:877880259407:ios:8482cf3543c6cbd781cb3a","uploadDebugSymbols":true,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"gong-mu-talk","configurations":{"android":"1:877880259407:android:9807275eddb4fd8581cb3a","ios":"1:877880259407:ios:8482cf3543c6cbd781cb3a"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "gong-mu-talk",
+          "appId": "1:877880259407:android:9807275eddb4fd8581cb3a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "gong-mu-talk",
+          "appId": "1:877880259407:ios:8482cf3543c6cbd781cb3a",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "gong-mu-talk",
+          "configurations": {
+            "android": "1:877880259407:android:9807275eddb4fd8581cb3a",
+            "ios": "1:877880259407:ios:8482cf3543c6cbd781cb3a"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-northeast3",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  }
+}
