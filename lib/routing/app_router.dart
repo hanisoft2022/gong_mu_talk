@@ -3,23 +3,54 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app/app_shell.dart';
-import '../features/community/presentation/views/community_feed_page.dart';
+import '../di/di.dart';
+import '../features/auth/presentation/cubit/auth_cubit.dart';
+import '../features/auth/presentation/views/auth_page.dart';
+import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
 import '../features/blind/presentation/views/blind_feed_page.dart';
 import '../features/calculator/presentation/views/salary_calculator_page.dart';
-import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
-import '../features/matching/presentation/views/matching_page.dart';
-import '../di/di.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
-import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
+import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
+import '../features/matching/presentation/views/matching_page.dart';
+import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
+import 'router_refresh_stream.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter() {
+  final AuthCubit authCubit = getIt<AuthCubit>();
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: CommunityRoute.path,
+    refreshListenable: GoRouterRefreshStream(authCubit.stream),
+    redirect: (context, state) {
+      final bool loggedIn = authCubit.state.isLoggedIn;
+      final bool loggingIn = state.matchedLocation == LoginRoute.path;
+
+      if (!loggedIn) {
+        if (loggingIn) {
+          return null;
+        }
+
+        final String target = _resolveRequestedPath(state);
+        return Uri(
+          path: LoginRoute.path,
+          queryParameters: <String, String>{'from': target},
+        ).toString();
+      }
+
+      if (loggingIn) {
+        final String from = _sanitizeRedirectTarget(
+          state.uri.queryParameters['from'],
+        );
+        return from;
+      }
+
+      return null;
+    },
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -87,6 +118,17 @@ GoRouter createRouter() {
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: LoginRoute.path,
+        name: LoginRoute.name,
+        builder: (context, state) {
+          final String redirectPath = _sanitizeRedirectTarget(
+            state.uri.queryParameters['from'],
+          );
+          return AuthPage(redirectPath: redirectPath);
+        },
+      ),
     ],
   );
 }
@@ -131,4 +173,61 @@ class BlindRoute {
 
   static const String name = 'blind';
   static const String path = '/blind';
+}
+
+class LoginRoute {
+  const LoginRoute._();
+
+  static const String name = 'login';
+  static const String path = '/login';
+}
+
+String _resolveRequestedPath(GoRouterState state) {
+  final Uri uri = state.uri;
+  final String path = uri.path;
+
+  if (path.isEmpty || path == LoginRoute.path) {
+    return CommunityRoute.path;
+  }
+
+  if (path == '/_shell') {
+    return _pathForBranch(uri.queryParameters['branch']);
+  }
+
+  return uri.toString();
+}
+
+String _sanitizeRedirectTarget(String? from) {
+  if (from == null || from.isEmpty || from == LoginRoute.path) {
+    return CommunityRoute.path;
+  }
+
+  final Uri uri = Uri.parse(from);
+  if (uri.path == '/_shell') {
+    return _pathForBranch(uri.queryParameters['branch']);
+  }
+
+  if (uri.path.isEmpty) {
+    return CommunityRoute.path;
+  }
+
+  return from;
+}
+
+String _pathForBranch(String? branchParam) {
+  final int branchIndex = int.tryParse(branchParam ?? '') ?? 0;
+  switch (branchIndex) {
+    case 0:
+      return CommunityRoute.path;
+    case 1:
+      return BlindRoute.path;
+    case 2:
+      return SalaryCalculatorRoute.path;
+    case 3:
+      return PensionCalculatorRoute.path;
+    case 4:
+      return MatchingRoute.path;
+    default:
+      return CommunityRoute.path;
+  }
 }

@@ -1,8 +1,10 @@
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/data/firebase_auth_repository.dart';
+import '../features/auth/data/login_session_store.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/calculator/data/datasources/calculator_local_data_source.dart';
 import '../features/calculator/data/datasources/salary_reference_local_data_source.dart';
@@ -30,12 +32,20 @@ Future<void> configureDependencies() async {
     return;
   }
 
+  final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
   getIt
     ..registerLazySingleton<ThemeCubit>(ThemeCubit.new)
     ..registerLazySingleton<BootpayPaymentService>(BootpayPaymentService.new)
     ..registerLazySingleton<FirebaseAuthRepository>(FirebaseAuthRepository.new)
+    ..registerSingleton<SharedPreferences>(sharedPreferences)
+    ..registerLazySingleton<LoginSessionStore>(() => LoginSessionStore(sharedPreferences))
     ..registerLazySingleton<AuthCubit>(
-      () => AuthCubit(paymentService: getIt(), authRepository: getIt()),
+      () => AuthCubit(
+        paymentService: getIt(),
+        authRepository: getIt(),
+        sessionStore: getIt(),
+      ),
     )
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
     ..registerLazySingleton<CommunityRepository>(CommunityRepository.new)

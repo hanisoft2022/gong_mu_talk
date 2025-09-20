@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/firebase_auth_repository.dart';
+import '../../data/login_session_store.dart';
 import '../../../payments/data/bootpay_payment_service.dart';
 import '../../../profile/domain/career_track.dart';
 
@@ -14,8 +15,10 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
     required BootpayPaymentService paymentService,
     required FirebaseAuthRepository authRepository,
+    required LoginSessionStore sessionStore,
   }) : _paymentService = paymentService,
        _authRepository = authRepository,
+       _sessionStore = sessionStore,
        super(const AuthState()) {
     _authSubscription = _authRepository.authStateChanges().listen(
       _onAuthUserChanged,
@@ -24,7 +27,10 @@ class AuthCubit extends Cubit<AuthState> {
 
   final BootpayPaymentService _paymentService;
   final FirebaseAuthRepository _authRepository;
+  final LoginSessionStore _sessionStore;
   late final StreamSubscription<AuthUser?> _authSubscription;
+  static const Duration _sessionMaxAge = Duration(days: 30);
+  String? _pendingForcedLogoutMessage;
 
   Future<void> signIn({required String email, required String password}) async {
     return _runAuthOperation(
@@ -234,8 +240,22 @@ class AuthCubit extends Cubit<AuthState> {
     final bool wasLoggedIn = state.isLoggedIn;
     final bool isLoggedIn = user != null;
 
-    String? message;
-    if (wasLoggedIn != isLoggedIn) {
+    if (isLoggedIn) {
+      if (_sessionStore.isSessionExpired(_sessionMaxAge)) {
+        _pendingForcedLogoutMessage = '보안을 위해 다시 로그인해주세요.';
+        unawaited(_forceSignOut());
+        return;
+      }
+      unawaited(_sessionStore.saveLoginTimestamp(DateTime.now()));
+    } else {
+      unawaited(_sessionStore.clearLoginTimestamp());
+    }
+
+    String? message = state.lastMessage;
+    if (_pendingForcedLogoutMessage != null && !isLoggedIn) {
+      message = _pendingForcedLogoutMessage;
+      _pendingForcedLogoutMessage = null;
+    } else if (wasLoggedIn != isLoggedIn) {
       message = isLoggedIn ? '로그인 되었습니다.' : '로그아웃 되었습니다.';
     }
 
@@ -249,7 +269,7 @@ class AuthCubit extends Cubit<AuthState> {
         isGovernmentEmailVerificationInProgress: false,
         isEmailVerified: user?.isEmailVerified ?? false,
         authError: null,
-        lastMessage: message ?? state.lastMessage,
+        lastMessage: message,
       ),
     );
   }
@@ -278,12 +298,17 @@ class AuthCubit extends Cubit<AuthState> {
     } on AuthException catch (error) {
       emit(state.copyWith(isAuthenticating: false, authError: error.message));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isAuthenticating: false,
-          authError: fallbackMessage,
-        ),
-      );
+      emit(state.copyWith(isAuthenticating: false, authError: fallbackMessage));
+    }
+  }
+
+  Future<void> _forceSignOut() async {
+    try {
+      await _authRepository.signOut();
+    } on AuthException catch (error) {
+      emit(state.copyWith(authError: error.message));
+    } catch (_) {
+      emit(state.copyWith(authError: '보안 로그아웃 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
     }
   }
 }

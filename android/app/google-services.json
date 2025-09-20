@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:877880259407:android:9807275eddb4fd8581cb3a",
+        "mobilesdk_app_id": "1:877880259407:android:8ac610256dcdac8c81cb3a",
         "android_client_info": {
-          "package_name": "com.example.gong_mu_talk"
+          "package_name": "com.hanisoft.gong_mu_talk"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "877880259407-eggrg3f7t3fabrovk80j6v5evqvg8495.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hanisoft.gong_mu_talk",
+            "certificate_hash": "faa8a5447e60b3073db9e14648854fbfaff6713a"
+          }
+        },
+        {
+          "client_id": "877880259407-qvsk8dc1d4nsu3v301irq6eb1n41gbf2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDAGyvi8gqPUtdsv1PhDrlxCTNBgJ4_jyc"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "877880259407-qvsk8dc1d4nsu3v301irq6eb1n41gbf2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "877880259407-7vupivdst1nl1lvc4ebur0givv82fr0h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gongMuTalk"
+              }
+            }
+          ]
         }
       }
     }

@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>877880259407-bn8ij5nadelt71bs0globfna7ua2bisq.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.877880259407-bn8ij5nadelt71bs0globfna7ua2bisq</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>877880259407-eggrg3f7t3fabrovk80j6v5evqvg8495.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDsgMuu8kf83jAiPH3lSB_yPCcoXI6U8wY</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.gongMuTalk</string>
+	<string>com.hanisoft.gong-mu-talk</string>
 	<key>PROJECT_ID</key>
 	<string>gong-mu-talk</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:877880259407:ios:8482cf3543c6cbd781cb3a</string>
+	<string>1:877880259407:ios:c36e32a3a649d45d81cb3a</string>
 </dict>
 </plist>
