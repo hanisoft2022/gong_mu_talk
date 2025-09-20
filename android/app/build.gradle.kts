@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gong_mu_talk"
+    namespace = "com.hanisoft.gong_mu_talk"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
