@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
+import '../routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -21,21 +22,38 @@ class AppShell extends StatelessWidget {
         }
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ..showSnackBar(SnackBar(content: Text(message)));
       },
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
           final bool isDark = themeMode == ThemeMode.dark;
           return Scaffold(
             appBar: AppBar(
-              title: Text(_titleForIndex(navigationShell.currentIndex)),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    height: 28,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '공무톡 · ${_titleForIndex(navigationShell.currentIndex)}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
               actions: [
                 IconButton(
                   tooltip: isDark ? '라이트 모드' : '다크 모드',
                   onPressed: () => context.read<ThemeCubit>().toggle(),
                   icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+                ),
+                IconButton(
+                  tooltip: '마이페이지',
+                  onPressed: () => GoRouter.of(context).push(ProfileRoute.path),
+                  icon: const Icon(Icons.person_outline),
                 ),
               ],
             ),
@@ -43,9 +61,22 @@ class AppShell extends StatelessWidget {
             bottomNavigationBar: NavigationBar(
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) {
-                navigationShell.goBranch(index);
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
               },
               destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.forum_outlined),
+                  selectedIcon: Icon(Icons.forum),
+                  label: '쫑알쫑알',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.visibility_outlined),
+                  selectedIcon: Icon(Icons.visibility),
+                  label: '블라인드',
+                ),
                 NavigationDestination(
                   icon: Icon(Icons.calculate_outlined),
                   selectedIcon: Icon(Icons.calculate),
@@ -55,6 +86,11 @@ class AppShell extends StatelessWidget {
                   icon: Icon(Icons.savings_outlined),
                   selectedIcon: Icon(Icons.savings),
                   label: '연금',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.favorite_outline),
+                  selectedIcon: Icon(Icons.favorite),
+                  label: '매칭',
                 ),
               ],
             ),
@@ -67,9 +103,15 @@ class AppShell extends StatelessWidget {
   String _titleForIndex(int index) {
     switch (index) {
       case 0:
-        return '나의 월급';
+        return '쫑알쫑알';
       case 1:
+        return '블라인드 커뮤니티';
+      case 2:
+        return '나의 월급';
+      case 3:
         return '연금 계산 서비스';
+      case 4:
+        return '매칭';
       default:
         return '공무톡';
     }

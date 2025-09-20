@@ -25,6 +25,14 @@ class FirebaseInitializer {
       debugPrint('$error');
       debugPrint('$stackTrace');
       return;
+    } on UnsupportedError catch (error, stackTrace) {
+      debugPrint(
+        '현재 실행 중인 플랫폼에 대한 Firebase 옵션이 구성되지 않았습니다. 필요한 경우 FlutterFire CLI로 다시 설정하세요.',
+      );
+      debugPrint('$error');
+      debugPrint('$stackTrace');
+      _initialized = true;
+      return;
     } catch (error, stackTrace) {
       debugPrint('Firebase 초기화 중 오류 발생: $error');
       debugPrint('$stackTrace');

@@ -1,10 +1,16 @@
 flutter_native_splash:
   color: "#0064FF"
   color_dark: "#0B1E3E"
+  image: assets/logo/gong_mu_talk_logo.png
+  image_dark: assets/logo/gong_mu_talk_logo.png
   android: true
   ios: true
   web: false
   android_12:
     color: "#0064FF"
     color_dark: "#0B1E3E"
+    image: assets/logo/gong_mu_talk_logo.png
+    image_dark: assets/logo/gong_mu_talk_logo.png
   branding_mode: bottom
+  branding: assets/logo/hanisoft_logo_white_font.png
+  branding_dark: assets/logo/hanisoft_logo_white_font.png
