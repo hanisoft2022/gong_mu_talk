@@ -1,55 +1,45 @@
-part of 'community_feed_cubit.dart';
+part of 'board_feed_cubit.dart';
 
-enum CommunityFeedStatus { initial, loading, loaded, refreshing, error }
+enum BoardFeedStatus { initial, loading, loaded, error }
 
-enum CommunityFeedTab { all, serial, hot }
-
-class CommunityFeedState extends Equatable {
-  const CommunityFeedState({
-    this.status = CommunityFeedStatus.initial,
+class BoardFeedState extends Equatable {
+  const BoardFeedState({
+    this.status = BoardFeedStatus.initial,
     this.posts = const <Post>[],
-    this.tab = CommunityFeedTab.all,
+    this.board,
     this.hasMore = true,
     this.isLoadingMore = false,
     this.errorMessage,
-    this.careerTrack = CareerTrack.none,
-    this.serial = 'unknown',
     this.likedPostIds = const <String>{},
     this.bookmarkedPostIds = const <String>{},
   });
 
-  final CommunityFeedStatus status;
+  final BoardFeedStatus status;
   final List<Post> posts;
-  final CommunityFeedTab tab;
+  final Board? board;
   final bool hasMore;
   final bool isLoadingMore;
   final String? errorMessage;
-  final CareerTrack careerTrack;
-  final String serial;
   final Set<String> likedPostIds;
   final Set<String> bookmarkedPostIds;
 
-  CommunityFeedState copyWith({
-    CommunityFeedStatus? status,
+  BoardFeedState copyWith({
+    BoardFeedStatus? status,
     List<Post>? posts,
-    CommunityFeedTab? tab,
+    Board? board,
     bool? hasMore,
     bool? isLoadingMore,
     String? errorMessage,
-    CareerTrack? careerTrack,
-    String? serial,
     Set<String>? likedPostIds,
     Set<String>? bookmarkedPostIds,
   }) {
-    return CommunityFeedState(
+    return BoardFeedState(
       status: status ?? this.status,
       posts: posts ?? this.posts,
-      tab: tab ?? this.tab,
+      board: board ?? this.board,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      errorMessage: errorMessage ?? this.errorMessage,
-      careerTrack: careerTrack ?? this.careerTrack,
-      serial: serial ?? this.serial,
+      errorMessage: errorMessage,
       likedPostIds: likedPostIds ?? this.likedPostIds,
       bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
     );
@@ -59,12 +49,10 @@ class CommunityFeedState extends Equatable {
   List<Object?> get props => <Object?>[
     status,
     posts,
-    tab,
+    board,
     hasMore,
     isLoadingMore,
     errorMessage,
-    careerTrack,
-    serial,
     likedPostIds,
     bookmarkedPostIds,
   ];

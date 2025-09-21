@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/user_profile.dart';
 import '../../data/matching_repository.dart';
 import '../../domain/entities/match_profile.dart';
 
@@ -17,17 +18,14 @@ class MatchingCubit extends Cubit<MatchingState> {
   }) : _repository = repository,
        _authCubit = authCubit,
        super(const MatchingState()) {
-    _authSubscription = _authCubit.stream.listen((authState) {
-      if (state.status == MatchingStatus.loaded) {
-        _filterCandidates(authState.excludedTracks);
-      }
-    });
+    _authSubscription = _authCubit.stream.listen(_handleAuthStateChanged);
   }
 
   final MatchingRepository _repository;
   final AuthCubit _authCubit;
   late final StreamSubscription<AuthState> _authSubscription;
   List<MatchProfile> _allCandidates = const <MatchProfile>[];
+  bool _pendingProfile = false;
 
   Future<void> loadCandidates() async {
     final AuthState authState = _authCubit.state;
@@ -43,16 +41,30 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
+    final UserProfile? profile = authState.userProfile;
+    if (profile == null) {
+      _pendingProfile = true;
+      emit(
+        state.copyWith(
+          status: MatchingStatus.loading,
+          candidates: const <MatchProfile>[],
+          lastActionMessage: '프로필 정보를 불러오는 중입니다...',
+        ),
+      );
+      return;
+    }
+
+    _pendingProfile = false;
     emit(
       state.copyWith(status: MatchingStatus.loading, lastActionMessage: null),
     );
 
     try {
       _allCandidates = await _repository.fetchCandidates(
-        currentUserId: authState.userId ?? authState.email ?? 'anonymous',
+        currentUser: profile,
       );
       _filterCandidates(
-        authState.excludedTracks,
+        authState,
         status: MatchingStatus.loaded,
       );
     } catch (_) {
@@ -71,12 +83,19 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
+    final UserProfile? profile = _authCubit.state.userProfile;
+    if (profile == null) {
+      emit(state.copyWith(lastActionMessage: '프로필 정보를 불러온 뒤에 다시 시도해주세요.'));
+      return;
+    }
+
     emit(
       state.copyWith(actionInProgressId: candidateId, lastActionMessage: null),
     );
     try {
       final MatchRequestResult result = await _repository.requestMatch(
-        candidateId,
+        currentUser: profile,
+        targetUid: candidateId,
       );
       emit(
         state.copyWith(
@@ -98,17 +117,61 @@ class MatchingCubit extends Cubit<MatchingState> {
     emit(state.copyWith(lastActionMessage: null));
   }
 
-  void _filterCandidates(Set<CareerTrack> excluded, {MatchingStatus? status}) {
+  void _filterCandidates(AuthState authState, {MatchingStatus? status}) {
+    final Set<CareerTrack> excludedTracks = authState.excludedTracks;
     final List<MatchProfile> filtered = _allCandidates
-        .where((profile) => !excluded.contains(profile.authorTrack))
+        .where((MatchProfile profile) => !excludedTracks.contains(profile.careerTrack))
         .toList(growable: false);
 
-    emit(state.copyWith(candidates: filtered, status: status ?? state.status));
+    emit(
+      state.copyWith(
+        candidates: filtered,
+        status: status ?? state.status,
+      ),
+    );
   }
 
   @override
   Future<void> close() async {
     await _authSubscription.cancel();
     return super.close();
+  }
+
+  void _handleAuthStateChanged(AuthState authState) {
+    if (!authState.isLoggedIn) {
+      _allCandidates = const <MatchProfile>[];
+      _pendingProfile = false;
+      emit(
+        state.copyWith(
+          status: MatchingStatus.initial,
+          candidates: const <MatchProfile>[],
+          actionInProgressId: null,
+          lastActionMessage: null,
+        ),
+      );
+      return;
+    }
+
+    if (!authState.isGovernmentEmailVerified) {
+      _allCandidates = const <MatchProfile>[];
+      emit(
+        state.copyWith(
+          status: MatchingStatus.locked,
+          candidates: const <MatchProfile>[],
+          actionInProgressId: null,
+          lastActionMessage: null,
+        ),
+      );
+      return;
+    }
+
+    if (_pendingProfile && authState.userProfile != null && authState.isGovernmentEmailVerified) {
+      unawaited(loadCandidates());
+      return;
+    }
+
+    if (state.status == MatchingStatus.loaded) {
+      _filterCandidates(authState);
+    }
   }
 }

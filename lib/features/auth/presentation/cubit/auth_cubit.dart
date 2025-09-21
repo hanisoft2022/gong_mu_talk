@@ -8,6 +8,8 @@ import '../../data/firebase_auth_repository.dart';
 import '../../data/login_session_store.dart';
 import '../../../payments/data/bootpay_payment_service.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/data/user_profile_repository.dart';
+import '../../../profile/domain/user_profile.dart';
 
 part 'auth_state.dart';
 
@@ -16,9 +18,11 @@ class AuthCubit extends Cubit<AuthState> {
     required BootpayPaymentService paymentService,
     required FirebaseAuthRepository authRepository,
     required LoginSessionStore sessionStore,
+    required UserProfileRepository userProfileRepository,
   }) : _paymentService = paymentService,
        _authRepository = authRepository,
        _sessionStore = sessionStore,
+       _userProfileRepository = userProfileRepository,
        super(const AuthState()) {
     _authSubscription = _authRepository.authStateChanges().listen(
       _onAuthUserChanged,
@@ -28,7 +32,9 @@ class AuthCubit extends Cubit<AuthState> {
   final BootpayPaymentService _paymentService;
   final FirebaseAuthRepository _authRepository;
   final LoginSessionStore _sessionStore;
+  final UserProfileRepository _userProfileRepository;
   late final StreamSubscription<AuthUser?> _authSubscription;
+  StreamSubscription<UserProfile?>? _profileSubscription;
   static const Duration _sessionMaxAge = Duration(days: 30);
   String? _pendingForcedLogoutMessage;
 
@@ -145,78 +151,122 @@ class AuthCubit extends Cubit<AuthState> {
     _onAuthUserChanged(user);
   }
 
-  void updateCareerTrack(CareerTrack track) {
-    emit(
-      state.copyWith(
-        careerTrack: track,
-        lastMessage: '직렬이 ${track.displayName}로 설정되었습니다.',
-      ),
-    );
-  }
-
-  void addSupporterBadge() {
-    final int nextLevel = state.supporterLevel + 1;
-    emit(
-      state.copyWith(
-        supporterLevel: nextLevel,
-        extraNicknameTickets: state.extraNicknameTickets + 1,
-        lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.',
-      ),
-    );
-  }
-
-  void updateNickname(String newNickname) {
-    final DateTime now = DateTime.now();
-    DateTime resetAnchor = state.nicknameResetAt ?? now;
-    int changeCount = state.nicknameChangeCount;
-    int tickets = state.extraNicknameTickets;
-
-    if (resetAnchor.year != now.year || resetAnchor.month != now.month) {
-      resetAnchor = DateTime(now.year, now.month);
-      changeCount = 0;
+  Future<void> updateCareerTrack(CareerTrack track) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 직렬을 설정할 수 있습니다.'));
+      return;
     }
 
-    if (newNickname.trim().isEmpty) {
+    try {
+      await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        careerTrack: track,
+      );
+      emit(
+        state.copyWith(
+          lastMessage: '직렬이 ${track.displayName}로 설정되었습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(state.copyWith(lastMessage: '직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.'));
+    }
+  }
+
+  Future<void> addSupporterBadge() async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 후원 배지를 획득할 수 있습니다.'));
+      return;
+    }
+
+    final int nextLevel = state.supporterLevel + 1;
+    try {
+      await _userProfileRepository.assignBadge(
+        uid: uid,
+        badgeId: 'supporter_$nextLevel',
+        label: '후원자 레벨 $nextLevel',
+        description: '공무톡 후원으로 획득한 배지',
+      );
+      await _userProfileRepository.incrementPoints(
+        uid: uid,
+        delta: 50,
+        levelDelta: 1,
+      );
+      await _userProfileRepository.addNicknameTickets(uid: uid, count: 1);
+      emit(
+        state.copyWith(
+          lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(state.copyWith(lastMessage: '후원 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
+    }
+  }
+
+  Future<void> updateNickname(String newNickname) async {
+    final String trimmed = newNickname.trim();
+    if (trimmed.isEmpty) {
       emit(state.copyWith(lastMessage: '닉네임을 입력해주세요.'));
       return;
     }
 
-    if (changeCount >= 2 && tickets <= 0) {
-      emit(state.copyWith(lastMessage: '이번 달 닉네임 변경 가능 횟수를 모두 사용했습니다.'));
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 닉네임을 변경할 수 있습니다.'));
       return;
     }
 
-    if (changeCount >= 2 && tickets > 0) {
-      tickets -= 1;
-    } else {
-      changeCount += 1;
+    if (!state.canChangeNickname) {
+      emit(state.copyWith(lastMessage: '닉네임 변경권이 부족합니다.'));
+      return;
     }
 
-    emit(
-      state.copyWith(
-        nickname: newNickname.trim(),
-        nicknameChangeCount: changeCount,
-        nicknameLastChangedAt: now,
-        nicknameResetAt: resetAnchor,
-        extraNicknameTickets: tickets,
-        lastMessage: '닉네임이 변경되었습니다.',
-      ),
-    );
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+
+    try {
+      final UserProfile profile = await _userProfileRepository.updateNickname(
+        uid: uid,
+        newNickname: trimmed,
+      );
+      _applyProfile(profile);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '닉네임이 변경되었습니다.',
+        ),
+      );
+    } on StateError catch (error) {
+      emit(state.copyWith(isProcessing: false, lastMessage: error.message));
+    } on ArgumentError catch (error) {
+      emit(state.copyWith(isProcessing: false, lastMessage: error.message));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '닉네임 변경 중 오류가 발생했습니다. 다시 시도해주세요.',
+        ),
+      );
+    }
   }
 
-  void purchaseNicknameTicket() {
-    emit(
-      state.copyWith(
-        extraNicknameTickets: state.extraNicknameTickets + 1,
-        lastMessage: '닉네임 변경권이 추가되었습니다.',
-      ),
-    );
+  Future<void> purchaseNicknameTicket() async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 닉네임 변경권을 구매할 수 있습니다.'));
+      return;
+    }
+
+    try {
+      await _userProfileRepository.addNicknameTickets(uid: uid, count: 1);
+      emit(state.copyWith(lastMessage: '닉네임 변경권이 추가되었습니다.'));
+    } catch (_) {
+      emit(state.copyWith(lastMessage: '닉네임 변경권 추가 중 오류가 발생했습니다.'));
+    }
   }
 
-  void toggleExcludedTrack(CareerTrack track) {
-    final Set<CareerTrack> updated = Set<CareerTrack>.from(
-      state.excludedTracks,
-    );
+  Future<void> toggleExcludedTrack(CareerTrack track) async {
+    final Set<CareerTrack> updated = Set<CareerTrack>.from(state.excludedTracks);
     if (!updated.remove(track)) {
       updated.add(track);
     }
@@ -224,82 +274,160 @@ class AuthCubit extends Cubit<AuthState> {
     emit(
       state.copyWith(
         excludedTracks: updated,
-        lastMessage: '매칭 제외 직렬 설정이 업데이트되었습니다.',
+        excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
       ),
     );
+
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(
+        state.copyWith(
+          excludedTracks: updated,
+          lastMessage: '로그인 후 제외 직렬을 설정할 수 있습니다.',
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _userProfileRepository.updateExclusionSettings(
+        uid: uid,
+        excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
+      );
+      emit(
+        state.copyWith(
+          excludedTracks: updated,
+          excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
+          lastMessage: '매칭 제외 직렬 설정이 업데이트되었습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          excludedTracks: updated,
+          excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
+          lastMessage: '매칭 제외 직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
   }
 
   void _onAuthUserChanged(AuthUser? user) {
     final bool wasLoggedIn = state.isLoggedIn;
-    final bool isLoggedIn = user != null;
-    final String? previousEmail = state.email;
 
-    if (isLoggedIn) {
-      if (_sessionStore.isSessionExpired(_sessionMaxAge)) {
-        _pendingForcedLogoutMessage = '보안을 위해 다시 로그인해주세요.';
-        unawaited(_forceSignOut());
-        return;
-      }
-      unawaited(_sessionStore.saveLoginTimestamp(DateTime.now()));
-
-      final String? newEmail = user.email;
-      if (newEmail != null && newEmail.isNotEmpty) {
-        if (previousEmail != null && previousEmail.isNotEmpty && previousEmail != newEmail) {
-          unawaited(
-            _authRepository.handlePrimaryEmailUpdated(
-              userId: user.uid,
-              previousEmail: previousEmail,
-              newEmail: newEmail,
-            ),
-          );
-        } else {
-          unawaited(
-            _authRepository.ensureGovernmentEmailRecord(
-              userId: user.uid,
-              email: newEmail,
-              isEmailVerified: user.isEmailVerified,
-            ),
-          );
-        }
-      }
-    } else {
+    if (user == null) {
       unawaited(_sessionStore.clearLoginTimestamp());
+      _profileSubscription?.cancel();
+
+      String? message = state.lastMessage;
+      if (_pendingForcedLogoutMessage != null) {
+        message = _pendingForcedLogoutMessage;
+        _pendingForcedLogoutMessage = null;
+      } else if (wasLoggedIn) {
+        message = '로그아웃 되었습니다.';
+      }
+
+      emit(
+        state.copyWith(
+          isLoggedIn: false,
+          userId: null,
+          email: null,
+          primaryEmail: null,
+          hasPensionAccess: false,
+          isAuthenticating: false,
+          isGovernmentEmailVerificationInProgress: false,
+          isEmailVerified: false,
+          authError: null,
+          userProfile: null,
+          nickname: '공무원',
+          careerTrack: CareerTrack.none,
+          serial: 'unknown',
+          department: 'unknown',
+          region: 'unknown',
+          jobTitle: '직무 미입력',
+          yearsOfService: 0,
+          supporterLevel: 0,
+          points: 0,
+          level: 1,
+          badges: const <String>[],
+          premiumTier: PremiumTier.none,
+          photoUrl: null,
+          nicknameChangeCount: 0,
+          nicknameLastChangedAt: null,
+          nicknameResetAt: null,
+          extraNicknameTickets: 0,
+          excludedTracks: const <CareerTrack>{},
+          excludedSerials: const <String>{},
+          excludedDepartments: const <String>{},
+          excludedRegions: const <String>{},
+          lastMessage: message,
+        ),
+      );
+      return;
+    }
+
+    if (_sessionStore.isSessionExpired(_sessionMaxAge)) {
+      _pendingForcedLogoutMessage = '보안을 위해 다시 로그인해주세요.';
+      unawaited(_forceSignOut());
+      return;
+    }
+
+    unawaited(_sessionStore.saveLoginTimestamp(DateTime.now()));
+
+    final String? previousEmail = state.email;
+    final String? newEmail = user.email;
+    if (newEmail != null && newEmail.isNotEmpty) {
+      if (previousEmail != null && previousEmail.isNotEmpty && previousEmail != newEmail) {
+        unawaited(
+          _authRepository.handlePrimaryEmailUpdated(
+            userId: user.uid,
+            previousEmail: previousEmail,
+            newEmail: newEmail,
+          ),
+        );
+      } else {
+        unawaited(
+          _authRepository.ensureGovernmentEmailRecord(
+            userId: user.uid,
+            email: newEmail,
+            isEmailVerified: user.isEmailVerified,
+          ),
+        );
+      }
     }
 
     String? message = state.lastMessage;
-    if (_pendingForcedLogoutMessage != null && !isLoggedIn) {
-      message = _pendingForcedLogoutMessage;
-      _pendingForcedLogoutMessage = null;
-    } else if (wasLoggedIn != isLoggedIn) {
-      message = isLoggedIn ? '로그인 되었습니다.' : '로그아웃 되었습니다.';
+    if (!wasLoggedIn) {
+      message = '로그인 되었습니다.';
     }
 
     emit(
       state.copyWith(
-        isLoggedIn: isLoggedIn,
-        userId: user?.uid,
-        email: user?.email,
-        primaryEmail: user?.email,
-        hasPensionAccess: isLoggedIn ? state.hasPensionAccess : false,
+        isLoggedIn: true,
+        userId: user.uid,
+        email: user.email,
+        primaryEmail: user.email,
+        hasPensionAccess: state.hasPensionAccess,
         isAuthenticating: false,
         isGovernmentEmailVerificationInProgress: false,
-        isEmailVerified: user?.isEmailVerified ?? false,
+        isEmailVerified: user.isEmailVerified,
         authError: null,
         lastMessage: message,
       ),
     );
 
-    if (user is AuthUser) {
-      final String? accountEmail = user.email;
-      if (accountEmail != null && _isGovernmentEmail(accountEmail)) {
-        unawaited(_refreshPrimaryEmail(user.uid, accountEmail));
-      }
+    if (newEmail != null && _isGovernmentEmail(newEmail)) {
+      unawaited(_refreshPrimaryEmail(user.uid, newEmail));
     }
+
+    unawaited(_userProfileRepository.recordLogin(user.uid));
+    _subscribeToProfile(uid: user.uid, fallbackEmail: newEmail);
   }
 
   @override
   Future<void> close() async {
     await _authSubscription.cancel();
+    await _profileSubscription?.cancel();
     await super.close();
   }
 
@@ -370,5 +498,93 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error, stackTrace) {
       debugPrint('Failed to resolve primary email for $governmentEmail: $error\n$stackTrace');
     }
+  }
+
+  void _subscribeToProfile({required String uid, String? fallbackEmail}) {
+    _profileSubscription?.cancel();
+    final String fallbackNickname = _deriveNickname(fallbackEmail);
+
+    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((UserProfile? profile) {
+      if (profile == null) {
+        return;
+      }
+      _applyProfile(profile);
+    });
+
+    unawaited(
+      _userProfileRepository
+          .ensureUserProfile(
+            uid: uid,
+            nickname: fallbackNickname,
+            serial: state.serial,
+            department: state.department,
+            region: state.region,
+            jobTitle: state.jobTitle,
+            yearsOfService: state.yearsOfService,
+          )
+          .then(_applyProfile),
+    );
+  }
+
+  void _applyProfile(UserProfile profile) {
+    if (isClosed) {
+      return;
+    }
+
+    final Set<CareerTrack> excludedTracks = profile.excludedSerials
+        .map(_careerTrackFromSerial)
+        .where((CareerTrack track) => track != CareerTrack.none)
+        .toSet();
+
+    emit(
+      state.copyWith(
+        userProfile: profile,
+        nickname: profile.nickname,
+        serial: profile.serial,
+        department: profile.department,
+        region: profile.region,
+        jobTitle: profile.jobTitle,
+        yearsOfService: profile.yearsOfService,
+        supporterLevel: profile.supporterLevel,
+        points: profile.points,
+        level: profile.level,
+        badges: profile.badges,
+        premiumTier: profile.premiumTier,
+        careerTrack: profile.careerTrack,
+        photoUrl: profile.photoUrl,
+        nicknameChangeCount: profile.nicknameChangeCount,
+        nicknameLastChangedAt: profile.nicknameLastChangedAt,
+        nicknameResetAt: profile.nicknameResetAt,
+        extraNicknameTickets: profile.extraNicknameTickets,
+        excludedTracks: excludedTracks,
+        excludedSerials: profile.excludedSerials,
+        excludedDepartments: profile.excludedDepartments,
+        excludedRegions: profile.excludedRegions,
+      ),
+    );
+  }
+
+  String _deriveNickname(String? email) {
+    if (email == null || email.isEmpty) {
+      return '공무원';
+    }
+    final String localPart = email.split('@').first;
+    if (localPart.isEmpty) {
+      return '공무원';
+    }
+    return localPart.length > 12 ? localPart.substring(0, 12) : localPart;
+  }
+
+  CareerTrack _careerTrackFromSerial(String serial) {
+    final String normalized = serial.trim().toLowerCase();
+    for (final CareerTrack track in CareerTrack.values) {
+      if (track == CareerTrack.none) {
+        continue;
+      }
+      if (normalized.contains(track.name.toLowerCase())) {
+        return track;
+      }
+    }
+    return CareerTrack.none;
   }
 }

@@ -1,7 +1,12 @@
 import 'dart:math';
 
-import '../../profile/domain/career_track.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../core/firebase/paginated_query.dart';
+import '../../profile/domain/user_profile.dart';
 import '../domain/entities/match_profile.dart';
+
+typedef JsonMap = Map<String, Object?>;
 
 class MatchRequestResult {
   const MatchRequestResult({required this.isSuccessful, required this.message});
@@ -11,111 +16,293 @@ class MatchRequestResult {
 }
 
 class MatchingRepository {
-  MatchingRepository();
+  MatchingRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  final List<MatchProfile> _profiles = List<MatchProfile>.unmodifiable([
-    const MatchProfile(
-      id: 'user_1',
-      name: '김하늘',
-      jobTitle: '행정사무관',
-      location: '서울시청',
-      yearsOfService: 8,
-      introduction: '문화행정 업무를 담당하고 있어요. 주말에는 전시회를 자주 다닙니다.',
-      interests: ['전시 관람', '요가', '도시 재생'],
-      authorTrack: CareerTrack.publicAdministration,
-    ),
-    const MatchProfile(
-      id: 'user_2',
-      name: '이도윤',
-      jobTitle: '세무서 주무관',
-      location: '성동세무서',
-      yearsOfService: 5,
-      introduction: '동료들과 러닝 모임을 운영 중! 건강한 라이프스타일을 지향해요.',
-      interests: ['러닝', '여행', '커피'],
-      authorTrack: CareerTrack.publicAdministration,
-    ),
-    const MatchProfile(
-      id: 'user_3',
-      name: '박서연',
-      jobTitle: '교육청 연구사',
-      location: '경기도교육청',
-      yearsOfService: 11,
-      introduction: '미래 교육 정책을 고민합니다. 독서와 글쓰기를 즐겨요.',
-      interests: ['독서', '글쓰기', '공연 관람'],
-      authorTrack: CareerTrack.teacher,
-    ),
-    const MatchProfile(
-      id: 'user_4',
-      name: '최민준',
-      jobTitle: '소방장',
-      location: '부산소방본부',
-      yearsOfService: 9,
-      introduction: '강인함과 따뜻함 모두 지향합니다. 서핑과 사진 촬영이 취미예요.',
-      interests: ['서핑', '사진', '맛집 탐방'],
-      authorTrack: CareerTrack.firefighter,
-    ),
-    const MatchProfile(
-      id: 'user_5',
-      name: '한지우',
-      jobTitle: '통계청 조사관',
-      location: '통계청 본청',
-      yearsOfService: 6,
-      introduction: '데이터로 사회를 이해하려 노력합니다. 보드게임과 캠핑을 좋아해요.',
-      interests: ['보드게임', '캠핑', '디지털 전환'],
-      authorTrack: CareerTrack.publicAdministration,
-    ),
-    const MatchProfile(
-      id: 'user_6',
-      name: '서가윤',
-      jobTitle: '경찰특채',
-      location: '서울경찰청',
-      yearsOfService: 7,
-      introduction: '치안 현장을 오래 지키고 있어요. 마라톤과 악기 연주가 취미입니다.',
-      interests: ['마라톤', '드럼', '범죄심리'],
-      authorTrack: CareerTrack.police,
-    ),
-  ]);
+  final FirebaseFirestore _firestore;
+  static const int _dailyExposureLimit = 8;
+  static const int _premiumExposureBonus = 10;
+
+  CollectionReference<JsonMap> get _usersRef => _firestore.collection('users');
+
+  CollectionReference<JsonMap> _userMatchingMeta(String uid) =>
+      _userDoc(uid).collection('matching_meta');
+
+  DocumentReference<JsonMap> _userDoc(String uid) => _usersRef.doc(uid);
+
+  CollectionReference<JsonMap> _likesCollection(String uid) =>
+      _userDoc(uid).collection('matching_likes');
+
+  CollectionReference<JsonMap> _receivedLikesCollection(String uid) =>
+      _userDoc(uid).collection('matching_inbox');
 
   Future<List<MatchProfile>> fetchCandidates({
-    required String currentUserId,
+    required UserProfile currentUser,
+    int limit = 6,
+    bool includePremiumHighlights = true,
   }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    final List<MatchProfile> candidates = _profiles
-        .where((profile) => profile.id != currentUserId)
-        .toList(growable: false);
-    candidates.shuffle(Random());
-    return candidates.take(6).toList(growable: false);
-  }
+    final int allowed = await _ensureExposureCapacity(
+      currentUser: currentUser,
+      requested: limit,
+    );
+    if (allowed <= 0) {
+      return const <MatchProfile>[];
+    }
 
-  Future<MatchRequestResult> requestMatch(String candidateId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 500));
+    final QuerySnapshot<JsonMap> snapshot = await _usersRef
+        .where('isDeleted', isEqualTo: false)
+        .orderBy('points', descending: true)
+        .limit(allowed * 3)
+        .get();
 
-    MatchProfile? profile;
-    for (final MatchProfile element in _profiles) {
-      if (element.id == candidateId) {
-        profile = element;
+    final List<MatchProfile> candidates = <MatchProfile>[];
+    final Set<String> excludedSerials = currentUser.excludedSerials;
+    final Set<String> excludedDepartments = currentUser.excludedDepartments;
+    final Set<String> excludedRegions = currentUser.excludedRegions;
+
+    for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+      if (doc.id == currentUser.uid) {
+        continue;
+      }
+
+      final UserProfile profile = UserProfile.fromSnapshot(doc);
+      if (profile.isBlocked || profile.isDeleted) {
+        continue;
+      }
+      if (excludedSerials.contains(profile.serial)) {
+        continue;
+      }
+      if (excludedDepartments.contains(profile.department)) {
+        continue;
+      }
+      if (excludedRegions.contains(profile.region)) {
+        continue;
+      }
+      if (profile.serial == currentUser.serial && currentUser.serial.isNotEmpty) {
+        continue;
+      }
+
+      final MatchProfileStage stage = profile.premiumTier == PremiumTier.premium
+          ? MatchProfileStage.nicknameRevealed
+          : MatchProfileStage.anonymized;
+
+      final MatchProfile matchProfile = MatchProfile(
+        id: profile.uid,
+        nickname: profile.nickname,
+        maskedNickname: _maskNickname(profile.nickname),
+        serial: profile.serial,
+        department: profile.department,
+        region: profile.region,
+        jobTitle: profile.jobTitle,
+        yearsOfService: profile.yearsOfService,
+        introduction: profile.bio ?? '아직 소개가 없습니다.',
+        interests: profile.interests,
+        careerTrack: profile.careerTrack,
+        badges: profile.badges,
+        stage: stage,
+        isPremium: profile.isPremium,
+        premiumTier: profile.premiumTier,
+        photoUrl: profile.photoUrl,
+        points: profile.points,
+        level: profile.level,
+      );
+
+      candidates.add(matchProfile);
+      if (candidates.length >= allowed) {
         break;
       }
     }
 
-    if (profile == null) {
+    if (includePremiumHighlights) {
+      candidates.sort((MatchProfile a, MatchProfile b) {
+        if (a.isPremium == b.isPremium) {
+          return (b.points ?? 0).compareTo(a.points ?? 0);
+        }
+        return a.isPremium ? -1 : 1;
+      });
+    } else {
+      candidates.shuffle(Random());
+    }
+
+    await _incrementExposureCount(currentUser.uid, candidates.length);
+    return candidates;
+  }
+
+  Future<PaginatedQueryResult<MatchProfile>> fetchLikesReceived({
+    required UserProfile currentUser,
+    int limit = 20,
+    QueryDocumentSnapshot<JsonMap>? startAfter,
+  }) async {
+    Query<JsonMap> query = _receivedLikesCollection(currentUser.uid)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    final QuerySnapshot<JsonMap> snapshot = await query.get();
+    final List<MatchProfile> profiles = <MatchProfile>[];
+    for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+      final String likerUid = doc.id;
+      final UserProfile? profile = await _fetchProfile(likerUid);
+      if (profile == null) {
+        continue;
+      }
+      profiles.add(
+        MatchProfile(
+          id: profile.uid,
+          nickname: profile.nickname,
+          maskedNickname: _maskNickname(profile.nickname),
+          serial: profile.serial,
+          department: profile.department,
+          region: profile.region,
+          jobTitle: profile.jobTitle,
+          yearsOfService: profile.yearsOfService,
+          introduction: profile.bio ?? '소개 작성 전입니다.',
+          interests: profile.interests,
+          careerTrack: profile.careerTrack,
+          badges: profile.badges,
+          stage: MatchProfileStage.nicknameRevealed,
+          isPremium: profile.isPremium,
+          premiumTier: profile.premiumTier,
+          photoUrl: profile.photoUrl,
+          points: profile.points,
+          level: profile.level,
+        ),
+      );
+    }
+
+    final bool hasMore = snapshot.docs.length == limit;
+    final QueryDocumentSnapshot<JsonMap>? last = snapshot.docs.isEmpty ? null : snapshot.docs.last;
+    return PaginatedQueryResult<MatchProfile>(items: profiles, hasMore: hasMore, lastDocument: last);
+  }
+
+  Future<MatchRequestResult> requestMatch({
+    required UserProfile currentUser,
+    required String targetUid,
+    String? message,
+  }) async {
+    if (currentUser.uid == targetUid) {
       return const MatchRequestResult(
         isSuccessful: false,
-        message: '대상을 찾을 수 없습니다.',
+        message: '자기 자신에게는 매칭을 신청할 수 없습니다.',
       );
     }
 
-    final bool success = Random().nextBool();
-    if (success) {
+    final DocumentReference<JsonMap> likeDoc = _likesCollection(currentUser.uid).doc(targetUid);
+    final DocumentReference<JsonMap> inboxDoc = _receivedLikesCollection(targetUid).doc(currentUser.uid);
+    final DocumentReference<JsonMap> reciprocalDoc = _likesCollection(targetUid).doc(currentUser.uid);
+
+    return _firestore.runTransaction<MatchRequestResult>((Transaction transaction) async {
+      final DocSnapshotJson reciprocalSnapshot = await transaction.get(reciprocalDoc);
+      final bool isMutual = reciprocalSnapshot.exists;
+
+      transaction.set(likeDoc, <String, Object?>{
+        'createdAt': Timestamp.now(),
+        'message': message,
+      });
+
+      transaction.set(inboxDoc, <String, Object?>{
+        'createdAt': Timestamp.now(),
+        'message': message,
+      });
+
+      if (isMutual) {
+        final DocumentReference<JsonMap> matchesRef = _firestore
+            .collection('matches')
+            .doc(_matchId(currentUser.uid, targetUid));
+        transaction.set(matchesRef, <String, Object?>{
+          'userA': currentUser.uid,
+          'userB': targetUid,
+          'createdAt': Timestamp.now(),
+          'stage': 'nicknameRevealed',
+        });
+        return MatchRequestResult(
+          isSuccessful: true,
+          message: '서로 좋아요를 보냈어요! 매칭 채팅방을 열어드릴게요.',
+        );
+      }
+
       return MatchRequestResult(
         isSuccessful: true,
-        message: '${profile.name}님과의 매칭 요청이 접수되었습니다! 24시간 내에 결과를 알려드릴게요.',
+        message: '매칭 요청을 보냈습니다. 상대방이 수락하면 알려드릴게요.',
       );
-    }
+    });
+  }
 
-    return MatchRequestResult(
-      isSuccessful: false,
-      message: '${profile.name}님이 현재 매칭 가능 상태가 아니에요. 다른 후보에게도 신청해보세요.',
+  Future<void> recordChatMessage({
+    required String matchId,
+    required String senderUid,
+  }) async {
+    final DocumentReference<JsonMap> matchDoc = _firestore.collection('matches').doc(matchId);
+    await matchDoc.set(
+      <String, Object?>{
+        'lastMessageAt': Timestamp.now(),
+        'lastMessageSender': senderUid,
+      },
+      SetOptions(merge: true),
     );
+  }
+
+  Future<void> progressRevealStage({
+    required String matchId,
+    required MatchProfileStage nextStage,
+  }) async {
+    final DocumentReference<JsonMap> matchDoc = _firestore.collection('matches').doc(matchId);
+    await matchDoc.update(<String, Object?>{'stage': nextStage.name});
+  }
+
+  Future<UserProfile?> _fetchProfile(String uid) async {
+    final DocSnapshotJson snapshot = await _userDoc(uid).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    return UserProfile.fromSnapshot(snapshot);
+  }
+
+  Future<int> _ensureExposureCapacity({
+    required UserProfile currentUser,
+    required int requested,
+  }) async {
+    final DocumentReference<JsonMap> doc = _exposureDoc(currentUser.uid);
+    final DocSnapshotJson snapshot = await doc.get();
+    final int currentCount = (snapshot.data()?['count'] as num?)?.toInt() ?? 0;
+    final int limit = currentUser.isPremium
+        ? _dailyExposureLimit + _premiumExposureBonus
+        : _dailyExposureLimit;
+    final int remaining = (limit - currentCount).clamp(0, limit);
+    if (remaining <= 0) {
+      return 0;
+    }
+    return remaining < requested ? remaining : requested;
+  }
+
+  Future<void> _incrementExposureCount(String uid, int delta) async {
+    final DocumentReference<JsonMap> doc = _exposureDoc(uid);
+    await doc.set(
+      <String, Object?>{
+        'count': FieldValue.increment(delta),
+        'updatedAt': Timestamp.now(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  DocumentReference<JsonMap> _exposureDoc(String uid) {
+    final DateTime now = DateTime.now();
+    final String ymd = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    return _userMatchingMeta(uid).doc('daily_$ymd');
+  }
+
+  String _maskNickname(String nickname) {
+    if (nickname.length <= 2) {
+      return '${nickname[0]}*';
+    }
+    return nickname[0] + ('*' * (nickname.length - 2)) + nickname[nickname.length - 1];
+  }
+
+  String _matchId(String a, String b) {
+    final List<String> ids = <String>[a, b]..sort();
+    return ids.join('_');
   }
 }

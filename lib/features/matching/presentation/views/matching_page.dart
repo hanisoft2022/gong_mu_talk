@@ -237,6 +237,13 @@ class _MatchingCandidatesView extends StatelessWidget {
       itemBuilder: (context, index) {
         final MatchProfile profile = state.candidates[index];
         final bool isProcessing = state.actionInProgressId == profile.id;
+        final bool revealNickname =
+            profile.stage == MatchProfileStage.nicknameRevealed ||
+            profile.stage == MatchProfileStage.fullProfile;
+        final String displayName = revealNickname
+            ? profile.nickname
+            : profile.maskedNickname;
+        final String subTitle = '${profile.jobTitle} · ${profile.region}';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 20),
@@ -252,7 +259,7 @@ class _MatchingCandidatesView extends StatelessWidget {
                         alpha: 0.12,
                       ),
                       foregroundColor: theme.colorScheme.primary,
-                      child: Text(_initial(profile.name)),
+                      child: Text(_initial(displayName)),
                     ),
                     const Gap(16),
                     Expanded(
@@ -260,17 +267,17 @@ class _MatchingCandidatesView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            profile.name,
+                            displayName,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
-                            '${profile.jobTitle} · ${profile.location}',
+                            subTitle,
                             style: theme.textTheme.bodyMedium,
                           ),
                           Text(
-                            '근무 경력 ${profile.yearsOfService}년',
+                            '${profile.careerTrack.emoji} ${profile.careerTrack.displayName} · 근무 ${profile.yearsOfService}년',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
@@ -288,6 +295,21 @@ class _MatchingCandidatesView extends StatelessWidget {
                       .map((interest) => Chip(label: Text(interest)))
                       .toList(growable: false),
                 ),
+                if (profile.badges.isNotEmpty) ...[
+                  const Gap(12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: profile.badges
+                        .map(
+                          (badge) => Chip(
+                            avatar: const Icon(Icons.stars, size: 16),
+                            label: Text(badge),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ],
                 const Gap(16),
                 _MatchRequestButton(
                   isProcessing: isProcessing,

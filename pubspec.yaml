@@ -41,6 +41,7 @@ dependencies:
   bootpay: ^4.9.96
   google_mobile_ads: ^5.0.0
   rive: ^0.13.3
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:

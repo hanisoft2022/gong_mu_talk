@@ -21,10 +21,12 @@ import '../features/payments/data/bootpay_payment_service.dart';
 import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
+import '../features/community/presentation/cubit/board_catalog_cubit.dart';
 import '../features/blind/data/blind_repository.dart';
 import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../routing/app_router.dart';
+import '../features/profile/data/user_profile_repository.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -46,15 +48,20 @@ Future<void> configureDependencies() async {
     )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
     ..registerLazySingleton<LoginSessionStore>(() => LoginSessionStore(sharedPreferences))
+    ..registerLazySingleton<UserProfileRepository>(UserProfileRepository.new)
     ..registerLazySingleton<AuthCubit>(
       () => AuthCubit(
         paymentService: getIt(),
         authRepository: getIt(),
         sessionStore: getIt(),
+        userProfileRepository: getIt(),
       ),
     )
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
     ..registerLazySingleton<CommunityRepository>(CommunityRepository.new)
+    ..registerFactory<BoardCatalogCubit>(
+      () => BoardCatalogCubit(repository: getIt()),
+    )
     ..registerLazySingleton<BlindRepository>(BlindRepository.new)
     ..registerFactory<MatchingCubit>(
       () => MatchingCubit(repository: getIt(), authCubit: getIt()),
