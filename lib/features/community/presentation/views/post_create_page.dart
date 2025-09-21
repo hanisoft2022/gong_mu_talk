@@ -301,6 +301,18 @@ class _BoardSelector extends StatelessWidget {
       );
     }
 
+    Board? selectedBoard;
+    if (state.selectedBoardId != null) {
+      for (final Board board in state.boards) {
+        if (board.id == state.selectedBoardId) {
+          selectedBoard = board;
+          break;
+        }
+      }
+    }
+    final bool requireRealname = selectedBoard?.requireRealname ?? false;
+    final bool isAnonymous = requireRealname ? false : state.isAnonymous;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,6 +320,7 @@ class _BoardSelector extends StatelessWidget {
         const Gap(8),
         DropdownButtonFormField<String>(
           value: state.selectedBoardId,
+          hint: const Text('게시판을 선택하세요'),
           items: state.boards
               .map(
                 (Board board) => DropdownMenuItem<String>(
@@ -319,7 +332,7 @@ class _BoardSelector extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
                           child: Chip(
-                            label: const Text('실명'),
+                            label: const Text('실명 인증'),
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
@@ -328,27 +341,24 @@ class _BoardSelector extends StatelessWidget {
                 ),
               )
               .toList(growable: false),
-          onChanged: (value) {
-            cubit.selectBoard(value);
-            if (value != null) {
-              final Board selected =
-                  state.boards.firstWhere((Board board) => board.id == value);
-              cubit.toggleAnonymous(!selected.requireRealname);
-            }
-          },
+          onChanged: cubit.selectBoard,
           decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         const Gap(8),
         Row(
           children: [
             Switch.adaptive(
-              value: state.isAnonymous,
-              onChanged: (value) => cubit.toggleAnonymous(value),
+              value: isAnonymous,
+              onChanged: requireRealname ? null : (value) => cubit.toggleAnonymous(value),
             ),
             const Gap(6),
-            Text(
-              state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시',
-              style: theme.textTheme.bodyMedium,
+            Expanded(
+              child: Text(
+                requireRealname
+                    ? '실명 인증 게시판은 익명 게시가 제한됩니다.'
+                    : (isAnonymous ? '닉네임으로 게시' : '프로필 공개로 게시'),
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
           ],
         ),

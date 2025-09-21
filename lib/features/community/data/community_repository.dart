@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -502,6 +503,18 @@ class CommunityRepository {
     );
   }
 
+  Future<Board?> fetchBoardById(String boardId, {bool includeHidden = false}) async {
+    final DocumentSnapshot<JsonMap> snapshot = await _boardsRef.doc(boardId).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    final Board board = Board.fromSnapshot(snapshot);
+    if (!includeHidden && board.visibility != BoardVisibility.public) {
+      return null;
+    }
+    return board;
+  }
+
   Future<List<Board>> fetchBoards({bool includeHidden = false}) async {
     Query<JsonMap> query = _boardsRef.orderBy('order');
     if (!includeHidden) {
@@ -591,6 +604,25 @@ class CommunityRepository {
     }, SetOptions(merge: true)));
 
     return page.items;
+  }
+
+  Future<List<String>> fetchAutocompleteTokens({
+    required String prefix,
+    int limit = 10,
+  }) async {
+    final String token = prefix.trim().toLowerCase();
+    if (token.isEmpty) {
+      return const <String>[];
+    }
+
+    Query<JsonMap> query = _searchSuggestionRef
+        .orderBy(FieldPath.documentId)
+        .startAt(<String>[token])
+        .endAt(<String>['$token\uf8ff'])
+        .limit(limit);
+
+    final QuerySnapshot<JsonMap> snapshot = await query.get();
+    return snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList(growable: false);
   }
 
   Future<List<SearchSuggestion>> topSearchSuggestions({int limit = 10}) async {

@@ -2,7 +2,157 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasValidAppCheck() {
+      return isSignedIn() && request.auth.token.firebaseAppCheck != null;
+    }
+
+    function isPostOwner() {
+      return isSignedIn() && request.auth.uid == resource.data.authorUid;
+    }
+
+    function canReadPost(post) {
+      return post.exists && (
+        post.data.visibility == 'public' ||
+        (isSignedIn() && post.data.authorUid == request.auth.uid)
+      );
+    }
+
+    function validPostCreate() {
+      return isSignedIn() && hasValidAppCheck() &&
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.type in ['chirp', 'board'] &&
+        request.resource.data.audience in ['all', 'serial'] &&
+        request.resource.data.visibility in ['public', 'hidden', 'deleted'] &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.likeCount is number &&
+        request.resource.data.commentCount is number &&
+        request.resource.data.viewCount is number &&
+        request.resource.data.hotScore is number;
+    }
+
+    function validPostAuthorUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      return isPostOwner() &&
+        request.resource.data.authorUid == resource.data.authorUid &&
+        request.resource.data.type == resource.data.type &&
+        request.resource.data.audience == resource.data.audience &&
+        request.resource.data.serial == resource.data.serial &&
+        request.resource.data.boardId == resource.data.boardId &&
+        diff.addedKeys().size() == 0 &&
+        diff.removedKeys().size() == 0 &&
+        diff.changedKeys().hasOnly(['text', 'media', 'tags', 'keywords', 'visibility', 'updatedAt']);
+    }
+
+    function isPostCounterUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      return isSignedIn() &&
+        diff.addedKeys().size() == 0 &&
+        diff.removedKeys().size() == 0 &&
+        diff.changedKeys().hasOnly(['likeCount', 'commentCount', 'viewCount', 'hotScore', 'updatedAt', 'topComment']);
+    }
+
+    function validCommentCreate() {
+      return isSignedIn() && hasValidAppCheck() &&
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.text is string &&
+        request.resource.data.likeCount is number &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.deleted == false;
+    }
+
+    function validCommentOwnerUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      return isSignedIn() && request.auth.uid == resource.data.authorUid &&
+        diff.addedKeys().size() == 0 &&
+        diff.removedKeys().size() == 0 &&
+        diff.changedKeys().hasOnly(['deleted', 'text']);
+    }
+
+    function isCommentCounterUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      return isSignedIn() &&
+        diff.addedKeys().size() == 0 &&
+        diff.removedKeys().size() == 0 &&
+        diff.changedKeys().hasOnly(['likeCount']);
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+
+      match /bookmarks/{postId} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow create, delete: if isSignedIn() && hasValidAppCheck() && request.auth.uid == uid &&
+          request.resource.data.postId == postId;
+        allow update: if false;
+      }
+
+      match /badges/{badgeId} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
+    match /handles/{handle} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && hasValidAppCheck() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.uid;
+      allow update: if false;
+    }
+
+    match /boards/{boardId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /posts/{postId} {
+      allow read: if resource.data.visibility == 'public' || isPostOwner();
+      allow create: if validPostCreate();
+      allow update: if validPostAuthorUpdate() || isPostCounterUpdate();
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if canReadPost(get(/databases/$(database)/documents/posts/$(postId)));
+        allow create: if validCommentCreate();
+        allow update: if validCommentOwnerUpdate() || isCommentCounterUpdate();
+        allow delete: if false;
+
+        match /comment_likes/{likeId} {
+          allow read: if isSignedIn();
+          allow create, delete: if isSignedIn() && hasValidAppCheck() &&
+            request.resource.data.uid == request.auth.uid &&
+            request.resource.data.commentId + '_' + request.auth.uid == likeId;
+          allow update: if false;
+        }
+      }
+    }
+
+    match /likes/{likeId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSignedIn() && hasValidAppCheck() &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.postId + '_' + request.auth.uid == likeId;
+      allow update: if false;
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && hasValidAppCheck();
+      allow read, update, delete: if false;
+    }
+
+    match /search_suggestions/{token} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /post_counters/{postId}/{document=**} {
       allow read, write: if false;
     }
   }

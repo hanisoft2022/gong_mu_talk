@@ -22,6 +22,8 @@ import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/board_catalog_cubit.dart';
+import '../features/community/presentation/cubit/board_feed_cubit.dart';
+import '../features/community/presentation/cubit/community_search_cubit.dart';
 import '../features/blind/data/blind_repository.dart';
 import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
@@ -62,12 +64,18 @@ Future<void> configureDependencies() async {
     ..registerFactory<BoardCatalogCubit>(
       () => BoardCatalogCubit(repository: getIt()),
     )
+    ..registerFactory<BoardFeedCubit>(
+      () => BoardFeedCubit(repository: getIt(), authCubit: getIt()),
+    )
     ..registerLazySingleton<BlindRepository>(BlindRepository.new)
     ..registerFactory<MatchingCubit>(
       () => MatchingCubit(repository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<CommunityFeedCubit>(
       () => CommunityFeedCubit(repository: getIt(), authCubit: getIt()),
+    )
+    ..registerFactory<CommunitySearchCubit>(
+      () => CommunitySearchCubit(repository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<BlindFeedCubit>(
       () => BlindFeedCubit(repository: getIt()),

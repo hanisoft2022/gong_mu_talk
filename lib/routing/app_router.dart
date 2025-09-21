@@ -11,11 +11,16 @@ import '../features/blind/presentation/views/blind_feed_page.dart';
 import '../features/calculator/presentation/views/salary_calculator_page.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
+import '../features/community/presentation/views/board_list_page.dart';
+import '../features/community/presentation/views/board_feed_page.dart';
+import '../features/community/presentation/views/post_create_page.dart';
+import '../features/community/presentation/views/community_search_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../features/matching/presentation/views/matching_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import 'router_refresh_stream.dart';
+import '../features/community/domain/models/board.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -114,6 +119,34 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: CommunityComposeRoute.path,
+        name: CommunityComposeRoute.name,
+        builder: (context, state) => const PostCreatePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: CommunityBoardsRoute.path,
+        name: CommunityBoardsRoute.name,
+        builder: (context, state) => const BoardListPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: CommunityBoardFeedRoute.path,
+        name: CommunityBoardFeedRoute.name,
+        builder: (context, state) {
+          final Board? board = state.extra as Board?;
+          final String? boardIdParam = state.pathParameters['boardId'] ?? board?.id;
+          return BoardFeedPage(board: board, boardId: boardIdParam);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: CommunitySearchRoute.path,
+        name: CommunitySearchRoute.name,
+        builder: (context, state) => const CommunitySearchPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: ProfileRoute.path,
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
@@ -166,6 +199,36 @@ class CommunityRoute {
 
   static const String name = 'community';
   static const String path = '/community';
+}
+
+class CommunityComposeRoute {
+  const CommunityComposeRoute._();
+
+  static const String name = 'community-compose';
+  static const String path = '/community/write';
+}
+
+class CommunityBoardsRoute {
+  const CommunityBoardsRoute._();
+
+  static const String name = 'community-boards';
+  static const String path = '/community/boards';
+}
+
+class CommunityBoardFeedRoute {
+  const CommunityBoardFeedRoute._();
+
+  static const String name = 'community-board-feed';
+  static const String path = '/community/boards/:boardId';
+
+  static String pathFor(String boardId) => '${CommunityBoardsRoute.path}/$boardId';
+}
+
+class CommunitySearchRoute {
+  const CommunitySearchRoute._();
+
+  static const String name = 'community-search';
+  static const String path = '/community/search';
 }
 
 class BlindRoute {

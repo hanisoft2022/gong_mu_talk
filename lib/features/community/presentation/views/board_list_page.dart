@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../di/di.dart';
 import '../../domain/models/board.dart';
 import '../cubit/board_catalog_cubit.dart';
+import '../../../../routing/app_router.dart';
 
 class BoardListPage extends StatefulWidget {
   const BoardListPage({super.key});
@@ -49,7 +50,8 @@ class _BoardListPageState extends State<BoardListPage> {
                       trailing: board.requireRealname
                           ? const Chip(label: Text('실명 필수'))
                           : const SizedBox.shrink(),
-                      onTap: () => context.push('/community/boards/${board.id}', extra: board),
+                      onTap: () =>
+                          context.push(CommunityBoardFeedRoute.pathFor(board.id), extra: board),
                     );
                   },
                   separatorBuilder: (context, index) => const Divider(height: 1),

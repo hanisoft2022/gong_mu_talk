@@ -30,32 +30,27 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
       return;
     }
     _isFetching = true;
-    emit(state.copyWith(status: BoardFeedStatus.loading, board: board, errorMessage: null));
-    _cursor = null;
     try {
-      final PaginatedQueryResult<Post> result = await _repository.fetchBoardPosts(
-        boardId: board.id,
-        limit: _pageSize,
-        currentUid: _authCubit.state.userId,
-      );
-      emit(
-        state.copyWith(
-          status: BoardFeedStatus.loaded,
-          posts: result.items,
-          hasMore: result.hasMore,
-          likedPostIds: result.items
-              .where((Post post) => post.isLiked)
-              .map((Post post) => post.id)
-              .toSet(),
-          bookmarkedPostIds: result.items
-              .where((Post post) => post.isBookmarked)
-              .map((Post post) => post.id)
-              .toSet(),
-        ),
-      );
-      _cursor = result.lastDocument;
+      await _performInitialLoad(board);
+    } finally {
+      _isFetching = false;
+    }
+  }
+
+  Future<void> loadBoardById(String boardId) async {
+    if (_isFetching) {
+      return;
+    }
+    _isFetching = true;
+    try {
+      final Board? board = await _repository.fetchBoardById(boardId);
+      if (board == null) {
+        emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판을 찾을 수 없습니다.'));
+        return;
+      }
+      await _performInitialLoad(board);
     } catch (_) {
-      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판 글을 불러오지 못했습니다.'));
+      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판을 불러오지 못했습니다.'));
     } finally {
       _isFetching = false;
     }
@@ -63,10 +58,15 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
 
   Future<void> refresh() async {
     final Board? board = state.board;
-    if (board == null) {
+    if (board == null || _isFetching) {
       return;
     }
-    await loadBoard(board);
+    _isFetching = true;
+    try {
+      await _performInitialLoad(board);
+    } finally {
+      _isFetching = false;
+    }
   }
 
   Future<void> fetchMore() async {
@@ -159,5 +159,39 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
     }
   }
 
+  void incrementViewCount(String postId) {
+    unawaited(_repository.incrementViewCount(postId));
+  }
+
   static const int _pageSize = 20;
+
+  Future<void> _performInitialLoad(Board board) async {
+    emit(state.copyWith(status: BoardFeedStatus.loading, board: board, errorMessage: null));
+    _cursor = null;
+    try {
+      final PaginatedQueryResult<Post> result = await _repository.fetchBoardPosts(
+        boardId: board.id,
+        limit: _pageSize,
+        currentUid: _authCubit.state.userId,
+      );
+      emit(
+        state.copyWith(
+          status: BoardFeedStatus.loaded,
+          posts: result.items,
+          hasMore: result.hasMore,
+          likedPostIds: result.items
+              .where((Post post) => post.isLiked)
+              .map((Post post) => post.id)
+              .toSet(),
+          bookmarkedPostIds: result.items
+              .where((Post post) => post.isBookmarked)
+              .map((Post post) => post.id)
+              .toSet(),
+        ),
+      );
+      _cursor = result.lastDocument;
+    } catch (_) {
+      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판 글을 불러오지 못했습니다.'));
+    }
+  }
 }

@@ -132,11 +132,24 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   }
 
   void toggleAnonymous(bool value) {
-    emit(state.copyWith(isAnonymous: value, submissionSuccess: false));
+    final bool requiresRealname = _boardRequiresRealname(state.selectedBoardId);
+    emit(
+      state.copyWith(
+        isAnonymous: requiresRealname ? false : value,
+        submissionSuccess: false,
+      ),
+    );
   }
 
   void selectBoard(String? boardId) {
-    emit(state.copyWith(selectedBoardId: boardId, submissionSuccess: false));
+    final bool requiresRealname = _boardRequiresRealname(boardId);
+    emit(
+      state.copyWith(
+        selectedBoardId: boardId,
+        isAnonymous: requiresRealname ? false : state.isAnonymous,
+        submissionSuccess: false,
+      ),
+    );
   }
 
   Future<void> addAttachmentFromGallery() async {
@@ -195,6 +208,11 @@ class PostComposerCubit extends Cubit<PostComposerState> {
 
     if (type == PostType.board && (state.selectedBoardId == null || state.selectedBoardId!.isEmpty)) {
       emit(state.copyWith(errorMessage: '게시판을 선택해주세요.'));
+      return;
+    }
+
+    if (type == PostType.board && _boardRequiresRealname(state.selectedBoardId) && state.isAnonymous) {
+      emit(state.copyWith(errorMessage: '실명 인증 게시판에서는 익명으로 게시할 수 없습니다.'));
       return;
     }
 
@@ -285,10 +303,43 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   Future<void> _loadBoards() async {
     try {
       final List<Board> boards = await _repository.fetchBoards();
-      emit(state.copyWith(boards: boards));
+      String? selectedBoardId = state.selectedBoardId;
+      if (selectedBoardId != null && !_containsBoard(boards, selectedBoardId)) {
+        selectedBoardId = null;
+      }
+      final bool requiresRealname = _boardRequiresRealname(selectedBoardId, boards);
+      emit(
+        state.copyWith(
+          boards: boards,
+          selectedBoardId: selectedBoardId,
+          isAnonymous: requiresRealname ? false : state.isAnonymous,
+        ),
+      );
     } catch (_) {
       emit(state.copyWith(errorMessage: '게시판 목록을 불러오지 못했습니다.'));
     }
+  }
+
+  bool _boardRequiresRealname(String? boardId, [List<Board>? source]) {
+    if (boardId == null) {
+      return false;
+    }
+    final List<Board> boards = source ?? state.boards;
+    for (final Board board in boards) {
+      if (board.id == boardId) {
+        return board.requireRealname;
+      }
+    }
+    return false;
+  }
+
+  bool _containsBoard(List<Board> boards, String boardId) {
+    for (final Board board in boards) {
+      if (board.id == boardId) {
+        return true;
+      }
+    }
+    return false;
   }
 
   String _contentTypeFromExtension(String fileName) {

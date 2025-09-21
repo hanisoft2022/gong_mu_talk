@@ -9,6 +9,7 @@ import '../../../profile/domain/career_track.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
 import '../widgets/post_card.dart';
+import '../../../../routing/app_router.dart';
 
 class CommunityFeedPage extends StatefulWidget {
   const CommunityFeedPage({super.key});
@@ -49,6 +50,25 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         Column(
           children: [
             const Gap(8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                readOnly: true,
+                onTap: () => _openSearch(context),
+                decoration: InputDecoration(
+                  hintText: '검색어를 입력하세요',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const Gap(12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -181,14 +201,18 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   }
 
   Future<void> _openComposer(BuildContext context) async {
-    final bool? published = await context.push<bool>('/community/write');
+    final bool? published = await context.push<bool>(CommunityComposeRoute.path);
     if (published == true && context.mounted) {
       await context.read<CommunityFeedCubit>().refresh();
     }
   }
 
   void _openBoardList(BuildContext context) {
-    context.push('/community/boards');
+    context.push(CommunityBoardsRoute.path);
+  }
+
+  void _openSearch(BuildContext context) {
+    context.push(CommunitySearchRoute.path);
   }
 }
 
