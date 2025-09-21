@@ -66,13 +66,6 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  Future<void> signInWithNaver() async {
-    return _runAuthOperation(
-      _authRepository.signInWithNaver,
-      fallbackMessage: '네이버 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
-    );
-  }
-
   Future<void> logOut() async {
     try {
       await _authRepository.signOut();
@@ -239,6 +232,7 @@ class AuthCubit extends Cubit<AuthState> {
   void _onAuthUserChanged(AuthUser? user) {
     final bool wasLoggedIn = state.isLoggedIn;
     final bool isLoggedIn = user != null;
+    final String? previousEmail = state.email;
 
     if (isLoggedIn) {
       if (_sessionStore.isSessionExpired(_sessionMaxAge)) {
@@ -247,6 +241,27 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
       unawaited(_sessionStore.saveLoginTimestamp(DateTime.now()));
+
+      final String? newEmail = user.email;
+      if (newEmail != null && newEmail.isNotEmpty) {
+        if (previousEmail != null && previousEmail.isNotEmpty && previousEmail != newEmail) {
+          unawaited(
+            _authRepository.handlePrimaryEmailUpdated(
+              userId: user.uid,
+              previousEmail: previousEmail,
+              newEmail: newEmail,
+            ),
+          );
+        } else {
+          unawaited(
+            _authRepository.ensureGovernmentEmailRecord(
+              userId: user.uid,
+              email: newEmail,
+              isEmailVerified: user.isEmailVerified,
+            ),
+          );
+        }
+      }
     } else {
       unawaited(_sessionStore.clearLoginTimestamp());
     }
@@ -264,6 +279,7 @@ class AuthCubit extends Cubit<AuthState> {
         isLoggedIn: isLoggedIn,
         userId: user?.uid,
         email: user?.email,
+        primaryEmail: user?.email,
         hasPensionAccess: isLoggedIn ? state.hasPensionAccess : false,
         isAuthenticating: false,
         isGovernmentEmailVerificationInProgress: false,
@@ -272,6 +288,13 @@ class AuthCubit extends Cubit<AuthState> {
         lastMessage: message,
       ),
     );
+
+    if (user is AuthUser) {
+      final String? accountEmail = user.email;
+      if (accountEmail != null && _isGovernmentEmail(accountEmail)) {
+        unawaited(_refreshPrimaryEmail(user.uid, accountEmail));
+      }
+    }
   }
 
   @override
@@ -309,6 +332,43 @@ class AuthCubit extends Cubit<AuthState> {
       emit(state.copyWith(authError: error.message));
     } catch (_) {
       emit(state.copyWith(authError: '보안 로그아웃 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
+    }
+  }
+
+  void clearLastMessage() {
+    if (state.lastMessage == null) {
+      return;
+    }
+    emit(state.copyWith(lastMessage: null));
+  }
+
+  bool _isGovernmentEmail(String email) {
+    final String normalized = email.trim().toLowerCase();
+    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
+  }
+
+  Future<void> _refreshPrimaryEmail(String userId, String governmentEmail) async {
+    try {
+      final String? legacyEmail = await _authRepository.findLegacyEmailForGovernmentEmail(
+        userId: userId,
+        governmentEmail: governmentEmail,
+      );
+
+      if (legacyEmail == null || legacyEmail.isEmpty) {
+        return;
+      }
+
+      if (isClosed) {
+        return;
+      }
+
+      if (state.primaryEmail == legacyEmail) {
+        return;
+      }
+
+      emit(state.copyWith(primaryEmail: legacyEmail));
+    } catch (error, stackTrace) {
+      debugPrint('Failed to resolve primary email for $governmentEmail: $error\n$stackTrace');
     }
   }
 }

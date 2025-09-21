@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/data/firebase_auth_repository.dart';
+import '../features/auth/data/government_email_repository.dart';
 import '../features/auth/data/login_session_store.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/calculator/data/datasources/calculator_local_data_source.dart';
@@ -37,7 +38,12 @@ Future<void> configureDependencies() async {
   getIt
     ..registerLazySingleton<ThemeCubit>(ThemeCubit.new)
     ..registerLazySingleton<BootpayPaymentService>(BootpayPaymentService.new)
-    ..registerLazySingleton<FirebaseAuthRepository>(FirebaseAuthRepository.new)
+    ..registerLazySingleton<GovernmentEmailRepository>(GovernmentEmailRepository.new)
+    ..registerLazySingleton<FirebaseAuthRepository>(
+      () => FirebaseAuthRepository(
+        governmentEmailRepository: getIt(),
+      ),
+    )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
     ..registerLazySingleton<LoginSessionStore>(() => LoginSessionStore(sharedPreferences))
     ..registerLazySingleton<AuthCubit>(

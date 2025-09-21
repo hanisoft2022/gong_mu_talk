@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
+import 'government_email_repository.dart';
 
 const String _googleServerClientIdOverride = String.fromEnvironment(
   'GOOGLE_SERVER_CLIENT_ID',
@@ -30,10 +33,15 @@ class AuthUser {
 }
 
 class FirebaseAuthRepository {
-  FirebaseAuthRepository({FirebaseAuth? firebaseAuth})
-    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+  FirebaseAuthRepository({
+    FirebaseAuth? firebaseAuth,
+    GovernmentEmailRepository? governmentEmailRepository,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _governmentEmailRepository =
+            governmentEmailRepository ?? GovernmentEmailRepository();
 
   final FirebaseAuth _firebaseAuth;
+  final GovernmentEmailRepository _governmentEmailRepository;
   static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   static Future<void>? _googleSignInInitialization;
 
@@ -42,9 +50,30 @@ class FirebaseAuthRepository {
   }
 
   Future<void> signIn({required String email, required String password}) async {
+    final String normalizedEmail = email.trim();
+
     try {
-      await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: normalizedEmail,
+        password: password,
+      );
     } on FirebaseAuthException catch (error) {
+      if (error.code == 'user-not-found') {
+        final GovernmentEmailAlias? alias =
+            await _governmentEmailRepository.findAliasForLegacyEmail(normalizedEmail);
+        if (alias != null) {
+          try {
+            await _firebaseAuth.signInWithEmailAndPassword(
+              email: alias.governmentEmail,
+              password: password,
+            );
+            return;
+          } on FirebaseAuthException catch (aliasError) {
+            throw AuthException(_messageForSignIn(aliasError));
+          }
+        }
+      }
+
       throw AuthException(_messageForSignIn(error));
     } catch (_) {
       throw const AuthException('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
@@ -127,7 +156,15 @@ class FirebaseAuthRepository {
       _ensureAuthDomainConfigured(providerName);
 
       final OAuthProvider provider = OAuthProvider(providerId);
-      provider.setCustomParameters(<String, String>{'prompt': 'consent'});
+
+      final List<String>? scopes = _providerScopes[providerId];
+      if (scopes != null) {
+        for (final String scope in scopes) {
+          provider.addScope(scope);
+        }
+      } else {
+        provider.setCustomParameters(<String, String>{'prompt': 'consent'});
+      }
 
       if (kIsWeb) {
         await _firebaseAuth.signInWithPopup(provider);
@@ -136,16 +173,18 @@ class FirebaseAuthRepository {
 
       await _firebaseAuth.signInWithProvider(provider);
     } on FirebaseAuthException catch (error) {
+      debugPrint('OIDC sign-in failed for $providerId: ${error.code} ${error.message}');
       throw AuthException(_messageForGenericOidc(error));
     } on UnimplementedError catch (_) {
       throw AuthException(
-        '$providerName 로그인은 현재 사용 중인 플랫폼에서 바로 사용할 수 없습니다.\nFirebase Authentication에서 $providerName OIDC 제공자를 설정했다면, FlutterFire의 OIDC 네이티브 지원이 포함된 최신 버전으로 업그레이드하거나, Kakao/Naver SDK와 Cloud Functions로 커스텀 토큰을 발급하는 방식으로 전환해야 합니다.',
+        '$providerName 로그인은 현재 사용 중인 플랫폼에서 바로 사용할 수 없습니다.\nFirebase Authentication에서 $providerName OIDC 제공자를 설정했다면, FlutterFire의 OIDC 네이티브 지원이 포함된 최신 버전으로 업그레이드하거나, 전용 SDK와 Cloud Functions로 커스텀 토큰을 발급하는 방식으로 전환해야 합니다.',
       );
     } on UnsupportedError catch (_) {
       throw AuthException(
         '$providerName 로그인을 진행하려면 Firebase Authentication 설정에서 Authorized domain을 등록하고, FlutterFire CLI를 다시 실행해 authDomain 정보가 포함된 firebase_options.dart 파일을 생성해야 합니다.',
       );
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      debugPrint('OIDC sign-in unexpected failure for $providerId: $error\n$stackTrace');
       throw AuthException('$providerName 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   }
@@ -155,20 +194,32 @@ class FirebaseAuthRepository {
       return;
     }
 
-    final String? authDomain = _firebaseAuth.app.options.authDomain;
-    if (authDomain == null || authDomain.trim().isEmpty) {
+    final FirebaseOptions options = _firebaseAuth.app.options;
+    final String? configuredAuthDomain = options.authDomain?.trim();
+    if (configuredAuthDomain != null && configuredAuthDomain.isNotEmpty) {
+      return;
+    }
+
+    final String projectId = options.projectId.trim();
+    if (projectId.isEmpty) {
       throw AuthException(
         '$providerName 로그인을 사용하려면 Firebase Authentication → 설정에서 호스팅 도메인을 확인하고, `firebase login` 후 FlutterFire CLI로 firebase_options.dart를 다시 생성하여 authDomain 값이 포함되도록 해야 합니다.',
       );
     }
+
+    // Firebase SDK가 authDomain을 노출하지 않는 플랫폼(Android/iOS)에서는 projectId 기반 기본 도메인을 사용합니다.
+    debugPrint(
+      'OIDC authDomain 정보가 노출되지 않아 $projectId.firebaseapp.com 도메인을 기본값으로 사용합니다. '
+      'Firebase 콘솔에서 해당 도메인이 Authorized domains에 등록되어 있는지 확인해주세요.',
+    );
   }
+
+  static const Map<String, List<String>> _providerScopes = <String, List<String>>{
+    'oidc.kakao': <String>['openid', 'profile_nickname', 'profile_image', 'account_email'],
+  };
 
   Future<void> signInWithKakao() async {
     await _signInWithOidcProvider('oidc.kakao', providerName: '카카오');
-  }
-
-  Future<void> signInWithNaver() async {
-    await _signInWithOidcProvider('oidc.naver', providerName: '네이버');
   }
 
   Future<void> requestGovernmentEmailVerification(String email) async {
@@ -177,26 +228,173 @@ class FirebaseAuthRepository {
       throw const AuthException('로그인 후 이용해주세요.');
     }
 
-    final String normalizedEmail = email.trim();
+    final String normalizedEmail = email.trim().toLowerCase();
     if (!_isGovernmentEmail(normalizedEmail)) {
       throw const AuthException('공직자 메일(@korea.kr, .go.kr) 주소만 인증할 수 있습니다.');
     }
 
+    GovernmentEmailClaim? claim;
     try {
-      if (normalizedEmail == (user.email ?? '').trim()) {
-        if (user.emailVerified) {
-          throw const AuthException('이미 공직자 메일로 인증이 완료되었습니다.');
-        }
-        await user.sendEmailVerification();
-        return;
+      claim = await _governmentEmailRepository.fetchClaim(normalizedEmail);
+    } on FirebaseException catch (error, stackTrace) {
+      debugPrint('Failed to read government email claim for $normalizedEmail: $error\n$stackTrace');
+      throw const AuthException('공직자 메일 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    if (claim != null) {
+      if (claim.userId != user.uid) {
+        throw const AuthException('이미 등록된 공직자 메일입니다. 다른 공직자 메일로 인증해주세요.');
       }
 
+      if (claim.status == GovernmentEmailClaimStatus.verified) {
+        throw const AuthException('이미 해당 공직자 메일로 인증을 완료했습니다.');
+      }
+    }
+
+    final String currentEmail = (user.email ?? '').trim();
+    final String currentEmailLower = currentEmail.toLowerCase();
+
+    if (normalizedEmail == currentEmailLower) {
+      if (user.emailVerified) {
+        throw const AuthException('이미 공직자 메일로 인증이 완료되었습니다.');
+      }
+
+      try {
+        await user.sendEmailVerification();
+      } on FirebaseAuthException catch (error) {
+        throw AuthException(_messageForGovernmentEmail(error));
+      } catch (error, stackTrace) {
+        debugPrint('Failed to send verification email for $normalizedEmail: $error\n$stackTrace');
+        throw const AuthException('인증 메일 전송 중 문제가 발생했습니다.');
+      }
+      return;
+    }
+
+    try {
+      await _governmentEmailRepository.markPending(
+        userId: user.uid,
+        governmentEmail: normalizedEmail,
+        originalEmail: currentEmail,
+        providerIds: user.providerData
+            .map((UserInfo info) => info.providerId)
+            .toList(growable: false),
+        displayName: user.displayName,
+        photoUrl: user.photoURL,
+      );
+
       await user.verifyBeforeUpdateEmail(normalizedEmail);
+    } on AuthException {
+      rethrow;
     } on FirebaseAuthException catch (error) {
       throw AuthException(_messageForGovernmentEmail(error));
-    } catch (_) {
+    } on FirebaseException catch (error, stackTrace) {
+      debugPrint('Failed to store pending verification for $normalizedEmail: $error\n$stackTrace');
+      throw const AuthException('공직자 메일 인증 정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (error, stackTrace) {
+      debugPrint('Unexpected government email verification error: $error\n$stackTrace');
       throw const AuthException('인증 메일 전송 중 문제가 발생했습니다.');
     }
+  }
+
+  Future<void> handlePrimaryEmailUpdated({
+    required String userId,
+    required String previousEmail,
+    required String newEmail,
+  }) async {
+    final String trimmedNew = newEmail.trim().toLowerCase();
+    if (!_isGovernmentEmail(trimmedNew)) {
+      return;
+    }
+
+    final String trimmedPrevious = previousEmail.trim();
+    final User? currentUser = _firebaseAuth.currentUser;
+    final List<String> providerIds = currentUser?.providerData
+            .map((UserInfo info) => info.providerId)
+            .toList(growable: false) ??
+        const <String>[];
+
+    await _governmentEmailRepository.markVerified(
+      userId: userId,
+      governmentEmail: trimmedNew,
+      originalEmail: trimmedPrevious,
+      providerIds: providerIds,
+      displayName: currentUser?.displayName,
+      photoUrl: currentUser?.photoURL,
+      verifiedEmail: currentUser?.email,
+    );
+
+    final bool hasPasswordProvider = providerIds.contains('password');
+    if (hasPasswordProvider && trimmedPrevious.isNotEmpty && !_isGovernmentEmail(trimmedPrevious)) {
+      await _governmentEmailRepository.upsertAlias(
+        legacyEmail: trimmedPrevious,
+        governmentEmail: trimmedNew,
+        userId: userId,
+        displayName: currentUser?.displayName,
+        photoUrl: currentUser?.photoURL,
+      );
+    }
+  }
+
+  Future<void> ensureGovernmentEmailRecord({
+    required String userId,
+    required String email,
+    required bool isEmailVerified,
+  }) async {
+    final String trimmedEmail = email.trim().toLowerCase();
+    if (!_isGovernmentEmail(trimmedEmail) || !isEmailVerified) {
+      return;
+    }
+
+    final GovernmentEmailClaim? existingClaim =
+        await _governmentEmailRepository.fetchClaim(trimmedEmail);
+
+    final Set<String> providerIds = <String>{
+      ...?existingClaim?.originalProviderIds,
+      ...(_firebaseAuth.currentUser?.providerData
+              .map((UserInfo info) => info.providerId) ??
+          const Iterable<String>.empty()),
+    };
+
+    final List<String> providerIdList = providerIds.toList(growable: false);
+
+    await _governmentEmailRepository.ensureVerifiedClaim(
+      userId: userId,
+      governmentEmail: trimmedEmail,
+      displayName: _firebaseAuth.currentUser?.displayName,
+      photoUrl: _firebaseAuth.currentUser?.photoURL,
+      verifiedEmail: _firebaseAuth.currentUser?.email,
+      providerIds: providerIdList,
+    );
+
+    final GovernmentEmailClaim? refreshedClaim = existingClaim ??
+        await _governmentEmailRepository.fetchClaim(trimmedEmail);
+    final String? legacyEmail = refreshedClaim?.originalEmail;
+
+    if (legacyEmail == null || legacyEmail.isEmpty || _isGovernmentEmail(legacyEmail)) {
+      return;
+    }
+
+    providerIds.addAll(refreshedClaim?.originalProviderIds ?? const <String>[]);
+
+    if (providerIds.contains('password')) {
+      await _governmentEmailRepository.upsertAlias(
+        legacyEmail: legacyEmail,
+        governmentEmail: trimmedEmail,
+        userId: userId,
+        displayName: _firebaseAuth.currentUser?.displayName,
+        photoUrl: _firebaseAuth.currentUser?.photoURL,
+      );
+    }
+  }
+
+  Future<String?> findLegacyEmailForGovernmentEmail({
+    required String userId,
+    required String governmentEmail,
+  }) {
+    return _governmentEmailRepository.findOriginalEmailForGovernmentEmail(
+      userId: userId,
+      governmentEmail: governmentEmail,
+    );
   }
 
   AuthUser? _mapUser(User? firebaseUser) {

@@ -20,9 +20,15 @@ class AppShell extends StatelessWidget {
         if (message == null) {
           return;
         }
+        final ModalRoute<dynamic>? route = ModalRoute.of(context);
+        if (route != null && !route.isCurrent) {
+          return;
+        }
+
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(message)));
+        context.read<AuthCubit>().clearLastMessage();
       },
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {

@@ -87,7 +87,7 @@ class _ProfileLoggedIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String email = state.email ?? '이메일 정보 없음';
+    final String email = state.preferredEmail ?? state.email ?? '이메일 정보 없음';
     final bool isGovernmentEmail = state.isGovernmentEmail;
     final bool isVerified = state.isGovernmentEmailVerified;
     final IconData statusIcon = isVerified
@@ -491,61 +491,75 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
       builder: (context, state) {
         final bool isLoading = state.isGovernmentEmailVerificationInProgress;
 
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '공직자 메일 인증',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const Gap(12),
-                  Text(
-                    '공직자 계정(@korea.kr, .go.kr)으로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. '
-                    '입력하신 주소로 인증 메일을 보내드려요.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const Gap(16),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: '공직자 메일 주소',
-                      hintText: 'example@korea.kr',
+        return BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) => previous.lastMessage != current.lastMessage && current.lastMessage != null,
+          listener: (context, authState) {
+            final String? message = authState.lastMessage;
+            if (message == null || message.isEmpty) {
+              return;
+            }
+            final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+            messenger
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(content: Text(message)));
+            context.read<AuthCubit>().clearLastMessage();
+          },
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '공직자 메일 인증',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    validator: _validateGovernmentEmail,
-                  ),
-                  const Gap(16),
-                  FilledButton.icon(
-                    onPressed: isLoading ? null : _submit,
-                    icon: isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_outlined),
-                    label: const Text('인증 메일 보내기'),
-                  ),
-                  TextButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => context.read<AuthCubit>().refreshAuthStatus(),
-                    icon: const Icon(Icons.refresh_outlined),
-                    label: const Text('메일 확인 후 상태 새로고침'),
-                  ),
-                  const Gap(12),
-                  Text(
-                    '인증 메일에 포함된 링크를 24시간 이내에 열어야 합니다. 링크를 열면 계정 이메일이 공직자 메일로 변경됩니다.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const Gap(12),
+                    Text(
+                      '공직자 계정(@korea.kr, .go.kr)으로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. '
+                      '입력하신 주소로 인증 메일을 보내드려요.',
+                      style: theme.textTheme.bodyMedium,
                     ),
-                  ),
-                ],
+                    const Gap(16),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: '공직자 메일 주소',
+                        hintText: 'example@korea.kr',
+                      ),
+                      validator: _validateGovernmentEmail,
+                    ),
+                    const Gap(16),
+                    FilledButton.icon(
+                      onPressed: isLoading ? null : _submit,
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_outlined),
+                      label: const Text('인증 메일 보내기'),
+                    ),
+                    TextButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () => context.read<AuthCubit>().refreshAuthStatus(),
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('메일 확인 후 상태 새로고침'),
+                    ),
+                    const Gap(12),
+                    Text(
+                      '인증 메일에 포함된 링크를 24시간 이내에 열어야 합니다. 링크를 열면 계정 이메일이 공직자 메일로 변경되지만, 기존에 사용하던 로그인 방식(이메일 또는 소셜 계정)은 계속 사용할 수 있습니다.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

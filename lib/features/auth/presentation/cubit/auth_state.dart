@@ -18,6 +18,7 @@ class AuthState extends Equatable {
     Set<CareerTrack>? excludedTracks,
     this.userId,
     this.email,
+    this.primaryEmail,
     this.authError,
     this.lastMessage,
   }) : excludedTracks = excludedTracks ?? const <CareerTrack>{};
@@ -38,6 +39,7 @@ class AuthState extends Equatable {
   final Set<CareerTrack> excludedTracks;
   final String? userId;
   final String? email;
+  final String? primaryEmail;
   final String? authError;
   final String? lastMessage;
 
@@ -60,6 +62,7 @@ class AuthState extends Equatable {
     Set<CareerTrack>? excludedTracks,
     Object? userId = _unset,
     Object? email = _unset,
+    Object? primaryEmail = _unset,
     Object? authError = _unset,
     Object? lastMessage = _unset,
   }) {
@@ -83,6 +86,7 @@ class AuthState extends Equatable {
       excludedTracks: excludedTracks ?? this.excludedTracks,
       userId: userId == _unset ? this.userId : userId as String?,
       email: email == _unset ? this.email : email as String?,
+      primaryEmail: primaryEmail == _unset ? this.primaryEmail : primaryEmail as String?,
       authError: authError == _unset ? this.authError : authError as String?,
       lastMessage: lastMessage == _unset
           ? this.lastMessage
@@ -108,9 +112,12 @@ class AuthState extends Equatable {
     excludedTracks,
     userId,
     email,
+    primaryEmail,
     authError,
     lastMessage,
   ];
+
+  String? get preferredEmail => primaryEmail ?? email;
 
   bool get isGovernmentEmail {
     final String? currentEmail = email;

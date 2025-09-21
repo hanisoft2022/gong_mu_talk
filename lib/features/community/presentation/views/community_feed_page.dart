@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:rive/rive.dart';
 
 import '../../../../core/ads/ad_banner.dart';
 import '../../../profile/domain/career_track.dart';
@@ -251,8 +252,15 @@ class _CommunityErrorView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.wifi_off_outlined, size: 56),
-                const Gap(12),
+                const SizedBox(
+                  height: 160,
+                  width: 160,
+                  child: RiveAnimation.asset(
+                    'assets/animations/empty_state.riv',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const Gap(16),
                 Text(
                   '피드를 불러오지 못했어요.',
                   style: Theme.of(context).textTheme.titleMedium,

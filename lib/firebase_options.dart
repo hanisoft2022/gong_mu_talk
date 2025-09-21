@@ -48,19 +48,23 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDAGyvi8gqPUtdsv1PhDrlxCTNBgJ4_jyc',
-    appId: '1:877880259407:android:9807275eddb4fd8581cb3a',
+    appId: '1:877880259407:android:8ac610256dcdac8c81cb3a',
     messagingSenderId: '877880259407',
     projectId: 'gong-mu-talk',
+    authDomain: 'gong-mu-talk.firebaseapp.com',
     storageBucket: 'gong-mu-talk.firebasestorage.app',
+    androidClientId: '877880259407-qvsk8dc1d4nsu3v301irq6eb1n41gbf2.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDsgMuu8kf83jAiPH3lSB_yPCcoXI6U8wY',
-    appId: '1:877880259407:ios:8482cf3543c6cbd781cb3a',
+    appId: '1:877880259407:ios:c36e32a3a649d45d81cb3a',
     messagingSenderId: '877880259407',
     projectId: 'gong-mu-talk',
     storageBucket: 'gong-mu-talk.firebasestorage.app',
-    iosBundleId: 'com.example.gongMuTalk',
+    authDomain: 'gong-mu-talk.firebaseapp.com',
+    iosClientId: '877880259407-bn8ij5nadelt71bs0globfna7ua2bisq.apps.googleusercontent.com',
+    iosBundleId: 'com.hanisoft.gong-mu-talk',
   );
 
 }

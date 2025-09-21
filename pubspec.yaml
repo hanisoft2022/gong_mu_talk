@@ -40,6 +40,7 @@ dependencies:
   stream_transform: ^2.1.1
   bootpay: ^4.9.96
   google_mobile_ads: ^5.0.0
+  rive: ^0.13.3
 
 dev_dependencies:
   flutter_test:
@@ -62,11 +63,13 @@ flutter:
   assets:
     - assets/data/salary_tables.json
     - assets/logo/
+    - assets/animations/
 
 flutter_launcher_icons:
-  image_path: assets/icons/app_icon.png
   android: true
   ios: true
-  adaptive_icon_background: "#123A78"
-  adaptive_icon_foreground: assets/icons/app_icon.png
+  image_path: assets/logo/gong_mu_talk_logo.png
+  adaptive_icon_background: "#181C27"
+  adaptive_icon_foreground: assets/logo/gong_mu_talk_logo.png
+  adaptive_icon_foreground_inset: 22
   min_sdk_android: 21

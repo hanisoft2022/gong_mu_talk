@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../routing/app_router.dart';
@@ -288,18 +289,9 @@ class _MatchingCandidatesView extends StatelessWidget {
                       .toList(growable: false),
                 ),
                 const Gap(16),
-                FilledButton.icon(
-                  onPressed: isProcessing
-                      ? null
-                      : () => cubit.requestMatch(profile.id),
-                  icon: isProcessing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.favorite_outline),
-                  label: Text(isProcessing ? '요청 중...' : '매칭 신청'),
+                _MatchRequestButton(
+                  isProcessing: isProcessing,
+                  onPressed: () => cubit.requestMatch(profile.id),
                 ),
               ],
             ),
@@ -315,4 +307,93 @@ String _initial(String value) {
     return '?';
   }
   return value.substring(0, 1);
+}
+
+class _MatchRequestButton extends StatefulWidget {
+  const _MatchRequestButton({
+    required this.isProcessing,
+    required this.onPressed,
+  });
+
+  final bool isProcessing;
+  final VoidCallback onPressed;
+
+  @override
+  State<_MatchRequestButton> createState() => _MatchRequestButtonState();
+}
+
+class _MatchRequestButtonState extends State<_MatchRequestButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  Duration? _loadedDuration;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..value = 1;
+    _controller.addStatusListener((AnimationStatus status) {
+      if (status == AnimationStatus.completed) {
+        _controller.value = 1;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handlePressed() {
+    if (widget.isProcessing) {
+      return;
+    }
+
+    _controller.forward(from: 0);
+
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget icon = widget.isProcessing
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Lottie.asset(
+            'assets/animations/heart_pop.json',
+            controller: _controller,
+            onLoaded: (LottieComposition composition) {
+              if (_loadedDuration == composition.duration) {
+                return;
+              }
+              _loadedDuration = composition.duration;
+              _controller.duration = composition.duration;
+              if (!_controller.isAnimating) {
+                _controller.value = 1;
+              }
+            },
+            repeat: false,
+            height: 28,
+            width: 28,
+            fit: BoxFit.contain,
+          );
+
+    return FilledButton(
+      onPressed: widget.isProcessing ? null : _handlePressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: 28, height: 28, child: Center(child: icon)),
+          const Gap(8),
+          Text(widget.isProcessing ? '요청 중...' : '매칭 신청'),
+        ],
+      ),
+    );
+  }
 }

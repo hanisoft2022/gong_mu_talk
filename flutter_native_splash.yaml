@@ -13,5 +13,5 @@ flutter_native_splash:
     image_dark: assets/logo/gong_mu_talk_logo.png
   branding_mode: bottom
   branding_bottom_padding: 32
-  branding: assets/logo/hanisoft_logo_white_font_small.png
-  branding_dark: assets/logo/hanisoft_logo_white_font_small.png
+  branding_ios: assets/logo/hanisoft_logo_white_font_small.png
+  branding_dark_ios: assets/logo/hanisoft_logo_white_font_small.png

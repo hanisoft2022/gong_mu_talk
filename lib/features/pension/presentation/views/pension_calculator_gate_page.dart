@@ -32,8 +32,9 @@ class _PensionLockedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AuthCubit authCubit = context.read<AuthCubit>();
-    final String loginDescription = state.isLoggedIn && state.email != null
-        ? '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.\n현재 로그인 계정: ${state.email}'
+    final String? displayEmail = state.preferredEmail ?? state.email;
+    final String loginDescription = state.isLoggedIn && displayEmail != null
+        ? '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.\n현재 로그인 계정: $displayEmail'
         : '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.';
 
     return SingleChildScrollView(

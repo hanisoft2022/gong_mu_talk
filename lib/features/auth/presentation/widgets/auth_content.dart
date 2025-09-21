@@ -213,7 +213,6 @@ class _AuthContentState extends State<AuthContent> {
                 ),
               ],
               const Gap(12),
-              _SocialLoginButtons(isLoading: isLoading),
               const Gap(8),
               TextButton(
                 onPressed: isLoading
@@ -363,33 +362,6 @@ class _SignUpGuidance extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SocialLoginButtons extends StatelessWidget {
-  const _SocialLoginButtons({required this.isLoading});
-
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final AuthCubit cubit = context.read<AuthCubit>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutlinedButton.icon(
-          onPressed: isLoading ? null : () => cubit.signInWithKakao(),
-          icon: const Icon(Icons.chat_bubble_outline),
-          label: const Text('카카오톡으로 계속하기'),
-        ),
-        const Gap(8),
-        OutlinedButton.icon(
-          onPressed: isLoading ? null : () => cubit.signInWithNaver(),
-          icon: const Icon(Icons.account_circle),
-          label: const Text('네이버로 계속하기'),
-        ),
-      ],
     );
   }
 }
