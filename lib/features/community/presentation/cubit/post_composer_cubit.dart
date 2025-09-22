@@ -260,7 +260,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     int? width;
     int? height;
     try {
-      final ui.Image decoded = await decodeImageFromList(bytes);
+      final ui.Image decoded = await ui.decodeImageFromList(bytes);
       width = decoded.width;
       height = decoded.height;
     } catch (_) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -509,6 +510,14 @@ class CommunityRepository {
     }
     final QuerySnapshot<JsonMap> snapshot = await query.get();
     return snapshot.docs.map(Board.fromSnapshot).toList(growable: false);
+  }
+
+  Future<Board?> fetchBoardById(String boardId) async {
+    final DocumentSnapshot<JsonMap> snapshot = await _boardsRef.doc(boardId).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    return Board.fromSnapshot(snapshot);
   }
 
   Stream<List<Board>> watchBoards({bool includeHidden = false}) {

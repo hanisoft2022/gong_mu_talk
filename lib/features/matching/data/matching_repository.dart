@@ -8,6 +8,10 @@ import '../domain/entities/match_profile.dart';
 
 typedef JsonMap = Map<String, Object?>;
 
+typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
+
+typedef QueryDocumentSnapshotJson = QueryDocumentSnapshot<JsonMap>;
+
 class MatchRequestResult {
   const MatchRequestResult({required this.isSuccessful, required this.message});
 

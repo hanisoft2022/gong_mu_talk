@@ -61,6 +61,38 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
     }
   }
 
+  Future<void> loadBoardById(String boardId) async {
+    if (_isFetching) {
+      return;
+    }
+    emit(state.copyWith(status: BoardFeedStatus.loading, errorMessage: null));
+    _cursor = null;
+    try {
+      final Board? board = await _repository.fetchBoardById(boardId);
+      if (board == null) {
+        emit(
+          state.copyWith(
+            status: BoardFeedStatus.error,
+            board: null,
+            posts: const <Post>[],
+            errorMessage: '게시판을 찾을 수 없습니다.',
+          ),
+        );
+        return;
+      }
+      await loadBoard(board);
+    } catch (_) {
+      emit(
+        state.copyWith(
+          status: BoardFeedStatus.error,
+          board: null,
+          posts: const <Post>[],
+          errorMessage: '게시판 정보를 불러오지 못했습니다.',
+        ),
+      );
+    }
+  }
+
   Future<void> refresh() async {
     final Board? board = state.board;
     if (board == null) {
@@ -160,4 +192,8 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
   }
 
   static const int _pageSize = 20;
+
+  void incrementViewCount(String postId) {
+    unawaited(_repository.incrementViewCount(postId));
+  }
 }

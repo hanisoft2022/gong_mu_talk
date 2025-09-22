@@ -2,6 +2,157 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function getUserDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function canModerate() {
+      return isSignedIn() && getUserDoc(request.auth.uid).data.role in ['admin', 'moderator'];
+    }
+
+    function canViewPost(postData) {
+      return postData.visibility == 'public' ||
+        (isSignedIn() && (
+          request.auth.uid == postData.authorUid ||
+          canModerate() ||
+          (postData.audience == 'serial' &&
+           getUserDoc(request.auth.uid).data.serial == postData.serial)
+        ));
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function unchangedOrIncremented(field, allowNegative) {
+      return !request.resource.data.keys().hasAny([field]) ||
+        request.resource.data[field] == resource.data[field] ||
+        (
+          resource.data[field] is int &&
+          request.resource.data[field] is int &&
+          (
+            request.resource.data[field] == resource.data[field] + 1 ||
+            (allowNegative && request.resource.data[field] == resource.data[field] - 1)
+          )
+        );
+    }
+
+    function isCounterUpdate() {
+      return changedKeys().hasOnly(['likeCount', 'commentCount', 'viewCount', 'updatedAt']) &&
+        unchangedOrIncremented('likeCount', true) &&
+        unchangedOrIncremented('commentCount', true) &&
+        unchangedOrIncremented('viewCount', false);
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid);
+      allow delete: if isOwner(uid) || canModerate();
+
+      match /badges/{badgeId} {
+        allow read: if isOwner(uid) || canModerate();
+        allow create, update, delete: if isOwner(uid) || canModerate();
+      }
+
+      match /bookmarks/{postId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      match /matching_meta/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /matching_likes/{targetUid} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /matching_inbox/{senderUid} {
+        allow read, delete: if isOwner(uid) || canModerate();
+        allow create: if isSignedIn() && request.auth.uid == senderUid;
+      }
+    }
+
+    match /handles/{handle} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /boards/{boardId} {
+      allow read: if true;
+      allow write: if canModerate();
+    }
+
+    match /posts/{postId} {
+      allow read: if canViewPost(resource.data);
+      allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid;
+      allow update: if isSignedIn() && (
+        (isOwner(resource.data.authorUid) &&
+         request.resource.data.authorUid == resource.data.authorUid) ||
+        canModerate() ||
+        isCounterUpdate()
+      );
+      allow delete: if isOwner(resource.data.authorUid) || canModerate();
+
+      match /comments/{commentId} {
+        allow read: if canViewPost(get(/databases/$(database)/documents/posts/$(postId)).data);
+        allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid;
+        allow update, delete: if isSignedIn() &&
+          (request.auth.uid == resource.data.authorUid || canModerate());
+
+        match /comment_likes/{likeId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+          allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+        }
+      }
+    }
+
+    match /likes/{likeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /post_counters/{postId} {
+      allow read: if isSignedIn() || canModerate();
+      allow write: if isSignedIn();
+
+      match /shards/{shardId} {
+        allow read: if isSignedIn() || canModerate();
+        allow write: if isSignedIn();
+      }
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if canModerate();
+    }
+
+    match /search_suggestions/{token} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /matches/{matchId} {
+      allow create: if isSignedIn() &&
+        (request.auth.uid == request.resource.data.userA ||
+         request.auth.uid == request.resource.data.userB);
+      allow read, update, delete: if isSignedIn() &&
+        (request.auth.uid == resource.data.userA ||
+         request.auth.uid == resource.data.userB ||
+         canModerate());
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

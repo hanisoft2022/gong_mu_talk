@@ -9,6 +9,10 @@ import '../domain/user_profile.dart';
 
 typedef JsonMap = Map<String, Object?>;
 
+typedef QueryJson = Query<JsonMap>;
+
+typedef QueryDocumentSnapshotJson = QueryDocumentSnapshot<JsonMap>;
+
 class UserProfileRepository {
   UserProfileRepository({
     FirebaseFirestore? firestore,
