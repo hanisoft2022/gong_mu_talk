@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/ads/ad_banner.dart';
 import '../../domain/entities/blind_post.dart';
 import '../cubit/blind_feed_cubit.dart';
 
@@ -39,30 +38,19 @@ class _BlindFeedPageState extends State<BlindFeedPage> {
           case BlindFeedStatus.loading:
             return const Center(child: CircularProgressIndicator());
           case BlindFeedStatus.error:
-            return _BlindErrorView(
-              onRetry: () => context.read<BlindFeedCubit>().loadInitial(),
-            );
+            return _BlindErrorView(onRetry: () => context.read<BlindFeedCubit>().loadInitial());
           case BlindFeedStatus.loaded:
             return RefreshIndicator(
               onRefresh: () => context.read<BlindFeedCubit>().refresh(),
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: state.posts.length + 2,
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    return _FiltersSection(
-                      controller: _searchController,
-                      state: state,
-                    );
+                    return _FiltersSection(controller: _searchController, state: state);
                   }
                   if (index == state.posts.length + 1) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: GongMuBannerAd(),
-                    );
+                    return const SizedBox(height: 16);
                   }
                   final BlindPost post = state.posts[index - 1];
                   return _BlindPostTile(post: post);
@@ -86,9 +74,7 @@ class _FiltersSection extends StatelessWidget {
     final BlindFeedCubit cubit = context.read<BlindFeedCubit>();
     if (controller.text != state.query) {
       controller.text = state.query;
-      controller.selection = TextSelection.collapsed(
-        offset: controller.text.length,
-      );
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
     }
 
     return Column(
@@ -121,8 +107,7 @@ class _FiltersSection extends StatelessWidget {
                     child: ChoiceChip(
                       label: Text(dept),
                       selected: state.selectedDepartment == dept,
-                      onSelected: (selected) =>
-                          cubit.selectDepartment(selected ? dept : null),
+                      onSelected: (selected) => cubit.selectDepartment(selected ? dept : null),
                     ),
                   ),
                 ),
@@ -158,27 +143,15 @@ class _BlindPostTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  post.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text(post.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const Gap(6),
-                Text(
-                  post.content,
-                  style: theme.textTheme.bodyMedium,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(post.content, style: theme.textTheme.bodyMedium, maxLines: 3, overflow: TextOverflow.ellipsis),
                 const Gap(12),
                 Row(
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: theme.colorScheme.primary.withValues(
-                        alpha: 0.1,
-                      ),
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                       foregroundColor: theme.colorScheme.primary,
                       child: Text(post.initial),
                     ),
@@ -187,28 +160,14 @@ class _BlindPostTile extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '@${post.department}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          Text(
-                            timestamp,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.hintColor,
-                            ),
-                          ),
+                          Text('@${post.department}', style: theme.textTheme.bodySmall),
+                          Text(timestamp, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
                         ],
                       ),
                     ),
-                    _BlindMeta(
-                      icon: Icons.recommend_outlined,
-                      label: '${post.likes}',
-                    ),
+                    _BlindMeta(icon: Icons.recommend_outlined, label: '${post.likes}'),
                     const Gap(12),
-                    _BlindMeta(
-                      icon: Icons.chat_bubble_outline,
-                      label: '${post.comments}',
-                    ),
+                    _BlindMeta(icon: Icons.chat_bubble_outline, label: '${post.comments}'),
                   ],
                 ),
               ],
@@ -258,10 +217,7 @@ class _BlindErrorView extends StatelessWidget {
               children: [
                 const Icon(Icons.wifi_off_outlined, size: 56),
                 const Gap(12),
-                Text(
-                  '피드를 불러오지 못했어요.',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('피드를 불러오지 못했어요.', style: Theme.of(context).textTheme.titleMedium),
                 const Gap(12),
                 FilledButton.icon(
                   onPressed: () => onRetry(),

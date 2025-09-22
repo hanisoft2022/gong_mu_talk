@@ -16,8 +16,7 @@ class MatchRequestResult {
 }
 
 class MatchingRepository {
-  MatchingRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  MatchingRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
   static const int _dailyExposureLimit = 8;
@@ -25,26 +24,20 @@ class MatchingRepository {
 
   CollectionReference<JsonMap> get _usersRef => _firestore.collection('users');
 
-  CollectionReference<JsonMap> _userMatchingMeta(String uid) =>
-      _userDoc(uid).collection('matching_meta');
+  CollectionReference<JsonMap> _userMatchingMeta(String uid) => _userDoc(uid).collection('matching_meta');
 
   DocumentReference<JsonMap> _userDoc(String uid) => _usersRef.doc(uid);
 
-  CollectionReference<JsonMap> _likesCollection(String uid) =>
-      _userDoc(uid).collection('matching_likes');
+  CollectionReference<JsonMap> _likesCollection(String uid) => _userDoc(uid).collection('matching_likes');
 
-  CollectionReference<JsonMap> _receivedLikesCollection(String uid) =>
-      _userDoc(uid).collection('matching_inbox');
+  CollectionReference<JsonMap> _receivedLikesCollection(String uid) => _userDoc(uid).collection('matching_inbox');
 
   Future<List<MatchProfile>> fetchCandidates({
     required UserProfile currentUser,
     int limit = 6,
     bool includePremiumHighlights = true,
   }) async {
-    final int allowed = await _ensureExposureCapacity(
-      currentUser: currentUser,
-      requested: limit,
-    );
+    final int allowed = await _ensureExposureCapacity(currentUser: currentUser, requested: limit);
     if (allowed <= 0) {
       return const <MatchProfile>[];
     }
@@ -133,9 +126,7 @@ class MatchingRepository {
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    QueryJson query = _receivedLikesCollection(currentUser.uid)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+    QueryJson query = _receivedLikesCollection(currentUser.uid).orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
@@ -183,10 +174,7 @@ class MatchingRepository {
     String? message,
   }) async {
     if (currentUser.uid == targetUid) {
-      return const MatchRequestResult(
-        isSuccessful: false,
-        message: '자기 자신에게는 매칭을 신청할 수 없습니다.',
-      );
+      return const MatchRequestResult(isSuccessful: false, message: '자기 자신에게는 매칭을 신청할 수 없습니다.');
     }
 
     final DocumentReference<JsonMap> likeDoc = _likesCollection(currentUser.uid).doc(targetUid);
@@ -197,15 +185,9 @@ class MatchingRepository {
       final DocumentSnapshot<JsonMap> reciprocalSnapshot = await transaction.get(reciprocalDoc);
       final bool isMutual = reciprocalSnapshot.exists;
 
-      transaction.set(likeDoc, <String, Object?>{
-        'createdAt': Timestamp.now(),
-        'message': message,
-      });
+      transaction.set(likeDoc, <String, Object?>{'createdAt': Timestamp.now(), 'message': message});
 
-      transaction.set(inboxDoc, <String, Object?>{
-        'createdAt': Timestamp.now(),
-        'message': message,
-      });
+      transaction.set(inboxDoc, <String, Object?>{'createdAt': Timestamp.now(), 'message': message});
 
       if (isMutual) {
         final DocumentReference<JsonMap> matchesRef = _firestore
@@ -217,37 +199,22 @@ class MatchingRepository {
           'createdAt': Timestamp.now(),
           'stage': 'nicknameRevealed',
         });
-        return MatchRequestResult(
-          isSuccessful: true,
-          message: '서로 좋아요를 보냈어요! 매칭 채팅방을 열어드릴게요.',
-        );
+        return const MatchRequestResult(isSuccessful: true, message: '서로 좋아요를 보냈어요! 매칭 채팅방을 열어드릴게요.');
       }
 
-      return MatchRequestResult(
-        isSuccessful: true,
-        message: '매칭 요청을 보냈습니다. 상대방이 수락하면 알려드릴게요.',
-      );
+      return const MatchRequestResult(isSuccessful: true, message: '매칭 요청을 보냈습니다. 상대방이 수락하면 알려드릴게요.');
     });
   }
 
-  Future<void> recordChatMessage({
-    required String matchId,
-    required String senderUid,
-  }) async {
+  Future<void> recordChatMessage({required String matchId, required String senderUid}) async {
     final DocumentReference<JsonMap> matchDoc = _firestore.collection('matches').doc(matchId);
-    await matchDoc.set(
-      <String, Object?>{
-        'lastMessageAt': Timestamp.now(),
-        'lastMessageSender': senderUid,
-      },
-      SetOptions(merge: true),
-    );
+    await matchDoc.set(<String, Object?>{
+      'lastMessageAt': Timestamp.now(),
+      'lastMessageSender': senderUid,
+    }, SetOptions(merge: true));
   }
 
-  Future<void> progressRevealStage({
-    required String matchId,
-    required MatchProfileStage nextStage,
-  }) async {
+  Future<void> progressRevealStage({required String matchId, required MatchProfileStage nextStage}) async {
     final DocumentReference<JsonMap> matchDoc = _firestore.collection('matches').doc(matchId);
     await matchDoc.update(<String, Object?>{'stage': nextStage.name});
   }
@@ -260,16 +227,11 @@ class MatchingRepository {
     return UserProfile.fromSnapshot(snapshot);
   }
 
-  Future<int> _ensureExposureCapacity({
-    required UserProfile currentUser,
-    required int requested,
-  }) async {
+  Future<int> _ensureExposureCapacity({required UserProfile currentUser, required int requested}) async {
     final DocumentReference<JsonMap> doc = _exposureDoc(currentUser.uid);
     final DocumentSnapshot<JsonMap> snapshot = await doc.get();
     final int currentCount = (snapshot.data()?['count'] as num?)?.toInt() ?? 0;
-    final int limit = currentUser.isPremium
-        ? _dailyExposureLimit + _premiumExposureBonus
-        : _dailyExposureLimit;
+    final int limit = currentUser.isPremium ? _dailyExposureLimit + _premiumExposureBonus : _dailyExposureLimit;
     final int remaining = (limit - currentCount).clamp(0, limit);
     if (remaining <= 0) {
       return 0;
@@ -279,13 +241,10 @@ class MatchingRepository {
 
   Future<void> _incrementExposureCount(String uid, int delta) async {
     final DocumentReference<JsonMap> doc = _exposureDoc(uid);
-    await doc.set(
-      <String, Object?>{
-        'count': FieldValue.increment(delta),
-        'updatedAt': Timestamp.now(),
-      },
-      SetOptions(merge: true),
-    );
+    await doc.set(<String, Object?>{
+      'count': FieldValue.increment(delta),
+      'updatedAt': Timestamp.now(),
+    }, SetOptions(merge: true));
   }
 
   DocumentReference<JsonMap> _exposureDoc(String uid) {

@@ -30,14 +30,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<PostComposerCubit>(
-      create: (_) => PostComposerCubit(
-        communityRepository: getIt(),
-        authCubit: getIt<AuthCubit>(),
-      ),
+      create: (_) => PostComposerCubit(communityRepository: getIt(), authCubit: getIt<AuthCubit>()),
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
-            previous.submissionSuccess != current.submissionSuccess ||
-            previous.errorMessage != current.errorMessage,
+            previous.submissionSuccess != current.submissionSuccess || previous.errorMessage != current.errorMessage,
         listener: (context, state) {
           if (state.errorMessage != null) {
             ScaffoldMessenger.of(context)
@@ -83,11 +79,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                           }
                         },
                   child: state.isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('등록'),
                 ),
               ],
@@ -154,12 +146,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.memory(
-                                draft.bytes,
-                                width: 96,
-                                height: 96,
-                                fit: BoxFit.cover,
-                              ),
+                              child: Image.memory(draft.bytes, width: 96, height: 96, fit: BoxFit.cover),
                             ),
                             Positioned(
                               right: 4,
@@ -198,8 +185,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                     ],
                   ),
                   const Gap(24),
-                  if (state.isSubmitting)
-                    const LinearProgressIndicator(minHeight: 3),
+                  if (state.isSubmitting) const LinearProgressIndicator(minHeight: 3),
                 ],
               ),
             ),
@@ -307,7 +293,7 @@ class _BoardSelector extends StatelessWidget {
         const Text('게시판 선택', style: TextStyle(fontWeight: FontWeight.w600)),
         const Gap(8),
         DropdownButtonFormField<String>(
-          value: state.selectedBoardId,
+          initialValue: state.selectedBoardId,
           items: state.boards
               .map(
                 (Board board) => DropdownMenuItem<String>(
@@ -316,12 +302,9 @@ class _BoardSelector extends StatelessWidget {
                     children: [
                       Text(board.name),
                       if (board.requireRealname)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Chip(
-                            label: const Text('실명'),
-                            visualDensity: VisualDensity.compact,
-                          ),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 8),
+                          child: Chip(label: Text('실명'), visualDensity: VisualDensity.compact),
                         ),
                     ],
                   ),
@@ -331,8 +314,7 @@ class _BoardSelector extends StatelessWidget {
           onChanged: (value) {
             cubit.selectBoard(value);
             if (value != null) {
-              final Board selected =
-                  state.boards.firstWhere((Board board) => board.id == value);
+              final Board selected = state.boards.firstWhere((Board board) => board.id == value);
               cubit.toggleAnonymous(!selected.requireRealname);
             }
           },
@@ -341,15 +323,9 @@ class _BoardSelector extends StatelessWidget {
         const Gap(8),
         Row(
           children: [
-            Switch.adaptive(
-              value: state.isAnonymous,
-              onChanged: (value) => cubit.toggleAnonymous(value),
-            ),
+            Switch.adaptive(value: state.isAnonymous, onChanged: (value) => cubit.toggleAnonymous(value)),
             const Gap(6),
-            Text(
-              state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시',
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시', style: theme.textTheme.bodyMedium),
           ],
         ),
       ],

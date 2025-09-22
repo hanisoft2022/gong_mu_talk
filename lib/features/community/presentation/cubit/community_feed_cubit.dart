@@ -17,17 +17,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       _authCubit = authCubit,
       super(const CommunityFeedState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
-    emit(
-      state.copyWith(careerTrack: _authCubit.state.careerTrack, serial: _authCubit.state.serial),
-    );
+    emit(state.copyWith(careerTrack: _authCubit.state.careerTrack, serial: _authCubit.state.serial));
   }
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
   late final StreamSubscription<AuthState> _authSubscription;
 
-  final Map<CommunityFeedTab, QueryDocumentSnapshotJson?> _cursors =
-      <CommunityFeedTab, QueryDocumentSnapshotJson?>{};
+  final Map<CommunityFeedTab, QueryDocumentSnapshotJson?> _cursors = <CommunityFeedTab, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
 
   static const int _pageSize = 20;
@@ -53,10 +50,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     try {
       final PaginatedQueryResult<Post> result = await _fetchPostsForTab(targetTab, reset: true);
-      final Set<String> liked = result.items
-          .where((Post post) => post.isLiked)
-          .map((Post post) => post.id)
-          .toSet();
+      final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
           .map((Post post) => post.id)
@@ -101,10 +95,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     emit(state.copyWith(status: CommunityFeedStatus.refreshing, errorMessage: null));
     try {
       final PaginatedQueryResult<Post> result = await _fetchPostsForTab(state.tab, reset: true);
-      final Set<String> liked = result.items
-          .where((Post post) => post.isLiked)
-          .map((Post post) => post.id)
-          .toSet();
+      final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
           .map((Post post) => post.id)
@@ -183,9 +174,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
             if (existing.id != post.id) {
               return existing;
             }
-            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1))
-                .clamp(0, 1 << 31)
-                .toInt();
+            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1)).clamp(0, 1 << 31).toInt();
             return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
           })
           .toList(growable: false);
@@ -256,35 +245,19 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
   }
 
-  Future<PaginatedQueryResult<Post>> _fetchPostsForTab(
-    CommunityFeedTab tab, {
-    required bool reset,
-  }) async {
+  Future<PaginatedQueryResult<Post>> _fetchPostsForTab(CommunityFeedTab tab, {required bool reset}) async {
     final String? uid = _authCubit.state.userId;
     final QueryDocumentSnapshotJson? startAfter = reset ? null : _cursors[tab];
 
     switch (tab) {
       case CommunityFeedTab.all:
-        return _repository.fetchChirpFeed(
-          limit: _pageSize,
-          startAfter: startAfter,
-          currentUid: uid,
-        );
+        return _repository.fetchChirpFeed(limit: _pageSize, startAfter: startAfter, currentUid: uid);
       case CommunityFeedTab.serial:
         final String serial = _authCubit.state.serial;
         if (serial == 'unknown' || serial.isEmpty) {
-          return PaginatedQueryResult<Post>(
-            items: const <Post>[],
-            lastDocument: null,
-            hasMore: false,
-          );
+          return const PaginatedQueryResult<Post>(items: <Post>[], lastDocument: null, hasMore: false);
         }
-        return _repository.fetchSerialFeed(
-          serial: serial,
-          limit: _pageSize,
-          startAfter: startAfter,
-          currentUid: uid,
-        );
+        return _repository.fetchSerialFeed(serial: serial, limit: _pageSize, startAfter: startAfter, currentUid: uid);
       case CommunityFeedTab.hot:
         return _repository.fetchHotFeed(limit: _pageSize, startAfter: startAfter, currentUid: uid);
     }

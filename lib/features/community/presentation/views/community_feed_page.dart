@@ -4,7 +4,6 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rive/rive.dart';
 
-import '../../../../core/ads/ad_banner.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
@@ -36,8 +35,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   void _onScroll() {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       cubit.fetchMore();
     }
   }
@@ -107,8 +105,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                     case CommunityFeedStatus.loaded:
                     case CommunityFeedStatus.refreshing:
                       if (state.tab == CommunityFeedTab.serial &&
-                          (state.careerTrack == CareerTrack.none ||
-                           state.serial == 'unknown')) {
+                          (state.careerTrack == CareerTrack.none || state.serial == 'unknown')) {
                         return _EmptyStateView(
                           icon: Icons.group_add_outlined,
                           title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
@@ -143,15 +140,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                             return PostCard(
                               post: post,
                               onToggleLike: () => context.read<CommunityFeedCubit>().toggleLike(post),
-                              onToggleBookmark: () =>
-                                  context.read<CommunityFeedCubit>().toggleBookmark(post),
+                              onToggleBookmark: () => context.read<CommunityFeedCubit>().toggleBookmark(post),
                               onTap: () {
                                 context.read<CommunityFeedCubit>().incrementViewCount(post.id);
                                 ScaffoldMessenger.of(context)
                                   ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    const SnackBar(content: Text('상세 페이지는 곧 제공될 예정입니다.')),
-                                  );
+                                  ..showSnackBar(const SnackBar(content: Text('상세 페이지는 곧 제공될 예정입니다.')));
                               },
                             );
                           },
@@ -161,10 +155,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 },
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: GongMuBannerAd(),
-            ),
+            const SizedBox(height: 8),
           ],
         ),
         Positioned(
@@ -213,10 +204,7 @@ class _CommunityErrorView extends StatelessWidget {
                 const SizedBox(
                   height: 160,
                   width: 160,
-                  child: RiveAnimation.asset(
-                    'assets/animations/empty_state.riv',
-                    fit: BoxFit.contain,
-                  ),
+                  child: RiveAnimation.asset('assets/animations/empty_state.riv', fit: BoxFit.contain),
                 ),
                 const Gap(16),
                 Text(
@@ -242,12 +230,7 @@ class _CommunityErrorView extends StatelessWidget {
 }
 
 class _EmptyStateView extends StatelessWidget {
-  const _EmptyStateView({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.onRefresh,
-  });
+  const _EmptyStateView({required this.icon, required this.title, required this.message, required this.onRefresh});
 
   final IconData icon;
   final String title;
@@ -271,11 +254,7 @@ class _EmptyStateView extends StatelessWidget {
               const Gap(12),
               Text(title, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
               const Gap(8),
-              Text(
-                message,
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
+              Text(message, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
             ],
           ),
         ],

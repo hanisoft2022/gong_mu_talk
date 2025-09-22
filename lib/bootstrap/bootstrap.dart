@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -23,7 +22,7 @@ Future<void> bootstrap(AppBuilder builder) async {
 
       final Future<void> localeFuture = initializeDateFormatting('ko_KR');
       final Future<void> diFuture = configureDependencies();
-      unawaited(_initializeMobileAds());
+      // Ads removed
 
       await Future.wait(<Future<void>>[localeFuture, diFuture]);
       Bloc.observer = AppBlocObserver();
@@ -36,11 +35,4 @@ Future<void> bootstrap(AppBuilder builder) async {
   );
 }
 
-Future<void> _initializeMobileAds() async {
-  try {
-    await MobileAds.instance.initialize();
-  } catch (error, stackTrace) {
-    debugPrint('Failed to initialize Mobile Ads: $error');
-    debugPrint('$stackTrace');
-  }
-}
+// Ads removed
