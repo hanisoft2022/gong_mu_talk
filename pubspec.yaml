@@ -42,6 +42,7 @@ dependencies:
   google_mobile_ads: ^5.0.0
   rive: ^0.13.3
   image_picker: ^1.0.7
+  firebase_storage: ^13.0.1
 
 dev_dependencies:
   flutter_test:

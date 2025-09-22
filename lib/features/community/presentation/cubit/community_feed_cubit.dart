@@ -5,25 +5,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
-import '../../../core/firebase/paginated_query.dart';
+import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/post.dart';
 
 part 'community_feed_state.dart';
 
 class CommunityFeedCubit extends Cubit<CommunityFeedState> {
-  CommunityFeedCubit({
-    required CommunityRepository repository,
-    required AuthCubit authCubit,
-  }) : _repository = repository,
-       _authCubit = authCubit,
-       super(const CommunityFeedState()) {
+  CommunityFeedCubit({required CommunityRepository repository, required AuthCubit authCubit})
+    : _repository = repository,
+      _authCubit = authCubit,
+      super(const CommunityFeedState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
     emit(
-      state.copyWith(
-        careerTrack: _authCubit.state.careerTrack,
-        serial: _authCubit.state.serial,
-      ),
+      state.copyWith(careerTrack: _authCubit.state.careerTrack, serial: _authCubit.state.serial),
     );
   }
 
@@ -162,12 +157,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
       _cursors[state.tab] = result.lastDocument ?? _cursors[state.tab];
     } catch (_) {
-      emit(
-        state.copyWith(
-          isLoadingMore: false,
-          errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.',
-        ),
-      );
+      emit(state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.'));
     } finally {
       _isFetching = false;
     }
@@ -188,14 +178,17 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     try {
       final bool nowLiked = await _repository.togglePostLike(postId: post.id, uid: uid);
-      final List<Post> updatedPosts = state.posts.map((Post existing) {
-        if (existing.id != post.id) {
-          return existing;
-        }
-        final int nextCount =
-            (existing.likeCount + (nowLiked ? 1 : -1)).clamp(0, 1 << 31).toInt();
-        return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
-      }).toList(growable: false);
+      final List<Post> updatedPosts = state.posts
+          .map((Post existing) {
+            if (existing.id != post.id) {
+              return existing;
+            }
+            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1))
+                .clamp(0, 1 << 31)
+                .toInt();
+            return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
+          })
+          .toList(growable: false);
 
       final Set<String> liked = Set<String>.from(state.likedPostIds);
       if (nowLiked) {
@@ -219,12 +212,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     try {
       await _repository.toggleBookmark(uid: uid, postId: post.id);
       final bool nowBookmarked = !state.bookmarkedPostIds.contains(post.id);
-      final List<Post> updatedPosts = state.posts.map((Post existing) {
-        if (existing.id != post.id) {
-          return existing;
-        }
-        return existing.copyWith(isBookmarked: nowBookmarked);
-      }).toList(growable: false);
+      final List<Post> updatedPosts = state.posts
+          .map((Post existing) {
+            if (existing.id != post.id) {
+              return existing;
+            }
+            return existing.copyWith(isBookmarked: nowBookmarked);
+          })
+          .toList(growable: false);
 
       final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds);
       if (nowBookmarked) {
@@ -254,12 +249,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     final bool trackChanged = authState.careerTrack != state.careerTrack;
 
     if (serialChanged || trackChanged) {
-      emit(
-        state.copyWith(
-          careerTrack: authState.careerTrack,
-          serial: authState.serial,
-        ),
-      );
+      emit(state.copyWith(careerTrack: authState.careerTrack, serial: authState.serial));
       if (state.tab == CommunityFeedTab.serial && serialChanged) {
         unawaited(loadInitial(tab: CommunityFeedTab.serial));
       }
@@ -296,11 +286,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           currentUid: uid,
         );
       case CommunityFeedTab.hot:
-        return _repository.fetchHotFeed(
-          limit: _pageSize,
-          startAfter: startAfter,
-          currentUid: uid,
-        );
+        return _repository.fetchHotFeed(limit: _pageSize, startAfter: startAfter, currentUid: uid);
     }
   }
 }

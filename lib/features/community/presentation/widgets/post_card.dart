@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../domain/models/post.dart';
+import '../../../profile/domain/career_track.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({

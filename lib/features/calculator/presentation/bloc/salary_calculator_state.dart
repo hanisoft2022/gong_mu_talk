@@ -24,7 +24,10 @@ class SalaryCalculatorState extends Equatable {
         result: SalaryBreakdown.empty(),
         status: SalaryCalculatorStatus.initial,
         errorMessage: null,
-        gradeOptions: const [],
+        gradeOptions: const <SalaryGradeOption>[
+          SalaryGradeOption(id: '9', name: '9급', minStep: 1, maxStep: 33),
+          SalaryGradeOption(id: '8', name: '8급', minStep: 1, maxStep: 33),
+        ],
         isReferenceLoading: false,
       );
 

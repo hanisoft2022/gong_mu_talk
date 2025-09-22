@@ -23,7 +23,7 @@ class HotScoreCalculator {
     final DateTime reference = now ?? DateTime.now();
     final Duration age = reference.difference(createdAt);
     final double hours = age.inMinutes / 60.0;
-    final double timeDecay = pow(2, hours / decayLambda) as num;
+    final double timeDecay = pow(2, hours / decayLambda).toDouble();
     final double base =
         likeCount * likeWeight + commentCount * commentWeight + viewCount * viewWeight;
     if (timeDecay <= 0) {

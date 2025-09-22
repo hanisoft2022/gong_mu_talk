@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../core/firebase/paginated_query.dart';
+import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/board.dart';
 import '../../domain/models/post.dart';
@@ -24,6 +24,37 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
 
   QueryDocumentSnapshotJson? _cursor;
   bool _isFetching = false;
+
+  Future<void> loadBoardById(String boardId) async {
+    if (_isFetching) {
+      return;
+    }
+    _isFetching = true;
+    emit(state.copyWith(status: BoardFeedStatus.loading, errorMessage: null));
+    try {
+      final List<Board> boards = await _repository.fetchBoards();
+      final Board found = boards.firstWhere(
+        (Board b) => b.id == boardId,
+        orElse: () => const Board(
+          id: '',
+          name: '',
+          slug: '',
+          requireRealname: false,
+          visibility: BoardVisibility.public,
+          order: 0,
+        ),
+      );
+      if (found.id.isEmpty) {
+        emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판을 찾을 수 없습니다.'));
+      } else {
+        await loadBoard(found);
+      }
+    } catch (_) {
+      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판 정보를 불러오는 데 실패했습니다.'));
+    } finally {
+      _isFetching = false;
+    }
+  }
 
   Future<void> loadBoard(Board board) async {
     if (_isFetching) {
@@ -156,6 +187,14 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
       emit(state.copyWith(posts: updated, bookmarkedPostIds: bookmarked));
     } catch (_) {
       emit(state.copyWith(errorMessage: '스크랩 처리 중 오류가 발생했습니다.'));
+    }
+  }
+
+  Future<void> incrementViewCount(String postId) async {
+    try {
+      await _repository.incrementViewCount(postId);
+    } catch (_) {
+      // no-op for UI; failures are non-blocking
     }
   }
 

@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../profile/domain/career_track.dart';
+// Removed unused import
 import '../../data/community_repository.dart';
 import '../../domain/models/board.dart';
 import '../../domain/models/post.dart';
@@ -260,7 +261,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     int? width;
     int? height;
     try {
-      final ui.Image decoded = await decodeImageFromList(bytes);
+      final Completer<ui.Image> completer = Completer<ui.Image>();
+      ui.decodeImageFromList(bytes, (ui.Image img) => completer.complete(img));
+      final ui.Image decoded = await completer.future;
       width = decoded.width;
       height = decoded.height;
     } catch (_) {

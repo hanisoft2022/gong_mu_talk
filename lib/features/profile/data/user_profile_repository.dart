@@ -2,10 +2,12 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
 
 import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/prefix_tokenizer.dart';
 import '../domain/user_profile.dart';
+import '../domain/career_track.dart';
 
 typedef JsonMap = Map<String, Object?>;
 
@@ -346,7 +348,7 @@ class UserProfileRepository {
     String contentType = 'image/jpeg',
   }) async {
     final Reference ref = _storage.ref('profile_images/$uid/$path');
-    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    await ref.putData(Uint8List.fromList(bytes), SettableMetadata(contentType: contentType));
     return ref.getDownloadURL();
   }
 

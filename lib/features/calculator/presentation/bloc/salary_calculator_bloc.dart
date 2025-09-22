@@ -271,6 +271,12 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
         );
       }
 
+      final bool userHasManualBase = state.input.isAutoCalculated == false;
+      final double resolvedBaseSalary = userHasManualBase
+          ? state.input.baseMonthlySalary
+          : (baseSalary ?? (preserveBaseOnMissing ? state.input.baseMonthlySalary : 0));
+      final bool resolvedIsAuto = userHasManualBase ? false : (baseSalary != null);
+
       emit(
         state.copyWith(
           isReferenceLoading: false,
@@ -281,12 +287,11 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
             appointmentYear: targetYear,
             gradeId: resolvedGradeId,
             step: resolvedStep,
-            baseMonthlySalary: baseSalary ??
-                (preserveBaseOnMissing ? state.input.baseMonthlySalary : 0),
-            isAutoCalculated: baseSalary != null,
+            baseMonthlySalary: resolvedBaseSalary,
+            isAutoCalculated: resolvedIsAuto,
           ),
-          clearError: baseSalary != null,
-          errorMessage: baseSalary == null
+          clearError: baseSalary != null && !userHasManualBase,
+          errorMessage: baseSalary == null && !userHasManualBase
               ? '선택한 조건에 해당하는 기준 월급 데이터를 찾지 못했습니다. 수동 입력을 이용해주세요.'
               : null,
         ),

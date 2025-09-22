@@ -8,6 +8,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../routing/app_router.dart';
 import '../../domain/entities/match_profile.dart';
 import '../cubit/matching_cubit.dart';
+import '../../../profile/domain/career_track.dart';
 
 class MatchingPage extends StatefulWidget {
   const MatchingPage({super.key});

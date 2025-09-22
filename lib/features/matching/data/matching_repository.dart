@@ -131,9 +131,9 @@ class MatchingRepository {
   Future<PaginatedQueryResult<MatchProfile>> fetchLikesReceived({
     required UserProfile currentUser,
     int limit = 20,
-    QueryDocumentSnapshot<JsonMap>? startAfter,
+    QueryDocumentSnapshotJson? startAfter,
   }) async {
-    Query<JsonMap> query = _receivedLikesCollection(currentUser.uid)
+    QueryJson query = _receivedLikesCollection(currentUser.uid)
         .orderBy('createdAt', descending: true)
         .limit(limit);
     if (startAfter != null) {
@@ -173,7 +173,7 @@ class MatchingRepository {
     }
 
     final bool hasMore = snapshot.docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last = snapshot.docs.isEmpty ? null : snapshot.docs.last;
+    final QueryDocumentSnapshotJson? last = snapshot.docs.isEmpty ? null : snapshot.docs.last;
     return PaginatedQueryResult<MatchProfile>(items: profiles, hasMore: hasMore, lastDocument: last);
   }
 
@@ -194,7 +194,7 @@ class MatchingRepository {
     final DocumentReference<JsonMap> reciprocalDoc = _likesCollection(targetUid).doc(currentUser.uid);
 
     return _firestore.runTransaction<MatchRequestResult>((Transaction transaction) async {
-      final DocSnapshotJson reciprocalSnapshot = await transaction.get(reciprocalDoc);
+      final DocumentSnapshot<JsonMap> reciprocalSnapshot = await transaction.get(reciprocalDoc);
       final bool isMutual = reciprocalSnapshot.exists;
 
       transaction.set(likeDoc, <String, Object?>{
@@ -253,7 +253,7 @@ class MatchingRepository {
   }
 
   Future<UserProfile?> _fetchProfile(String uid) async {
-    final DocSnapshotJson snapshot = await _userDoc(uid).get();
+    final DocumentSnapshot<JsonMap> snapshot = await _userDoc(uid).get();
     if (!snapshot.exists) {
       return null;
     }
@@ -265,7 +265,7 @@ class MatchingRepository {
     required int requested,
   }) async {
     final DocumentReference<JsonMap> doc = _exposureDoc(currentUser.uid);
-    final DocSnapshotJson snapshot = await doc.get();
+    final DocumentSnapshot<JsonMap> snapshot = await doc.get();
     final int currentCount = (snapshot.data()?['count'] as num?)?.toInt() ?? 0;
     final int limit = currentUser.isPremium
         ? _dailyExposureLimit + _premiumExposureBonus
