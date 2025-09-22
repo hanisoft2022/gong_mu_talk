@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../routing/app_router.dart';
@@ -29,8 +28,7 @@ class _MatchingPageState extends State<MatchingPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<MatchingCubit, MatchingState>(
-      listenWhen: (previous, current) =>
-          previous.lastActionMessage != current.lastActionMessage,
+      listenWhen: (previous, current) => previous.lastActionMessage != current.lastActionMessage,
       listener: (context, state) {
         final String? message = state.lastActionMessage;
         if (message == null) {
@@ -48,10 +46,7 @@ class _MatchingPageState extends State<MatchingPage> {
           }
 
           if (!authState.isGovernmentEmailVerified) {
-            return const _MatchingLockedView(
-              reason: '공직자 메일 인증이 완료된 사용자만 이용할 수 있어요.',
-              showVerifyShortcut: true,
-            );
+            return const _MatchingLockedView(reason: '공직자 메일 인증이 완료된 사용자만 이용할 수 있어요.', showVerifyShortcut: true);
           }
 
           return BlocBuilder<MatchingCubit, MatchingState>(
@@ -63,27 +58,19 @@ class _MatchingPageState extends State<MatchingPage> {
                   body = const _MatchingLoadingView();
                   break;
                 case MatchingStatus.error:
-                  body = _MatchingErrorView(
-                    onRetry: () =>
-                        context.read<MatchingCubit>().loadCandidates(),
-                  );
+                  body = _MatchingErrorView(onRetry: () => context.read<MatchingCubit>().loadCandidates());
                   break;
                 case MatchingStatus.locked:
-                  body = const _MatchingLockedView(
-                    reason: '공직자 메일 인증 완료 후 이용 가능합니다.',
-                    showVerifyShortcut: true,
-                  );
+                  body = const _MatchingLockedView(reason: '공직자 메일 인증 완료 후 이용 가능합니다.', showVerifyShortcut: true);
                   break;
                 case MatchingStatus.loaded:
                   body = _MatchingCandidatesView(state: state);
                   break;
               }
 
-              if (state.status == MatchingStatus.loaded ||
-                  state.status == MatchingStatus.error) {
+              if (state.status == MatchingStatus.loaded || state.status == MatchingStatus.error) {
                 return RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<MatchingCubit>().refreshCandidates(),
+                  onRefresh: () => context.read<MatchingCubit>().refreshCandidates(),
                   child: body,
                 );
               }
@@ -122,10 +109,7 @@ class _MatchingErrorView extends StatelessWidget {
             children: [
               const Icon(Icons.error_outline, size: 56),
               const Gap(12),
-              Text(
-                '매칭 후보를 불러오지 못했어요.',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('매칭 후보를 불러오지 못했어요.', style: Theme.of(context).textTheme.titleMedium),
               const Gap(12),
               FilledButton.icon(
                 onPressed: onRetry,
@@ -141,10 +125,7 @@ class _MatchingErrorView extends StatelessWidget {
 }
 
 class _MatchingLockedView extends StatelessWidget {
-  const _MatchingLockedView({
-    required this.reason,
-    this.showVerifyShortcut = false,
-  });
+  const _MatchingLockedView({required this.reason, this.showVerifyShortcut = false});
 
   final String reason;
   final bool showVerifyShortcut;
@@ -159,24 +140,11 @@ class _MatchingLockedView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.lock_outline,
-              size: 56,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.lock_outline, size: 56, color: theme.colorScheme.primary),
             const Gap(12),
-            Text(
-              '매칭 서비스 잠금',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text('매칭 서비스 잠금', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
             const Gap(8),
-            Text(
-              reason,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
+            Text(reason, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
             if (showVerifyShortcut) ...[
               const Gap(20),
               OutlinedButton.icon(
@@ -239,11 +207,8 @@ class _MatchingCandidatesView extends StatelessWidget {
         final MatchProfile profile = state.candidates[index];
         final bool isProcessing = state.actionInProgressId == profile.id;
         final bool revealNickname =
-            profile.stage == MatchProfileStage.nicknameRevealed ||
-            profile.stage == MatchProfileStage.fullProfile;
-        final String displayName = revealNickname
-            ? profile.nickname
-            : profile.maskedNickname;
+            profile.stage == MatchProfileStage.nicknameRevealed || profile.stage == MatchProfileStage.fullProfile;
+        final String displayName = revealNickname ? profile.nickname : profile.maskedNickname;
         final String subTitle = '${profile.jobTitle} · ${profile.region}';
 
         return Card(
@@ -256,9 +221,7 @@ class _MatchingCandidatesView extends StatelessWidget {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: theme.colorScheme.primary.withValues(
-                        alpha: 0.12,
-                      ),
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
                       foregroundColor: theme.colorScheme.primary,
                       child: Text(_initial(displayName)),
                     ),
@@ -267,16 +230,8 @@ class _MatchingCandidatesView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            displayName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            subTitle,
-                            style: theme.textTheme.bodyMedium,
-                          ),
+                          Text(displayName, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          Text(subTitle, style: theme.textTheme.bodyMedium),
                           Text(
                             '${profile.careerTrack.emoji} ${profile.careerTrack.displayName} · 근무 ${profile.yearsOfService}년',
                             style: theme.textTheme.bodySmall,
@@ -292,9 +247,7 @@ class _MatchingCandidatesView extends StatelessWidget {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: profile.interests
-                      .map((interest) => Chip(label: Text(interest)))
-                      .toList(growable: false),
+                  children: profile.interests.map((interest) => Chip(label: Text(interest))).toList(growable: false),
                 ),
                 if (profile.badges.isNotEmpty) ...[
                   const Gap(12),
@@ -302,20 +255,12 @@ class _MatchingCandidatesView extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: profile.badges
-                        .map(
-                          (badge) => Chip(
-                            avatar: const Icon(Icons.stars, size: 16),
-                            label: Text(badge),
-                          ),
-                        )
+                        .map((badge) => Chip(avatar: const Icon(Icons.stars, size: 16), label: Text(badge)))
                         .toList(growable: false),
                   ),
                 ],
                 const Gap(16),
-                _MatchRequestButton(
-                  isProcessing: isProcessing,
-                  onPressed: () => cubit.requestMatch(profile.id),
-                ),
+                _MatchRequestButton(isProcessing: isProcessing, onPressed: () => cubit.requestMatch(profile.id)),
               ],
             ),
           ),
@@ -333,10 +278,7 @@ String _initial(String value) {
 }
 
 class _MatchRequestButton extends StatefulWidget {
-  const _MatchRequestButton({
-    required this.isProcessing,
-    required this.onPressed,
-  });
+  const _MatchRequestButton({required this.isProcessing, required this.onPressed});
 
   final bool isProcessing;
   final VoidCallback onPressed;
@@ -345,29 +287,10 @@ class _MatchRequestButton extends StatefulWidget {
   State<_MatchRequestButton> createState() => _MatchRequestButtonState();
 }
 
-class _MatchRequestButtonState extends State<_MatchRequestButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  Duration? _loadedDuration;
-
+class _MatchRequestButtonState extends State<_MatchRequestButton> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..value = 1;
-    _controller.addStatusListener((AnimationStatus status) {
-      if (status == AnimationStatus.completed) {
-        _controller.value = 1;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   void _handlePressed() {
@@ -375,37 +298,14 @@ class _MatchRequestButtonState extends State<_MatchRequestButton>
       return;
     }
 
-    _controller.forward(from: 0);
-
     widget.onPressed();
   }
 
   @override
   Widget build(BuildContext context) {
     final Widget icon = widget.isProcessing
-        ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : Lottie.asset(
-            'assets/animations/heart_pop.json',
-            controller: _controller,
-            onLoaded: (LottieComposition composition) {
-              if (_loadedDuration == composition.duration) {
-                return;
-              }
-              _loadedDuration = composition.duration;
-              _controller.duration = composition.duration;
-              if (!_controller.isAnimating) {
-                _controller.value = 1;
-              }
-            },
-            repeat: false,
-            height: 28,
-            width: 28,
-            fit: BoxFit.contain,
-          );
+        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+        : const Icon(Icons.favorite_border, size: 22);
 
     return FilledButton(
       onPressed: widget.isProcessing ? null : _handlePressed,

@@ -227,6 +227,26 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     unawaited(_repository.incrementViewCount(postId));
   }
 
+  Future<void> seedDummyChirps() async {
+    final AuthState auth = _authCubit.state;
+    final String? uid = auth.userId;
+    if (uid == null) {
+      return;
+    }
+    try {
+      await _repository.seedSamplePosts(
+        uid: uid,
+        nickname: auth.nickname,
+        track: auth.careerTrack,
+        serial: auth.serial,
+        count: 16,
+      );
+      await refresh();
+    } catch (_) {
+      emit(state.copyWith(errorMessage: '더미 데이터를 추가하지 못했습니다.'));
+    }
+  }
+
   @override
   Future<void> close() async {
     await _authSubscription.cancel();

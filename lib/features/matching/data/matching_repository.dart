@@ -37,88 +37,96 @@ class MatchingRepository {
     int limit = 6,
     bool includePremiumHighlights = true,
   }) async {
-    final int allowed = await _ensureExposureCapacity(currentUser: currentUser, requested: limit);
-    if (allowed <= 0) {
-      return const <MatchProfile>[];
-    }
-
-    final QuerySnapshot<JsonMap> snapshot = await _usersRef
-        .where('isDeleted', isEqualTo: false)
-        .orderBy('points', descending: true)
-        .limit(allowed * 3)
-        .get();
-
-    final List<MatchProfile> candidates = <MatchProfile>[];
-    final Set<String> excludedSerials = currentUser.excludedSerials;
-    final Set<String> excludedDepartments = currentUser.excludedDepartments;
-    final Set<String> excludedRegions = currentUser.excludedRegions;
-
-    for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
-      if (doc.id == currentUser.uid) {
-        continue;
+    try {
+      final int allowed = await _ensureExposureCapacity(currentUser: currentUser, requested: limit);
+      if (allowed <= 0) {
+        return _generateDummyCandidates(currentUser: currentUser, count: limit);
       }
 
-      final UserProfile profile = UserProfile.fromSnapshot(doc);
-      if (profile.isBlocked || profile.isDeleted) {
-        continue;
-      }
-      if (excludedSerials.contains(profile.serial)) {
-        continue;
-      }
-      if (excludedDepartments.contains(profile.department)) {
-        continue;
-      }
-      if (excludedRegions.contains(profile.region)) {
-        continue;
-      }
-      if (profile.serial == currentUser.serial && currentUser.serial.isNotEmpty) {
-        continue;
-      }
+      final QuerySnapshot<JsonMap> snapshot = await _usersRef
+          .where('isDeleted', isEqualTo: false)
+          .orderBy('points', descending: true)
+          .limit(allowed * 3)
+          .get();
 
-      final MatchProfileStage stage = profile.premiumTier == PremiumTier.premium
-          ? MatchProfileStage.nicknameRevealed
-          : MatchProfileStage.anonymized;
+      final List<MatchProfile> candidates = <MatchProfile>[];
+      final Set<String> excludedSerials = currentUser.excludedSerials;
+      final Set<String> excludedDepartments = currentUser.excludedDepartments;
+      final Set<String> excludedRegions = currentUser.excludedRegions;
 
-      final MatchProfile matchProfile = MatchProfile(
-        id: profile.uid,
-        nickname: profile.nickname,
-        maskedNickname: _maskNickname(profile.nickname),
-        serial: profile.serial,
-        department: profile.department,
-        region: profile.region,
-        jobTitle: profile.jobTitle,
-        yearsOfService: profile.yearsOfService,
-        introduction: profile.bio ?? '아직 소개가 없습니다.',
-        interests: profile.interests,
-        careerTrack: profile.careerTrack,
-        badges: profile.badges,
-        stage: stage,
-        isPremium: profile.isPremium,
-        premiumTier: profile.premiumTier,
-        photoUrl: profile.photoUrl,
-        points: profile.points,
-        level: profile.level,
-      );
-
-      candidates.add(matchProfile);
-      if (candidates.length >= allowed) {
-        break;
-      }
-    }
-
-    if (includePremiumHighlights) {
-      candidates.sort((MatchProfile a, MatchProfile b) {
-        if (a.isPremium == b.isPremium) {
-          return (b.points ?? 0).compareTo(a.points ?? 0);
+      for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+        if (doc.id == currentUser.uid) {
+          continue;
         }
-        return a.isPremium ? -1 : 1;
-      });
-    } else {
-      candidates.shuffle(Random());
-    }
 
-    await _incrementExposureCount(currentUser.uid, candidates.length);
-    return candidates;
+        final UserProfile profile = UserProfile.fromSnapshot(doc);
+        if (profile.isBlocked || profile.isDeleted) {
+          continue;
+        }
+        if (excludedSerials.contains(profile.serial)) {
+          continue;
+        }
+        if (excludedDepartments.contains(profile.department)) {
+          continue;
+        }
+        if (excludedRegions.contains(profile.region)) {
+          continue;
+        }
+        if (profile.serial == currentUser.serial && currentUser.serial.isNotEmpty) {
+          continue;
+        }
+
+        final MatchProfileStage stage = profile.premiumTier == PremiumTier.premium
+            ? MatchProfileStage.nicknameRevealed
+            : MatchProfileStage.anonymized;
+
+        final MatchProfile matchProfile = MatchProfile(
+          id: profile.uid,
+          nickname: profile.nickname,
+          maskedNickname: _maskNickname(profile.nickname),
+          serial: profile.serial,
+          department: profile.department,
+          region: profile.region,
+          jobTitle: profile.jobTitle,
+          yearsOfService: profile.yearsOfService,
+          introduction: profile.bio ?? '아직 소개가 없습니다.',
+          interests: profile.interests,
+          careerTrack: profile.careerTrack,
+          badges: profile.badges,
+          stage: stage,
+          isPremium: profile.isPremium,
+          premiumTier: profile.premiumTier,
+          photoUrl: profile.photoUrl,
+          points: profile.points,
+          level: profile.level,
+        );
+
+        candidates.add(matchProfile);
+        if (candidates.length >= allowed) {
+          break;
+        }
+      }
+
+      if (candidates.isEmpty) {
+        return _generateDummyCandidates(currentUser: currentUser, count: limit);
+      }
+
+      if (includePremiumHighlights) {
+        candidates.sort((MatchProfile a, MatchProfile b) {
+          if (a.isPremium == b.isPremium) {
+            return (b.points ?? 0).compareTo(a.points ?? 0);
+          }
+          return a.isPremium ? -1 : 1;
+        });
+      } else {
+        candidates.shuffle(Random());
+      }
+
+      await _incrementExposureCount(currentUser.uid, candidates.length);
+      return candidates;
+    } catch (_) {
+      return _generateDummyCandidates(currentUser: currentUser, count: limit);
+    }
   }
 
   Future<PaginatedQueryResult<MatchProfile>> fetchLikesReceived({
@@ -263,5 +271,46 @@ class MatchingRepository {
   String _matchId(String a, String b) {
     final List<String> ids = <String>[a, b]..sort();
     return ids.join('_');
+  }
+
+  List<MatchProfile> _generateDummyCandidates({required UserProfile currentUser, int count = 6}) {
+    final Random random = Random();
+    final List<String> nicknames = <String>['민수', '지영', '현우', '서연', '도윤', '하은', '지호', '예린'];
+    final List<String> jobs = <String>['행정사무관', '주무관', '전산주사', '교육행정', '세무주사'];
+    final List<String> regions = <String>['서울', '부산', '대전', '대구', '광주'];
+
+    final List<MatchProfile> items = <MatchProfile>[];
+    for (int i = 0; i < count; i += 1) {
+      final String base = nicknames[random.nextInt(nicknames.length)];
+      final String id = 'dummy_match_${DateTime.now().millisecondsSinceEpoch}_${i}_${random.nextInt(9999)}';
+      final String nickname = base;
+      final String serial = currentUser.careerTrack.name;
+
+      items.add(
+        MatchProfile(
+          id: id,
+          nickname: nickname,
+          maskedNickname: _maskNickname(nickname),
+          serial: serial,
+          department: currentUser.department,
+          region: regions[random.nextInt(regions.length)],
+          jobTitle: jobs[random.nextInt(jobs.length)],
+          yearsOfService: random.nextInt(15),
+          introduction: '안녕하세요! 함께 정보 나눠요.',
+          interests: const <String>['독서', '운동', '여행'],
+          careerTrack: currentUser.careerTrack,
+          badges: const <String>['친절', '성실'],
+          stage: MatchProfileStage.anonymized,
+          isPremium: random.nextBool(),
+          premiumTier: random.nextBool() ? PremiumTier.premium : PremiumTier.none,
+          photoUrl: null,
+          points: random.nextInt(1000),
+          level: 1 + random.nextInt(10),
+        ),
+      );
+    }
+
+    items.sort((a, b) => (b.points ?? 0).compareTo(a.points ?? 0));
+    return items;
   }
 }

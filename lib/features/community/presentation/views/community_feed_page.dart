@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rive/rive.dart';
 
 import '../../../profile/domain/career_track.dart';
 import '../../domain/models/post.dart';
@@ -201,11 +200,8 @@ class _CommunityErrorView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
-                  height: 160,
-                  width: 160,
-                  child: RiveAnimation.asset('assets/animations/empty_state.riv', fit: BoxFit.contain),
-                ),
+                const SizedBox(height: 12),
+                const Icon(Icons.inbox_outlined, size: 72),
                 const Gap(16),
                 Text(
                   message ?? '피드를 불러오지 못했어요.',
@@ -255,6 +251,12 @@ class _EmptyStateView extends StatelessWidget {
               Text(title, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
               const Gap(8),
               Text(message, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+              const Gap(16),
+              FilledButton.icon(
+                onPressed: () => context.read<CommunityFeedCubit>().seedDummyChirps(),
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('더미 데이터 채우기'),
+              ),
             ],
           ),
         ],

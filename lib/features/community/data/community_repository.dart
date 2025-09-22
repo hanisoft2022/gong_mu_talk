@@ -22,11 +22,9 @@ typedef QueryJson = Query<JsonMap>;
 typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 
 class CommunityRepository {
-  CommunityRepository({
-    FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  CommunityRepository({FirebaseFirestore? firestore, FirebaseStorage? storage})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -40,29 +38,22 @@ class CommunityRepository {
 
   CollectionReference<JsonMap> get _boardsRef => _firestore.collection('boards');
 
-  CollectionReference<JsonMap> get _searchSuggestionRef =>
-      _firestore.collection('search_suggestions');
+  CollectionReference<JsonMap> get _searchSuggestionRef => _firestore.collection('search_suggestions');
 
   CollectionReference<JsonMap> get _reportsRef => _firestore.collection('reports');
 
   DocumentReference<JsonMap> _postDoc(String postId) => _postsRef.doc(postId);
 
-  CollectionReference<JsonMap> _commentsRef(String postId) =>
-      _postDoc(postId).collection('comments');
+  CollectionReference<JsonMap> _commentsRef(String postId) => _postDoc(postId).collection('comments');
 
-  CollectionReference<JsonMap> _commentLikesRef(String postId) =>
-      _postDoc(postId).collection('comment_likes');
+  CollectionReference<JsonMap> _commentLikesRef(String postId) => _postDoc(postId).collection('comment_likes');
 
-  CollectionReference<JsonMap> _postCounterShard(String postId) => _firestore
-      .collection('post_counters')
-      .doc(postId)
-      .collection('shards');
+  CollectionReference<JsonMap> _postCounterShard(String postId) =>
+      _firestore.collection('post_counters').doc(postId).collection('shards');
 
-  CollectionReference<JsonMap> _bookmarksRef(String uid) =>
-      _userDoc(uid).collection('bookmarks');
+  CollectionReference<JsonMap> _bookmarksRef(String uid) => _userDoc(uid).collection('bookmarks');
 
-  DocumentReference<JsonMap> _userDoc(String uid) =>
-      _firestore.collection('users').doc(uid);
+  DocumentReference<JsonMap> _userDoc(String uid) => _firestore.collection('users').doc(uid);
 
   Future<Post> createPost({
     required PostType type,
@@ -78,11 +69,7 @@ class CommunityRepository {
   }) async {
     final DocumentReference<JsonMap> ref = _postsRef.doc();
     final DateTime now = DateTime.now();
-    final List<String> keywords = _tokenizer.buildPrefixes(
-      title: authorNickname,
-      body: text,
-      tags: tags,
-    );
+    final List<String> keywords = _tokenizer.buildPrefixes(title: authorNickname, body: text, tags: tags);
 
     final Map<String, Object?> data = <String, Object?>{
       'type': type.name,
@@ -99,13 +86,7 @@ class CommunityRepository {
       'likeCount': 0,
       'commentCount': 0,
       'viewCount': 0,
-      'hotScore': _hotScoreCalculator.calculate(
-        likeCount: 0,
-        commentCount: 0,
-        viewCount: 0,
-        createdAt: now,
-        now: now,
-      ),
+      'hotScore': _hotScoreCalculator.calculate(likeCount: 0, commentCount: 0, viewCount: 0, createdAt: now, now: now),
       'createdAt': Timestamp.fromDate(now),
       'updatedAt': Timestamp.fromDate(now),
       'visibility': PostVisibility.public.name,
@@ -135,9 +116,7 @@ class CommunityRepository {
         throw StateError('게시글 수정 권한이 없습니다.');
       }
 
-      final Map<String, Object?> updates = <String, Object?>{
-        'updatedAt': Timestamp.now(),
-      };
+      final Map<String, Object?> updates = <String, Object?>{'updatedAt': Timestamp.now()};
       if (text != null) {
         updates['text'] = text;
         final List<String> keywords = _tokenizer.buildPrefixes(
@@ -190,11 +169,9 @@ class CommunityRepository {
     bool liked = false;
     bool bookmarked = false;
     if (currentUid != null) {
-      final DocumentSnapshot<JsonMap> likeSnapshot =
-          await _likesRef.doc('${postId}_$currentUid').get();
+      final DocumentSnapshot<JsonMap> likeSnapshot = await _likesRef.doc('${postId}_$currentUid').get();
       liked = likeSnapshot.exists;
-      final DocumentSnapshot<JsonMap> bookmarkSnapshot =
-          await _bookmarksRef(currentUid).doc(postId).get();
+      final DocumentSnapshot<JsonMap> bookmarkSnapshot = await _bookmarksRef(currentUid).doc(postId).get();
       bookmarked = bookmarkSnapshot.exists;
     }
 
@@ -206,18 +183,23 @@ class CommunityRepository {
     QueryDocumentSnapshotJson? startAfter,
     String? currentUid,
   }) async {
-    QueryJson query = _postsRef
-        .where('type', isEqualTo: PostType.chirp.name)
-        .where('visibility', isEqualTo: PostVisibility.public.name)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+    try {
+      QueryJson query = _postsRef
+          .where('type', isEqualTo: PostType.chirp.name)
+          .where('visibility', isEqualTo: PostVisibility.public.name)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
 
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final QuerySnapshot<JsonMap> snapshot = await query.get();
+      return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    } catch (_) {
+      final List<Post> items = _generateDummyPosts(count: limit);
+      return PaginatedQueryResult<Post>(items: items, hasMore: false, lastDocument: null);
     }
-
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
   }
 
   Future<PaginatedQueryResult<Post>> fetchSerialFeed({
@@ -226,18 +208,23 @@ class CommunityRepository {
     QueryDocumentSnapshotJson? startAfter,
     String? currentUid,
   }) async {
-    QueryJson query = _postsRef
-        .where('type', isEqualTo: PostType.chirp.name)
-        .where('audience', isEqualTo: PostAudience.serial.name)
-        .where('serial', isEqualTo: serial)
-        .where('visibility', isEqualTo: PostVisibility.public.name)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
+    try {
+      QueryJson query = _postsRef
+          .where('type', isEqualTo: PostType.chirp.name)
+          .where('audience', isEqualTo: PostAudience.serial.name)
+          .where('serial', isEqualTo: serial)
+          .where('visibility', isEqualTo: PostVisibility.public.name)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      final QuerySnapshot<JsonMap> snapshot = await query.get();
+      return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    } catch (_) {
+      final List<Post> items = _generateDummyPosts(count: limit, forceSerial: serial);
+      return PaginatedQueryResult<Post>(items: items, hasMore: false, lastDocument: null);
     }
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
   }
 
   Future<PaginatedQueryResult<Post>> fetchHotFeed({
@@ -245,17 +232,22 @@ class CommunityRepository {
     QueryDocumentSnapshotJson? startAfter,
     String? currentUid,
   }) async {
-    QueryJson query = _postsRef
-        .where('type', isEqualTo: PostType.chirp.name)
-        .where('visibility', isEqualTo: PostVisibility.public.name)
-        .orderBy('hotScore', descending: true)
-        .limit(limit);
+    try {
+      QueryJson query = _postsRef
+          .where('type', isEqualTo: PostType.chirp.name)
+          .where('visibility', isEqualTo: PostVisibility.public.name)
+          .orderBy('hotScore', descending: true)
+          .limit(limit);
 
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      final QuerySnapshot<JsonMap> snapshot = await query.get();
+      return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    } catch (_) {
+      final List<Post> items = _generateDummyPosts(count: limit)..sort((a, b) => b.hotScore.compareTo(a.hotScore));
+      return PaginatedQueryResult<Post>(items: items, hasMore: false, lastDocument: null);
     }
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
   }
 
   Future<PaginatedQueryResult<Post>> fetchBoardPosts({
@@ -283,9 +275,7 @@ class CommunityRepository {
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    Query<JsonMap> bookmarkQuery = _bookmarksRef(uid)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+    Query<JsonMap> bookmarkQuery = _bookmarksRef(uid).orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {
       bookmarkQuery = bookmarkQuery.startAfterDocument(startAfter);
     }
@@ -304,9 +294,7 @@ class CommunityRepository {
     }
 
     final bool hasMore = bookmarkSnapshot.docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last = bookmarkSnapshot.docs.isEmpty
-        ? null
-        : bookmarkSnapshot.docs.last;
+    final QueryDocumentSnapshot<JsonMap>? last = bookmarkSnapshot.docs.isEmpty ? null : bookmarkSnapshot.docs.last;
 
     return PaginatedQueryResult<Post>(items: posts, hasMore: hasMore, lastDocument: last);
   }
@@ -317,9 +305,7 @@ class CommunityRepository {
     QueryDocumentSnapshot<JsonMap>? startAfter,
     String? currentUid,
   }) async {
-    Query<JsonMap> query = _commentsRef(postId)
-        .orderBy('createdAt', descending: false)
-        .limit(limit);
+    Query<JsonMap> query = _commentsRef(postId).orderBy('createdAt', descending: false).limit(limit);
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
@@ -327,7 +313,11 @@ class CommunityRepository {
     final QuerySnapshot<JsonMap> snapshot = await query.get();
     final Set<String> likedCommentIds = currentUid == null
         ? const <String>{}
-        : await _fetchLikedCommentIds(postId: postId, uid: currentUid, commentIds: snapshot.docs.map((doc) => doc.id).toList(growable: false));
+        : await _fetchLikedCommentIds(
+            postId: postId,
+            uid: currentUid,
+            commentIds: snapshot.docs.map((doc) => doc.id).toList(growable: false),
+          );
 
     final List<Comment> comments = snapshot.docs
         .map(
@@ -370,11 +360,7 @@ class CommunityRepository {
       });
 
       final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(
-        shardRef,
-        <String, Object?>{'comments': FieldValue.increment(1)},
-        SetOptions(merge: true),
-      );
+      transaction.set(shardRef, <String, Object?>{'comments': FieldValue.increment(1)}, SetOptions(merge: true));
     });
 
     return Comment(
@@ -389,11 +375,7 @@ class CommunityRepository {
     );
   }
 
-  Future<void> deleteComment({
-    required String postId,
-    required String commentId,
-    required String requesterUid,
-  }) async {
+  Future<void> deleteComment({required String postId, required String commentId, required String requesterUid}) async {
     final DocumentReference<JsonMap> commentDoc = _commentsRef(postId).doc(commentId);
     await _firestore.runTransaction<void>((Transaction transaction) async {
       final DocSnapshotJson snapshot = await transaction.get(commentDoc);
@@ -406,10 +388,7 @@ class CommunityRepository {
         throw StateError('댓글 삭제 권한이 없습니다.');
       }
 
-      transaction.update(commentDoc, <String, Object?>{
-        'deleted': true,
-        'text': '[삭제된 댓글]',
-      });
+      transaction.update(commentDoc, <String, Object?>{'deleted': true, 'text': '[삭제된 댓글]'});
 
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
       transaction.update(postRef, <String, Object?>{
@@ -417,11 +396,7 @@ class CommunityRepository {
         'updatedAt': Timestamp.now(),
       });
       final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(
-        shardRef,
-        <String, Object?>{'comments': FieldValue.increment(-1)},
-        SetOptions(merge: true),
-      );
+      transaction.set(shardRef, <String, Object?>{'comments': FieldValue.increment(-1)}, SetOptions(merge: true));
     });
   }
 
@@ -434,27 +409,17 @@ class CommunityRepository {
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
 
-      transaction.set(
-        postDoc,
-        <String, Object?>{
-          'likeCount': FieldValue.increment(willLike ? 1 : -1),
-          'updatedAt': Timestamp.now(),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(postDoc, <String, Object?>{
+        'likeCount': FieldValue.increment(willLike ? 1 : -1),
+        'updatedAt': Timestamp.now(),
+      }, SetOptions(merge: true));
 
-      transaction.set(
-        shardDoc,
-        <String, Object?>{'likes': FieldValue.increment(willLike ? 1 : -1)},
-        SetOptions(merge: true),
-      );
+      transaction.set(shardDoc, <String, Object?>{
+        'likes': FieldValue.increment(willLike ? 1 : -1),
+      }, SetOptions(merge: true));
 
       if (willLike) {
-        transaction.set(likeDoc, <String, Object?>{
-          'postId': postId,
-          'uid': uid,
-          'createdAt': Timestamp.now(),
-        });
+        transaction.set(likeDoc, <String, Object?>{'postId': postId, 'uid': uid, 'createdAt': Timestamp.now()});
       } else {
         transaction.delete(likeDoc);
       }
@@ -463,11 +428,7 @@ class CommunityRepository {
     });
   }
 
-  Future<bool> toggleCommentLike({
-    required String postId,
-    required String commentId,
-    required String uid,
-  }) async {
+  Future<bool> toggleCommentLike({required String postId, required String commentId, required String uid}) async {
     final CollectionReference<JsonMap> commentLikes = _commentLikesRef(postId);
     final DocumentReference<JsonMap> likeDoc = commentLikes.doc('${commentId}_$uid');
     final DocumentReference<JsonMap> commentDoc = _commentsRef(postId).doc(commentId);
@@ -475,16 +436,10 @@ class CommunityRepository {
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
 
-      transaction.update(commentDoc, <String, Object?>{
-        'likeCount': FieldValue.increment(willLike ? 1 : -1),
-      });
+      transaction.update(commentDoc, <String, Object?>{'likeCount': FieldValue.increment(willLike ? 1 : -1)});
 
       if (willLike) {
-        transaction.set(likeDoc, <String, Object?>{
-          'commentId': commentId,
-          'uid': uid,
-          'createdAt': Timestamp.now(),
-        });
+        transaction.set(likeDoc, <String, Object?>{'commentId': commentId, 'uid': uid, 'createdAt': Timestamp.now()});
       } else {
         transaction.delete(likeDoc);
       }
@@ -494,13 +449,8 @@ class CommunityRepository {
   }
 
   Future<void> incrementViewCount(String postId) async {
-    await _postDoc(postId).update(<String, Object?>{
-      'viewCount': FieldValue.increment(1),
-    });
-    await _counterShardRef(postId).set(
-      <String, Object?>{'views': FieldValue.increment(1)},
-      SetOptions(merge: true),
-    );
+    await _postDoc(postId).update(<String, Object?>{'viewCount': FieldValue.increment(1)});
+    await _counterShardRef(postId).set(<String, Object?>{'views': FieldValue.increment(1)}, SetOptions(merge: true));
   }
 
   Future<List<Board>> fetchBoards({bool includeHidden = false}) async {
@@ -518,8 +468,7 @@ class CommunityRepository {
       query = query.where('visibility', isEqualTo: BoardVisibility.public.name);
     }
     return query.snapshots().map(
-      (QuerySnapshot<JsonMap> snapshot) =>
-          snapshot.docs.map(Board.fromSnapshot).toList(growable: false),
+      (QuerySnapshot<JsonMap> snapshot) => snapshot.docs.map(Board.fromSnapshot).toList(growable: false),
     );
   }
 
@@ -529,10 +478,7 @@ class CommunityRepository {
     if (snapshot.exists) {
       await bookmarkDoc.delete();
     } else {
-      await bookmarkDoc.set(<String, Object?>{
-        'createdAt': Timestamp.now(),
-        'postId': postId,
-      });
+      await bookmarkDoc.set(<String, Object?>{'createdAt': Timestamp.now(), 'postId': postId});
     }
   }
 
@@ -541,10 +487,7 @@ class CommunityRepository {
     return snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toSet();
   }
 
-  Future<Set<String>> _fetchBookmarkedIds({
-    required String uid,
-    required List<String> postIds,
-  }) async {
+  Future<Set<String>> _fetchBookmarkedIds({required String uid, required List<String> postIds}) async {
     if (postIds.isEmpty) {
       return const <String>{};
     }
@@ -566,11 +509,7 @@ class CommunityRepository {
     return bookmarked;
   }
 
-  Future<List<Post>> searchPosts({
-    required String prefix,
-    int limit = 20,
-    String? currentUid,
-  }) async {
+  Future<List<Post>> searchPosts({required String prefix, int limit = 20, String? currentUid}) async {
     final String token = prefix.trim().toLowerCase();
     if (token.isEmpty) {
       return const <Post>[];
@@ -583,13 +522,14 @@ class CommunityRepository {
         .limit(limit);
 
     final QuerySnapshot<JsonMap> snapshot = await query.get();
-    final PaginatedQueryResult<Post> page =
-        await _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    final PaginatedQueryResult<Post> page = await _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
 
-    unawaited(_searchSuggestionRef.doc(token).set(<String, Object?>{
-      'count': FieldValue.increment(1),
-      'updatedAt': Timestamp.now(),
-    }, SetOptions(merge: true)));
+    unawaited(
+      _searchSuggestionRef.doc(token).set(<String, Object?>{
+        'count': FieldValue.increment(1),
+        'updatedAt': Timestamp.now(),
+      }, SetOptions(merge: true)),
+    );
 
     return page.items;
   }
@@ -609,15 +549,17 @@ class CommunityRepository {
     required String reporterUid,
     Map<String, Object?> metadata = const <String, Object?>{},
   }) async {
-    await _reportsRef.add(ContentReport(
-      id: '',
-      targetType: targetType,
-      targetId: targetId,
-      reason: reason,
-      reporterUid: reporterUid,
-      createdAt: DateTime.now(),
-      metadata: metadata,
-    ).toMap());
+    await _reportsRef.add(
+      ContentReport(
+        id: '',
+        targetType: targetType,
+        targetId: targetId,
+        reason: reason,
+        reporterUid: reporterUid,
+        createdAt: DateTime.now(),
+        metadata: metadata,
+      ).toMap(),
+    );
   }
 
   Future<PostMedia> uploadPostImage({
@@ -631,42 +573,30 @@ class CommunityRepository {
     int? width,
     int? height,
   }) async {
-    final Reference fileRef =
-        _storage.ref('post_images/$uid/$postId/$fileName');
+    final Reference fileRef = _storage.ref('post_images/$uid/$postId/$fileName');
     await fileRef.putData(bytes, SettableMetadata(contentType: contentType));
     final String url = await fileRef.getDownloadURL();
 
     String? thumbnailUrl;
     if (thumbnailBytes != null) {
       final Reference thumbRef = _storage.ref('post_images/$uid/$postId/thumb_$fileName');
-      await thumbRef.putData(
-        thumbnailBytes,
-        SettableMetadata(contentType: thumbnailContentType ?? contentType),
-      );
+      await thumbRef.putData(thumbnailBytes, SettableMetadata(contentType: thumbnailContentType ?? contentType));
       thumbnailUrl = await thumbRef.getDownloadURL();
     }
 
-    return PostMedia(
-      path: fileRef.fullPath,
-      url: url,
-      thumbnailUrl: thumbnailUrl,
-      width: width,
-      height: height,
-    );
+    return PostMedia(path: fileRef.fullPath, url: url, thumbnailUrl: thumbnailUrl, width: width, height: height);
   }
 
   Future<void> hidePost({required String postId}) async {
-    await _postDoc(postId).update(<String, Object?>{
-      'visibility': PostVisibility.hidden.name,
-      'updatedAt': Timestamp.now(),
-    });
+    await _postDoc(
+      postId,
+    ).update(<String, Object?>{'visibility': PostVisibility.hidden.name, 'updatedAt': Timestamp.now()});
   }
 
   Future<void> restorePost({required String postId}) async {
-    await _postDoc(postId).update(<String, Object?>{
-      'visibility': PostVisibility.public.name,
-      'updatedAt': Timestamp.now(),
-    });
+    await _postDoc(
+      postId,
+    ).update(<String, Object?>{'visibility': PostVisibility.public.name, 'updatedAt': Timestamp.now()});
   }
 
   Future<void> batchHidePosts(List<String> postIds) async {
@@ -690,19 +620,15 @@ class CommunityRepository {
     Set<String> bookmarkedIds = const <String>{};
 
     if (currentUid != null && docs.isNotEmpty) {
-      final List<String> postIds =
-          docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList(growable: false);
+      final List<String> postIds = docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList(growable: false);
       likedIds = await _fetchLikedPostIds(uid: currentUid, postIds: postIds);
       bookmarkedIds = await _fetchBookmarkedIds(uid: currentUid, postIds: postIds);
     }
 
     final List<Post> posts = docs
         .map(
-          (QueryDocumentSnapshot<JsonMap> doc) => Post.fromSnapshot(
-            doc,
-            isLiked: likedIds.contains(doc.id),
-            isBookmarked: bookmarkedIds.contains(doc.id),
-          ),
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Post.fromSnapshot(doc, isLiked: likedIds.contains(doc.id), isBookmarked: bookmarkedIds.contains(doc.id)),
         )
         .toList(growable: false);
 
@@ -711,10 +637,7 @@ class CommunityRepository {
     return PaginatedQueryResult<Post>(items: posts, hasMore: hasMore, lastDocument: last);
   }
 
-  Future<Set<String>> _fetchLikedPostIds({
-    required String uid,
-    required List<String> postIds,
-  }) async {
+  Future<Set<String>> _fetchLikedPostIds({required String uid, required List<String> postIds}) async {
     if (postIds.isEmpty) {
       return const <String>{};
     }
@@ -743,10 +666,9 @@ class CommunityRepository {
     final Set<String> likedIds = <String>{};
     final Iterable<List<String>> chunks = _chunk(commentIds, size: 10);
     for (final List<String> chunk in chunks) {
-      final QuerySnapshot<JsonMap> snapshot = await _commentLikesRef(postId)
-          .where('uid', isEqualTo: uid)
-          .where('commentId', whereIn: chunk)
-          .get();
+      final QuerySnapshot<JsonMap> snapshot = await _commentLikesRef(
+        postId,
+      ).where('uid', isEqualTo: uid).where('commentId', whereIn: chunk).get();
       likedIds.addAll(snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc['commentId'] as String));
     }
     return likedIds;
@@ -761,6 +683,127 @@ class CommunityRepository {
   Iterable<List<T>> _chunk<T>(List<T> items, {int size = 10}) sync* {
     for (int i = 0; i < items.length; i += size) {
       yield items.sublist(i, i + size > items.length ? items.length : i + size);
+    }
+  }
+
+  List<Post> _generateDummyPosts({int count = 10, String? forceSerial}) {
+    final Random random = Random();
+    final List<String> samples = <String>[
+      '공직 생활 팁 공유합니다. 오늘도 파이팅!',
+      '부서 협업 툴로 무엇을 쓰시나요? 의견 부탁드려요.',
+      '점심 뭐 드셨나요? 청사 근처 추천 좀...',
+      '주간 보고를 효율적으로 쓰는 법이 있을까요?',
+      '문서 템플릿 표준화에 동의하시나요?',
+      '업무 자동화 아이디어 나눠요.',
+      '신규 발령 부서 적응기 공유합니다.',
+      '이번 분기 목표 어떻게 세우셨나요?',
+      '출장 경비 정산 팁 모아봅시다.',
+      '내부 교육 추천 과정 있으신가요?',
+    ];
+
+    final List<String> serials = <String>['general', 'teacher', 'police', 'tax', 'fire'];
+
+    final List<Post> posts = <Post>[];
+    for (int i = 0; i < count; i += 1) {
+      final String id = 'dummy_${DateTime.now().millisecondsSinceEpoch}_${i}_${random.nextInt(9999)}';
+      final DateTime createdAt = DateTime.now().subtract(Duration(minutes: random.nextInt(120)));
+      final int likeCount = random.nextInt(50);
+      final int commentCount = random.nextInt(10);
+      final int viewCount = likeCount * 10 + random.nextInt(200);
+      final double hot = _hotScoreCalculator.calculate(
+        likeCount: likeCount,
+        commentCount: commentCount,
+        viewCount: viewCount,
+        createdAt: createdAt,
+      );
+      final String serial = forceSerial ?? serials[random.nextInt(serials.length)];
+      final String text = samples[random.nextInt(samples.length)];
+
+      posts.add(
+        Post(
+          id: id,
+          type: PostType.chirp,
+          audience: forceSerial == null ? PostAudience.all : PostAudience.serial,
+          serial: serial,
+          boardId: null,
+          authorUid: 'dummy_user',
+          authorNickname: '더미유저',
+          authorTrack: CareerTrack.none,
+          text: text,
+          media: const <PostMedia>[],
+          tags: const <String>[],
+          keywords: const <String>[],
+          likeCount: likeCount,
+          commentCount: commentCount,
+          viewCount: viewCount,
+          hotScore: hot,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+          visibility: PostVisibility.public,
+          topComment: null,
+          isLiked: false,
+          isBookmarked: false,
+        ),
+      );
+    }
+
+    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return posts;
+  }
+
+  Future<void> seedSamplePosts({
+    required String uid,
+    required String nickname,
+    required CareerTrack track,
+    required String serial,
+    int count = 12,
+  }) async {
+    final List<String> samples = <String>[
+      '오늘 업무 중 느낀 점을 공유해요. 같은 경험 있으신가요?',
+      '부서 내 협업을 더 잘하려면 무엇이 필요할까요?',
+      '점심 추천 부탁드립니다! 정부청사 근처 맛집 아시나요?',
+      '업무 자동화 아이디어를 모아봅시다.',
+      '정책 자료 정리 노하우 공유합니다.',
+      '회의가 많은 날엔 집중 시간이 부족하네요.',
+      '새로 발령받은 부서에 적응 중입니다.',
+      '문서 양식 표준화에 대한 의견이 궁금해요.',
+      '업무용 장비 교체 일정이 잡혔다고 합니다.',
+      '팀 내 코드 리뷰 문화를 만들어볼까 해요.',
+      '공유할만한 유용한 템플릿이 있으신가요?',
+      '이번 주간 보고 양식을 바꿔보려 합니다.',
+    ];
+
+    final Random random = Random();
+
+    for (int i = 0; i < count; i += 1) {
+      final String text = samples[random.nextInt(samples.length)];
+      final List<String> tags = <String>[
+        '업무',
+        '협업',
+        '문서',
+        '정책',
+      ].where((_) => random.nextBool()).take(2).toList(growable: false);
+
+      final Post post = await createPost(
+        type: PostType.chirp,
+        authorUid: uid,
+        authorNickname: nickname.isEmpty ? '시드봇' : nickname,
+        authorTrack: track,
+        text: text,
+        audience: random.nextBool() ? PostAudience.all : PostAudience.serial,
+        serial: serial.isEmpty ? (track == CareerTrack.none ? 'all' : track.name) : serial,
+        tags: tags,
+      );
+
+      final int comments = random.nextInt(3);
+      for (int c = 0; c < comments; c += 1) {
+        await createComment(
+          postId: post.id,
+          authorUid: uid,
+          authorNickname: nickname.isEmpty ? '시드봇' : nickname,
+          text: '댓글 ${c + 1}: $text',
+        );
+      }
     }
   }
 }

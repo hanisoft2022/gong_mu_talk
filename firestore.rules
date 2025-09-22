@@ -92,5 +92,68 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    // Community: posts
+    match /posts/{postId} {
+      // Public read of posts
+      allow get, list, read: if request.auth != null;
+
+      // Any authenticated user can create/update posts (author enforced in app)
+      allow create, update: if request.auth != null;
+      // No client deletes; use soft-delete via update
+      allow delete: if false;
+
+      // Post subcollections
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null;
+        allow delete: if false;
+      }
+
+      match /comment_likes/{docId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if request.auth != null;
+      }
+    }
+
+    // Likes (post likes stored top-level)
+    match /likes/{docId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Post counter shards
+    match /post_counters/{postId} {
+      match /shards/{shardId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if request.auth != null;
+      }
+    }
+
+    // Boards are public readable
+    match /boards/{boardId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Search suggestions increment
+    match /search_suggestions/{token} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // Content reports
+    match /reports/{reportId} {
+      allow read: if false;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // Bookmarks under users: owner only
+    match /users/{userId}/bookmarks/{postId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
