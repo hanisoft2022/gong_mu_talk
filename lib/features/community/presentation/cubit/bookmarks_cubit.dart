@@ -113,9 +113,14 @@ class BookmarksCubit extends Cubit<BookmarksState> {
 
     try {
       // Clear all bookmarks for current user
-      for (final post in originalBookmarks) {
-        await _repository.toggleBookmark(uid: _repository.currentUserId, postId: post.id);
-      }
+      await Future.wait(
+        originalBookmarks.map(
+          (Post post) => _repository.toggleBookmark(
+            uid: _repository.currentUserId,
+            postId: post.id,
+          ),
+        ),
+      );
     } catch (e) {
       // Revert on error
       emit(state.copyWith(

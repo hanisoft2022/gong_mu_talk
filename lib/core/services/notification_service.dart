@@ -66,17 +66,12 @@ class NotificationService {
       importance: Importance.defaultImportance,
     );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(likesChannel);
+    final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
+        _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(commentsChannel);
-
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(generalChannel);
+    await androidPlugin?.createNotificationChannel(likesChannel);
+    await androidPlugin?.createNotificationChannel(commentsChannel);
+    await androidPlugin?.createNotificationChannel(generalChannel);
   }
 
   Future<void> _initializeFirebaseMessaging() async {

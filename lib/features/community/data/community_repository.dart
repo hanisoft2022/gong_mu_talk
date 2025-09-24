@@ -38,6 +38,7 @@ class CommunityRepository {
   final FirebaseStorage _storage;
   final AuthCubit _authCubit;
   final UserProfileRepository _userProfileRepository;
+  final Random _random = Random();
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
   final HotScoreCalculator _hotScoreCalculator = const HotScoreCalculator();
   static const int _counterShardCount = 20;
@@ -302,16 +303,17 @@ class CommunityRepository {
         .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
         .toList(growable: false);
 
-    final List<Post> posts = <Post>[];
-    for (final String postId in postIds) {
-      final Post? post = await fetchPostById(postId, currentUid: uid);
-      if (post != null) {
-        posts.add(post);
-      }
-    }
-
     final bool hasMore = bookmarkSnapshot.docs.length == limit;
     final QueryDocumentSnapshot<JsonMap>? last = bookmarkSnapshot.docs.isEmpty ? null : bookmarkSnapshot.docs.last;
+
+    if (postIds.isEmpty) {
+      return PaginatedQueryResult<Post>(items: const <Post>[], hasMore: hasMore, lastDocument: last);
+    }
+
+    final List<Post?> fetchedPosts = await Future.wait(
+      postIds.map((String postId) => fetchPostById(postId, currentUid: uid)),
+    );
+    final List<Post> posts = fetchedPosts.whereType<Post>().toList(growable: false);
 
     return PaginatedQueryResult<Post>(items: posts, hasMore: hasMore, lastDocument: last);
   }
@@ -844,8 +846,7 @@ class CommunityRepository {
   }
 
   DocumentReference<JsonMap> _counterShardRef(String postId) {
-    final Random random = Random();
-    final int shardIndex = random.nextInt(_counterShardCount);
+    final int shardIndex = _random.nextInt(_counterShardCount);
     return _postCounterShard(postId).doc('shard_$shardIndex');
   }
 
@@ -856,7 +857,6 @@ class CommunityRepository {
   }
 
   List<Post> _generateDummyPosts({int count = 10, String? forceSerial}) {
-    final Random random = Random();
     final List<String> samples = <String>[
       '공직 생활 팁 공유합니다. 오늘도 파이팅!',
       '부서 협업 툴로 무엇을 쓰시나요? 의견 부탁드려요.',
@@ -874,19 +874,19 @@ class CommunityRepository {
 
     final List<Post> posts = <Post>[];
     for (int i = 0; i < count; i += 1) {
-      final String id = 'dummy_${DateTime.now().millisecondsSinceEpoch}_${i}_${random.nextInt(9999)}';
-      final DateTime createdAt = DateTime.now().subtract(Duration(minutes: random.nextInt(120)));
-      final int likeCount = random.nextInt(50);
-      final int commentCount = random.nextInt(10);
-      final int viewCount = likeCount * 10 + random.nextInt(200);
+      final String id = 'dummy_${DateTime.now().millisecondsSinceEpoch}_${i}_${_random.nextInt(9999)}';
+      final DateTime createdAt = DateTime.now().subtract(Duration(minutes: _random.nextInt(120)));
+      final int likeCount = _random.nextInt(50);
+      final int commentCount = _random.nextInt(10);
+      final int viewCount = likeCount * 10 + _random.nextInt(200);
       final double hot = _hotScoreCalculator.calculate(
         likeCount: likeCount,
         commentCount: commentCount,
         viewCount: viewCount,
         createdAt: createdAt,
       );
-      final String serial = forceSerial ?? serials[random.nextInt(serials.length)];
-      final String text = samples[random.nextInt(samples.length)];
+      final String serial = forceSerial ?? serials[_random.nextInt(serials.length)];
+      final String text = samples[_random.nextInt(samples.length)];
 
       posts.add(
         Post(
