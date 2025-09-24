@@ -1,122 +1,309 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../di/di.dart';
+import '../../data/community_repository.dart';
+import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../../profile/domain/career_track.dart';
 
-class PostCard extends StatelessWidget {
+class PostCard extends StatefulWidget {
   const PostCard({
     super.key,
     required this.post,
     required this.onToggleLike,
     required this.onToggleBookmark,
-    this.onTap,
     this.trailing,
   });
 
   final Post post;
   final VoidCallback onToggleLike;
   final VoidCallback onToggleBookmark;
-  final VoidCallback? onTap;
   final Widget? trailing;
 
   @override
+  State<PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<PostCard> {
+  bool _isExpanded = false;
+  bool _showComments = false;
+  bool _isLoadingComments = false;
+  bool _commentsLoaded = false;
+  List<Comment> _featuredComments = const <Comment>[];
+  List<Comment> _timelineComments = const <Comment>[];
+
+  CommunityRepository get _repository => getIt<CommunityRepository>();
+
+  @override
   Widget build(BuildContext context) {
+    final Post post = widget.post;
     final ThemeData theme = Theme.of(context);
     final String timestamp = _formatTimestamp(post.createdAt);
+    final bool showMoreButton = !_isExpanded && _shouldShowMore(post.text);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    foregroundColor: theme.colorScheme.primary,
-                    child: Text(post.authorNickname.substring(0, 1)),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
                   ),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          post.authorNickname,
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  trailing ?? IconButton(
-                    icon: Icon(
-                      post.isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-                      color: post.isBookmarked
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    onPressed: onToggleBookmark,
-                  ),
-                ],
-              ),
-              const Gap(14),
-              Text(
-                post.text,
-                style: theme.textTheme.bodyLarge,
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (post.tags.isNotEmpty) ...[
-                const Gap(10),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: -8,
-                  children: post.tags
-                      .map((String tag) => Chip(
-                            label: Text('#$tag'),
-                            visualDensity: VisualDensity.compact,
-                          ))
-                      .toList(growable: false),
+                  foregroundColor: theme.colorScheme.primary,
+                  child: Text(post.authorNickname.substring(0, 1)),
                 ),
-              ],
-              if (post.media.isNotEmpty) ...[
                 const Gap(12),
-                _PostMediaPreview(mediaList: post.media),
-              ],
-              if (post.topComment != null) ...[
-                const Gap(12),
-                _TopCommentPreview(comment: post.topComment!),
-              ],
-              const Gap(16),
-              Row(
-                children: [
-                  _PostActionButton(
-                    icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-                    label: '${post.likeCount}',
-                    isHighlighted: post.isLiked,
-                    onPressed: onToggleLike,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.authorNickname,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                  const Gap(16),
-                  _PostActionButton(
-                    icon: Icons.mode_comment_outlined,
-                    label: '${post.commentCount}',
-                    onPressed: onTap,
-                  ),
-                ],
+                ),
+                widget.trailing ??
+                    IconButton(
+                      icon: Icon(
+                        post.isBookmarked
+                            ? Icons.bookmark
+                            : Icons.bookmark_outline,
+                        color: post.isBookmarked
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: widget.onToggleBookmark,
+                    ),
+              ],
+            ),
+            const Gap(14),
+            Text(
+              post.text,
+              style: theme.textTheme.bodyLarge,
+              maxLines: _isExpanded ? null : 3,
+              overflow: _isExpanded ? null : TextOverflow.ellipsis,
+            ),
+            if (showMoreButton)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => setState(() => _isExpanded = true),
+                  child: const Text('더보기'),
+                ),
+              ),
+            if (post.tags.isNotEmpty) ...[
+              const Gap(10),
+              Wrap(
+                spacing: 6,
+                runSpacing: -8,
+                children: post.tags
+                    .map(
+                      (String tag) => Chip(
+                        label: Text('#$tag'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(growable: false),
               ),
             ],
-          ),
+            if (post.media.isNotEmpty) ...[
+              const Gap(12),
+              _PostMediaPreview(mediaList: post.media),
+            ],
+            const Gap(16),
+            Row(
+              children: [
+                _PostActionButton(
+                  icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
+                  label: '${post.likeCount}',
+                  isHighlighted: post.isLiked,
+                  onPressed: widget.onToggleLike,
+                ),
+                const Gap(16),
+                _PostActionButton(
+                  icon: Icons.mode_comment_outlined,
+                  label: '${post.commentCount}',
+                  onPressed: post.commentCount == 0
+                      ? null
+                      : () => _toggleComments(),
+                ),
+              ],
+            ),
+            if (_showComments) ...[
+              const Gap(12),
+              if (_isLoadingComments)
+                const Center(child: CircularProgressIndicator())
+              else if (_timelineComments.isEmpty)
+                Text(
+                  '아직 댓글이 없습니다. 첫 댓글을 남겨보세요!',
+                  style: theme.textTheme.bodyMedium,
+                )
+              else ...[
+                if (_featuredComments.isNotEmpty) ...[
+                  _FeaturedCommentTile(
+                    comment: _featuredComments.first,
+                    onToggleLike: _handleCommentLike,
+                  ),
+                  const Gap(12),
+                ],
+                ..._timelineComments.map(
+                  (Comment comment) => _CommentTile(
+                    comment: comment,
+                    highlight: _isFeatured(comment),
+                    onToggleLike: _handleCommentLike,
+                  ),
+                ),
+              ],
+            ],
+          ],
         ),
+      ),
+    );
+  }
+
+  bool _shouldShowMore(String text) {
+    if (text.trim().split('\n').length > 3) {
+      return true;
+    }
+    return text.trim().length > 120;
+  }
+
+  Future<void> _toggleComments() async {
+    if (_showComments) {
+      setState(() => _showComments = false);
+      return;
+    }
+
+    setState(() => _showComments = true);
+
+    if (_commentsLoaded || widget.post.commentCount == 0) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingComments = true;
+    });
+
+    try {
+      final Post post = widget.post;
+      if (_isSynthetic(post)) {
+        final List<Comment> syntheticTimeline = List<Comment>.generate(
+          post.previewComments.length,
+          (int index) => _fromCached(post, post.previewComments[index], index),
+        );
+        setState(() {
+          _featuredComments = syntheticTimeline.take(1).toList(growable: false);
+          _timelineComments = syntheticTimeline;
+          _commentsLoaded = true;
+          _isLoadingComments = false;
+        });
+        return;
+      }
+
+      final List<Comment> featured = await _repository.getTopComments(
+        widget.post.id,
+        limit: 1,
+      );
+      final List<Comment> timeline = await _repository.getComments(
+        widget.post.id,
+      );
+
+      final Set<String> featuredIds = featured
+          .map((Comment comment) => comment.id)
+          .toSet();
+      final List<Comment> mergedTimeline = timeline
+          .map((Comment comment) {
+            if (featuredIds.contains(comment.id)) {
+              return featured.firstWhere(
+                (Comment element) => element.id == comment.id,
+              );
+            }
+            return comment;
+          })
+          .toList(growable: false);
+
+      setState(() {
+        _featuredComments = featured;
+        _timelineComments = mergedTimeline;
+        _commentsLoaded = true;
+        _isLoadingComments = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingComments = false);
+    }
+  }
+
+  bool _isSynthetic(Post post) {
+    return post.id.startsWith('dummy_') || post.authorUid == 'dummy_user';
+  }
+
+  bool _isFeatured(Comment comment) {
+    return _featuredComments.any(
+      (Comment featured) => featured.id == comment.id,
+    );
+  }
+
+  Future<void> _handleCommentLike(Comment comment) async {
+    final bool willLike = !comment.isLiked;
+    final int nextCount = max(0, comment.likeCount + (willLike ? 1 : -1));
+
+    void updateLists(bool liked, int likeCount) {
+      _timelineComments = _timelineComments
+          .map(
+            (Comment c) => c.id == comment.id
+                ? c.copyWith(isLiked: liked, likeCount: likeCount)
+                : c,
+          )
+          .toList(growable: false);
+      _featuredComments = _featuredComments
+          .map(
+            (Comment c) => c.id == comment.id
+                ? c.copyWith(isLiked: liked, likeCount: likeCount)
+                : c,
+          )
+          .toList(growable: false);
+    }
+
+    setState(() => updateLists(willLike, nextCount));
+
+    if (_isSynthetic(widget.post)) {
+      return;
+    }
+
+    try {
+      await _repository.toggleCommentLikeById(widget.post.id, comment.id);
+    } catch (_) {
+      setState(() => updateLists(!willLike, comment.likeCount));
+    }
+  }
+
+  Comment _fromCached(Post post, CachedComment cached, int index) {
+    return Comment(
+      id: cached.id,
+      postId: post.id,
+      authorUid: 'preview',
+      authorNickname: cached.authorNickname,
+      text: cached.text,
+      likeCount: cached.likeCount,
+      createdAt: (post.updatedAt ?? post.createdAt).add(
+        Duration(minutes: index),
       ),
     );
   }
@@ -133,7 +320,216 @@ class PostCard extends StatelessWidget {
     if (difference.inHours < 24) {
       return '${difference.inHours}시간 전';
     }
-    return '${createdAt.month}월 ${createdAt.day}일 ${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+    return '${createdAt.month}월 ${createdAt.day}일';
+  }
+}
+
+class _FeaturedCommentTile extends StatelessWidget {
+  const _FeaturedCommentTile({
+    required this.comment,
+    required this.onToggleLike,
+  });
+
+  final Comment comment;
+  final ValueChanged<Comment> onToggleLike;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String timestamp = _formatTimestamp(comment.createdAt);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.local_fire_department_outlined,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const Gap(6),
+              Text(
+                '베스트 댓글',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(timestamp, style: theme.textTheme.bodySmall),
+            ],
+          ),
+          const Gap(10),
+          Text(
+            comment.authorNickname,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Gap(4),
+          Text(comment.text, style: theme.textTheme.bodyMedium),
+          const Gap(8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => onToggleLike(comment),
+              icon: Icon(
+                comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                size: 16,
+                color: comment.isLiked
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              label: Text(
+                '${comment.likeCount}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: comment.isLiked
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime createdAt) {
+    final DateTime now = DateTime.now();
+    final Duration difference = now.difference(createdAt);
+    if (difference.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    }
+    return '${createdAt.month}월 ${createdAt.day}일';
+  }
+}
+
+class _CommentTile extends StatelessWidget {
+  const _CommentTile({
+    required this.comment,
+    this.highlight = false,
+    required this.onToggleLike,
+  });
+
+  final Comment comment;
+  final bool highlight;
+  final ValueChanged<Comment> onToggleLike;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String timestamp = _formatTimestamp(comment.createdAt);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      decoration: highlight
+          ? BoxDecoration(
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.12,
+                ),
+                foregroundColor: theme.colorScheme.primary,
+                child: Text(comment.authorNickname.substring(0, 1)),
+              ),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      comment.authorNickname,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      timestamp,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => onToggleLike(comment),
+                icon: Icon(
+                  comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                  size: 16,
+                  color: comment.isLiked
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  '${comment.likeCount}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: comment.isLiked
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(8),
+          Text(comment.text, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime createdAt) {
+    final DateTime now = DateTime.now();
+    final Duration difference = now.difference(createdAt);
+    if (difference.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    }
+    return '${createdAt.month}월 ${createdAt.day}일';
   }
 }
 
@@ -153,16 +549,18 @@ class _PostActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color iconColor = isHighlighted ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final Color iconColor = isHighlighted
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
     return TextButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18, color: iconColor),
       label: Text(
         label,
-        style: Theme.of(context)
-            .textTheme
-            .labelLarge
-            ?.copyWith(color: iconColor, fontWeight: FontWeight.w600),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: iconColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -184,9 +582,12 @@ class _PostMediaPreview extends StatelessWidget {
           placeholder: (context, url) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             height: 180,
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
-          errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
+          errorWidget: (context, url, error) =>
+              const Icon(Icons.broken_image_outlined, size: 48),
           fit: BoxFit.cover,
         ),
       );
@@ -210,54 +611,14 @@ class _PostMediaPreview extends StatelessWidget {
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
-            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+            errorWidget: (context, url, error) =>
+                const Icon(Icons.broken_image_outlined),
           );
         },
-      ),
-    );
-  }
-}
-
-class _TopCommentPreview extends StatelessWidget {
-  const _TopCommentPreview({required this.comment});
-
-  final CachedComment comment;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.favorite_border, size: 18, color: theme.colorScheme.primary),
-          const Gap(8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  comment.authorNickname,
-                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const Gap(4),
-                Text(
-                  comment.text,
-                  style: theme.textTheme.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

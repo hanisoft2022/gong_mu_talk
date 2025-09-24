@@ -22,8 +22,8 @@ import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/board_catalog_cubit.dart';
-import '../features/blind/data/blind_repository.dart';
-import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
+import '../features/community/presentation/cubit/post_detail_cubit.dart';
+import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
@@ -35,19 +35,22 @@ Future<void> configureDependencies() async {
     return;
   }
 
-  final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+  final SharedPreferences sharedPreferences =
+      await SharedPreferences.getInstance();
 
   getIt
     ..registerLazySingleton<ThemeCubit>(ThemeCubit.new)
     ..registerLazySingleton<BootpayPaymentService>(BootpayPaymentService.new)
-    ..registerLazySingleton<GovernmentEmailRepository>(GovernmentEmailRepository.new)
+    ..registerLazySingleton<GovernmentEmailRepository>(
+      GovernmentEmailRepository.new,
+    )
     ..registerLazySingleton<FirebaseAuthRepository>(
-      () => FirebaseAuthRepository(
-        governmentEmailRepository: getIt(),
-      ),
+      () => FirebaseAuthRepository(governmentEmailRepository: getIt()),
     )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
-    ..registerLazySingleton<LoginSessionStore>(() => LoginSessionStore(sharedPreferences))
+    ..registerLazySingleton<LoginSessionStore>(
+      () => LoginSessionStore(sharedPreferences),
+    )
     ..registerLazySingleton<UserProfileRepository>(UserProfileRepository.new)
     ..registerLazySingleton<AuthCubit>(
       () => AuthCubit(
@@ -67,16 +70,14 @@ Future<void> configureDependencies() async {
     ..registerFactory<BoardCatalogCubit>(
       () => BoardCatalogCubit(repository: getIt()),
     )
-    ..registerLazySingleton<BlindRepository>(BlindRepository.new)
     ..registerFactory<MatchingCubit>(
       () => MatchingCubit(repository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<CommunityFeedCubit>(
       () => CommunityFeedCubit(repository: getIt(), authCubit: getIt()),
     )
-    ..registerFactory<BlindFeedCubit>(
-      () => BlindFeedCubit(repository: getIt()),
-    )
+    ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
+    ..registerFactory<SearchCubit>(() => SearchCubit(getIt()))
     ..registerLazySingleton<GoRouter>(createRouter)
     ..registerLazySingleton<SalaryCalculatorLocalDataSource>(
       () => SalaryCalculatorLocalDataSource(),

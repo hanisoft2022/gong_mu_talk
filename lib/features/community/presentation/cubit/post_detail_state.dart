@@ -7,6 +7,7 @@ class PostDetailState extends Equatable {
     this.status = PostDetailStatus.initial,
     this.post,
     this.comments = const [],
+    this.featuredComments = const [],
     this.isLoadingComments = false,
     this.isSubmittingComment = false,
     this.errorMessage,
@@ -15,6 +16,7 @@ class PostDetailState extends Equatable {
   final PostDetailStatus status;
   final Post? post;
   final List<Comment> comments;
+  final List<Comment> featuredComments;
   final bool isLoadingComments;
   final bool isSubmittingComment;
   final String? errorMessage;
@@ -23,6 +25,7 @@ class PostDetailState extends Equatable {
     PostDetailStatus? status,
     Post? post,
     List<Comment>? comments,
+    List<Comment>? featuredComments,
     bool? isLoadingComments,
     bool? isSubmittingComment,
     String? errorMessage,
@@ -31,6 +34,7 @@ class PostDetailState extends Equatable {
       status: status ?? this.status,
       post: post ?? this.post,
       comments: comments ?? this.comments,
+      featuredComments: featuredComments ?? this.featuredComments,
       isLoadingComments: isLoadingComments ?? this.isLoadingComments,
       isSubmittingComment: isSubmittingComment ?? this.isSubmittingComment,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -39,11 +43,12 @@ class PostDetailState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        post,
-        comments,
-        isLoadingComments,
-        isSubmittingComment,
-        errorMessage,
-      ];
+    status,
+    post,
+    comments,
+    featuredComments,
+    isLoadingComments,
+    isSubmittingComment,
+    errorMessage,
+  ];
 }

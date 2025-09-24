@@ -6,16 +6,18 @@ import '../app/app_shell.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/auth/presentation/views/auth_page.dart';
-import '../features/blind/presentation/cubit/blind_feed_cubit.dart';
-import '../features/blind/presentation/views/blind_feed_page.dart';
 import '../features/calculator/presentation/views/salary_calculator_page.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
+import '../features/community/presentation/cubit/post_detail_cubit.dart';
+import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
+import '../features/community/presentation/views/post_detail_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../features/matching/presentation/views/matching_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
+import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import 'router_refresh_stream.dart';
 
@@ -73,18 +75,6 @@ GoRouter createRouter() {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: BlindRoute.path,
-                name: BlindRoute.name,
-                builder: (context, state) => BlocProvider<BlindFeedCubit>(
-                  create: (_) => getIt<BlindFeedCubit>(),
-                  child: const BlindFeedPage(),
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: SalaryCalculatorRoute.path,
                 name: SalaryCalculatorRoute.name,
                 builder: (context, state) => const SalaryCalculatorPage(),
@@ -133,15 +123,34 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: PostCreateRoute.communityPath,
-        name: '${PostCreateRoute.name}-community',
-        builder: (context, state) => const PostCreatePage(postType: PostType.chirp),
+        path: '${CommunityRoute.postDetailPath}/:postId',
+        name: CommunityPostDetailRoute.name,
+        builder: (context, state) {
+          final String postId = state.pathParameters['postId']!;
+          final Post? initialPost = state.extra is Post
+              ? state.extra as Post
+              : null;
+          return BlocProvider<PostDetailCubit>(
+            create: (_) => getIt<PostDetailCubit>(),
+            child: PostDetailPage(postId: postId, initialPost: initialPost),
+          );
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: PostCreateRoute.blindPath,
-        name: '${PostCreateRoute.name}-blind',
-        builder: (context, state) => const PostCreatePage(postType: PostType.board),
+        path: CommunityRoute.searchPath,
+        name: CommunitySearchRoute.name,
+        builder: (context, state) => BlocProvider<SearchCubit>(
+          create: (_) => getIt<SearchCubit>(),
+          child: SearchPage(initialQuery: state.uri.queryParameters['q']),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: PostCreateRoute.communityPath,
+        name: '${PostCreateRoute.name}-community',
+        builder: (context, state) =>
+            const PostCreatePage(postType: PostType.chirp),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -191,6 +200,23 @@ class CommunityRoute {
   static const String path = '/community';
   static const String writePath = '$path/write';
   static const String editPath = '$path/post/edit';
+  static const String postDetailPath = '$path/post';
+  static const String searchPath = '$path/search';
+
+  static String postDetailPathWithId(String postId) =>
+      '$postDetailPath/$postId';
+}
+
+class CommunityPostDetailRoute {
+  const CommunityPostDetailRoute._();
+
+  static const String name = 'community-post-detail';
+}
+
+class CommunitySearchRoute {
+  const CommunitySearchRoute._();
+
+  static const String name = 'community-search';
 }
 
 class PostCreateRoute {
@@ -198,15 +224,6 @@ class PostCreateRoute {
 
   static const String name = 'post-create';
   static const String communityPath = CommunityRoute.writePath;
-  static const String blindPath = BlindRoute.writePath;
-}
-
-class BlindRoute {
-  const BlindRoute._();
-
-  static const String name = 'blind';
-  static const String path = '/blind';
-  static const String writePath = '$path/write';
 }
 
 class LoginRoute {
@@ -254,12 +271,10 @@ String _pathForBranch(String? branchParam) {
     case 0:
       return CommunityRoute.path;
     case 1:
-      return BlindRoute.path;
-    case 2:
       return SalaryCalculatorRoute.path;
-    case 3:
+    case 2:
       return PensionCalculatorRoute.path;
-    case 4:
+    case 3:
       return MatchingRoute.path;
     default:
       return CommunityRoute.path;

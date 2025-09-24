@@ -119,6 +119,7 @@ class Post extends Equatable {
     required this.updatedAt,
     required this.visibility,
     this.topComment,
+    this.previewComments = const <CachedComment>[],
     this.isLiked = false,
     this.isBookmarked = false,
   });
@@ -143,6 +144,7 @@ class Post extends Equatable {
   final DateTime? updatedAt;
   final PostVisibility visibility;
   final CachedComment? topComment;
+  final List<CachedComment> previewComments;
   final bool isLiked;
   final bool isBookmarked;
 
@@ -162,7 +164,9 @@ class Post extends Equatable {
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
       'text': text,
-      'media': media.map((PostMedia media) => media.toMap()).toList(growable: false),
+      'media': media
+          .map((PostMedia media) => media.toMap())
+          .toList(growable: false),
       'tags': tags,
       'keywords': keywords,
       'likeCount': likeCount,
@@ -170,19 +174,31 @@ class Post extends Equatable {
       'viewCount': viewCount,
       'hotScore': hotScore,
       'topComment': topComment?.toMap(),
+      'previewComments': previewComments
+          .map((CachedComment comment) => comment.toMap())
+          .toList(growable: false),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'visibility': visibility.name,
     };
   }
 
-  static Post fromSnapshot(DocumentSnapshot<Map<String, Object?>> snapshot, {bool isLiked = false, bool isBookmarked = false}) {
+  static Post fromSnapshot(
+    DocumentSnapshot<Map<String, Object?>> snapshot, {
+    bool isLiked = false,
+    bool isBookmarked = false,
+  }) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
       throw StateError('Post document ${snapshot.id} has no data');
     }
 
-    return fromMap(snapshot.id, data, isLiked: isLiked, isBookmarked: isBookmarked);
+    return fromMap(
+      snapshot.id,
+      data,
+      isLiked: isLiked,
+      isBookmarked: isBookmarked,
+    );
   }
 
   static Post fromMap(
@@ -214,6 +230,7 @@ class Post extends Equatable {
       topComment: CachedComment.fromMap(
         (data['topComment'] as Map<String, Object?>?)?.cast<String, Object?>(),
       ),
+      previewComments: _parseCachedCommentList(data['previewComments']),
       isLiked: isLiked,
       isBookmarked: isBookmarked,
     );
@@ -225,6 +242,7 @@ class Post extends Equatable {
     int? viewCount,
     double? hotScore,
     CachedComment? topComment,
+    List<CachedComment>? previewComments,
     bool? isLiked,
     bool? isBookmarked,
     PostVisibility? visibility,
@@ -250,6 +268,7 @@ class Post extends Equatable {
       updatedAt: updatedAt,
       visibility: visibility ?? this.visibility,
       topComment: topComment ?? this.topComment,
+      previewComments: previewComments ?? this.previewComments,
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
     );
@@ -312,6 +331,23 @@ class Post extends Equatable {
     return const <String>[];
   }
 
+  static List<CachedComment> _parseCachedCommentList(Object? raw) {
+    if (raw is Iterable) {
+      final List<CachedComment> comments = <CachedComment>[];
+      for (final Map<Object?, Object?> item
+          in raw.whereType<Map<Object?, Object?>>()) {
+        final CachedComment? comment = CachedComment.fromMap(
+          item.cast<String, Object?>(),
+        );
+        if (comment != null) {
+          comments.add(comment);
+        }
+      }
+      return comments;
+    }
+    return const <CachedComment>[];
+  }
+
   static DateTime? _parseTimestamp(Object? raw) {
     if (raw is Timestamp) {
       return raw.toDate();
@@ -355,6 +391,7 @@ class Post extends Equatable {
     updatedAt,
     visibility,
     topComment,
+    previewComments,
     isLiked,
     isBookmarked,
   ];

@@ -16,30 +16,53 @@ class PostDetailCubit extends Cubit<PostDetailState> {
 
   String get currentUserId => _repository.currentUserId;
 
-  Future<void> loadPost(String postId) async {
-    emit(state.copyWith(status: PostDetailStatus.loading));
+  Future<void> loadPost(String postId, {Post? fallback}) async {
+    if (fallback != null) {
+      emit(
+        state.copyWith(
+          status: PostDetailStatus.loaded,
+          post: fallback,
+          featuredComments: _buildFallbackFeaturedComments(fallback),
+          comments: _buildFallbackChronologicalComments(fallback),
+          isLoadingComments: false,
+        ),
+      );
+
+      if (_isDummyPost(fallback)) {
+        return;
+      }
+    } else {
+      emit(state.copyWith(status: PostDetailStatus.loading));
+    }
 
     try {
       final post = await _repository.getPost(postId);
       if (post == null) {
-        emit(state.copyWith(
-          status: PostDetailStatus.error,
-          errorMessage: '게시글을 찾을 수 없습니다.',
-        ));
+        if (fallback != null) {
+          return;
+        }
+        emit(
+          state.copyWith(
+            status: PostDetailStatus.error,
+            errorMessage: '게시글을 찾을 수 없습니다.',
+          ),
+        );
         return;
       }
 
-      emit(state.copyWith(
-        status: PostDetailStatus.loaded,
-        post: post,
-      ));
+      emit(state.copyWith(status: PostDetailStatus.loaded, post: post));
 
       await _loadComments(postId);
     } catch (e) {
-      emit(state.copyWith(
-        status: PostDetailStatus.error,
-        errorMessage: '게시글을 불러오는 중 오류가 발생했습니다.',
-      ));
+      if (fallback != null) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          status: PostDetailStatus.error,
+          errorMessage: '게시글을 불러오는 중 오류가 발생했습니다.',
+        ),
+      );
     }
   }
 
@@ -47,11 +70,31 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     emit(state.copyWith(isLoadingComments: true));
 
     try {
-      final comments = await _repository.getComments(postId);
-      emit(state.copyWith(
-        comments: comments,
-        isLoadingComments: false,
-      ));
+      final List<Comment> featured = await _repository.getTopComments(postId);
+      final List<Comment> timeline = await _repository.getComments(postId);
+
+      final Set<String> featuredIds = featured
+          .map((comment) => comment.id)
+          .toSet();
+      final List<Comment> mergedTimeline = timeline
+          .map((comment) {
+            if (featuredIds.contains(comment.id)) {
+              final Comment featuredMatch = featured.firstWhere(
+                (featuredComment) => featuredComment.id == comment.id,
+              );
+              return featuredMatch;
+            }
+            return comment;
+          })
+          .toList(growable: false);
+
+      emit(
+        state.copyWith(
+          featuredComments: featured,
+          comments: mergedTimeline,
+          isLoadingComments: false,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(isLoadingComments: false));
     }
@@ -110,10 +153,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
 
       // Update post comment count
       final updatedPost = post.copyWith(commentCount: post.commentCount + 1);
-      emit(state.copyWith(
-        post: updatedPost,
-        isSubmittingComment: false,
-      ));
+      emit(state.copyWith(post: updatedPost, isSubmittingComment: false));
 
       return true;
     } catch (e) {
@@ -131,7 +171,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     final comment = comments[index];
     final updatedComment = comment.copyWith(
       isLiked: !comment.isLiked,
-      likeCount: comment.isLiked ? comment.likeCount - 1 : comment.likeCount + 1,
+      likeCount: comment.isLiked
+          ? comment.likeCount - 1
+          : comment.likeCount + 1,
     );
 
     comments[index] = updatedComment;
@@ -178,5 +220,78 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     } catch (e) {
       // Handle error silently for now
     }
+  }
+
+  bool _isDummyPost(Post post) {
+    return post.id.startsWith('dummy_') || post.authorUid == 'dummy_user';
+  }
+
+  List<Comment> _buildFallbackFeaturedComments(Post post) {
+    if (post.previewComments.isNotEmpty) {
+      return post.previewComments
+          .take(3)
+          .map(
+            (CachedComment comment) => Comment(
+              id: comment.id,
+              postId: post.id,
+              authorUid: 'preview',
+              authorNickname: comment.authorNickname,
+              text: comment.text,
+              likeCount: comment.likeCount,
+              createdAt: post.updatedAt ?? post.createdAt,
+            ),
+          )
+          .toList(growable: false);
+    }
+
+    if (post.topComment != null) {
+      return <Comment>[
+        Comment(
+          id: post.topComment!.id,
+          postId: post.id,
+          authorUid: 'preview',
+          authorNickname: post.topComment!.authorNickname,
+          text: post.topComment!.text,
+          likeCount: post.topComment!.likeCount,
+          createdAt: post.updatedAt ?? post.createdAt,
+        ),
+      ];
+    }
+
+    return const <Comment>[];
+  }
+
+  List<Comment> _buildFallbackChronologicalComments(Post post) {
+    if (post.previewComments.isNotEmpty) {
+      return post.previewComments
+          .map(
+            (CachedComment comment) => Comment(
+              id: comment.id,
+              postId: post.id,
+              authorUid: 'preview',
+              authorNickname: comment.authorNickname,
+              text: comment.text,
+              likeCount: comment.likeCount,
+              createdAt: post.updatedAt ?? post.createdAt,
+            ),
+          )
+          .toList(growable: false);
+    }
+
+    if (post.topComment != null) {
+      return <Comment>[
+        Comment(
+          id: post.topComment!.id,
+          postId: post.id,
+          authorUid: 'preview',
+          authorNickname: post.topComment!.authorNickname,
+          text: post.topComment!.text,
+          likeCount: post.topComment!.likeCount,
+          createdAt: post.updatedAt ?? post.createdAt,
+        ),
+      ];
+    }
+
+    return const <Comment>[];
   }
 }

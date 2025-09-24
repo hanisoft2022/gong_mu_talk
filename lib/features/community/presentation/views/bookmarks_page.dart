@@ -33,7 +33,8 @@ class _BookmarksPageState extends State<BookmarksPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<BookmarksCubit>().loadMore();
     }
   }
@@ -78,7 +79,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
             onRefresh: () => context.read<BookmarksCubit>().refresh(),
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               itemCount: state.bookmarks.length + (state.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index >= state.bookmarks.length) {
@@ -91,16 +92,10 @@ class _BookmarksPageState extends State<BookmarksPage> {
                 final Post post = state.bookmarks[index];
                 return PostCard(
                   post: post,
-                  onToggleLike: () => context.read<BookmarksCubit>().toggleLike(post),
-                  onToggleBookmark: () => context.read<BookmarksCubit>().removeBookmark(post),
-                  onTap: () async {
-                    final cubit = context.read<BookmarksCubit>();
-                    final result = await context.push<bool>('/community/post/${post.id}');
-                    if (result == true && mounted) {
-                      // Post was deleted, refresh bookmarks
-                      cubit.refresh();
-                    }
-                  },
+                  onToggleLike: () =>
+                      context.read<BookmarksCubit>().toggleLike(post),
+                  onToggleBookmark: () =>
+                      context.read<BookmarksCubit>().removeBookmark(post),
                 );
               },
             ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../domain/models/post.dart';
 import '../../domain/models/search_suggestion.dart';
@@ -32,6 +31,8 @@ class _SearchPageState extends State<SearchPage> {
     } else {
       context.read<SearchCubit>().loadSuggestions();
     }
+
+    context.read<SearchCubit>().onQueryChanged(_searchController.text);
   }
 
   @override
@@ -44,7 +45,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<SearchCubit>().loadMore();
     }
   }
@@ -62,6 +64,8 @@ class _SearchPageState extends State<SearchPage> {
           ),
           textInputAction: TextInputAction.search,
           onSubmitted: (query) => _performSearch(query.trim()),
+          onChanged: (value) =>
+              context.read<SearchCubit>().onQueryChanged(value),
           autofocus: widget.initialQuery?.isEmpty ?? true,
         ),
         actions: [
@@ -69,60 +73,60 @@ class _SearchPageState extends State<SearchPage> {
             icon: const Icon(Icons.search),
             onPressed: () => _performSearch(_searchController.text.trim()),
           ),
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: _clearSearch,
-          ),
+          IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch),
         ],
       ),
       body: BlocBuilder<SearchCubit, SearchState>(
         builder: (context, state) {
-          if (state.isLoading && state.results.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+          final Widget content = _buildBody(state);
+          final Widget overlay = _buildAutocompleteOverlay(state);
+          if (overlay is SizedBox) {
+            return content;
+          }
+          return Stack(children: [content, overlay]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(SearchState state) {
+    if (state.isLoading && state.results.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.query.isEmpty) {
+      return _buildSuggestions(state.suggestions);
+    }
+
+    if (state.results.isEmpty && !state.isLoading) {
+      return _buildEmptyResults(state.query);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<SearchCubit>().refresh(),
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        itemCount: state.results.length + (state.hasMore ? 1 : 0) + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildResultsHeader(state.query, state.results.length);
           }
 
-          if (state.query.isEmpty) {
-            return _buildSuggestions(state.suggestions);
+          final int postIndex = index - 1;
+          if (postIndex >= state.results.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            );
           }
 
-          if (state.results.isEmpty && !state.isLoading) {
-            return _buildEmptyResults(state.query);
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => context.read<SearchCubit>().refresh(),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: state.results.length + (state.hasMore ? 1 : 0) + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return _buildResultsHeader(state.query, state.results.length);
-                }
-
-                final int postIndex = index - 1;
-                if (postIndex >= state.results.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                final Post post = state.results[postIndex];
-                return PostCard(
-                  post: post,
-                  onToggleLike: () => context.read<SearchCubit>().toggleLike(post),
-                  onToggleBookmark: () => context.read<SearchCubit>().toggleBookmark(post),
-                  onTap: () async {
-                    final cubit = context.read<SearchCubit>();
-                    final result = await context.push<bool>('/community/post/${post.id}');
-                    if (result == true && mounted) {
-                      cubit.refresh();
-                    }
-                  },
-                );
-              },
-            ),
+          final Post post = state.results[postIndex];
+          return PostCard(
+            post: post,
+            onToggleLike: () => context.read<SearchCubit>().toggleLike(post),
+            onToggleBookmark: () =>
+                context.read<SearchCubit>().toggleBookmark(post),
           );
         },
       ),
@@ -154,9 +158,9 @@ class _SearchPageState extends State<SearchPage> {
             const Gap(8),
             Text(
               '인기 검색어',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -188,10 +192,7 @@ class _SearchPageState extends State<SearchPage> {
               textAlign: TextAlign.center,
             ),
             const Gap(8),
-            const Text(
-              '다른 검색어로 시도해보세요.',
-              textAlign: TextAlign.center,
-            ),
+            const Text('다른 검색어로 시도해보세요.', textAlign: TextAlign.center),
             const Gap(24),
             FilledButton.icon(
               onPressed: _clearSearch,
@@ -199,6 +200,49 @@ class _SearchPageState extends State<SearchPage> {
               label: const Text('새로 검색'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAutocompleteOverlay(SearchState state) {
+    final List<String> suggestions = state.autocomplete;
+    final String draft = state.draftQuery.trim();
+    if (suggestions.isEmpty || draft.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      top: 12,
+      left: 16,
+      right: 16,
+      child: Material(
+        elevation: 6,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 240),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: suggestions.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final String token = suggestions[index];
+              return ListTile(
+                leading: const Icon(Icons.search),
+                title: Text(token),
+                onTap: () {
+                  _searchController
+                    ..text = token
+                    ..selection = TextSelection.fromPosition(
+                      TextPosition(offset: token.length),
+                    );
+                  context.read<SearchCubit>().onQueryChanged(token);
+                  _performSearch(token);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -240,7 +284,11 @@ class _SearchPageState extends State<SearchPage> {
     if (query.isEmpty) return;
 
     _searchController.text = query;
+    _searchController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _searchController.text.length),
+    );
     context.read<SearchCubit>().search(query);
+    FocusScope.of(context).unfocus();
   }
 
   void _clearSearch() {

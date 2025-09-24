@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gong_mu_talk/routing/app_router.dart';
 
 import '../../domain/models/comment.dart';
+import '../../domain/models/post.dart';
 import '../cubit/post_detail_cubit.dart';
 import '../widgets/post_card.dart';
 
 class PostDetailPage extends StatefulWidget {
-  const PostDetailPage({super.key, required this.postId});
+  const PostDetailPage({super.key, required this.postId, this.initialPost});
 
   final String postId;
+  final Post? initialPost;
 
   @override
   State<PostDetailPage> createState() => _PostDetailPageState();
@@ -25,7 +28,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
     super.initState();
     _commentController = TextEditingController();
     _scrollController = ScrollController();
-    context.read<PostDetailCubit>().loadPost(widget.postId);
+    context.read<PostDetailCubit>().loadPost(
+      widget.postId,
+      fallback: widget.initialPost,
+    );
   }
 
   @override
@@ -69,14 +75,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
           if (state.status == PostDetailStatus.error) {
             return _ErrorView(
               message: state.errorMessage ?? '게시글을 불러올 수 없습니다.',
-              onRetry: () => context.read<PostDetailCubit>().loadPost(widget.postId),
+              onRetry: () =>
+                  context.read<PostDetailCubit>().loadPost(widget.postId),
             );
           }
 
           if (state.post == null) {
-            return const Center(
-              child: Text('게시글을 찾을 수 없습니다.'),
-            );
+            return const Center(child: Text('게시글을 찾을 수 없습니다.'));
           }
 
           return Column(
@@ -90,12 +95,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     children: [
                       PostCard(
                         post: state.post!,
-                        onToggleLike: () => context.read<PostDetailCubit>().toggleLike(),
-                        onToggleBookmark: () => context.read<PostDetailCubit>().toggleBookmark(),
+                        onToggleLike: () =>
+                            context.read<PostDetailCubit>().toggleLike(),
+                        onToggleBookmark: () =>
+                            context.read<PostDetailCubit>().toggleBookmark(),
                         trailing: PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
                           itemBuilder: (context) => [
-                            if (state.post!.authorUid == context.read<PostDetailCubit>().currentUserId) ...[
+                            if (state.post!.authorUid ==
+                                context
+                                    .read<PostDetailCubit>()
+                                    .currentUserId) ...[
                               const PopupMenuItem(
                                 value: 'edit',
                                 child: ListTile(
@@ -136,10 +146,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                       const Gap(24),
                       _CommentsSection(
-                        comments: state.comments,
+                        featuredComments: state.featuredComments,
+                        timelineComments: state.comments,
                         isLoading: state.isLoadingComments,
-                        onToggleLike: (commentId) =>
-                            context.read<PostDetailCubit>().toggleCommentLike(commentId),
+                        onToggleLike: (commentId) => context
+                            .read<PostDetailCubit>()
+                            .toggleCommentLike(commentId),
                       ),
                     ],
                   ),
@@ -200,9 +212,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
             onPressed: () async {
               final navigator = Navigator.of(context);
               if (mounted) navigator.pop();
-              final success = await context.read<PostDetailCubit>().deletePost();
+              final success = await context
+                  .read<PostDetailCubit>()
+                  .deletePost();
               if (success && mounted) {
-                navigator.pop(true); // Return to previous page with success flag
+                navigator.pop(
+                  true,
+                ); // Return to previous page with success flag
               }
             },
             child: const Text('삭제'),
@@ -247,7 +263,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('사용자 차단'),
-        content: const Text('이 사용자를 차단하시겠습니까?\n차단하면 해당 사용자의 게시글과 댓글을 볼 수 없습니다.'),
+        content: const Text(
+          '이 사용자를 차단하시겠습니까?\n차단하면 해당 사용자의 게시글과 댓글을 볼 수 없습니다.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -276,19 +294,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
   void _navigateToEdit() {
     final state = context.read<PostDetailCubit>().state;
     if (state.post != null) {
-      context.push('/community/post/edit/${state.post!.id}');
+      context.push('${CommunityRoute.editPath}/${state.post!.id}');
     }
   }
 }
 
 class _CommentsSection extends StatelessWidget {
   const _CommentsSection({
-    required this.comments,
+    required this.featuredComments,
+    required this.timelineComments,
     required this.isLoading,
     required this.onToggleLike,
   });
 
-  final List<Comment> comments;
+  final List<Comment> featuredComments;
+  final List<Comment> timelineComments;
   final bool isLoading;
   final void Function(String commentId) onToggleLike;
 
@@ -306,17 +326,17 @@ class _CommentsSection extends StatelessWidget {
             ),
             const Gap(8),
             Text(
-              '댓글 ${comments.length}개',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              '댓글 ${timelineComments.length}',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
         const Gap(16),
         if (isLoading) ...[
           const Center(child: CircularProgressIndicator()),
-        ] else if (comments.isEmpty) ...[
+        ] else if (timelineComments.isEmpty) ...[
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32),
             alignment: Alignment.center,
@@ -336,7 +356,14 @@ class _CommentsSection extends StatelessWidget {
             ),
           ),
         ] else ...[
-          ...comments.map(
+          if (featuredComments.isNotEmpty) ...[
+            _FeaturedCommentsSection(
+              comments: featuredComments,
+              onToggleLike: onToggleLike,
+            ),
+            const Gap(16),
+          ],
+          ...timelineComments.map(
             (comment) => _CommentTile(
               comment: comment,
               onToggleLike: () => onToggleLike(comment.id),
@@ -348,22 +375,85 @@ class _CommentsSection extends StatelessWidget {
   }
 }
 
+class _FeaturedCommentsSection extends StatelessWidget {
+  const _FeaturedCommentsSection({
+    required this.comments,
+    required this.onToggleLike,
+  });
+
+  final List<Comment> comments;
+  final void Function(String commentId) onToggleLike;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Set<String> rendered = <String>{};
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '베스트 댓글',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Gap(12),
+          ...comments
+              .where((comment) {
+                if (rendered.contains(comment.id)) {
+                  return false;
+                }
+                rendered.add(comment.id);
+                return true;
+              })
+              .map(
+                (comment) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CommentTile(
+                    comment: comment,
+                    onToggleLike: () => onToggleLike(comment.id),
+                    highlight: true,
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CommentTile extends StatelessWidget {
   const _CommentTile({
     required this.comment,
     required this.onToggleLike,
+    this.highlight = false,
   });
 
   final Comment comment;
   final VoidCallback onToggleLike;
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timestamp = _formatTimestamp(comment.createdAt);
 
-    return Padding(
+    return Container(
       padding: const EdgeInsets.only(bottom: 16),
+      margin: highlight ? const EdgeInsets.only(bottom: 4) : EdgeInsets.zero,
+      decoration: highlight
+          ? BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -396,17 +486,16 @@ class _CommentTile extends StatelessWidget {
                   ],
                 ),
                 const Gap(4),
-                Text(
-                  comment.text,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text(comment.text, style: theme.textTheme.bodyMedium),
                 const Gap(8),
                 Row(
                   children: [
                     TextButton.icon(
                       onPressed: onToggleLike,
                       icon: Icon(
-                        comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                        comment.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
                         size: 16,
                         color: comment.isLiked
                             ? Colors.red
@@ -418,7 +507,10 @@ class _CommentTile extends StatelessWidget {
                       ),
                       style: TextButton.styleFrom(
                         minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
@@ -512,7 +604,10 @@ class _CommentComposerState extends State<_CommentComposer> {
               decoration: const InputDecoration(
                 hintText: '댓글을 입력하세요...',
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               maxLines: null,
               textInputAction: TextInputAction.newline,
@@ -521,7 +616,9 @@ class _CommentComposerState extends State<_CommentComposer> {
           ),
           const Gap(12),
           FilledButton(
-            onPressed: _canSubmit && !widget.isSubmitting ? widget.onSubmit : null,
+            onPressed: _canSubmit && !widget.isSubmitting
+                ? widget.onSubmit
+                : null,
             child: widget.isSubmitting
                 ? const SizedBox(
                     width: 16,
@@ -537,10 +634,7 @@ class _CommentComposerState extends State<_CommentComposer> {
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

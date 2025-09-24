@@ -108,7 +108,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                       segments: const [
                         ButtonSegment<PostType>(
                           value: PostType.chirp,
-                          label: Text('쫑알쫑알'),
+                          label: Text('라운지'),
                           icon: Icon(Icons.bubble_chart_outlined),
                         ),
                         ButtonSegment<PostType>(

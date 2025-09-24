@@ -76,12 +76,7 @@ class AppShell extends StatelessWidget {
                 NavigationDestination(
                   icon: Icon(Icons.forum_outlined),
                   selectedIcon: Icon(Icons.forum),
-                  label: '쫑알쫑알',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.visibility_outlined),
-                  selectedIcon: Icon(Icons.visibility),
-                  label: '블라인드',
+                  label: '라운지',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.calculate_outlined),
@@ -109,14 +104,12 @@ class AppShell extends StatelessWidget {
   String _titleForIndex(int index) {
     switch (index) {
       case 0:
-        return '쫑알쫑알';
+        return '라운지';
       case 1:
-        return '블라인드 커뮤니티';
-      case 2:
         return '나의 월급';
-      case 3:
+      case 2:
         return '연금 계산 서비스';
-      case 4:
+      case 3:
         return '매칭';
       default:
         return '공무톡';

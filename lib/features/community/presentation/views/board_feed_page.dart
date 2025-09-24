@@ -70,7 +70,8 @@ class _BoardFeedViewState extends State<_BoardFeedView> {
       appBar: AppBar(
         title: BlocBuilder<BoardFeedCubit, BoardFeedState>(
           builder: (context, state) {
-            final String title = state.board?.name ?? widget.defaultBoard?.name ?? '게시판';
+            final String title =
+                state.board?.name ?? widget.defaultBoard?.name ?? '게시판';
             return Text(title);
           },
         ),
@@ -98,7 +99,10 @@ class _BoardFeedViewState extends State<_BoardFeedView> {
                 onRefresh: () => context.read<BoardFeedCubit>().refresh(),
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 16,
+                  ),
                   itemCount: state.posts.length + (state.hasMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index >= state.posts.length) {
@@ -110,16 +114,10 @@ class _BoardFeedViewState extends State<_BoardFeedView> {
                     final Post post = state.posts[index];
                     return PostCard(
                       post: post,
-                      onToggleLike: () => context.read<BoardFeedCubit>().toggleLike(post),
-                      onToggleBookmark: () => context.read<BoardFeedCubit>().toggleBookmark(post),
-                      onTap: () {
-                        context.read<BoardFeedCubit>().incrementViewCount(post.id);
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            const SnackBar(content: Text('게시판 상세는 곧 제공될 예정입니다.')),
-                          );
-                      },
+                      onToggleLike: () =>
+                          context.read<BoardFeedCubit>().toggleLike(post),
+                      onToggleBookmark: () =>
+                          context.read<BoardFeedCubit>().toggleBookmark(post),
                     );
                   },
                 ),
@@ -183,9 +181,16 @@ class _BoardFeedEmptyView extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.chat_outlined, size: 56, color: theme.colorScheme.primary),
+              Icon(
+                Icons.chat_outlined,
+                size: 56,
+                color: theme.colorScheme.primary,
+              ),
               const Gap(12),
-              Text('$boardName 게시판이 아직 조용해요!', style: theme.textTheme.titleMedium),
+              Text(
+                '$boardName 게시판이 아직 조용해요!',
+                style: theme.textTheme.titleMedium,
+              ),
               const Gap(8),
               Text(
                 '첫 번째 글을 작성해 동료들과 이야기를 시작해보세요.',

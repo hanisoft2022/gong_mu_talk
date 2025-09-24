@@ -301,7 +301,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       emit(state.copyWith(boards: boards));
     } catch (_) {
       // Silently ignore board load failures to avoid showing a global snackbar
-      // when the composer opens in '쫑알쫑알' mode. The board selector UI will
+      // when the composer opens in '라운지' mode. The board selector UI will
       // handle empty lists gracefully.
       emit(state.copyWith(boards: const <Board>[], errorMessage: null));
     }
