@@ -159,14 +159,21 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     try {
-      await _userProfileRepository.updateProfileFields(
+      final String serial =
+          track == CareerTrack.none ? 'unknown' : track.name;
+      final UserProfile profile = await _userProfileRepository.updateProfileFields(
         uid: uid,
         careerTrack: track,
+        serial: serial,
       );
+
+      _applyProfile(profile);
+
+      final String message = track == CareerTrack.none
+          ? '직렬 설정이 초기화되었습니다.'
+          : '직렬이 ${track.displayName}로 설정되었습니다.';
       emit(
-        state.copyWith(
-          lastMessage: '직렬이 ${track.displayName}로 설정되었습니다.',
-        ),
+        state.copyWith(lastMessage: message),
       );
     } catch (_) {
       emit(state.copyWith(lastMessage: '직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.'));

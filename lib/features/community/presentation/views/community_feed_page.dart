@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/routing/app_router.dart';
 
 import '../../../profile/domain/career_track.dart';
+import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
+import '../widgets/inline_post_composer.dart';
 import '../widgets/post_card.dart';
 
 class CommunityFeedPage extends StatefulWidget {
@@ -44,166 +46,106 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              const Gap(8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child:
-                          BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-                            builder: (context, state) {
-                              return SegmentedButton<CommunityFeedTab>(
-                                segments: const [
-                                  ButtonSegment<CommunityFeedTab>(
-                                    value: CommunityFeedTab.all,
-                                    label: Text('전체'),
-                                    icon: Icon(Icons.public_outlined),
-                                  ),
-                                  ButtonSegment<CommunityFeedTab>(
-                                    value: CommunityFeedTab.serial,
-                                    label: Text('직렬별'),
-                                    icon: Icon(Icons.group_outlined),
-                                  ),
-                                  ButtonSegment<CommunityFeedTab>(
-                                    value: CommunityFeedTab.hot,
-                                    label: Text('인기'),
-                                    icon: Icon(
-                                      Icons.local_fire_department_outlined,
-                                    ),
-                                  ),
-                                ],
-                                selected: <CommunityFeedTab>{state.tab},
-                                onSelectionChanged: (selection) {
-                                  context.read<CommunityFeedCubit>().changeTab(
-                                    selection.first,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                    ),
-                    const Gap(12),
-                    IconButton(
-                      tooltip: '검색',
-                      onPressed: () => context.push(CommunityRoute.searchPath),
-                      icon: const Icon(Icons.search),
-                    ),
-                    const Gap(8),
-                    IconButton(
-                      tooltip: '게시판 보기',
-                      onPressed: () => _openBoardList(context),
-                      icon: const Icon(Icons.view_list_outlined),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(8),
-              Expanded(
-                child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-                  builder: (context, state) {
-                    switch (state.status) {
-                      case CommunityFeedStatus.initial:
-                      case CommunityFeedStatus.loading:
-                        return const Center(child: CircularProgressIndicator());
-                      case CommunityFeedStatus.error:
-                        return _CommunityErrorView(
-                          message: state.errorMessage,
-                          onRetry: () =>
-                              context.read<CommunityFeedCubit>().loadInitial(),
-                        );
-                      case CommunityFeedStatus.loaded:
-                      case CommunityFeedStatus.refreshing:
-                        if (state.tab == CommunityFeedTab.serial &&
-                            (state.careerTrack == CareerTrack.none ||
-                                state.serial == 'unknown')) {
-                          return _EmptyStateView(
-                            icon: Icons.group_add_outlined,
-                            title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
-                            message: '마이페이지에서 직렬과 소속 정보를 설정해주세요.',
-                            onRefresh: () =>
-                                context.read<CommunityFeedCubit>().refresh(),
-                          );
-                        }
+      body: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+        builder: (context, state) {
+          if ((state.status == CommunityFeedStatus.initial ||
+                  state.status == CommunityFeedStatus.loading) &&
+              state.posts.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                        if (state.posts.isEmpty) {
-                          return _EmptyStateView(
-                            icon: Icons.chat_bubble_outline,
-                            title: '아직 게시물이 없습니다.',
-                            message: '첫 번째 글을 올려 동료 공무원과 이야기를 시작해보세요!',
-                            onRefresh: () =>
-                                context.read<CommunityFeedCubit>().refresh(),
-                          );
-                        }
+          if (state.status == CommunityFeedStatus.error &&
+              state.posts.isEmpty) {
+            return _CommunityErrorView(
+              message: state.errorMessage,
+              onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
+            );
+          }
 
-                        return RefreshIndicator(
-                          onRefresh: () =>
-                              context.read<CommunityFeedCubit>().refresh(),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            itemCount:
-                                state.posts.length + (state.hasMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index >= state.posts.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              }
-                              final Post post = state.posts[index];
-                              return PostCard(
-                                post: post,
-                                onToggleLike: () => context
-                                    .read<CommunityFeedCubit>()
-                                    .toggleLike(post),
-                                onToggleBookmark: () => context
-                                    .read<CommunityFeedCubit>()
-                                    .toggleBookmark(post),
-                              );
-                            },
-                          ),
-                        );
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-          Positioned(
-            bottom: 24,
-            right: 16,
-            child: FloatingActionButton.extended(
-              heroTag: "community_fab",
-              onPressed: () => _openComposer(context),
-              icon: const Icon(Icons.edit_square),
-              label: const Text('글 작성'),
+          return RefreshIndicator(
+            onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
+            child: ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+              children: _buildFeedChildren(context, state),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _openComposer(BuildContext context) async {
-    final bool? published = await context.push<bool>('/community/write');
-    if (published == true && context.mounted) {
-      await context.read<CommunityFeedCubit>().refresh();
-    }
-  }
-
   void _openBoardList(BuildContext context) {
     context.push('/community/boards');
+  }
+
+  List<Widget> _buildFeedChildren(
+    BuildContext context,
+    CommunityFeedState state,
+  ) {
+    final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
+    final bool hasSerialAccess =
+        state.careerTrack != CareerTrack.none && state.serial != 'unknown';
+    final bool showSerialGuide =
+        state.scope == LoungeScope.serial && !hasSerialAccess;
+    final bool showEmptyPosts = state.posts.isEmpty && !showSerialGuide;
+
+    final List<Widget> children = <Widget>[
+      _FeedHeader(
+        scope: state.scope,
+        sort: state.sort,
+        hasSerialAccess: hasSerialAccess,
+        onScopeChanged: cubit.changeScope,
+        onSortSelected: cubit.changeSort,
+        onSearchTap: () => context.push(CommunityRoute.searchPath),
+        onBoardTap: () => _openBoardList(context),
+      ),
+      const Gap(12),
+      const InlinePostComposer(),
+      const Gap(16),
+    ];
+
+    if (showSerialGuide) {
+      children.add(
+        _EmptyStateView(
+          icon: Icons.group_add_outlined,
+          title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
+          message: '마이페이지에서 직렬과 소속 정보를 설정해주세요.',
+          onRefresh: () => cubit.refresh(),
+        ),
+      );
+    } else if (showEmptyPosts) {
+      children.add(
+        _EmptyStateView(
+          icon: Icons.chat_bubble_outline,
+          title: '아직 게시물이 없습니다.',
+          message: '첫 번째 글을 올려 동료 공무원과 이야기를 시작해보세요!',
+          onRefresh: () => cubit.refresh(),
+        ),
+      );
+    } else {
+      for (final Post post in state.posts) {
+        children.add(
+          PostCard(
+            post: post,
+            onToggleLike: () => cubit.toggleLike(post),
+            onToggleBookmark: () => cubit.toggleBookmark(post),
+          ),
+        );
+      }
+    }
+
+    if (state.isLoadingMore) {
+      children.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    return children;
   }
 }
 
@@ -246,6 +188,117 @@ class _CommunityErrorView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FeedHeader extends StatelessWidget {
+  const _FeedHeader({
+    required this.scope,
+    required this.sort,
+    required this.hasSerialAccess,
+    required this.onScopeChanged,
+    required this.onSortSelected,
+    required this.onSearchTap,
+    required this.onBoardTap,
+  });
+
+  final LoungeScope scope;
+  final LoungeSort sort;
+  final bool hasSerialAccess;
+  final ValueChanged<LoungeScope> onScopeChanged;
+  final ValueChanged<LoungeSort> onSortSelected;
+  final VoidCallback onSearchTap;
+  final VoidCallback onBoardTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: SegmentedButton<LoungeScope>(
+                segments: [
+                  const ButtonSegment<LoungeScope>(
+                    value: LoungeScope.all,
+                    label: Text('전체'),
+                    icon: Icon(Icons.public_outlined),
+                  ),
+                  ButtonSegment<LoungeScope>(
+                    value: LoungeScope.serial,
+                    label: const Text('내 직렬'),
+                    icon: const Icon(Icons.group_outlined),
+                    enabled: hasSerialAccess,
+                  ),
+                ],
+                selected: <LoungeScope>{scope},
+                onSelectionChanged: (selection) {
+                  onScopeChanged(selection.first);
+                },
+              ),
+            ),
+            const Gap(12),
+            IconButton(
+              tooltip: '검색',
+              onPressed: onSearchTap,
+              icon: const Icon(Icons.search),
+            ),
+            const Gap(8),
+            IconButton(
+              tooltip: '게시판 보기',
+              onPressed: onBoardTap,
+              icon: const Icon(Icons.view_list_outlined),
+            ),
+          ],
+        ),
+        const Gap(12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: PopupMenuButton<LoungeSort>(
+            tooltip: '정렬 방법',
+            initialValue: sort,
+            onSelected: onSortSelected,
+            itemBuilder: (context) {
+              return LoungeSort.values.map((LoungeSort option) {
+                final bool isSelected = option == sort;
+                return PopupMenuItem<LoungeSort>(
+                  value: option,
+                  child: Row(
+                    children: [
+                      if (isSelected)
+                        Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
+                      else
+                        const SizedBox(width: 18),
+                      const Gap(8),
+                      Text(option.label),
+                    ],
+                  ),
+                );
+              }).toList(growable: false);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tune, size: 18),
+                  const Gap(6),
+                  Text(sort.label, style: theme.textTheme.labelLarge),
+                  const Gap(2),
+                  const Icon(Icons.arrow_drop_down, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

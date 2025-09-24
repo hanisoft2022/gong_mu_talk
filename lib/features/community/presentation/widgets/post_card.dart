@@ -144,6 +144,12 @@ class _PostCardState extends State<PostCard> {
                       ? null
                       : () => _toggleComments(),
                 ),
+                const Gap(16),
+                _PostActionButton(
+                  icon: Icons.visibility_outlined,
+                  label: '${post.viewCount}',
+                  onPressed: null,
+                ),
               ],
             ),
             if (_showComments) ...[

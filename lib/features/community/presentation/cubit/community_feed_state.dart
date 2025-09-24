@@ -2,13 +2,12 @@ part of 'community_feed_cubit.dart';
 
 enum CommunityFeedStatus { initial, loading, loaded, refreshing, error }
 
-enum CommunityFeedTab { all, serial, hot }
-
 class CommunityFeedState extends Equatable {
   const CommunityFeedState({
     this.status = CommunityFeedStatus.initial,
     this.posts = const <Post>[],
-    this.tab = CommunityFeedTab.all,
+    this.scope = LoungeScope.all,
+    this.sort = LoungeSort.latest,
     this.hasMore = true,
     this.isLoadingMore = false,
     this.errorMessage,
@@ -20,7 +19,8 @@ class CommunityFeedState extends Equatable {
 
   final CommunityFeedStatus status;
   final List<Post> posts;
-  final CommunityFeedTab tab;
+  final LoungeScope scope;
+  final LoungeSort sort;
   final bool hasMore;
   final bool isLoadingMore;
   final String? errorMessage;
@@ -32,7 +32,8 @@ class CommunityFeedState extends Equatable {
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
     List<Post>? posts,
-    CommunityFeedTab? tab,
+    LoungeScope? scope,
+    LoungeSort? sort,
     bool? hasMore,
     bool? isLoadingMore,
     String? errorMessage,
@@ -44,7 +45,8 @@ class CommunityFeedState extends Equatable {
     return CommunityFeedState(
       status: status ?? this.status,
       posts: posts ?? this.posts,
-      tab: tab ?? this.tab,
+      scope: scope ?? this.scope,
+      sort: sort ?? this.sort,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -59,7 +61,8 @@ class CommunityFeedState extends Equatable {
   List<Object?> get props => <Object?>[
     status,
     posts,
-    tab,
+    scope,
+    sort,
     hasMore,
     isLoadingMore,
     errorMessage,

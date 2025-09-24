@@ -7,6 +7,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
+import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 
 part 'community_feed_state.dart';
@@ -24,32 +25,39 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   final AuthCubit _authCubit;
   late final StreamSubscription<AuthState> _authSubscription;
 
-  final Map<CommunityFeedTab, QueryDocumentSnapshotJson?> _cursors = <CommunityFeedTab, QueryDocumentSnapshotJson?>{};
+  final Map<String, QueryDocumentSnapshotJson?> _cursors =
+      <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
 
   static const int _pageSize = 20;
 
-  Future<void> loadInitial({CommunityFeedTab? tab}) async {
+  String _cursorKey(LoungeScope scope, LoungeSort sort) =>
+      '${scope.name}_${sort.name}';
+
+  Future<void> loadInitial({LoungeScope? scope, LoungeSort? sort}) async {
     if (_isFetching) {
       return;
     }
 
     _isFetching = true;
-    final CommunityFeedTab targetTab = tab ?? state.tab;
+    final LoungeScope targetScope = scope ?? state.scope;
+    final LoungeSort targetSort = sort ?? state.sort;
     emit(
       state.copyWith(
         status: CommunityFeedStatus.loading,
-        tab: targetTab,
+        scope: targetScope,
+        sort: targetSort,
         errorMessage: null,
         careerTrack: _authCubit.state.careerTrack,
         serial: _authCubit.state.serial,
       ),
     );
 
-    _cursors[targetTab] = null;
+    _cursors[_cursorKey(targetScope, targetSort)] = null;
 
     try {
-      final PaginatedQueryResult<Post> result = await _fetchPostsForTab(targetTab, reset: true);
+      final PaginatedQueryResult<Post> result =
+          await _fetchPosts(targetScope, targetSort, reset: true);
       final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
@@ -60,7 +68,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         state.copyWith(
           status: CommunityFeedStatus.loaded,
           posts: result.items,
-          tab: targetTab,
+          scope: targetScope,
+          sort: targetSort,
           hasMore: result.hasMore,
           isLoadingMore: false,
           likedPostIds: liked,
@@ -71,7 +80,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         ),
       );
 
-      _cursors[targetTab] = result.lastDocument;
+      _cursors[_cursorKey(targetScope, targetSort)] = result.lastDocument;
     } catch (_) {
       emit(
         state.copyWith(
@@ -94,7 +103,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     _isFetching = true;
     emit(state.copyWith(status: CommunityFeedStatus.refreshing, errorMessage: null));
     try {
-      final PaginatedQueryResult<Post> result = await _fetchPostsForTab(state.tab, reset: true);
+      final PaginatedQueryResult<Post> result =
+          await _fetchPosts(state.scope, state.sort, reset: true);
       final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
@@ -111,7 +121,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           errorMessage: null,
         ),
       );
-      _cursors[state.tab] = result.lastDocument;
+      _cursors[_cursorKey(state.scope, state.sort)] = result.lastDocument;
     } catch (_) {
       emit(state.copyWith(status: CommunityFeedStatus.error, errorMessage: '새로고침 중 오류가 발생했습니다.'));
     } finally {
@@ -128,7 +138,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final PaginatedQueryResult<Post> result = await _fetchPostsForTab(state.tab, reset: false);
+      final PaginatedQueryResult<Post> result =
+          await _fetchPosts(state.scope, state.sort, reset: false);
       final List<Post> combined = List<Post>.from(state.posts)..addAll(result.items);
       final Set<String> liked = Set<String>.from(state.likedPostIds)
         ..addAll(result.items.where((Post post) => post.isLiked).map((Post post) => post.id));
@@ -146,7 +157,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         ),
       );
 
-      _cursors[state.tab] = result.lastDocument ?? _cursors[state.tab];
+      final String key = _cursorKey(state.scope, state.sort);
+      _cursors[key] = result.lastDocument ?? _cursors[key];
     } catch (_) {
       emit(state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.'));
     } finally {
@@ -154,11 +166,18 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
   }
 
-  Future<void> changeTab(CommunityFeedTab tab) async {
-    if (state.tab == tab && state.status == CommunityFeedStatus.loaded) {
+  Future<void> changeScope(LoungeScope scope) async {
+    if (state.scope == scope && state.status == CommunityFeedStatus.loaded) {
       return;
     }
-    await loadInitial(tab: tab);
+    await loadInitial(scope: scope);
+  }
+
+  Future<void> changeSort(LoungeSort sort) async {
+    if (state.sort == sort && state.status == CommunityFeedStatus.loaded) {
+      return;
+    }
+    await loadInitial(sort: sort);
   }
 
   Future<void> toggleLike(Post post) async {
@@ -259,27 +278,38 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     if (serialChanged || trackChanged) {
       emit(state.copyWith(careerTrack: authState.careerTrack, serial: authState.serial));
-      if (state.tab == CommunityFeedTab.serial && serialChanged) {
-        unawaited(loadInitial(tab: CommunityFeedTab.serial));
+      if (state.scope == LoungeScope.serial && serialChanged) {
+        unawaited(loadInitial(scope: LoungeScope.serial));
       }
     }
   }
 
-  Future<PaginatedQueryResult<Post>> _fetchPostsForTab(CommunityFeedTab tab, {required bool reset}) async {
+  Future<PaginatedQueryResult<Post>> _fetchPosts(
+    LoungeScope scope,
+    LoungeSort sort, {
+    required bool reset,
+  }) async {
     final String? uid = _authCubit.state.userId;
-    final QueryDocumentSnapshotJson? startAfter = reset ? null : _cursors[tab];
+    final String key = _cursorKey(scope, sort);
+    final QueryDocumentSnapshotJson? startAfter = reset ? null : _cursors[key];
 
-    switch (tab) {
-      case CommunityFeedTab.all:
-        return _repository.fetchChirpFeed(limit: _pageSize, startAfter: startAfter, currentUid: uid);
-      case CommunityFeedTab.serial:
-        final String serial = _authCubit.state.serial;
-        if (serial == 'unknown' || serial.isEmpty) {
-          return const PaginatedQueryResult<Post>(items: <Post>[], lastDocument: null, hasMore: false);
-        }
-        return _repository.fetchSerialFeed(serial: serial, limit: _pageSize, startAfter: startAfter, currentUid: uid);
-      case CommunityFeedTab.hot:
-        return _repository.fetchHotFeed(limit: _pageSize, startAfter: startAfter, currentUid: uid);
+    final String serial = _authCubit.state.serial;
+
+    if (scope == LoungeScope.serial && (serial == 'unknown' || serial.isEmpty)) {
+      return const PaginatedQueryResult<Post>(
+        items: <Post>[],
+        lastDocument: null,
+        hasMore: false,
+      );
     }
+
+    return _repository.fetchLoungeFeed(
+      scope: scope,
+      sort: sort,
+      limit: _pageSize,
+      startAfter: startAfter,
+      serial: scope == LoungeScope.serial ? serial : null,
+      currentUid: uid,
+    );
   }
 }

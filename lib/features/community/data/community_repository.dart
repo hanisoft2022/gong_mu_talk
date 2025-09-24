@@ -11,9 +11,11 @@ import '../../../core/utils/prefix_tokenizer.dart';
 import '../../profile/domain/career_track.dart';
 import '../domain/models/board.dart';
 import '../domain/models/comment.dart';
+import '../domain/models/feed_filters.dart';
 import '../domain/models/post.dart';
 import '../domain/models/report.dart';
 import '../domain/models/search_suggestion.dart';
+import '../domain/models/search_result.dart';
 import '../../auth/presentation/cubit/auth_cubit.dart';
 import '../../profile/data/user_profile_repository.dart';
 
@@ -316,6 +318,70 @@ class CommunityRepository {
     }
   }
 
+  Future<PaginatedQueryResult<Post>> fetchLoungeFeed({
+    required LoungeScope scope,
+    required LoungeSort sort,
+    int limit = 20,
+    QueryDocumentSnapshotJson? startAfter,
+    String? serial,
+    String? currentUid,
+  }) async {
+    try {
+      QueryJson query = _postsRef
+          .where('type', isEqualTo: PostType.chirp.name)
+          .where('visibility', isEqualTo: PostVisibility.public.name);
+
+      if (scope == LoungeScope.serial) {
+        if (serial == null || serial.isEmpty || serial == 'unknown') {
+          return const PaginatedQueryResult<Post>(
+            items: <Post>[],
+            lastDocument: null,
+            hasMore: false,
+          );
+        }
+
+        query = query
+            .where('audience', isEqualTo: PostAudience.serial.name)
+            .where('serial', isEqualTo: serial);
+      }
+
+      query = _applyLoungeSort(query, sort);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final QuerySnapshot<JsonMap> snapshot = await query.limit(limit).get();
+      return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    } catch (_) {
+      final List<Post> items = _generateDummyPosts(
+        count: limit,
+        forceSerial: scope == LoungeScope.serial ? serial : null,
+      );
+
+      switch (sort) {
+        case LoungeSort.latest:
+          items.sort((Post a, Post b) => b.createdAt.compareTo(a.createdAt));
+          break;
+        case LoungeSort.popular:
+          items.sort((Post a, Post b) => b.hotScore.compareTo(a.hotScore));
+          break;
+        case LoungeSort.likes:
+          items.sort((Post a, Post b) => b.likeCount.compareTo(a.likeCount));
+          break;
+        case LoungeSort.comments:
+          items.sort((Post a, Post b) => b.commentCount.compareTo(a.commentCount));
+          break;
+      }
+
+      return PaginatedQueryResult<Post>(
+        items: items,
+        hasMore: false,
+        lastDocument: null,
+      );
+    }
+  }
+
   Future<PaginatedQueryResult<Post>> fetchSerialFeed({
     required String serial,
     int limit = 20,
@@ -345,6 +411,25 @@ class CommunityRepository {
         hasMore: false,
         lastDocument: null,
       );
+    }
+  }
+
+  Query<JsonMap> _applyLoungeSort(Query<JsonMap> query, LoungeSort sort) {
+    switch (sort) {
+      case LoungeSort.latest:
+        return query.orderBy('createdAt', descending: true);
+      case LoungeSort.popular:
+        return query
+            .orderBy('hotScore', descending: true)
+            .orderBy('createdAt', descending: true);
+      case LoungeSort.likes:
+        return query
+            .orderBy('likeCount', descending: true)
+            .orderBy('createdAt', descending: true);
+      case LoungeSort.comments:
+        return query
+            .orderBy('commentCount', descending: true)
+            .orderBy('createdAt', descending: true);
     }
   }
 
@@ -505,6 +590,10 @@ class CommunityRepository {
         'createdAt': Timestamp.fromDate(now),
         'parentCommentId': parentCommentId,
         'deleted': false,
+        'keywords': _tokenizer.buildPrefixes(
+          title: authorNickname,
+          body: text,
+        ),
       });
 
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
@@ -724,37 +813,46 @@ class CommunityRepository {
     return bookmarked;
   }
 
-  Future<List<Post>> searchPosts({
-    required String prefix,
-    int limit = 20,
+  Future<CommunitySearchResults> searchCommunity({
+    required String query,
+    required SearchScope scope,
+    int postLimit = 20,
+    int commentLimit = 20,
     String? currentUid,
   }) async {
-    final String token = prefix.trim().toLowerCase();
+    final String token = query.trim().toLowerCase();
     if (token.isEmpty) {
-      return const <Post>[];
+      return const CommunitySearchResults();
     }
 
-    Query<JsonMap> query = _postsRef
-        .where('keywords', arrayContains: token)
-        .where('visibility', isEqualTo: PostVisibility.public.name)
-        .orderBy('hotScore', descending: true)
-        .limit(limit);
+    final bool includePosts = scope != SearchScope.comments;
+    final bool authorOnly = scope == SearchScope.author;
+    final bool includeComments =
+        scope == SearchScope.comments || scope == SearchScope.all;
 
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    final PaginatedQueryResult<Post> page = await _buildPostPage(
-      snapshot,
-      currentUid: currentUid,
-      limit: limit,
-    );
+    List<Post> posts = const <Post>[];
+    List<CommentSearchResult> comments = const <CommentSearchResult>[];
 
-    unawaited(
-      _searchSuggestionRef.doc(token).set(<String, Object?>{
-        'count': FieldValue.increment(1),
-        'updatedAt': Timestamp.now(),
-      }, SetOptions(merge: true)),
-    );
+    if (includePosts && postLimit > 0) {
+      posts = await _searchPosts(
+        token: token,
+        limit: postLimit,
+        currentUid: currentUid,
+        authorOnly: authorOnly,
+      );
+    }
 
-    return page.items;
+    if (includeComments && commentLimit > 0) {
+      comments = await _searchComments(
+        token: token,
+        limit: commentLimit,
+        currentUid: currentUid,
+      );
+    }
+
+    _recordSearchToken(token);
+
+    return CommunitySearchResults(posts: posts, comments: comments);
   }
 
   Future<List<SearchSuggestion>> topSearchSuggestions({int limit = 10}) async {
@@ -784,6 +882,167 @@ class CommunityRepository {
         createdAt: DateTime.now(),
         metadata: metadata,
       ).toMap(),
+    );
+  }
+
+  Future<List<Post>> _searchPosts({
+    required String token,
+    int limit = 20,
+    String? currentUid,
+    bool authorOnly = false,
+  }) async {
+    Query<JsonMap> query = _postsRef
+        .where('keywords', arrayContains: token)
+        .where('visibility', isEqualTo: PostVisibility.public.name)
+        .orderBy('hotScore', descending: true)
+        .limit(limit);
+
+    final QuerySnapshot<JsonMap> snapshot = await query.get();
+    PaginatedQueryResult<Post> page = await _buildPostPage(
+      snapshot,
+      currentUid: currentUid,
+      limit: limit,
+    );
+
+    if (authorOnly) {
+      final List<Post> filtered = page.items
+          .where(
+            (Post post) => post.authorNickname
+                .toLowerCase()
+                .contains(token),
+          )
+          .toList(growable: false);
+      page = PaginatedQueryResult<Post>(
+        items: filtered,
+        hasMore: false,
+        lastDocument: null,
+      );
+    }
+
+    return page.items;
+  }
+
+  Future<List<CommentSearchResult>> _searchComments({
+    required String token,
+    int limit = 20,
+    String? currentUid,
+  }) async {
+    final QuerySnapshot<JsonMap> snapshot = await _firestore
+        .collectionGroup('comments')
+        .where('deleted', isEqualTo: false)
+        .where('keywords', arrayContains: token)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return const <CommentSearchResult>[];
+    }
+
+    final Map<String, List<String>> commentIdsByPost = <String, List<String>>{};
+    final List<Comment> comments = snapshot.docs.map((doc) {
+      final String postId = doc.reference.parent.parent?.id ?? '';
+      commentIdsByPost.putIfAbsent(postId, () => <String>[]).add(doc.id);
+      return Comment.fromMap(
+        id: doc.id,
+        postId: postId,
+        data: doc.data(),
+      );
+    }).toList(growable: false);
+
+    final Map<String, Set<String>> likedCommentIds = <String, Set<String>>{};
+    if (currentUid != null) {
+      for (final MapEntry<String, List<String>> entry
+          in commentIdsByPost.entries) {
+        final Set<String> liked = await _fetchLikedCommentIds(
+          postId: entry.key,
+          uid: currentUid,
+          commentIds: entry.value,
+        );
+        likedCommentIds[entry.key] = liked;
+      }
+    }
+
+    final Map<String, Post> parentPosts = await _fetchPostsByIds(
+      commentIdsByPost.keys,
+      currentUid: currentUid,
+    );
+
+    return comments.map((Comment comment) {
+      final Set<String> likedIds =
+          likedCommentIds[comment.postId] ?? const <String>{};
+      final Comment resolved = comment.copyWith(
+        isLiked: likedIds.contains(comment.id),
+      );
+      return CommentSearchResult(
+        comment: resolved,
+        post: parentPosts[comment.postId],
+      );
+    }).toList(growable: false);
+  }
+
+  Future<Map<String, Post>> _fetchPostsByIds(
+    Iterable<String> ids, {
+    String? currentUid,
+  }) async {
+    final List<String> postIds = ids
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (postIds.isEmpty) {
+      return const <String, Post>{};
+    }
+
+    final List<DocumentSnapshot<JsonMap>> snapshots = await Future.wait(
+      postIds.map((String postId) => _postDoc(postId).get()),
+    );
+
+    final List<Post> posts = <Post>[];
+    for (final DocumentSnapshot<JsonMap> snapshot in snapshots) {
+      if (!snapshot.exists) {
+        continue;
+      }
+      final Map<String, Object?>? data = snapshot.data();
+      if (data == null) {
+        continue;
+      }
+      if (data['visibility'] != PostVisibility.public.name) {
+        continue;
+      }
+      posts.add(Post.fromSnapshot(snapshot));
+    }
+
+    if (posts.isEmpty) {
+      return const <String, Post>{};
+    }
+
+    Set<String> likedIds = const <String>{};
+    Set<String> bookmarkedIds = const <String>{};
+    if (currentUid != null) {
+      final List<String> idsList =
+          posts.map((Post post) => post.id).toList(growable: false);
+      likedIds = await _fetchLikedPostIds(uid: currentUid, postIds: idsList);
+      bookmarkedIds =
+          await _fetchBookmarkedIds(uid: currentUid, postIds: idsList);
+    }
+
+    final List<Post> enriched = await _attachTopComments(posts);
+
+    return <String, Post>{
+      for (final Post post in enriched)
+        post.id: post.copyWith(
+          isLiked: likedIds.contains(post.id),
+          isBookmarked: bookmarkedIds.contains(post.id),
+        ),
+    };
+  }
+
+  void _recordSearchToken(String token) {
+    unawaited(
+      _searchSuggestionRef.doc(token).set(<String, Object?>{
+        'count': FieldValue.increment(1),
+        'updatedAt': Timestamp.now(),
+      }, SetOptions(merge: true)),
     );
   }
 
