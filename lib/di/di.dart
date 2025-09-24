@@ -58,7 +58,12 @@ Future<void> configureDependencies() async {
       ),
     )
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
-    ..registerLazySingleton<CommunityRepository>(CommunityRepository.new)
+    ..registerLazySingleton<CommunityRepository>(
+      () => CommunityRepository(
+        authCubit: getIt(),
+        userProfileRepository: getIt(),
+      ),
+    )
     ..registerFactory<BoardCatalogCubit>(
       () => BoardCatalogCubit(repository: getIt()),
     )

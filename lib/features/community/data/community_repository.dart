@@ -14,6 +14,8 @@ import '../domain/models/comment.dart';
 import '../domain/models/post.dart';
 import '../domain/models/report.dart';
 import '../domain/models/search_suggestion.dart';
+import '../../auth/presentation/cubit/auth_cubit.dart';
+import '../../profile/data/user_profile_repository.dart';
 
 typedef JsonMap = Map<String, Object?>;
 
@@ -22,15 +24,30 @@ typedef QueryJson = Query<JsonMap>;
 typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 
 class CommunityRepository {
-  CommunityRepository({FirebaseFirestore? firestore, FirebaseStorage? storage})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _storage = storage ?? FirebaseStorage.instance;
+  CommunityRepository({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+    required AuthCubit authCubit,
+    required UserProfileRepository userProfileRepository,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance,
+       _authCubit = authCubit,
+       _userProfileRepository = userProfileRepository;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
+  final AuthCubit _authCubit;
+  final UserProfileRepository _userProfileRepository;
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
   final HotScoreCalculator _hotScoreCalculator = const HotScoreCalculator();
   static const int _counterShardCount = 20;
+
+  String get currentUserId => _authCubit.state.userId ?? 'anonymous';
+
+  Future<String> get currentUserNickname async {
+    final profile = await _userProfileRepository.fetchProfile(currentUserId);
+    return profile?.nickname ?? 'Unknown User';
+  }
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection('posts');
 
@@ -608,6 +625,158 @@ class CommunityRepository {
       });
     }
     await batch.commit();
+  }
+
+  Future<Post?> getPost(String postId) async {
+    final DocumentSnapshot<JsonMap> doc = await _postDoc(postId).get();
+    if (!doc.exists) {
+      return null;
+    }
+    return Post.fromSnapshot(doc);
+  }
+
+  Future<List<Comment>> getComments(String postId) async {
+    final QuerySnapshot<JsonMap> snapshot = await _commentsRef(postId)
+        .orderBy('createdAt', descending: false)
+        .get();
+
+    final Set<String> likedIds = await _fetchLikedCommentIds(
+      postId: postId,
+      uid: currentUserId,
+      commentIds: snapshot.docs.map((doc) => doc.id).toList(),
+    );
+
+    return snapshot.docs.map((doc) => Comment.fromSnapshot(
+      doc,
+      isLiked: likedIds.contains(doc.id),
+    )).toList();
+  }
+
+  Future<void> toggleLike(String postId) async {
+    final String likeId = '${postId}_$currentUserId';
+    final DocumentReference<JsonMap> likeDoc = _likesRef.doc(likeId);
+    final DocumentReference<JsonMap> postDoc = _postDoc(postId);
+
+    await _firestore.runTransaction((transaction) async {
+      final DocumentSnapshot<JsonMap> likeSnapshot = await transaction.get(likeDoc);
+      final DocumentSnapshot<JsonMap> postSnapshot = await transaction.get(postDoc);
+
+      if (!postSnapshot.exists) {
+        throw StateError('게시글을 찾을 수 없습니다.');
+      }
+
+      final Map<String, Object?> postData = postSnapshot.data()!;
+      final int currentLikes = (postData['likeCount'] as num?)?.toInt() ?? 0;
+
+      if (likeSnapshot.exists) {
+        // Unlike
+        transaction.delete(likeDoc);
+        transaction.update(postDoc, {
+          'likeCount': currentLikes - 1,
+          'updatedAt': Timestamp.now(),
+        });
+      } else {
+        // Like
+        transaction.set(likeDoc, {
+          'postId': postId,
+          'uid': currentUserId,
+          'createdAt': Timestamp.now(),
+        });
+        transaction.update(postDoc, {
+          'likeCount': currentLikes + 1,
+          'updatedAt': Timestamp.now(),
+        });
+      }
+    });
+  }
+
+  Future<void> togglePostBookmark(String postId) async {
+    final DocumentReference<JsonMap> bookmarkDoc = _bookmarksRef(currentUserId).doc(postId);
+
+    await _firestore.runTransaction((transaction) async {
+      final DocumentSnapshot<JsonMap> snapshot = await transaction.get(bookmarkDoc);
+
+      if (snapshot.exists) {
+        transaction.delete(bookmarkDoc);
+      } else {
+        transaction.set(bookmarkDoc, {
+          'postId': postId,
+          'createdAt': Timestamp.now(),
+        });
+      }
+    });
+  }
+
+  Future<void> addComment(String postId, String text) async {
+    final nickname = await currentUserNickname;
+    await createComment(
+      postId: postId,
+      authorUid: currentUserId,
+      authorNickname: nickname,
+      text: text,
+    );
+  }
+
+  Future<void> toggleCommentLikeById(String postId, String commentId) async {
+    final String likeId = '${commentId}_$currentUserId';
+    final DocumentReference<JsonMap> likeDoc = _commentLikesRef(postId).doc(likeId);
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(postId).doc(commentId);
+
+    await _firestore.runTransaction((transaction) async {
+      final DocumentSnapshot<JsonMap> likeSnapshot = await transaction.get(likeDoc);
+      final DocumentSnapshot<JsonMap> commentSnapshot = await transaction.get(commentDoc);
+
+      if (!commentSnapshot.exists) {
+        throw StateError('댓글을 찾을 수 없습니다.');
+      }
+
+      final Map<String, Object?> commentData = commentSnapshot.data()!;
+      final int currentLikes = (commentData['likeCount'] as num?)?.toInt() ?? 0;
+
+      if (likeSnapshot.exists) {
+        // Unlike
+        transaction.delete(likeDoc);
+        transaction.update(commentDoc, {
+          'likeCount': currentLikes - 1,
+          'updatedAt': Timestamp.now(),
+        });
+      } else {
+        // Like
+        transaction.set(likeDoc, {
+          'commentId': commentId,
+          'uid': currentUserId,
+          'createdAt': Timestamp.now(),
+        });
+        transaction.update(commentDoc, {
+          'likeCount': currentLikes + 1,
+          'updatedAt': Timestamp.now(),
+        });
+      }
+    });
+  }
+
+  Future<void> deletePostById(String postId) async {
+    await deletePost(postId: postId, authorUid: currentUserId);
+  }
+
+  Future<void> reportPost(String postId, String reason) async {
+    await submitReport(
+      targetType: ReportTargetType.post,
+      targetId: postId,
+      reason: reason,
+      reporterUid: currentUserId,
+    );
+  }
+
+  Future<void> blockUser(String userId) async {
+    await _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('blocked_users')
+        .doc(userId)
+        .set({
+      'blockedAt': Timestamp.now(),
+    });
   }
 
   Future<PaginatedQueryResult<Post>> _buildPostPage(

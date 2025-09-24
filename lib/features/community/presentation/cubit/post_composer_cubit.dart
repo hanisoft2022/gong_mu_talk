@@ -46,6 +46,8 @@ class PostComposerState extends Equatable {
     this.selectedBoardId,
     this.errorMessage,
     this.submissionSuccess = false,
+    this.editingPost,
+    this.isLoading = false,
   });
 
   final String text;
@@ -58,6 +60,8 @@ class PostComposerState extends Equatable {
   final String? selectedBoardId;
   final String? errorMessage;
   final bool submissionSuccess;
+  final Post? editingPost;
+  final bool isLoading;
 
   PostComposerState copyWith({
     String? text,
@@ -70,6 +74,8 @@ class PostComposerState extends Equatable {
     String? selectedBoardId,
     String? errorMessage,
     bool? submissionSuccess,
+    Post? editingPost,
+    bool? isLoading,
   }) {
     return PostComposerState(
       text: text ?? this.text,
@@ -82,6 +88,8 @@ class PostComposerState extends Equatable {
       selectedBoardId: selectedBoardId ?? this.selectedBoardId,
       errorMessage: errorMessage,
       submissionSuccess: submissionSuccess ?? this.submissionSuccess,
+      editingPost: editingPost ?? this.editingPost,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 
@@ -97,6 +105,8 @@ class PostComposerState extends Equatable {
     selectedBoardId,
     errorMessage,
     submissionSuccess,
+    editingPost,
+    isLoading,
   ];
 }
 
@@ -290,7 +300,10 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       final List<Board> boards = await _repository.fetchBoards();
       emit(state.copyWith(boards: boards));
     } catch (_) {
-      emit(state.copyWith(errorMessage: '게시판 목록을 불러오지 못했습니다.'));
+      // Silently ignore board load failures to avoid showing a global snackbar
+      // when the composer opens in '쫑알쫑알' mode. The board selector UI will
+      // handle empty lists gracefully.
+      emit(state.copyWith(boards: const <Board>[], errorMessage: null));
     }
   }
 
@@ -306,5 +319,34 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       return 'image/webp';
     }
     return 'image/jpeg';
+  }
+
+  Future<void> loadPostForEditing(String postId) async {
+    try {
+      emit(state.copyWith(isLoading: true, errorMessage: null));
+      final Post? post = await _repository.getPost(postId);
+
+      if (post == null) {
+        emit(state.copyWith(
+          isLoading: false,
+          errorMessage: '게시글을 찾을 수 없습니다.',
+        ));
+        return;
+      }
+
+      emit(state.copyWith(
+        text: post.text,
+        tags: post.tags,
+        audience: post.audience,
+        selectedBoardId: post.boardId,
+        editingPost: post,
+        isLoading: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        errorMessage: '게시글을 불러올 수 없습니다: $e',
+      ));
+    }
   }
 }

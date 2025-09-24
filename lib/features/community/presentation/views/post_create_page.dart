@@ -9,14 +9,23 @@ import '../../domain/models/post.dart';
 import '../cubit/post_composer_cubit.dart';
 
 class PostCreatePage extends StatefulWidget {
-  const PostCreatePage({super.key});
+  const PostCreatePage({super.key, this.postType, this.postId});
+
+  final PostType? postType;
+  final String? postId;
 
   @override
   State<PostCreatePage> createState() => _PostCreatePageState();
 }
 
 class _PostCreatePageState extends State<PostCreatePage> {
-  PostType _postType = PostType.chirp;
+  late PostType _postType;
+
+  @override
+  void initState() {
+    super.initState();
+    _postType = widget.postType ?? PostType.chirp;
+  }
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _tagController = TextEditingController();
 
@@ -30,7 +39,13 @@ class _PostCreatePageState extends State<PostCreatePage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<PostComposerCubit>(
-      create: (_) => PostComposerCubit(communityRepository: getIt(), authCubit: getIt<AuthCubit>()),
+      create: (_) {
+        final cubit = PostComposerCubit(communityRepository: getIt(), authCubit: getIt<AuthCubit>());
+        if (widget.postId != null) {
+          cubit.loadPostForEditing(widget.postId!);
+        }
+        return cubit;
+      },
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
             previous.submissionSuccess != current.submissionSuccess || previous.errorMessage != current.errorMessage,
@@ -88,26 +103,27 @@ class _PostCreatePageState extends State<PostCreatePage> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  SegmentedButton<PostType>(
-                    segments: const [
-                      ButtonSegment<PostType>(
-                        value: PostType.chirp,
-                        label: Text('쫑알쫑알'),
-                        icon: Icon(Icons.bubble_chart_outlined),
-                      ),
-                      ButtonSegment<PostType>(
-                        value: PostType.board,
-                        label: Text('게시판'),
-                        icon: Icon(Icons.article_outlined),
-                      ),
-                    ],
-                    selected: <PostType>{_postType},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _postType = selection.first;
-                      });
-                    },
-                  ),
+                  if (widget.postType == null)
+                    SegmentedButton<PostType>(
+                      segments: const [
+                        ButtonSegment<PostType>(
+                          value: PostType.chirp,
+                          label: Text('쫑알쫑알'),
+                          icon: Icon(Icons.bubble_chart_outlined),
+                        ),
+                        ButtonSegment<PostType>(
+                          value: PostType.board,
+                          label: Text('게시판'),
+                          icon: Icon(Icons.article_outlined),
+                        ),
+                      ],
+                      selected: <PostType>{_postType},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _postType = selection.first;
+                        });
+                      },
+                    ),
                   const Gap(16),
                   if (_postType == PostType.chirp) _ChirpOptions(state: state, cubit: cubit),
                   if (_postType == PostType.board) _BoardSelector(state: state, cubit: cubit),

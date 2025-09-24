@@ -110,11 +110,7 @@ class PostCard extends StatelessWidget {
                   _PostActionButton(
                     icon: Icons.mode_comment_outlined,
                     label: '${post.commentCount}',
-                    onPressed: () {
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(const SnackBar(content: Text('댓글 기능은 곧 제공될 예정입니다.')));
-                    },
+                    onPressed: onTap,
                   ),
                 ],
               ),

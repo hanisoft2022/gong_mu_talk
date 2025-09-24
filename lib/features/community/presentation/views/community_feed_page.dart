@@ -41,132 +41,139 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
-          children: [
-            const Gap(8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-                      builder: (context, state) {
-                        return SegmentedButton<CommunityFeedTab>(
-                          segments: const [
-                            ButtonSegment<CommunityFeedTab>(
-                              value: CommunityFeedTab.all,
-                              label: Text('전체'),
-                              icon: Icon(Icons.public_outlined),
-                            ),
-                            ButtonSegment<CommunityFeedTab>(
-                              value: CommunityFeedTab.serial,
-                              label: Text('직렬별'),
-                              icon: Icon(Icons.group_outlined),
-                            ),
-                            ButtonSegment<CommunityFeedTab>(
-                              value: CommunityFeedTab.hot,
-                              label: Text('인기'),
-                              icon: Icon(Icons.local_fire_department_outlined),
-                            ),
-                          ],
-                          selected: <CommunityFeedTab>{state.tab},
-                          onSelectionChanged: (selection) {
-                            context.read<CommunityFeedCubit>().changeTab(selection.first);
-                          },
-                        );
-                      },
+    return Scaffold(
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              const Gap(8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+                        builder: (context, state) {
+                          return SegmentedButton<CommunityFeedTab>(
+                            segments: const [
+                              ButtonSegment<CommunityFeedTab>(
+                                value: CommunityFeedTab.all,
+                                label: Text('전체'),
+                                icon: Icon(Icons.public_outlined),
+                              ),
+                              ButtonSegment<CommunityFeedTab>(
+                                value: CommunityFeedTab.serial,
+                                label: Text('직렬별'),
+                                icon: Icon(Icons.group_outlined),
+                              ),
+                              ButtonSegment<CommunityFeedTab>(
+                                value: CommunityFeedTab.hot,
+                                label: Text('인기'),
+                                icon: Icon(Icons.local_fire_department_outlined),
+                              ),
+                            ],
+                            selected: <CommunityFeedTab>{state.tab},
+                            onSelectionChanged: (selection) {
+                              context.read<CommunityFeedCubit>().changeTab(selection.first);
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const Gap(12),
-                  IconButton(
-                    tooltip: '게시판 보기',
-                    onPressed: () => _openBoardList(context),
-                    icon: const Icon(Icons.view_list_outlined),
-                  ),
-                ],
+                    const Gap(12),
+                    IconButton(
+                      tooltip: '게시판 보기',
+                      onPressed: () => _openBoardList(context),
+                      icon: const Icon(Icons.view_list_outlined),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Gap(8),
-            Expanded(
-              child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-                builder: (context, state) {
-                  switch (state.status) {
-                    case CommunityFeedStatus.initial:
-                    case CommunityFeedStatus.loading:
-                      return const Center(child: CircularProgressIndicator());
-                    case CommunityFeedStatus.error:
-                      return _CommunityErrorView(
-                        message: state.errorMessage,
-                        onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
-                      );
-                    case CommunityFeedStatus.loaded:
-                    case CommunityFeedStatus.refreshing:
-                      if (state.tab == CommunityFeedTab.serial &&
-                          (state.careerTrack == CareerTrack.none || state.serial == 'unknown')) {
-                        return _EmptyStateView(
-                          icon: Icons.group_add_outlined,
-                          title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
-                          message: '마이페이지에서 직렬과 소속 정보를 설정해주세요.',
-                          onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
+              const Gap(8),
+              Expanded(
+                child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+                  builder: (context, state) {
+                    switch (state.status) {
+                      case CommunityFeedStatus.initial:
+                      case CommunityFeedStatus.loading:
+                        return const Center(child: CircularProgressIndicator());
+                      case CommunityFeedStatus.error:
+                        return _CommunityErrorView(
+                          message: state.errorMessage,
+                          onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
                         );
-                      }
+                      case CommunityFeedStatus.loaded:
+                      case CommunityFeedStatus.refreshing:
+                        if (state.tab == CommunityFeedTab.serial &&
+                            (state.careerTrack == CareerTrack.none || state.serial == 'unknown')) {
+                          return _EmptyStateView(
+                            icon: Icons.group_add_outlined,
+                            title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
+                            message: '마이페이지에서 직렬과 소속 정보를 설정해주세요.',
+                            onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
+                          );
+                        }
 
-                      if (state.posts.isEmpty) {
-                        return _EmptyStateView(
-                          icon: Icons.chat_bubble_outline,
-                          title: '아직 게시물이 없습니다.',
-                          message: '첫 번째 글을 올려 동료 공무원과 이야기를 시작해보세요!',
+                        if (state.posts.isEmpty) {
+                          return _EmptyStateView(
+                            icon: Icons.chat_bubble_outline,
+                            title: '아직 게시물이 없습니다.',
+                            message: '첫 번째 글을 올려 동료 공무원과 이야기를 시작해보세요!',
+                            onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
+                          );
+                        }
+
+                        return RefreshIndicator(
                           onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
-                        );
-                      }
-
-                      return RefreshIndicator(
-                        onRefresh: () => context.read<CommunityFeedCubit>().refresh(),
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          itemCount: state.posts.length + (state.hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= state.posts.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24),
-                                child: Center(child: CircularProgressIndicator()),
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            itemCount: state.posts.length + (state.hasMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= state.posts.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 24),
+                                  child: Center(child: CircularProgressIndicator()),
+                                );
+                              }
+                              final Post post = state.posts[index];
+                              return PostCard(
+                                post: post,
+                                onToggleLike: () =>
+                                    context.read<CommunityFeedCubit>().toggleLike(post),
+                                onToggleBookmark: () =>
+                                    context.read<CommunityFeedCubit>().toggleBookmark(post),
+                                onTap: () async {
+                                  context.read<CommunityFeedCubit>().incrementViewCount(post.id);
+                                  final result = await context.push<bool>('/community/post/${post.id}');
+                                  if (result == true && context.mounted) {
+                                    // Post was deleted, refresh the feed
+                                    await context.read<CommunityFeedCubit>().refresh();
+                                  }
+                                },
                               );
-                            }
-                            final Post post = state.posts[index];
-                            return PostCard(
-                              post: post,
-                              onToggleLike: () => context.read<CommunityFeedCubit>().toggleLike(post),
-                              onToggleBookmark: () => context.read<CommunityFeedCubit>().toggleBookmark(post),
-                              onTap: () {
-                                context.read<CommunityFeedCubit>().incrementViewCount(post.id);
-                                ScaffoldMessenger.of(context)
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(const SnackBar(content: Text('상세 페이지는 곧 제공될 예정입니다.')));
-                              },
-                            );
-                          },
-                        ),
-                      );
-                  }
-                },
+                            },
+                          ),
+                        );
+                    }
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-        Positioned(
-          bottom: 24,
-          right: 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => _openComposer(context),
-            icon: const Icon(Icons.edit_square),
-            label: const Text('글 작성'),
+              const SizedBox(height: 8),
+            ],
           ),
-        ),
-      ],
+          Positioned(
+            bottom: 24,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: "community_fab",
+              onPressed: () => _openComposer(context),
+              icon: const Icon(Icons.edit_square),
+              label: const Text('글 작성'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -226,7 +233,12 @@ class _CommunityErrorView extends StatelessWidget {
 }
 
 class _EmptyStateView extends StatelessWidget {
-  const _EmptyStateView({required this.icon, required this.title, required this.message, required this.onRefresh});
+  const _EmptyStateView({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.onRefresh,
+  });
 
   final IconData icon;
   final String title;

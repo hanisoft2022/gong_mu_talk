@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../routing/app_router.dart';
 import '../../domain/entities/blind_post.dart';
 import '../cubit/blind_feed_cubit.dart';
 
@@ -14,6 +16,13 @@ class BlindFeedPage extends StatefulWidget {
 }
 
 class _BlindFeedPageState extends State<BlindFeedPage> {
+  Future<void> _openComposer(BuildContext context) async {
+    final bool? published = await context.push<bool>(BlindRoute.writePath);
+    if (published == true && context.mounted) {
+      await context.read<BlindFeedCubit>().refresh();
+    }
+  }
+
   late final TextEditingController _searchController;
 
   @override
@@ -31,8 +40,9 @@ class _BlindFeedPageState extends State<BlindFeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BlindFeedCubit, BlindFeedState>(
-      builder: (context, state) {
+    return Scaffold(
+      body: BlocBuilder<BlindFeedCubit, BlindFeedState>(
+        builder: (context, state) {
         switch (state.status) {
           case BlindFeedStatus.initial:
           case BlindFeedStatus.loading:
@@ -58,7 +68,14 @@ class _BlindFeedPageState extends State<BlindFeedPage> {
               ),
             );
         }
-      },
+      }),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: "blind_fab",
+        onPressed: () => _openComposer(context),
+        icon: const Icon(Icons.edit_outlined),
+        label: const Text('글쓰기'),
+        tooltip: '새 글 작성',
+      ),
     );
   }
 }

@@ -14,6 +14,8 @@ import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../features/matching/presentation/views/matching_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
+import '../features/community/domain/models/post.dart';
+import '../features/community/presentation/views/post_create_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import 'router_refresh_stream.dart';
 
@@ -129,6 +131,27 @@ GoRouter createRouter() {
           return AuthPage(redirectPath: redirectPath);
         },
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: PostCreateRoute.communityPath,
+        name: '${PostCreateRoute.name}-community',
+        builder: (context, state) => const PostCreatePage(postType: PostType.chirp),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: PostCreateRoute.blindPath,
+        name: '${PostCreateRoute.name}-blind',
+        builder: (context, state) => const PostCreatePage(postType: PostType.board),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${CommunityRoute.editPath}/:postId',
+        name: 'post-edit',
+        builder: (context, state) {
+          final postId = state.pathParameters['postId']!;
+          return PostCreatePage(postType: PostType.chirp, postId: postId);
+        },
+      ),
     ],
   );
 }
@@ -166,6 +189,16 @@ class CommunityRoute {
 
   static const String name = 'community';
   static const String path = '/community';
+  static const String writePath = '$path/write';
+  static const String editPath = '$path/post/edit';
+}
+
+class PostCreateRoute {
+  const PostCreateRoute._();
+
+  static const String name = 'post-create';
+  static const String communityPath = CommunityRoute.writePath;
+  static const String blindPath = BlindRoute.writePath;
 }
 
 class BlindRoute {
@@ -173,6 +206,7 @@ class BlindRoute {
 
   static const String name = 'blind';
   static const String path = '/blind';
+  static const String writePath = '$path/write';
 }
 
 class LoginRoute {
