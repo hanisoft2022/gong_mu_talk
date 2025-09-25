@@ -2,158 +2,224 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasOnlyKeys(data, keys) {
+      return data.keys().hasOnly(keys);
+    }
+
+    function hasAllKeys(data, keys) {
+      return data.keys().hasAll(keys);
+    }
+
+    function notificationAllowedKeys() {
+      return [
+        'type',
+        'title',
+        'body',
+        'payload',
+        'createdAt',
+        'delivered',
+        'deliveredAt',
+        'read'
+      ];
+    }
+
+    function isValidNotificationCreate(data) {
+      return hasOnlyKeys(data, notificationAllowedKeys()) &&
+        hasAllKeys(data, ['type', 'title', 'body', 'createdAt', 'delivered', 'read']) &&
+        data.type is string &&
+        data.title is string &&
+        data.body is string &&
+        (data.payload == null || data.payload is map) &&
+        data.createdAt is timestamp &&
+        data.delivered == false &&
+        data.read == false &&
+        (!data.keys().hasAny(['deliveredAt']) || data.deliveredAt == null);
+    }
+
+    function isValidNotificationUpdate(newData, existingData) {
+      return hasOnlyKeys(newData, notificationAllowedKeys()) &&
+        newData.type == existingData.type &&
+        newData.title == existingData.title &&
+        newData.body == existingData.body &&
+        newData.payload == existingData.payload &&
+        newData.createdAt == existingData.createdAt &&
+        (newData.delivered == existingData.delivered ||
+          (existingData.delivered == false && newData.delivered == true)) &&
+        (newData.read == existingData.read ||
+          (existingData.read == false && newData.read == true)) &&
+        (newData.delivered is bool) &&
+        (newData.read is bool) &&
+        (newData.deliveredAt == existingData.deliveredAt ||
+          (newData.deliveredAt == null && newData.delivered == false) ||
+          (newData.deliveredAt is timestamp && newData.delivered == true));
+    }
+
+    function isTimestampOrServer(value) {
+      return value is timestamp || value == request.time;
+    }
+
+    function isValidPaystubClientWrite(data, userId) {
+      return hasOnlyKeys(data, [
+          'status',
+          'uploadedAt',
+          'updatedAt',
+          'detectedTrack',
+          'detectedKeywords',
+          'errorMessage',
+          'storagePath',
+          'originalFileName'
+        ]) &&
+        hasAllKeys(data, [
+          'status',
+          'uploadedAt',
+          'updatedAt',
+          'detectedKeywords',
+          'storagePath',
+          'originalFileName'
+        ]) &&
+        data.status == 'processing' &&
+        data.storagePath is string &&
+        data.storagePath.matches('^paystub_uploads/' + userId + '/[A-Za-z0-9._-]+$') &&
+        data.originalFileName is string &&
+        data.originalFileName.size() > 0 &&
+        (data.detectedTrack == null) &&
+        (data.errorMessage == null) &&
+        (data.detectedKeywords is list) &&
+        isTimestampOrServer(data.uploadedAt) &&
+        isTimestampOrServer(data.updatedAt);
+    }
+
     match /users/{userId} {
-      // Allow authenticated reads of user profiles (needed for listings/queries)
-      allow get, list, read: if request.auth != null;
+      allow get, list, read: if isSignedIn();
+      allow create, update: if isOwner(userId);
+      allow delete: if isOwner(userId);
 
-      // Allow users to create or update only their own document
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-
-      // Restrict deletes to self as well (or lock it down completely if desired)
-      allow delete: if request.auth != null && request.auth.uid == userId;
-
-      // Subcollections under users
-      // Badges: user can read and write their own badges
       match /badges/{badgeId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isSignedIn();
+        allow create, update, delete: if isOwner(userId);
       }
 
-      // Matching likes: user can manage their own likes
       match /matching_likes/{targetUid} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId);
       }
 
-      // Matching inbox: other users can write a like addressed to userId
       match /matching_inbox/{senderUid} {
-        // Recipient can read their inbox
-        allow read: if request.auth != null && request.auth.uid == userId;
-        // Only the sender may create/update/delete their own entry in someone else's inbox
-        allow create, update, delete: if request.auth != null && request.auth.uid == senderUid;
+        allow read: if isOwner(userId);
+        allow create, update, delete: if isSignedIn() && request.auth.uid == senderUid;
       }
 
-      // Matching meta (e.g., exposure counters): only owner may update
       match /matching_meta/{docId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isSignedIn() &&
+          isValidNotificationCreate(request.resource.data);
+        allow update: if isOwner(userId) &&
+          isValidNotificationUpdate(request.resource.data, resource.data);
+        allow delete: if false;
+      }
+
+      match /verifications/{verificationId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+          verificationId == 'paystub' &&
+          isValidPaystubClientWrite(request.resource.data, userId);
+        allow delete: if false;
+      }
+
+      match /bookmarks/{postId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId);
       }
     }
 
-    // Handles collection used for unique nickname reservation
     match /handles/{handle} {
-      // Anyone authenticated can check if a handle exists
-      allow get, list, read: if request.auth != null;
-
-      // Allow creating a handle doc only when the stored uid matches the caller
-      allow create: if request.auth != null &&
+      allow get, list, read: if isSignedIn();
+      allow create: if isSignedIn() &&
         request.resource.data.keys().hasOnly(['uid']) &&
         request.resource.data.uid == request.auth.uid;
-
-      // Prevent updates/deletes in normal flow
       allow update, delete: if false;
     }
 
-    // Matches collection (top-level): only participants can read/write
     match /matches/{matchId} {
-      allow read: if request.auth != null &&
+      allow read: if isSignedIn() &&
         (resource.data.userA == request.auth.uid || resource.data.userB == request.auth.uid);
-
-      allow create, update: if request.auth != null &&
+      allow create, update: if isSignedIn() &&
         (request.resource.data.userA == request.auth.uid || request.resource.data.userB == request.auth.uid);
-
-      // Typically no deletes; restrict to participants if needed
-      allow delete: if request.auth != null &&
+      allow delete: if isSignedIn() &&
         (resource.data.userA == request.auth.uid || resource.data.userB == request.auth.uid);
     }
 
-    // Government email claim index: stores mapping and verification status
     match /government_email_index/{docId} {
-      // Authenticated users can read to resolve/verify their email state
-      allow get, list, read: if request.auth != null;
-
-      // Allow users to create/update their own claim entries
-      allow create, update: if request.auth != null &&
+      allow get, list, read: if isSignedIn();
+      allow create, update: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;
-
-      // No deletes by clients
       allow delete: if false;
     }
 
-    // Government email aliases: legacyEmail -> governmentEmail mapping
     match /government_email_aliases/{docId} {
-      // Authenticated reads to resolve linkage
-      allow get, list, read: if request.auth != null;
-
-      // Allow create/update when alias belongs to caller
-      allow create, update: if request.auth != null &&
+      allow get, list, read: if isSignedIn();
+      allow create, update: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;
-
       allow delete: if false;
     }
 
-    // Community: posts
     match /posts/{postId} {
-      // Public read of posts
-      allow get, list, read: if request.auth != null;
-
-      // Any authenticated user can create/update posts (author enforced in app)
-      allow create, update: if request.auth != null;
-      // No client deletes; use soft-delete via update
+      allow get, list, read: if isSignedIn();
+      allow create, update: if isSignedIn();
       allow delete: if false;
 
-      // Post subcollections
       match /comments/{commentId} {
-        allow read: if request.auth != null;
-        allow create, update: if request.auth != null;
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn();
         allow delete: if false;
       }
 
       match /comment_likes/{docId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if request.auth != null;
+        allow read: if isSignedIn();
+        allow create, update, delete: if isSignedIn();
       }
     }
 
-    // Likes (post likes stored top-level)
     match /likes/{docId} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
-    // Post counter shards
     match /post_counters/{postId} {
       match /shards/{shardId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if request.auth != null;
+        allow read: if isSignedIn();
+        allow create, update, delete: if isSignedIn();
       }
     }
 
-    // Boards are public readable
     match /boards/{boardId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
       allow write: if false;
     }
 
-    // Search suggestions increment
     match /search_suggestions/{token} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
       allow delete: if false;
     }
 
-    // Content reports
     match /reports/{reportId} {
       allow read: if false;
-      allow create: if request.auth != null;
+      allow create: if isSignedIn();
       allow update, delete: if false;
-    }
-
-    // Bookmarks under users: owner only
-    match /users/{userId}/bookmarks/{postId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
