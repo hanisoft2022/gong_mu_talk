@@ -149,6 +149,15 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  void clearGovernmentEmailVerificationForTesting() {
+    emit(
+      state.copyWith(
+        isEmailVerified: false,
+        lastMessage: '개발용 인증 상태가 초기화되었습니다.',
+      ),
+    );
+  }
+
   Future<void> refreshAuthStatus() async {
     await _authRepository.reloadCurrentUser();
     final AuthUser? user = _authRepository.currentAuthUser;

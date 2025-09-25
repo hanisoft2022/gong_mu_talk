@@ -7,6 +7,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/widgets/auth_dialog.dart';
 import '../../domain/career_track.dart';
 import '../../domain/user_profile.dart';
+import '../../../../core/constants/engagement_points.dart';
 import '../../../../routing/app_router.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -99,26 +100,6 @@ class _ProfileLoggedIn extends StatelessWidget {
     final bool isVerified = state.isGovernmentEmailVerified;
     final bool isSupporter =
         state.supporterLevel > 0 || state.premiumTier != PremiumTier.none;
-    final IconData statusIcon = isVerified
-        ? Icons.verified_outlined
-        : (isGovernmentEmail
-              ? Icons.mark_email_read_outlined
-              : Icons.mail_outline);
-    final Color statusColor = isVerified
-        ? theme.colorScheme.primary
-        : theme.colorScheme.tertiary;
-    final String statusTitle;
-    final String statusSubtitle;
-    if (isVerified) {
-      statusTitle = '공직자 메일 인증 완료';
-      statusSubtitle = '공직자 메일 계정으로 로그인했습니다. 모든 기능을 바로 이용할 수 있습니다.';
-    } else if (isGovernmentEmail) {
-      statusTitle = '공직자 메일 인증 대기중';
-      statusSubtitle = '인증 메일을 열어 계정을 확인하면 자동으로 완료됩니다.';
-    } else {
-      statusTitle = '공직자 메일 인증 필요';
-      statusSubtitle = '커뮤니티·매칭 등 확장 기능을 이용하려면 공직자 메일 인증을 완료해주세요.';
-    }
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -165,16 +146,9 @@ class _ProfileLoggedIn extends StatelessWidget {
                   title: Text(email, style: theme.textTheme.bodyLarge),
                   subtitle: const Text('로그인 계정 (이메일)'),
                 ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(statusIcon, color: statusColor),
-                  title: Text(
-                    statusTitle,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: statusColor,
-                    ),
-                  ),
-                  subtitle: Text(statusSubtitle),
+                _GovernmentEmailStatusTile(
+                  isVerified: isVerified,
+                  isGovernmentEmail: isGovernmentEmail,
                 ),
                 const Divider(height: 32),
                 _ProfileGuidance(theme: theme),
@@ -183,13 +157,14 @@ class _ProfileLoggedIn extends StatelessWidget {
           ),
         ),
         const Gap(24),
+        _EngagementPointsCard(state: state, theme: theme),
+        const Gap(24),
         _CareerTrackSelectorCard(state: state),
         const Gap(24),
         _ExcludedTrackCard(state: state),
         const Gap(24),
-        if (!state.isGovernmentEmailVerified)
-          const _GovernmentEmailVerificationCard(),
-        if (!state.isGovernmentEmailVerified) const Gap(24),
+        const _GovernmentEmailVerificationCard(),
+        const Gap(24),
         if (state.isGovernmentEmailVerified) const _MatchingShortcutCard(),
         if (state.isGovernmentEmailVerified) const Gap(24),
         Card(
@@ -287,6 +262,113 @@ class _ProfileGuidance extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EngagementPointsCard extends StatelessWidget {
+  const _EngagementPointsCard({required this.state, required this.theme});
+
+  final AuthState state;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.stars, color: theme.colorScheme.primary),
+                const Gap(8),
+                Text(
+                  '활동 포인트',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(16),
+            Text(
+              '${state.points} pts',
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const Gap(4),
+            Text('현재 레벨 ${state.level}', style: theme.textTheme.bodyMedium),
+            const Gap(16),
+            const Divider(height: 24),
+            Text(
+              '포인트는 아래 활동으로 적립됩니다.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Gap(12),
+            const _PointRuleRow(
+              icon: Icons.edit_note_outlined,
+              label: '라운지 글 작성',
+              value: '+${EngagementPoints.postCreation} pts',
+            ),
+            const _PointRuleRow(
+              icon: Icons.chat_bubble_outline,
+              label: '댓글 작성',
+              value: '+${EngagementPoints.commentCreation} pts',
+            ),
+            const _PointRuleRow(
+              icon: Icons.favorite_outline,
+              label: '내 글/댓글에 좋아요 수신',
+              value: '+${EngagementPoints.contentReceivedLike} pts',
+            ),
+            const Gap(8),
+            Text(
+              '포인트는 실시간으로 반영되며, 누적 포인트에 따라 더 많은 혜택이 제공될 예정입니다.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PointRuleRow extends StatelessWidget {
+  const _PointRuleRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.secondary),
+          const Gap(12),
+          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -564,6 +646,27 @@ class _GovernmentEmailVerificationCardState
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final bool isLoading = state.isGovernmentEmailVerificationInProgress;
+        final bool isVerified = state.isGovernmentEmailVerified;
+
+        if (isVerified) {
+          return Card(
+            color: theme.colorScheme.primaryContainer,
+            child: ListTile(
+              leading: Icon(
+                Icons.verified_outlined,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              title: const Text('공직자 메일 인증 완료'),
+              subtitle: const Text('확장 기능을 모두 이용할 수 있습니다.'),
+              trailing: TextButton(
+                onPressed: () => context
+                    .read<AuthCubit>()
+                    .clearGovernmentEmailVerificationForTesting(),
+                child: const Text('인증 취소(개발)'),
+              ),
+            ),
+          );
+        }
 
         return BlocListener<AuthCubit, AuthState>(
           listenWhen: (previous, current) =>
@@ -705,4 +808,46 @@ void _showAuthDialog(BuildContext context) {
       );
     },
   );
+}
+class _GovernmentEmailStatusTile extends StatelessWidget {
+  const _GovernmentEmailStatusTile({
+    required this.isVerified,
+    required this.isGovernmentEmail,
+  });
+
+  final bool isVerified;
+  final bool isGovernmentEmail;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final IconData icon = isVerified
+        ? Icons.verified_outlined
+        : (isGovernmentEmail ? Icons.mark_email_read_outlined : Icons.mail_outline);
+    final Color color = isVerified
+        ? theme.colorScheme.primary
+        : theme.colorScheme.tertiary;
+    final String title;
+    final String subtitle;
+    if (isVerified) {
+      title = '공직자 메일 인증 완료';
+      subtitle = '확장 기능을 모두 이용할 수 있습니다.';
+    } else if (isGovernmentEmail) {
+      title = '공직자 메일 인증 대기중';
+      subtitle = '인증 메일을 열어 상태를 업데이트해주세요.';
+    } else {
+      title = '공직자 메일 인증 필요';
+      subtitle = '공직자 메일(@korea.kr 또는 .go.kr) 계정을 인증하면 기능이 확장됩니다.';
+    }
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: color),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyLarge?.copyWith(color: color),
+      ),
+      subtitle: Text(subtitle),
+    );
+  }
 }
