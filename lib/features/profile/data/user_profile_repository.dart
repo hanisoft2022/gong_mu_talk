@@ -15,8 +15,8 @@ class UserProfileRepository {
   UserProfileRepository({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -60,7 +60,9 @@ class UserProfileRepository {
     String? photoUrl,
     UserRole role = UserRole.member,
   }) async {
-    return _firestore.runTransaction<UserProfile>((Transaction transaction) async {
+    return _firestore.runTransaction<UserProfile>((
+      Transaction transaction,
+    ) async {
       final DocumentReference<JsonMap> userRef = _userDoc(uid);
       final DocumentSnapshot<JsonMap> existing = await transaction.get(userRef);
       if (existing.exists) {
@@ -104,6 +106,10 @@ class UserProfileRepository {
         moderationStrike: 0,
         isDeleted: false,
         lastLoginAt: now,
+        followerCount: 0,
+        followingCount: 0,
+        notificationsEnabled: true,
+        supporterBadgeVisible: true,
       );
 
       transaction.set(userRef, profile.toMap());
@@ -120,9 +126,13 @@ class UserProfileRepository {
       throw ArgumentError('닉네임은 비워둘 수 없습니다.');
     }
 
-    return _firestore.runTransaction<UserProfile>((Transaction transaction) async {
+    return _firestore.runTransaction<UserProfile>((
+      Transaction transaction,
+    ) async {
       final DocumentReference<JsonMap> userRef = _userDoc(uid);
-      final DocumentSnapshot<JsonMap> userSnapshot = await transaction.get(userRef);
+      final DocumentSnapshot<JsonMap> userSnapshot = await transaction.get(
+        userRef,
+      );
       if (!userSnapshot.exists) {
         throw StateError('사용자 프로필을 찾을 수 없습니다.');
       }
@@ -136,7 +146,9 @@ class UserProfileRepository {
       final String newHandle = _normalizeHandle(trimmedNickname, fallback: uid);
       if (newHandle != profile.handle) {
         final DocumentReference<JsonMap> newHandleDoc = _handleDoc(newHandle);
-        final DocumentSnapshot<JsonMap> handleSnapshot = await transaction.get(newHandleDoc);
+        final DocumentSnapshot<JsonMap> handleSnapshot = await transaction.get(
+          newHandleDoc,
+        );
         if (handleSnapshot.exists) {
           throw StateError('이미 사용 중인 닉네임입니다.');
         }
@@ -147,15 +159,23 @@ class UserProfileRepository {
 
       int changeCount = profile.nicknameChangeCount;
       int extraTickets = profile.extraNicknameTickets;
-      if (changeCount >= 2) {
-        if (extraTickets <= 0) {
-          throw StateError('닉네임 변경권이 부족합니다.');
-        }
-        extraTickets -= 1;
-      } else {
-        changeCount += 1;
+      final DateTime? previousReset = profile.nicknameResetAt;
+      if (previousReset == null ||
+          previousReset.year != now.year ||
+          previousReset.month != now.month) {
+        changeCount = 0;
       }
 
+      if (changeCount >= 1) {
+        if (extraTickets <= 0) {
+          throw StateError(
+            '닉네임은 한 달에 한 번만 변경할 수 있어요. 변경권을 사용하거나 다음 달에 다시 시도해주세요.',
+          );
+        }
+        extraTickets -= 1;
+      }
+
+      changeCount += 1;
       final DateTime resetAnchor = DateTime(now.year, now.month);
 
       final Map<String, Object?> updates = <String, Object?>{
@@ -194,6 +214,8 @@ class UserProfileRepository {
     String? jobTitle,
     int? yearsOfService,
     String? photoUrl,
+    bool? notificationsEnabled,
+    bool? supporterBadgeVisible,
   }) async {
     final DocumentReference<JsonMap> doc = _userDoc(uid);
     final Map<String, Object?> updates = <String, Object?>{};
@@ -227,6 +249,12 @@ class UserProfileRepository {
     if (photoUrl != null) {
       updates['photoUrl'] = photoUrl;
     }
+    if (notificationsEnabled != null) {
+      updates['notificationsEnabled'] = notificationsEnabled;
+    }
+    if (supporterBadgeVisible != null) {
+      updates['supporterBadgeVisible'] = supporterBadgeVisible;
+    }
     updates['updatedAt'] = Timestamp.now();
 
     await doc.update(updates);
@@ -248,7 +276,9 @@ class UserProfileRepository {
       updates['excludedSerials'] = excludedSerials.toList(growable: false);
     }
     if (excludedDepartments != null) {
-      updates['excludedDepartments'] = excludedDepartments.toList(growable: false);
+      updates['excludedDepartments'] = excludedDepartments.toList(
+        growable: false,
+      );
     }
     if (excludedRegions != null) {
       updates['excludedRegions'] = excludedRegions.toList(growable: false);
@@ -275,7 +305,9 @@ class UserProfileRepository {
     required String label,
     String? description,
   }) async {
-    final DocumentReference<JsonMap> badgeDoc = _badgesCollection(uid).doc(badgeId);
+    final DocumentReference<JsonMap> badgeDoc = _badgesCollection(
+      uid,
+    ).doc(badgeId);
     await badgeDoc.set(<String, Object?>{
       'label': label,
       'description': description,
@@ -283,10 +315,7 @@ class UserProfileRepository {
     });
   }
 
-  Future<void> addNicknameTickets({
-    required String uid,
-    int count = 1,
-  }) async {
+  Future<void> addNicknameTickets({required String uid, int count = 1}) async {
     await _userDoc(uid).update(<String, Object?>{
       'extraNicknameTickets': FieldValue.increment(count),
       'updatedAt': Timestamp.now(),
@@ -301,9 +330,9 @@ class UserProfileRepository {
   }
 
   Future<void> recordLogin(String uid) async {
-    await _userDoc(uid).update(<String, Object?>{
-      'lastLoginAt': Timestamp.now(),
-    });
+    await _userDoc(
+      uid,
+    ).update(<String, Object?>{'lastLoginAt': Timestamp.now()});
   }
 
   Future<PaginatedQueryResult<UserProfile>> fetchProfiles({
@@ -314,7 +343,9 @@ class UserProfileRepository {
     String? region,
     bool excludeDeleted = true,
   }) async {
-    QueryJson query = _usersRef.orderBy('createdAt', descending: true).limit(limit);
+    QueryJson query = _usersRef
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
     if (serial != null) {
       query = query.where('serial', isEqualTo: serial);
     }
@@ -337,8 +368,14 @@ class UserProfileRepository {
         .toList(growable: false);
 
     final bool hasMore = snapshot.docs.length == limit;
-    final QueryDocumentSnapshotJson? last = snapshot.docs.isEmpty ? null : snapshot.docs.last;
-    return PaginatedQueryResult<UserProfile>(items: profiles, lastDocument: last, hasMore: hasMore);
+    final QueryDocumentSnapshotJson? last = snapshot.docs.isEmpty
+        ? null
+        : snapshot.docs.last;
+    return PaginatedQueryResult<UserProfile>(
+      items: profiles,
+      lastDocument: last,
+      hasMore: hasMore,
+    );
   }
 
   Future<String> uploadProfileImage({
@@ -348,8 +385,43 @@ class UserProfileRepository {
     String contentType = 'image/jpeg',
   }) async {
     final Reference ref = _storage.ref('profile_images/$uid/$path');
-    await ref.putData(Uint8List.fromList(bytes), SettableMetadata(contentType: contentType));
+    await ref.putData(
+      Uint8List.fromList(bytes),
+      SettableMetadata(contentType: contentType),
+    );
     return ref.getDownloadURL();
+  }
+
+  Future<List<UserProfile>> fetchProfilesByIds(List<String> uids) async {
+    if (uids.isEmpty) {
+      return const <UserProfile>[];
+    }
+
+    final Map<String, UserProfile> resolved = <String, UserProfile>{};
+    for (final List<String> chunk in _chunk(uids, size: 10)) {
+      final QuerySnapshot<JsonMap> snapshot = await _usersRef
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+        resolved[doc.id] = UserProfile.fromSnapshot(doc);
+      }
+    }
+
+    return uids
+        .map((String id) => resolved[id])
+        .whereType<UserProfile>()
+        .toList(growable: false);
+  }
+
+  Iterable<List<T>> _chunk<T>(List<T> items, {int size = 10}) sync* {
+    if (items.isEmpty) {
+      return;
+    }
+    final int total = items.length;
+    for (int index = 0; index < total; index += size) {
+      final int end = (index + size) > total ? total : index + size;
+      yield items.sublist(index, end);
+    }
   }
 
   String _normalizeHandle(String nickname, {required String fallback}) {
@@ -370,7 +442,11 @@ class UserProfileRepository {
     return normalized;
   }
 
-  Future<void> _reserveHandle(Transaction transaction, String handle, String uid) async {
+  Future<void> _reserveHandle(
+    Transaction transaction,
+    String handle,
+    String uid,
+  ) async {
     final DocumentReference<JsonMap> handleRef = _handleDoc(handle);
     final DocumentSnapshot<JsonMap> snapshot = await transaction.get(handleRef);
     if (snapshot.exists) {

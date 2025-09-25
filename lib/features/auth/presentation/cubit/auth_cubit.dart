@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -260,7 +261,11 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     if (!state.canChangeNickname) {
-      emit(state.copyWith(lastMessage: '닉네임 변경권이 부족합니다.'));
+      emit(
+        state.copyWith(
+          lastMessage: '닉네임은 한 달에 한 번만 변경할 수 있어요. 변경권이 있다면 사용해주세요.',
+        ),
+      );
       return;
     }
 
@@ -299,6 +304,176 @@ class AuthCubit extends Cubit<AuthState> {
       emit(state.copyWith(lastMessage: '닉네임 변경권이 추가되었습니다.'));
     } catch (_) {
       emit(state.copyWith(lastMessage: '닉네임 변경권 추가 중 오류가 발생했습니다.'));
+    }
+  }
+
+  Future<void> updateBio(String bio) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 자기소개를 수정할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final String trimmed = bio.trim();
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, bio: trimmed.isEmpty ? null : trimmed);
+      _applyProfile(profile);
+      emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트했습니다.'));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '자기소개를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> updateNotificationsEnabled(bool enabled) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 알림 설정을 변경할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, notificationsEnabled: enabled);
+      _applyProfile(profile);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: enabled ? '알림을 켰습니다.' : '알림을 껐습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '알림 설정을 변경하지 못했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> updateSupporterBadgeVisibility(bool visible) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 후원 배지 노출을 설정할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, supporterBadgeVisible: visible);
+      _applyProfile(profile);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: visible ? '후원 배지를 다시 표시합니다.' : '후원 배지를 숨겼습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '후원 배지 설정 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> updateProfileImage({
+    required Uint8List bytes,
+    String? fileName,
+    String contentType = 'image/jpeg',
+  }) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 프로필 이미지를 변경할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final String resolvedName = (fileName?.trim().isNotEmpty ?? false)
+          ? fileName!.trim()
+          : 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String downloadUrl = await _userProfileRepository
+          .uploadProfileImage(
+            uid: uid,
+            path: resolvedName,
+            bytes: bytes,
+            contentType: contentType,
+          );
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, photoUrl: downloadUrl);
+      _applyProfile(profile);
+      emit(
+        state.copyWith(isProcessing: false, lastMessage: '프로필 이미지가 변경되었습니다.'),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '프로필 이미지를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      await _authRepository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '비밀번호를 변경했습니다.'));
+    } on AuthException catch (error) {
+      emit(state.copyWith(isProcessing: false, lastMessage: error.message));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteAccount({String? currentPassword}) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 탈퇴를 진행할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      await _authRepository.deleteAccount(currentPassword: currentPassword);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '계정을 삭제했습니다. 다시 만나길 바랄게요.',
+        ),
+      );
+    } on AuthException catch (error) {
+      emit(state.copyWith(isProcessing: false, lastMessage: error.message));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '회원 탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
     }
   }
 
@@ -596,11 +771,13 @@ class AuthCubit extends Cubit<AuthState> {
       state.copyWith(
         userProfile: profile,
         nickname: profile.nickname,
+        handle: profile.handle,
         serial: profile.serial,
         department: profile.department,
         region: profile.region,
         jobTitle: profile.jobTitle,
         yearsOfService: profile.yearsOfService,
+        bio: profile.bio,
         supporterLevel: profile.supporterLevel,
         points: profile.points,
         level: profile.level,
@@ -612,12 +789,23 @@ class AuthCubit extends Cubit<AuthState> {
         nicknameLastChangedAt: profile.nicknameLastChangedAt,
         nicknameResetAt: profile.nicknameResetAt,
         extraNicknameTickets: profile.extraNicknameTickets,
+        followerCount: profile.followerCount,
+        followingCount: profile.followingCount,
+        notificationsEnabled: profile.notificationsEnabled,
+        supporterBadgeVisible: profile.supporterBadgeVisible,
         excludedTracks: excludedTracks,
         excludedSerials: profile.excludedSerials,
         excludedDepartments: profile.excludedDepartments,
         excludedRegions: profile.excludedRegions,
       ),
     );
+
+    if (profile.notificationsEnabled) {
+      final String uid = state.userId ?? profile.uid;
+      unawaited(_notificationRepository.startListening(uid));
+    } else {
+      unawaited(_notificationRepository.stopListening());
+    }
   }
 
   String _deriveNickname(String? email) {

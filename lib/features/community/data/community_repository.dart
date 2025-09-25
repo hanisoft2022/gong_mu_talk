@@ -514,6 +514,34 @@ class CommunityRepository {
     return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
   }
 
+  Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
+    required String authorUid,
+    int limit = 20,
+    QueryDocumentSnapshotJson? startAfter,
+    String? currentUid,
+  }) async {
+    try {
+      QueryJson query = _postsRef
+          .where('authorUid', isEqualTo: authorUid)
+          .where('visibility', isEqualTo: PostVisibility.public.name)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final QuerySnapshot<JsonMap> snapshot = await query.get();
+      return _buildPostPage(snapshot, currentUid: currentUid, limit: limit);
+    } catch (_) {
+      return const PaginatedQueryResult<Post>(
+        items: <Post>[],
+        hasMore: false,
+        lastDocument: null,
+      );
+    }
+  }
+
   Future<PaginatedQueryResult<Post>> fetchBookmarkedPosts({
     required String uid,
     int limit = 20,

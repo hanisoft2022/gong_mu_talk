@@ -42,6 +42,10 @@ class UserProfile extends Equatable {
     this.moderationStrike = 0,
     this.isDeleted = false,
     this.lastLoginAt,
+    this.followerCount = 0,
+    this.followingCount = 0,
+    this.notificationsEnabled = true,
+    this.supporterBadgeVisible = true,
   });
 
   final String uid;
@@ -77,23 +81,30 @@ class UserProfile extends Equatable {
   final int moderationStrike;
   final bool isDeleted;
   final DateTime? lastLoginAt;
+  final int followerCount;
+  final int followingCount;
+  final bool notificationsEnabled;
+  final bool supporterBadgeVisible;
 
-  bool get isBlocked => blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
+  bool get isBlocked =>
+      blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
 
   bool get isPremium => premiumTier != PremiumTier.none;
 
+  bool get hasNicknameTickets => extraNicknameTickets > 0;
+
   bool get canChangeNickname {
     final DateTime now = DateTime.now();
-    final DateTime? lastReset = nicknameResetAt;
-    if (lastReset == null) {
+    final DateTime? resetAnchor = nicknameResetAt;
+    if (resetAnchor == null ||
+        resetAnchor.year != now.year ||
+        resetAnchor.month != now.month) {
       return true;
     }
-
-    if (lastReset.year != now.year || lastReset.month != now.month) {
+    if (nicknameChangeCount < 1) {
       return true;
     }
-
-    return nicknameChangeCount < 2 || extraNicknameTickets > 0;
+    return hasNicknameTickets;
   }
 
   UserProfile copyWith({
@@ -129,6 +140,10 @@ class UserProfile extends Equatable {
     int? moderationStrike,
     bool? isDeleted,
     DateTime? lastLoginAt,
+    int? followerCount,
+    int? followingCount,
+    bool? notificationsEnabled,
+    bool? supporterBadgeVisible,
   }) {
     return UserProfile(
       uid: uid,
@@ -154,7 +169,8 @@ class UserProfile extends Equatable {
       excludedDepartments: excludedDepartments ?? this.excludedDepartments,
       excludedRegions: excludedRegions ?? this.excludedRegions,
       nicknameChangeCount: nicknameChangeCount ?? this.nicknameChangeCount,
-      nicknameLastChangedAt: nicknameLastChangedAt ?? this.nicknameLastChangedAt,
+      nicknameLastChangedAt:
+          nicknameLastChangedAt ?? this.nicknameLastChangedAt,
       nicknameResetAt: nicknameResetAt ?? this.nicknameResetAt,
       extraNicknameTickets: extraNicknameTickets ?? this.extraNicknameTickets,
       interests: interests ?? this.interests,
@@ -165,6 +181,11 @@ class UserProfile extends Equatable {
       moderationStrike: moderationStrike ?? this.moderationStrike,
       isDeleted: isDeleted ?? this.isDeleted,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      followerCount: followerCount ?? this.followerCount,
+      followingCount: followingCount ?? this.followingCount,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      supporterBadgeVisible:
+          supporterBadgeVisible ?? this.supporterBadgeVisible,
     );
   }
 
@@ -181,7 +202,9 @@ class UserProfile extends Equatable {
       'photoUrl': photoUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
-      'blockedUntil': blockedUntil != null ? Timestamp.fromDate(blockedUntil!) : null,
+      'blockedUntil': blockedUntil != null
+          ? Timestamp.fromDate(blockedUntil!)
+          : null,
       'supporterLevel': supporterLevel,
       'premiumTier': premiumTier.name,
       'points': points,
@@ -205,11 +228,19 @@ class UserProfile extends Equatable {
       'hasUnreadModerationNotice': hasUnreadModerationNotice,
       'moderationStrike': moderationStrike,
       'isDeleted': isDeleted,
-      'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
+      'lastLoginAt': lastLoginAt != null
+          ? Timestamp.fromDate(lastLoginAt!)
+          : null,
+      'followerCount': followerCount,
+      'followingCount': followingCount,
+      'notificationsEnabled': notificationsEnabled,
+      'supporterBadgeVisible': supporterBadgeVisible,
     };
   }
 
-  static UserProfile fromSnapshot(DocumentSnapshot<Map<String, Object?>> snapshot) {
+  static UserProfile fromSnapshot(
+    DocumentSnapshot<Map<String, Object?>> snapshot,
+  ) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
       throw StateError('User profile document ${snapshot.id} has no data');
@@ -245,7 +276,8 @@ class UserProfile extends Equatable {
       nicknameChangeCount: (data['nicknameChangeCount'] as num?)?.toInt() ?? 0,
       nicknameLastChangedAt: _parseTimestamp(data['nicknameLastChangedAt']),
       nicknameResetAt: _parseTimestamp(data['nicknameResetAt']),
-      extraNicknameTickets: (data['extraNicknameTickets'] as num?)?.toInt() ?? 0,
+      extraNicknameTickets:
+          (data['extraNicknameTickets'] as num?)?.toInt() ?? 0,
       interests: _parseStringList(data['interests']),
       bio: data['bio'] as String?,
       isAnonymousDefault: data['isAnonymousDefault'] as bool? ?? true,
@@ -254,13 +286,17 @@ class UserProfile extends Equatable {
       moderationStrike: (data['moderationStrike'] as num?)?.toInt() ?? 0,
       isDeleted: data['isDeleted'] as bool? ?? false,
       lastLoginAt: _parseTimestamp(data['lastLoginAt']),
+      followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
+      followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
+      notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
+      supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
     );
   }
 
   static UserRole _parseRole(Object? raw) {
     if (raw is String) {
       return UserRole.values.firstWhere(
-        (element) => element.name == raw,
+        (UserRole element) => element.name == raw,
         orElse: () => UserRole.member,
       );
     }
@@ -270,7 +306,7 @@ class UserProfile extends Equatable {
   static PremiumTier _parsePremium(Object? raw) {
     if (raw is String) {
       return PremiumTier.values.firstWhere(
-        (element) => element.name == raw,
+        (PremiumTier element) => element.name == raw,
         orElse: () => PremiumTier.none,
       );
     }
@@ -280,7 +316,7 @@ class UserProfile extends Equatable {
   static CareerTrack _parseCareerTrack(Object? raw) {
     if (raw is String) {
       return CareerTrack.values.firstWhere(
-        (element) => element.name == raw,
+        (CareerTrack element) => element.name == raw,
         orElse: () => CareerTrack.none,
       );
     }
@@ -349,5 +385,9 @@ class UserProfile extends Equatable {
     moderationStrike,
     isDeleted,
     lastLoginAt,
+    followerCount,
+    followingCount,
+    notificationsEnabled,
+    supporterBadgeVisible,
   ];
 }

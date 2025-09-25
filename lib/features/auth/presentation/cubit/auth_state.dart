@@ -11,11 +11,13 @@ class AuthState extends Equatable {
     this.userProfile,
     this.careerTrack = CareerTrack.none,
     this.nickname = '공무원',
+    this.handle = '',
     this.serial = 'unknown',
     this.department = 'unknown',
     this.region = 'unknown',
     this.jobTitle = '직무 미입력',
     this.yearsOfService = 0,
+    this.bio,
     this.supporterLevel = 0,
     this.points = 0,
     this.level = 1,
@@ -26,6 +28,10 @@ class AuthState extends Equatable {
     this.nicknameLastChangedAt,
     this.nicknameResetAt,
     this.extraNicknameTickets = 0,
+    this.followerCount = 0,
+    this.followingCount = 0,
+    this.notificationsEnabled = true,
+    this.supporterBadgeVisible = true,
     this.excludedTracks = const <CareerTrack>{},
     this.excludedSerials = const <String>{},
     this.excludedDepartments = const <String>{},
@@ -46,11 +52,13 @@ class AuthState extends Equatable {
   final UserProfile? userProfile;
   final CareerTrack careerTrack;
   final String nickname;
+  final String handle;
   final String serial;
   final String department;
   final String region;
   final String jobTitle;
   final int yearsOfService;
+  final String? bio;
   final int supporterLevel;
   final int points;
   final int level;
@@ -61,6 +69,10 @@ class AuthState extends Equatable {
   final DateTime? nicknameLastChangedAt;
   final DateTime? nicknameResetAt;
   final int extraNicknameTickets;
+  final int followerCount;
+  final int followingCount;
+  final bool notificationsEnabled;
+  final bool supporterBadgeVisible;
   final Set<CareerTrack> excludedTracks;
   final Set<String> excludedSerials;
   final Set<String> excludedDepartments;
@@ -83,11 +95,13 @@ class AuthState extends Equatable {
     UserProfile? userProfile,
     CareerTrack? careerTrack,
     String? nickname,
+    String? handle,
     String? serial,
     String? department,
     String? region,
     String? jobTitle,
     int? yearsOfService,
+    String? bio,
     int? supporterLevel,
     int? points,
     int? level,
@@ -98,6 +112,10 @@ class AuthState extends Equatable {
     DateTime? nicknameLastChangedAt,
     DateTime? nicknameResetAt,
     int? extraNicknameTickets,
+    int? followerCount,
+    int? followingCount,
+    bool? notificationsEnabled,
+    bool? supporterBadgeVisible,
     Set<CareerTrack>? excludedTracks,
     Set<String>? excludedSerials,
     Set<String>? excludedDepartments,
@@ -120,11 +138,13 @@ class AuthState extends Equatable {
       userProfile: userProfile ?? this.userProfile,
       careerTrack: careerTrack ?? this.careerTrack,
       nickname: nickname ?? this.nickname,
+      handle: handle ?? this.handle,
       serial: serial ?? this.serial,
       department: department ?? this.department,
       region: region ?? this.region,
       jobTitle: jobTitle ?? this.jobTitle,
       yearsOfService: yearsOfService ?? this.yearsOfService,
+      bio: bio ?? this.bio,
       supporterLevel: supporterLevel ?? this.supporterLevel,
       points: points ?? this.points,
       level: level ?? this.level,
@@ -136,15 +156,24 @@ class AuthState extends Equatable {
           nicknameLastChangedAt ?? this.nicknameLastChangedAt,
       nicknameResetAt: nicknameResetAt ?? this.nicknameResetAt,
       extraNicknameTickets: extraNicknameTickets ?? this.extraNicknameTickets,
+      followerCount: followerCount ?? this.followerCount,
+      followingCount: followingCount ?? this.followingCount,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      supporterBadgeVisible:
+          supporterBadgeVisible ?? this.supporterBadgeVisible,
       excludedTracks: excludedTracks ?? this.excludedTracks,
       excludedSerials: excludedSerials ?? this.excludedSerials,
       excludedDepartments: excludedDepartments ?? this.excludedDepartments,
       excludedRegions: excludedRegions ?? this.excludedRegions,
       userId: userId == _unset ? this.userId : userId as String?,
       email: email == _unset ? this.email : email as String?,
-      primaryEmail: primaryEmail == _unset ? this.primaryEmail : primaryEmail as String?,
+      primaryEmail: primaryEmail == _unset
+          ? this.primaryEmail
+          : primaryEmail as String?,
       authError: authError == _unset ? this.authError : authError as String?,
-      lastMessage: lastMessage == _unset ? this.lastMessage : lastMessage as String?,
+      lastMessage: lastMessage == _unset
+          ? this.lastMessage
+          : lastMessage as String?,
     );
   }
 
@@ -159,11 +188,13 @@ class AuthState extends Equatable {
     userProfile,
     careerTrack,
     nickname,
+    handle,
     serial,
     department,
     region,
     jobTitle,
     yearsOfService,
+    bio,
     supporterLevel,
     points,
     level,
@@ -174,6 +205,10 @@ class AuthState extends Equatable {
     nicknameLastChangedAt,
     nicknameResetAt,
     extraNicknameTickets,
+    followerCount,
+    followingCount,
+    notificationsEnabled,
+    supporterBadgeVisible,
     excludedTracks,
     excludedSerials,
     excludedDepartments,
@@ -204,10 +239,15 @@ class AuthState extends Equatable {
 
   bool get canChangeNickname {
     final DateTime now = DateTime.now();
-    final DateTime effectiveReset = nicknameResetAt ?? now;
-    if (effectiveReset.year != now.year || effectiveReset.month != now.month) {
+    final DateTime? resetAnchor = nicknameResetAt;
+    if (resetAnchor == null ||
+        resetAnchor.year != now.year ||
+        resetAnchor.month != now.month) {
       return true;
     }
-    return nicknameChangeCount < 2 || hasNicknameTickets;
+    if (nicknameChangeCount < 1) {
+      return true;
+    }
+    return hasNicknameTickets;
   }
 }

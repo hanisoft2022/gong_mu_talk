@@ -29,6 +29,10 @@ import '../features/notifications/data/notification_repository.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
+import '../features/profile/data/follow_repository.dart';
+import '../features/profile/data/paystub_verification_repository.dart';
+import '../features/profile/presentation/cubit/profile_timeline_cubit.dart';
+import '../features/profile/presentation/cubit/profile_relations_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -55,6 +59,12 @@ Future<void> configureDependencies() async {
       () => LoginSessionStore(sharedPreferences),
     )
     ..registerLazySingleton<UserProfileRepository>(UserProfileRepository.new)
+    ..registerLazySingleton<FollowRepository>(
+      () => FollowRepository(userProfileRepository: getIt()),
+    )
+    ..registerLazySingleton<PaystubVerificationRepository>(
+      () => PaystubVerificationRepository(authCubit: getIt()),
+    )
     ..registerLazySingleton<NotificationRepository>(
       () => NotificationRepository(
         notificationService: getIt(),
@@ -90,6 +100,13 @@ Future<void> configureDependencies() async {
         authCubit: getIt(),
         notificationRepository: getIt(),
       ),
+    )
+    ..registerFactory<ProfileTimelineCubit>(
+      () => ProfileTimelineCubit(repository: getIt(), authCubit: getIt()),
+    )
+    ..registerFactory<ProfileRelationsCubit>(
+      () =>
+          ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt()))
