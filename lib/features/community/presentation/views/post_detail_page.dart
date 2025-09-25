@@ -21,12 +21,14 @@ class PostDetailPage extends StatefulWidget {
 
 class _PostDetailPageState extends State<PostDetailPage> {
   late final TextEditingController _commentController;
+  late final FocusNode _commentFocusNode;
   late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _commentController = TextEditingController();
+    _commentFocusNode = FocusNode();
     _scrollController = ScrollController();
     context.read<PostDetailCubit>().loadPost(
       widget.postId,
@@ -37,6 +39,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   void dispose() {
     _commentController.dispose();
+    _commentFocusNode.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -152,6 +155,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         onToggleLike: (commentId) => context
                             .read<PostDetailCubit>()
                             .toggleCommentLike(commentId),
+                        onReact: (commentId, emoji) => context
+                            .read<PostDetailCubit>()
+                            .toggleCommentReaction(commentId, emoji),
+                        onReply: _insertMention,
                       ),
                     ],
                   ),
@@ -161,6 +168,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 controller: _commentController,
                 isSubmitting: state.isSubmittingComment,
                 onSubmit: _submitComment,
+                focusNode: _commentFocusNode,
               ),
             ],
           );
@@ -297,6 +305,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
       context.push('${CommunityRoute.editPath}/${state.post!.id}');
     }
   }
+
+  void _insertMention(String nickname) {
+    final String trimmed = nickname.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    final TextEditingValue value = _commentController.value;
+    final int start = value.selection.isValid ? value.selection.start : value.text.length;
+    final int end = value.selection.isValid ? value.selection.end : value.text.length;
+    final bool needsLeadingSpace = start > 0 && !value.text.substring(0, start).endsWith(' ');
+    final String mention = '${needsLeadingSpace ? ' ' : ''}@$trimmed ';
+    final String newText = value.text.replaceRange(start, end, mention);
+    _commentController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + mention.length),
+    );
+    _commentFocusNode.requestFocus();
+  }
 }
 
 class _CommentsSection extends StatelessWidget {
@@ -305,12 +332,16 @@ class _CommentsSection extends StatelessWidget {
     required this.timelineComments,
     required this.isLoading,
     required this.onToggleLike,
+    required this.onReact,
+    required this.onReply,
   });
 
   final List<Comment> featuredComments;
   final List<Comment> timelineComments;
   final bool isLoading;
   final void Function(String commentId) onToggleLike;
+  final void Function(String commentId, String emoji) onReact;
+  final void Function(String nickname) onReply;
 
   @override
   Widget build(BuildContext context) {
@@ -327,9 +358,9 @@ class _CommentsSection extends StatelessWidget {
             const Gap(8),
             Text(
               '댓글 ${timelineComments.length}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
@@ -360,13 +391,17 @@ class _CommentsSection extends StatelessWidget {
             _FeaturedCommentsSection(
               comments: featuredComments,
               onToggleLike: onToggleLike,
+              onReact: onReact,
+              onReply: onReply,
             ),
             const Gap(16),
           ],
           ...timelineComments.map(
-            (comment) => _CommentTile(
+            (Comment comment) => _CommentTile(
               comment: comment,
               onToggleLike: () => onToggleLike(comment.id),
+              onReact: (String emoji) => onReact(comment.id, emoji),
+              onReply: () => onReply(comment.authorNickname),
             ),
           ),
         ],
@@ -379,10 +414,14 @@ class _FeaturedCommentsSection extends StatelessWidget {
   const _FeaturedCommentsSection({
     required this.comments,
     required this.onToggleLike,
+    required this.onReact,
+    required this.onReply,
   });
 
   final List<Comment> comments;
   final void Function(String commentId) onToggleLike;
+  final void Function(String commentId, String emoji) onReact;
+  final void Function(String nickname) onReply;
 
   @override
   Widget build(BuildContext context) {
@@ -406,7 +445,7 @@ class _FeaturedCommentsSection extends StatelessWidget {
           ),
           const Gap(12),
           ...comments
-              .where((comment) {
+              .where((Comment comment) {
                 if (rendered.contains(comment.id)) {
                   return false;
                 }
@@ -414,11 +453,13 @@ class _FeaturedCommentsSection extends StatelessWidget {
                 return true;
               })
               .map(
-                (comment) => Padding(
+                (Comment comment) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _CommentTile(
                     comment: comment,
                     onToggleLike: () => onToggleLike(comment.id),
+                    onReact: (String emoji) => onReact(comment.id, emoji),
+                    onReply: () => onReply(comment.authorNickname),
                     highlight: true,
                   ),
                 ),
@@ -433,11 +474,15 @@ class _CommentTile extends StatelessWidget {
   const _CommentTile({
     required this.comment,
     required this.onToggleLike,
+    required this.onReact,
+    required this.onReply,
     this.highlight = false,
   });
 
   final Comment comment;
   final VoidCallback onToggleLike;
+  final void Function(String emoji) onReact;
+  final VoidCallback onReply;
   final bool highlight;
 
   @override
@@ -487,6 +532,12 @@ class _CommentTile extends StatelessWidget {
                 ),
                 const Gap(4),
                 Text(comment.text, style: theme.textTheme.bodyMedium),
+                const Gap(12),
+                _CommentReactionBar(
+                  reactions: comment.reactionCounts,
+                  viewerReaction: comment.viewerReaction,
+                  onReact: onReact,
+                ),
                 const Gap(8),
                 Row(
                   children: [
@@ -505,6 +556,20 @@ class _CommentTile extends StatelessWidget {
                         '${comment.likeCount}',
                         style: theme.textTheme.labelSmall,
                       ),
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    const Gap(8),
+                    TextButton.icon(
+                      onPressed: onReply,
+                      icon: const Icon(Icons.reply_outlined, size: 16),
+                      label: const Text('답글'),
                       style: TextButton.styleFrom(
                         minimumSize: Size.zero,
                         padding: const EdgeInsets.symmetric(
@@ -545,11 +610,13 @@ class _CommentComposer extends StatefulWidget {
     required this.controller,
     required this.isSubmitting,
     required this.onSubmit,
+    required this.focusNode,
   });
 
   final TextEditingController controller;
   final bool isSubmitting;
   final Future<void> Function() onSubmit;
+  final FocusNode focusNode;
 
   @override
   State<_CommentComposer> createState() => _CommentComposerState();
@@ -601,6 +668,7 @@ class _CommentComposerState extends State<_CommentComposer> {
           Expanded(
             child: TextField(
               controller: widget.controller,
+              focusNode: widget.focusNode,
               decoration: const InputDecoration(
                 hintText: '댓글을 입력하세요...',
                 border: OutlineInputBorder(),
@@ -629,6 +697,42 @@ class _CommentComposerState extends State<_CommentComposer> {
           ),
         ],
       ),
+    );
+  }
+}
+
+const List<String> _commentReactionOptions = <String>['👍', '🎉', '😍', '😄'];
+
+class _CommentReactionBar extends StatelessWidget {
+  const _CommentReactionBar({
+    required this.reactions,
+    required this.viewerReaction,
+    required this.onReact,
+  });
+
+  final Map<String, int> reactions;
+  final String? viewerReaction;
+  final void Function(String emoji) onReact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      children: _commentReactionOptions.map((String emoji) {
+        final int count = reactions[emoji] ?? 0;
+        final bool selected = viewerReaction == emoji;
+        return ChoiceChip(
+          label: Text(
+            count > 0 ? '$emoji $count' : emoji,
+            style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
+          ),
+          selected: selected,
+          showCheckmark: false,
+          onSelected: (_) => onReact(emoji),
+          selectedColor:
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
+        );
+      }).toList(growable: false),
     );
   }
 }

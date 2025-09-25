@@ -122,6 +122,9 @@ class CommunityRepository {
   CollectionReference<JsonMap> _commentLikesRef(String postId) =>
       _postDoc(postId).collection('comment_likes');
 
+  CollectionReference<JsonMap> _commentReactionsRef(String postId) =>
+      _postDoc(postId).collection('comment_reactions');
+
   CollectionReference<JsonMap> _postCounterShard(String postId) =>
       _firestore.collection('post_counters').doc(postId).collection('shards');
 
@@ -539,14 +542,23 @@ class CommunityRepository {
     }
 
     final QuerySnapshot<JsonMap> snapshot = await query.get();
+    final List<String> commentIds =
+        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+
     final Set<String> likedCommentIds = currentUid == null
         ? const <String>{}
         : await _fetchLikedCommentIds(
             postId: postId,
             uid: currentUid,
-            commentIds: snapshot.docs
-                .map((doc) => doc.id)
-                .toList(growable: false),
+            commentIds: commentIds,
+          );
+
+    final Map<String, String> reactions = currentUid == null
+        ? const <String, String>{}
+        : await _fetchCommentReactions(
+            postId: postId,
+            uid: currentUid,
+            commentIds: commentIds,
           );
 
     final List<Comment> comments = snapshot.docs
@@ -555,6 +567,7 @@ class CommunityRepository {
             doc,
             postId: postId,
             isLiked: likedCommentIds.contains(doc.id),
+            viewerReaction: reactions[doc.id],
           ),
         )
         .toList(growable: false);
@@ -594,6 +607,7 @@ class CommunityRepository {
           title: authorNickname,
           body: text,
         ),
+        'reactionCounts': const <String, Object?>{},
       });
 
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
@@ -617,6 +631,7 @@ class CommunityRepository {
       likeCount: 0,
       createdAt: now,
       parentCommentId: parentCommentId,
+      reactionCounts: const <String, int>{},
     );
   }
 
@@ -1118,16 +1133,28 @@ class CommunityRepository {
       postId,
     ).orderBy('createdAt', descending: false).get();
 
+    final List<String> commentIds =
+        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+
     final Set<String> likedIds = await _fetchLikedCommentIds(
       postId: postId,
       uid: currentUserId,
-      commentIds: snapshot.docs.map((doc) => doc.id).toList(),
+      commentIds: commentIds,
+    );
+
+    final Map<String, String> reactions = await _fetchCommentReactions(
+      postId: postId,
+      uid: currentUserId,
+      commentIds: commentIds,
     );
 
     return snapshot.docs
         .map(
-          (doc) =>
-              Comment.fromSnapshot(doc, isLiked: likedIds.contains(doc.id)),
+          (QueryDocumentSnapshot<JsonMap> doc) => Comment.fromSnapshot(
+            doc,
+            isLiked: likedIds.contains(doc.id),
+            viewerReaction: reactions[doc.id],
+          ),
         )
         .toList();
   }
@@ -1139,16 +1166,28 @@ class CommunityRepository {
         .limit(limit)
         .get();
 
+    final List<String> commentIds =
+        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+
     final Set<String> likedIds = await _fetchLikedCommentIds(
       postId: postId,
       uid: currentUserId,
-      commentIds: snapshot.docs.map((doc) => doc.id).toList(),
+      commentIds: commentIds,
+    );
+
+    final Map<String, String> reactions = await _fetchCommentReactions(
+      postId: postId,
+      uid: currentUserId,
+      commentIds: commentIds,
     );
 
     return snapshot.docs
         .map(
-          (doc) =>
-              Comment.fromSnapshot(doc, isLiked: likedIds.contains(doc.id)),
+          (QueryDocumentSnapshot<JsonMap> doc) => Comment.fromSnapshot(
+            doc,
+            isLiked: likedIds.contains(doc.id),
+            viewerReaction: reactions[doc.id],
+          ),
         )
         .toList(growable: false);
   }
@@ -1272,6 +1311,72 @@ class CommunityRepository {
     });
   }
 
+  Future<String?> toggleCommentReaction({
+    required String postId,
+    required String commentId,
+    required String emoji,
+  }) async {
+    final DocumentReference<JsonMap> reactionDoc = _commentReactionsRef(postId)
+        .doc('${commentId}_$currentUserId');
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(postId).doc(commentId);
+
+    return _firestore.runTransaction<String?>(
+      (Transaction transaction) async {
+        final DocSnapshotJson commentSnapshot = await transaction.get(commentDoc);
+        if (!commentSnapshot.exists) {
+          throw StateError('댓글을 찾을 수 없습니다.');
+        }
+
+        final Map<String, Object?> data = commentSnapshot.data()!;
+        final Map<String, int> counts =
+            (data['reactionCounts'] as Map<String, Object?>?)?.map(
+                  (String key, Object? value) => MapEntry(
+                    key,
+                    (value as num?)?.toInt() ?? 0,
+                  ),
+                ) ??
+                <String, int>{};
+
+        final DocSnapshotJson reactionSnapshot = await transaction.get(reactionDoc);
+        Map<String, Object?>? reactionData;
+        if (reactionSnapshot.exists) {
+          reactionData = reactionSnapshot.data();
+        }
+        final String? currentEmoji = reactionData == null
+            ? null
+            : reactionData['emoji'] as String?;
+
+        String? nextReaction;
+        if (currentEmoji == emoji) {
+          nextReaction = null;
+          counts[emoji] = max(0, (counts[emoji] ?? 0) - 1);
+          transaction.delete(reactionDoc);
+        } else {
+          nextReaction = emoji;
+          if (currentEmoji != null) {
+            counts[currentEmoji] = max(0, (counts[currentEmoji] ?? 0) - 1);
+          }
+          counts[emoji] = (counts[emoji] ?? 0) + 1;
+          transaction.set(reactionDoc, <String, Object?>{
+            'commentId': commentId,
+            'uid': currentUserId,
+            'emoji': emoji,
+            'createdAt': Timestamp.now(),
+          });
+        }
+
+        counts.removeWhere((_, int value) => value <= 0);
+
+        transaction.update(commentDoc, <String, Object?>{
+          'reactionCounts': counts,
+          'updatedAt': Timestamp.now(),
+        });
+
+        return nextReaction;
+      },
+    );
+  }
+
   Future<void> deletePostById(String postId) async {
     await deletePost(postId: postId, authorUid: currentUserId);
   }
@@ -1383,6 +1488,33 @@ class CommunityRepository {
       );
     }
     return likedIds;
+  }
+
+  Future<Map<String, String>> _fetchCommentReactions({
+    required String postId,
+    required String uid,
+    required List<String> commentIds,
+  }) async {
+    if (commentIds.isEmpty) {
+      return const <String, String>{};
+    }
+
+    final Map<String, String> reactions = <String, String>{};
+    final Iterable<List<String>> chunks = _chunk(commentIds, size: 10);
+    for (final List<String> chunk in chunks) {
+      final QuerySnapshot<JsonMap> snapshot = await _commentReactionsRef(postId)
+          .where('uid', isEqualTo: uid)
+          .where('commentId', whereIn: chunk)
+          .get();
+      for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+        final String? commentId = doc.data()['commentId'] as String?;
+        final String? emoji = doc.data()['emoji'] as String?;
+        if (commentId != null && emoji != null) {
+          reactions[commentId] = emoji;
+        }
+      }
+    }
+    return reactions;
   }
 
   DocumentReference<JsonMap> _counterShardRef(String postId) {

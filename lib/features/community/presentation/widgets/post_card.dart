@@ -10,6 +10,8 @@ import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../../profile/domain/career_track.dart';
 
+const List<String> _commentReactionOptions = <String>['👍', '🎉', '😍', '😄'];
+
 class PostCard extends StatefulWidget {
   const PostCard({
     super.key,
@@ -163,9 +165,16 @@ class _PostCardState extends State<PostCard> {
                 )
               else ...[
                 if (_featuredComments.isNotEmpty) ...[
-                  _FeaturedCommentTile(
-                    comment: _featuredComments.first,
-                    onToggleLike: _handleCommentLike,
+                  Builder(
+                    builder: (BuildContext context) {
+                      final Comment featuredComment = _featuredComments.first;
+                      return _FeaturedCommentTile(
+                        comment: featuredComment,
+                        onToggleLike: _handleCommentLike,
+                        onReact: (String emoji) =>
+                            _handleReaction(featuredComment, emoji),
+                      );
+                    },
                   ),
                   const Gap(12),
                 ],
@@ -174,6 +183,7 @@ class _PostCardState extends State<PostCard> {
                     comment: comment,
                     highlight: _isFeatured(comment),
                     onToggleLike: _handleCommentLike,
+                    onReact: (String emoji) => _handleReaction(comment, emoji),
                   ),
                 ),
               ],
@@ -300,6 +310,65 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
+  Future<void> _handleReaction(Comment comment, String emoji) async {
+    final String? previous = comment.viewerReaction;
+    final String? next = previous == emoji ? null : emoji;
+
+    Comment updateComment(Comment current, String? reaction) {
+      final Map<String, int> counts = Map<String, int>.from(current.reactionCounts);
+      final String? currentReaction = current.viewerReaction;
+      if (currentReaction != null) {
+        counts[currentReaction] = (counts[currentReaction] ?? 0) - 1;
+        if ((counts[currentReaction] ?? 0) <= 0) {
+          counts.remove(currentReaction);
+        }
+      }
+      if (reaction != null) {
+        counts[reaction] = (counts[reaction] ?? 0) + 1;
+      }
+      return current.copyWith(
+        viewerReaction: reaction,
+        reactionCounts: counts,
+      );
+    }
+
+    void apply(String? reaction) {
+      setState(() {
+        _timelineComments = _timelineComments
+            .map(
+              (Comment current) =>
+                  current.id == comment.id ? updateComment(current, reaction) : current,
+            )
+            .toList(growable: false);
+        _featuredComments = _featuredComments
+            .map(
+              (Comment current) =>
+                  current.id == comment.id ? updateComment(current, reaction) : current,
+            )
+            .toList(growable: false);
+      });
+    }
+
+    apply(next);
+
+    if (_isSynthetic(widget.post)) {
+      return;
+    }
+
+    try {
+      final String? confirmed = await _repository.toggleCommentReaction(
+        postId: widget.post.id,
+        commentId: comment.id,
+        emoji: emoji,
+      );
+      if (confirmed != next) {
+        apply(confirmed);
+      }
+    } catch (_) {
+      apply(previous);
+    }
+  }
+
   Comment _fromCached(Post post, CachedComment cached, int index) {
     return Comment(
       id: cached.id,
@@ -311,6 +380,7 @@ class _PostCardState extends State<PostCard> {
       createdAt: (post.updatedAt ?? post.createdAt).add(
         Duration(minutes: index),
       ),
+      reactionCounts: const <String, int>{},
     );
   }
 
@@ -334,10 +404,12 @@ class _FeaturedCommentTile extends StatelessWidget {
   const _FeaturedCommentTile({
     required this.comment,
     required this.onToggleLike,
+    required this.onReact,
   });
 
   final Comment comment;
   final ValueChanged<Comment> onToggleLike;
+  final void Function(String emoji) onReact;
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +452,13 @@ class _FeaturedCommentTile extends StatelessWidget {
           ),
           const Gap(4),
           Text(comment.text, style: theme.textTheme.bodyMedium),
-          const Gap(8),
+          const Gap(12),
+          _CommentReactionBar(
+            reactions: comment.reactionCounts,
+            viewerReaction: comment.viewerReaction,
+            onReact: onReact,
+          ),
+          const Gap(6),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -433,11 +511,13 @@ class _CommentTile extends StatelessWidget {
     required this.comment,
     this.highlight = false,
     required this.onToggleLike,
+    required this.onReact,
   });
 
   final Comment comment;
   final bool highlight;
   final ValueChanged<Comment> onToggleLike;
+  final void Function(String emoji) onReact;
 
   @override
   Widget build(BuildContext context) {
@@ -518,6 +598,12 @@ class _CommentTile extends StatelessWidget {
           ),
           const Gap(8),
           Text(comment.text, style: theme.textTheme.bodyMedium),
+          const Gap(12),
+          _CommentReactionBar(
+            reactions: comment.reactionCounts,
+            viewerReaction: comment.viewerReaction,
+            onReact: onReact,
+          ),
         ],
       ),
     );
@@ -536,6 +622,40 @@ class _CommentTile extends StatelessWidget {
       return '${difference.inHours}시간 전';
     }
     return '${createdAt.month}월 ${createdAt.day}일';
+  }
+}
+
+class _CommentReactionBar extends StatelessWidget {
+  const _CommentReactionBar({
+    required this.reactions,
+    required this.viewerReaction,
+    required this.onReact,
+  });
+
+  final Map<String, int> reactions;
+  final String? viewerReaction;
+  final void Function(String emoji) onReact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      children: _commentReactionOptions.map((String emoji) {
+        final int count = reactions[emoji] ?? 0;
+        final bool selected = viewerReaction == emoji;
+        return ChoiceChip(
+          label: Text(
+            count > 0 ? '$emoji $count' : emoji,
+            style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
+          ),
+          selected: selected,
+          showCheckmark: false,
+          onSelected: (_) => onReact(emoji),
+          selectedColor:
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
+        );
+      }).toList(growable: false),
+    );
   }
 }
 

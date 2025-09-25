@@ -188,6 +188,62 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     }
   }
 
+  Future<void> toggleCommentReaction(String commentId, String emoji) async {
+    final Post? post = state.post;
+    if (post == null) {
+      return;
+    }
+
+    final String? current = state.comments
+        .firstWhere(
+          (Comment comment) => comment.id == commentId,
+          orElse: () => state.featuredComments.firstWhere(
+            (Comment comment) => comment.id == commentId,
+            orElse: () => Comment(
+              id: commentId,
+              postId: post.id,
+              authorUid: '',
+              authorNickname: '',
+              text: '',
+              likeCount: 0,
+              createdAt: DateTime.now(),
+            ),
+          ),
+        )
+        .viewerReaction;
+
+    final String? previous = current;
+    final String? next = previous == emoji ? null : emoji;
+
+    void emitWith(String? reaction) {
+      emit(
+        state.copyWith(
+          comments: _updateCommentReactions(state.comments, commentId, reaction),
+          featuredComments: _updateCommentReactions(
+            state.featuredComments,
+            commentId,
+            reaction,
+          ),
+        ),
+      );
+    }
+
+    emitWith(next);
+
+    try {
+      final String? confirmed = await _repository.toggleCommentReaction(
+        postId: post.id,
+        commentId: commentId,
+        emoji: emoji,
+      );
+      if (confirmed != next) {
+        emitWith(confirmed);
+      }
+    } catch (_) {
+      emitWith(previous);
+    }
+  }
+
   Future<bool> deletePost() async {
     final post = state.post;
     if (post == null) return false;
@@ -239,6 +295,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
+              reactionCounts: const <String, int>{},
             ),
           )
           .toList(growable: false);
@@ -254,6 +311,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           text: post.topComment!.text,
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
+          reactionCounts: const <String, int>{},
         ),
       ];
     }
@@ -273,6 +331,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
+              reactionCounts: const <String, int>{},
             ),
           )
           .toList(growable: false);
@@ -288,10 +347,43 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           text: post.topComment!.text,
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
+          reactionCounts: const <String, int>{},
         ),
       ];
     }
 
     return const <Comment>[];
+  }
+
+  List<Comment> _updateCommentReactions(
+    List<Comment> source,
+    String commentId,
+    String? reaction,
+  ) {
+    return source
+        .map(
+          (Comment comment) => comment.id == commentId
+              ? _adjustCommentReaction(comment, reaction)
+              : comment,
+        )
+        .toList(growable: false);
+  }
+
+  Comment _adjustCommentReaction(Comment comment, String? reaction) {
+    final Map<String, int> counts = Map<String, int>.from(comment.reactionCounts);
+    final String? current = comment.viewerReaction;
+    if (current != null) {
+      counts[current] = (counts[current] ?? 0) - 1;
+      if ((counts[current] ?? 0) <= 0) {
+        counts.remove(current);
+      }
+    }
+    if (reaction != null) {
+      counts[reaction] = (counts[reaction] ?? 0) + 1;
+    }
+    return comment.copyWith(
+      viewerReaction: reaction,
+      reactionCounts: counts,
+    );
   }
 }

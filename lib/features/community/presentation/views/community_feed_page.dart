@@ -94,15 +94,18 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final List<Widget> children = <Widget>[
       _FeedHeader(
         scope: state.scope,
-        sort: state.sort,
         hasSerialAccess: hasSerialAccess,
         onScopeChanged: cubit.changeScope,
-        onSortSelected: cubit.changeSort,
         onSearchTap: () => context.push(CommunityRoute.searchPath),
         onBoardTap: () => _openBoardList(context),
       ),
       const Gap(12),
       const InlinePostComposer(),
+      const Gap(12),
+      _SortMenu(
+        currentSort: state.sort,
+        onSelect: cubit.changeSort,
+      ),
       const Gap(16),
     ];
 
@@ -195,110 +198,114 @@ class _CommunityErrorView extends StatelessWidget {
 class _FeedHeader extends StatelessWidget {
   const _FeedHeader({
     required this.scope,
-    required this.sort,
     required this.hasSerialAccess,
     required this.onScopeChanged,
-    required this.onSortSelected,
     required this.onSearchTap,
     required this.onBoardTap,
   });
 
   final LoungeScope scope;
-  final LoungeSort sort;
   final bool hasSerialAccess;
   final ValueChanged<LoungeScope> onScopeChanged;
-  final ValueChanged<LoungeSort> onSortSelected;
   final VoidCallback onSearchTap;
   final VoidCallback onBoardTap;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: SegmentedButton<LoungeScope>(
-                segments: [
-                  const ButtonSegment<LoungeScope>(
-                    value: LoungeScope.all,
-                    label: Text('전체'),
-                    icon: Icon(Icons.public_outlined),
-                  ),
-                  ButtonSegment<LoungeScope>(
-                    value: LoungeScope.serial,
-                    label: const Text('내 직렬'),
-                    icon: const Icon(Icons.group_outlined),
-                    enabled: hasSerialAccess,
-                  ),
-                ],
-                selected: <LoungeScope>{scope},
-                onSelectionChanged: (selection) {
-                  onScopeChanged(selection.first);
-                },
+        Expanded(
+          child: SegmentedButton<LoungeScope>(
+            segments: [
+              const ButtonSegment<LoungeScope>(
+                value: LoungeScope.all,
+                label: Text('전체'),
+                icon: Icon(Icons.public_outlined),
               ),
-            ),
-            const Gap(12),
-            IconButton(
-              tooltip: '검색',
-              onPressed: onSearchTap,
-              icon: const Icon(Icons.search),
-            ),
-            const Gap(8),
-            IconButton(
-              tooltip: '게시판 보기',
-              onPressed: onBoardTap,
-              icon: const Icon(Icons.view_list_outlined),
-            ),
-          ],
-        ),
-        const Gap(12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: PopupMenuButton<LoungeSort>(
-            tooltip: '정렬 방법',
-            initialValue: sort,
-            onSelected: onSortSelected,
-            itemBuilder: (context) {
-              return LoungeSort.values.map((LoungeSort option) {
-                final bool isSelected = option == sort;
-                return PopupMenuItem<LoungeSort>(
-                  value: option,
-                  child: Row(
-                    children: [
-                      if (isSelected)
-                        Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
-                      else
-                        const SizedBox(width: 18),
-                      const Gap(8),
-                      Text(option.label),
-                    ],
-                  ),
-                );
-              }).toList(growable: false);
+              ButtonSegment<LoungeScope>(
+                value: LoungeScope.serial,
+                label: const Text('내 직렬'),
+                icon: const Icon(Icons.group_outlined),
+                enabled: hasSerialAccess,
+              ),
+            ],
+            selected: <LoungeScope>{scope},
+            onSelectionChanged: (selection) {
+              onScopeChanged(selection.first);
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.tune, size: 18),
-                  const Gap(6),
-                  Text(sort.label, style: theme.textTheme.labelLarge),
-                  const Gap(2),
-                  const Icon(Icons.arrow_drop_down, size: 20),
-                ],
-              ),
-            ),
           ),
         ),
+        const Gap(12),
+        IconButton(
+          tooltip: '검색',
+          onPressed: onSearchTap,
+          icon: const Icon(Icons.search),
+        ),
+        const Gap(8),
+        IconButton(
+          tooltip: '게시판 보기',
+          onPressed: onBoardTap,
+          icon: const Icon(Icons.view_list_outlined),
+        ),
       ],
+    );
+  }
+}
+
+class _SortMenu extends StatelessWidget {
+  const _SortMenu({
+    required this.currentSort,
+    required this.onSelect,
+  });
+
+  final LoungeSort currentSort;
+  final ValueChanged<LoungeSort> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.centerRight,
+      child: PopupMenuButton<LoungeSort>(
+        tooltip: '정렬 방법',
+        initialValue: currentSort,
+        onSelected: onSelect,
+        itemBuilder: (context) {
+          return LoungeSort.values.map((LoungeSort option) {
+            final bool isSelected = option == currentSort;
+            return PopupMenuItem<LoungeSort>(
+              value: option,
+              child: Row(
+                children: [
+                  if (isSelected)
+                    Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
+                  else
+                    const SizedBox(width: 18),
+                  const Gap(8),
+                  Text(option.label),
+                ],
+              ),
+            );
+          }).toList(growable: false);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.tune, size: 18),
+              const Gap(6),
+              Text(currentSort.label, style: theme.textTheme.labelLarge),
+              const Gap(2),
+              const Icon(Icons.arrow_drop_down, size: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
