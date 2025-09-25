@@ -15,6 +15,7 @@ class CommunityFeedState extends Equatable {
     this.serial = 'unknown',
     this.likedPostIds = const <String>{},
     this.bookmarkedPostIds = const <String>{},
+    this.showAds = true,
   });
 
   final CommunityFeedStatus status;
@@ -28,6 +29,7 @@ class CommunityFeedState extends Equatable {
   final String serial;
   final Set<String> likedPostIds;
   final Set<String> bookmarkedPostIds;
+  final bool showAds;
 
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
@@ -41,6 +43,7 @@ class CommunityFeedState extends Equatable {
     String? serial,
     Set<String>? likedPostIds,
     Set<String>? bookmarkedPostIds,
+    bool? showAds,
   }) {
     return CommunityFeedState(
       status: status ?? this.status,
@@ -54,6 +57,7 @@ class CommunityFeedState extends Equatable {
       serial: serial ?? this.serial,
       likedPostIds: likedPostIds ?? this.likedPostIds,
       bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
+      showAds: showAds ?? this.showAds,
     );
   }
 
@@ -70,5 +74,6 @@ class CommunityFeedState extends Equatable {
     serial,
     likedPostIds,
     bookmarkedPostIds,
+    showAds,
   ];
 }

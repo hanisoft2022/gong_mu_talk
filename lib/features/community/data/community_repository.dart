@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/hot_score.dart';
 import '../../../core/utils/prefix_tokenizer.dart';
+import '../../../core/constants/engagement_points.dart';
+import '../../notifications/data/notification_repository.dart';
 import '../../profile/domain/career_track.dart';
 import '../domain/models/board.dart';
 import '../domain/models/comment.dart';
@@ -30,11 +32,17 @@ class _DummyCommentSeed {
     required this.author,
     required this.text,
     required this.likes,
+    required this.track,
+    this.supporterLevel = 0,
   });
 
   final String author;
   final String text;
   final int likes;
+  final CareerTrack track;
+  final int supporterLevel;
+
+  bool get isSupporter => supporterLevel > 0;
 }
 
 class CommunityRepository {
@@ -43,15 +51,18 @@ class CommunityRepository {
     FirebaseStorage? storage,
     required AuthCubit authCubit,
     required UserProfileRepository userProfileRepository,
+    required NotificationRepository notificationRepository,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _storage = storage ?? FirebaseStorage.instance,
        _authCubit = authCubit,
-       _userProfileRepository = userProfileRepository;
+       _userProfileRepository = userProfileRepository,
+       _notificationRepository = notificationRepository;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
   final AuthCubit _authCubit;
   final UserProfileRepository _userProfileRepository;
+  final NotificationRepository _notificationRepository;
   final Random _random = Random();
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
   final HotScoreCalculator _hotScoreCalculator = const HotScoreCalculator();
@@ -139,12 +150,15 @@ class CommunityRepository {
     required String authorUid,
     required String authorNickname,
     required CareerTrack authorTrack,
+    int authorSupporterLevel = 0,
+    bool authorIsSupporter = false,
     required String text,
     required PostAudience audience,
     required String serial,
     List<PostMedia> media = const <PostMedia>[],
     List<String> tags = const <String>[],
     String? boardId,
+    bool awardPoints = true,
   }) async {
     final DocumentReference<JsonMap> ref = _postsRef.doc();
     final DateTime now = DateTime.now();
@@ -162,6 +176,8 @@ class CommunityRepository {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSupporterLevel': authorSupporterLevel,
+      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'media': media
           .map((PostMedia media) => media.toMap())
@@ -185,6 +201,18 @@ class CommunityRepository {
     };
 
     await ref.set(data);
+    if (awardPoints) {
+      try {
+        await _userProfileRepository.incrementPoints(
+          uid: authorUid,
+          delta: EngagementPoints.postCreation,
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Failed to award points for post creation: $error\n$stackTrace',
+        );
+      }
+    }
     return Post.fromMap(ref.id, data);
   }
 
@@ -373,7 +401,9 @@ class CommunityRepository {
           items.sort((Post a, Post b) => b.likeCount.compareTo(a.likeCount));
           break;
         case LoungeSort.comments:
-          items.sort((Post a, Post b) => b.commentCount.compareTo(a.commentCount));
+          items.sort(
+            (Post a, Post b) => b.commentCount.compareTo(a.commentCount),
+          );
           break;
       }
 
@@ -542,8 +572,9 @@ class CommunityRepository {
     }
 
     final QuerySnapshot<JsonMap> snapshot = await query.get();
-    final List<String> commentIds =
-        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+    final List<String> commentIds = snapshot.docs
+        .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
+        .toList();
 
     final Set<String> likedCommentIds = currentUid == null
         ? const <String>{}
@@ -589,6 +620,10 @@ class CommunityRepository {
     required String authorNickname,
     required String text,
     String? parentCommentId,
+    CareerTrack authorTrack = CareerTrack.none,
+    int authorSupporterLevel = 0,
+    bool authorIsSupporter = false,
+    bool awardPoints = true,
   }) async {
     final CollectionReference<JsonMap> comments = _commentsRef(postId);
     final DocumentReference<JsonMap> commentDoc = comments.doc();
@@ -598,15 +633,15 @@ class CommunityRepository {
       transaction.set(commentDoc, <String, Object?>{
         'authorUid': authorUid,
         'authorNickname': authorNickname,
+        'authorTrack': authorTrack.name,
+        'authorSupporterLevel': authorSupporterLevel,
+        'authorIsSupporter': authorIsSupporter,
         'text': text,
         'likeCount': 0,
         'createdAt': Timestamp.fromDate(now),
         'parentCommentId': parentCommentId,
         'deleted': false,
-        'keywords': _tokenizer.buildPrefixes(
-          title: authorNickname,
-          body: text,
-        ),
+        'keywords': _tokenizer.buildPrefixes(title: authorNickname, body: text),
         'reactionCounts': const <String, Object?>{},
       });
 
@@ -622,16 +657,47 @@ class CommunityRepository {
       }, SetOptions(merge: true));
     });
 
+    if (awardPoints) {
+      try {
+        await _userProfileRepository.incrementPoints(
+          uid: authorUid,
+          delta: EngagementPoints.commentCreation,
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Failed to award points for comment creation: $error\n$stackTrace',
+        );
+      }
+
+      try {
+        await _dispatchCommentNotifications(
+          postId: postId,
+          commentId: commentDoc.id,
+          parentCommentId: parentCommentId,
+          authorUid: authorUid,
+          authorNickname: authorNickname,
+          text: text,
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Failed to dispatch comment notifications: $error\n$stackTrace',
+        );
+      }
+    }
+
     return Comment(
       id: commentDoc.id,
       postId: postId,
       authorUid: authorUid,
       authorNickname: authorNickname,
+      authorTrack: authorTrack,
       text: text,
       likeCount: 0,
       createdAt: now,
       parentCommentId: parentCommentId,
       reactionCounts: const <String, int>{},
+      authorSupporterLevel: authorSupporterLevel,
+      authorIsSupporter: authorIsSupporter,
     );
   }
 
@@ -678,8 +744,16 @@ class CommunityRepository {
     final DocumentReference<JsonMap> likeDoc = _likesRef.doc('${postId}_$uid');
     final DocumentReference<JsonMap> postDoc = _postDoc(postId);
     final DocumentReference<JsonMap> shardDoc = _counterShardRef(postId);
+    String? postAuthorUid;
+    final bool liked = await _firestore.runTransaction<bool>((
+      Transaction transaction,
+    ) async {
+      final DocSnapshotJson postSnapshot = await transaction.get(postDoc);
+      if (!postSnapshot.exists) {
+        throw StateError('게시글을 찾을 수 없습니다.');
+      }
+      postAuthorUid = (postSnapshot.data()?['authorUid'] as String?) ?? '';
 
-    return _firestore.runTransaction<bool>((Transaction transaction) async {
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
 
@@ -704,6 +778,22 @@ class CommunityRepository {
 
       return willLike;
     });
+
+    if (liked &&
+        postAuthorUid != null &&
+        postAuthorUid!.isNotEmpty &&
+        postAuthorUid != uid) {
+      try {
+        await _userProfileRepository.incrementPoints(
+          uid: postAuthorUid!,
+          delta: EngagementPoints.contentReceivedLike,
+        );
+      } catch (error, stackTrace) {
+        debugPrint('Failed to award points for post like: $error\n$stackTrace');
+      }
+    }
+
+    return liked;
   }
 
   Future<bool> toggleCommentLike({
@@ -718,7 +808,17 @@ class CommunityRepository {
     final DocumentReference<JsonMap> commentDoc = _commentsRef(
       postId,
     ).doc(commentId);
-    return _firestore.runTransaction<bool>((Transaction transaction) async {
+    String? commentAuthorUid;
+    final bool liked = await _firestore.runTransaction<bool>((
+      Transaction transaction,
+    ) async {
+      final DocSnapshotJson commentSnapshot = await transaction.get(commentDoc);
+      if (!commentSnapshot.exists) {
+        throw StateError('댓글을 찾을 수 없습니다.');
+      }
+      commentAuthorUid =
+          (commentSnapshot.data()?['authorUid'] as String?) ?? '';
+
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
 
@@ -738,6 +838,24 @@ class CommunityRepository {
 
       return willLike;
     });
+
+    if (liked &&
+        commentAuthorUid != null &&
+        commentAuthorUid!.isNotEmpty &&
+        commentAuthorUid != uid) {
+      try {
+        await _userProfileRepository.incrementPoints(
+          uid: commentAuthorUid!,
+          delta: EngagementPoints.contentReceivedLike,
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Failed to award points for comment like: $error\n$stackTrace',
+        );
+      }
+    }
+
+    return liked;
   }
 
   Future<void> incrementViewCount(String postId) async {
@@ -922,9 +1040,7 @@ class CommunityRepository {
     if (authorOnly) {
       final List<Post> filtered = page.items
           .where(
-            (Post post) => post.authorNickname
-                .toLowerCase()
-                .contains(token),
+            (Post post) => post.authorNickname.toLowerCase().contains(token),
           )
           .toList(growable: false);
       page = PaginatedQueryResult<Post>(
@@ -955,15 +1071,13 @@ class CommunityRepository {
     }
 
     final Map<String, List<String>> commentIdsByPost = <String, List<String>>{};
-    final List<Comment> comments = snapshot.docs.map((doc) {
-      final String postId = doc.reference.parent.parent?.id ?? '';
-      commentIdsByPost.putIfAbsent(postId, () => <String>[]).add(doc.id);
-      return Comment.fromMap(
-        id: doc.id,
-        postId: postId,
-        data: doc.data(),
-      );
-    }).toList(growable: false);
+    final List<Comment> comments = snapshot.docs
+        .map((doc) {
+          final String postId = doc.reference.parent.parent?.id ?? '';
+          commentIdsByPost.putIfAbsent(postId, () => <String>[]).add(doc.id);
+          return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
+        })
+        .toList(growable: false);
 
     final Map<String, Set<String>> likedCommentIds = <String, Set<String>>{};
     if (currentUid != null) {
@@ -983,17 +1097,19 @@ class CommunityRepository {
       currentUid: currentUid,
     );
 
-    return comments.map((Comment comment) {
-      final Set<String> likedIds =
-          likedCommentIds[comment.postId] ?? const <String>{};
-      final Comment resolved = comment.copyWith(
-        isLiked: likedIds.contains(comment.id),
-      );
-      return CommentSearchResult(
-        comment: resolved,
-        post: parentPosts[comment.postId],
-      );
-    }).toList(growable: false);
+    return comments
+        .map((Comment comment) {
+          final Set<String> likedIds =
+              likedCommentIds[comment.postId] ?? const <String>{};
+          final Comment resolved = comment.copyWith(
+            isLiked: likedIds.contains(comment.id),
+          );
+          return CommentSearchResult(
+            comment: resolved,
+            post: parentPosts[comment.postId],
+          );
+        })
+        .toList(growable: false);
   }
 
   Future<Map<String, Post>> _fetchPostsByIds(
@@ -1034,11 +1150,14 @@ class CommunityRepository {
     Set<String> likedIds = const <String>{};
     Set<String> bookmarkedIds = const <String>{};
     if (currentUid != null) {
-      final List<String> idsList =
-          posts.map((Post post) => post.id).toList(growable: false);
+      final List<String> idsList = posts
+          .map((Post post) => post.id)
+          .toList(growable: false);
       likedIds = await _fetchLikedPostIds(uid: currentUid, postIds: idsList);
-      bookmarkedIds =
-          await _fetchBookmarkedIds(uid: currentUid, postIds: idsList);
+      bookmarkedIds = await _fetchBookmarkedIds(
+        uid: currentUid,
+        postIds: idsList,
+      );
     }
 
     final List<Post> enriched = await _attachTopComments(posts);
@@ -1133,8 +1252,9 @@ class CommunityRepository {
       postId,
     ).orderBy('createdAt', descending: false).get();
 
-    final List<String> commentIds =
-        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+    final List<String> commentIds = snapshot.docs
+        .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
+        .toList();
 
     final Set<String> likedIds = await _fetchLikedCommentIds(
       postId: postId,
@@ -1166,8 +1286,9 @@ class CommunityRepository {
         .limit(limit)
         .get();
 
-    final List<String> commentIds =
-        snapshot.docs.map((QueryDocumentSnapshot<JsonMap> doc) => doc.id).toList();
+    final List<String> commentIds = snapshot.docs
+        .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
+        .toList();
 
     final Set<String> likedIds = await _fetchLikedCommentIds(
       postId: postId,
@@ -1193,45 +1314,7 @@ class CommunityRepository {
   }
 
   Future<void> toggleLike(String postId) async {
-    final String likeId = '${postId}_$currentUserId';
-    final DocumentReference<JsonMap> likeDoc = _likesRef.doc(likeId);
-    final DocumentReference<JsonMap> postDoc = _postDoc(postId);
-
-    await _firestore.runTransaction((transaction) async {
-      final DocumentSnapshot<JsonMap> likeSnapshot = await transaction.get(
-        likeDoc,
-      );
-      final DocumentSnapshot<JsonMap> postSnapshot = await transaction.get(
-        postDoc,
-      );
-
-      if (!postSnapshot.exists) {
-        throw StateError('게시글을 찾을 수 없습니다.');
-      }
-
-      final Map<String, Object?> postData = postSnapshot.data()!;
-      final int currentLikes = (postData['likeCount'] as num?)?.toInt() ?? 0;
-
-      if (likeSnapshot.exists) {
-        // Unlike
-        transaction.delete(likeDoc);
-        transaction.update(postDoc, {
-          'likeCount': currentLikes - 1,
-          'updatedAt': Timestamp.now(),
-        });
-      } else {
-        // Like
-        transaction.set(likeDoc, {
-          'postId': postId,
-          'uid': currentUserId,
-          'createdAt': Timestamp.now(),
-        });
-        transaction.update(postDoc, {
-          'likeCount': currentLikes + 1,
-          'updatedAt': Timestamp.now(),
-        });
-      }
-    });
+    await togglePostLike(postId: postId, uid: currentUserId);
   }
 
   Future<void> togglePostBookmark(String postId) async {
@@ -1257,11 +1340,16 @@ class CommunityRepository {
 
   Future<void> addComment(String postId, String text) async {
     final nickname = await currentUserNickname;
+    final CareerTrack track = _authCubit.state.careerTrack;
+    final int supporterLevel = _authCubit.state.supporterLevel;
     await createComment(
       postId: postId,
       authorUid: currentUserId,
       authorNickname: nickname,
       text: text,
+      authorTrack: track,
+      authorSupporterLevel: supporterLevel,
+      authorIsSupporter: supporterLevel > 0,
     );
   }
 
@@ -1273,8 +1361,10 @@ class CommunityRepository {
     final DocumentReference<JsonMap> commentDoc = _commentsRef(
       postId,
     ).doc(commentId);
-
-    await _firestore.runTransaction((transaction) async {
+    String? commentAuthorUid;
+    final bool liked = await _firestore.runTransaction<bool>((
+      transaction,
+    ) async {
       final DocumentSnapshot<JsonMap> likeSnapshot = await transaction.get(
         likeDoc,
       );
@@ -1287,6 +1377,7 @@ class CommunityRepository {
       }
 
       final Map<String, Object?> commentData = commentSnapshot.data()!;
+      commentAuthorUid = (commentData['authorUid'] as String?) ?? '';
       final int currentLikes = (commentData['likeCount'] as num?)?.toInt() ?? 0;
 
       if (likeSnapshot.exists) {
@@ -1296,6 +1387,7 @@ class CommunityRepository {
           'likeCount': currentLikes - 1,
           'updatedAt': Timestamp.now(),
         });
+        return false;
       } else {
         // Like
         transaction.set(likeDoc, {
@@ -1307,8 +1399,25 @@ class CommunityRepository {
           'likeCount': currentLikes + 1,
           'updatedAt': Timestamp.now(),
         });
+        return true;
       }
     });
+
+    if (liked &&
+        commentAuthorUid != null &&
+        commentAuthorUid!.isNotEmpty &&
+        commentAuthorUid != currentUserId) {
+      try {
+        await _userProfileRepository.incrementPoints(
+          uid: commentAuthorUid!,
+          delta: EngagementPoints.contentReceivedLike,
+        );
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Failed to award points for comment like: $error\n$stackTrace',
+        );
+      }
+    }
   }
 
   Future<String?> toggleCommentReaction({
@@ -1316,65 +1425,66 @@ class CommunityRepository {
     required String commentId,
     required String emoji,
   }) async {
-    final DocumentReference<JsonMap> reactionDoc = _commentReactionsRef(postId)
-        .doc('${commentId}_$currentUserId');
-    final DocumentReference<JsonMap> commentDoc = _commentsRef(postId).doc(commentId);
+    final DocumentReference<JsonMap> reactionDoc = _commentReactionsRef(
+      postId,
+    ).doc('${commentId}_$currentUserId');
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(
+      postId,
+    ).doc(commentId);
 
-    return _firestore.runTransaction<String?>(
-      (Transaction transaction) async {
-        final DocSnapshotJson commentSnapshot = await transaction.get(commentDoc);
-        if (!commentSnapshot.exists) {
-          throw StateError('댓글을 찾을 수 없습니다.');
+    return _firestore.runTransaction<String?>((Transaction transaction) async {
+      final DocSnapshotJson commentSnapshot = await transaction.get(commentDoc);
+      if (!commentSnapshot.exists) {
+        throw StateError('댓글을 찾을 수 없습니다.');
+      }
+
+      final Map<String, Object?> data = commentSnapshot.data()!;
+      final Map<String, int> counts =
+          (data['reactionCounts'] as Map<String, Object?>?)?.map(
+            (String key, Object? value) =>
+                MapEntry(key, (value as num?)?.toInt() ?? 0),
+          ) ??
+          <String, int>{};
+
+      final DocSnapshotJson reactionSnapshot = await transaction.get(
+        reactionDoc,
+      );
+      Map<String, Object?>? reactionData;
+      if (reactionSnapshot.exists) {
+        reactionData = reactionSnapshot.data();
+      }
+      final String? currentEmoji = reactionData == null
+          ? null
+          : reactionData['emoji'] as String?;
+
+      String? nextReaction;
+      if (currentEmoji == emoji) {
+        nextReaction = null;
+        counts[emoji] = max(0, (counts[emoji] ?? 0) - 1);
+        transaction.delete(reactionDoc);
+      } else {
+        nextReaction = emoji;
+        if (currentEmoji != null) {
+          counts[currentEmoji] = max(0, (counts[currentEmoji] ?? 0) - 1);
         }
-
-        final Map<String, Object?> data = commentSnapshot.data()!;
-        final Map<String, int> counts =
-            (data['reactionCounts'] as Map<String, Object?>?)?.map(
-                  (String key, Object? value) => MapEntry(
-                    key,
-                    (value as num?)?.toInt() ?? 0,
-                  ),
-                ) ??
-                <String, int>{};
-
-        final DocSnapshotJson reactionSnapshot = await transaction.get(reactionDoc);
-        Map<String, Object?>? reactionData;
-        if (reactionSnapshot.exists) {
-          reactionData = reactionSnapshot.data();
-        }
-        final String? currentEmoji = reactionData == null
-            ? null
-            : reactionData['emoji'] as String?;
-
-        String? nextReaction;
-        if (currentEmoji == emoji) {
-          nextReaction = null;
-          counts[emoji] = max(0, (counts[emoji] ?? 0) - 1);
-          transaction.delete(reactionDoc);
-        } else {
-          nextReaction = emoji;
-          if (currentEmoji != null) {
-            counts[currentEmoji] = max(0, (counts[currentEmoji] ?? 0) - 1);
-          }
-          counts[emoji] = (counts[emoji] ?? 0) + 1;
-          transaction.set(reactionDoc, <String, Object?>{
-            'commentId': commentId,
-            'uid': currentUserId,
-            'emoji': emoji,
-            'createdAt': Timestamp.now(),
-          });
-        }
-
-        counts.removeWhere((_, int value) => value <= 0);
-
-        transaction.update(commentDoc, <String, Object?>{
-          'reactionCounts': counts,
-          'updatedAt': Timestamp.now(),
+        counts[emoji] = (counts[emoji] ?? 0) + 1;
+        transaction.set(reactionDoc, <String, Object?>{
+          'commentId': commentId,
+          'uid': currentUserId,
+          'emoji': emoji,
+          'createdAt': Timestamp.now(),
         });
+      }
 
-        return nextReaction;
-      },
-    );
+      counts.removeWhere((_, int value) => value <= 0);
+
+      transaction.update(commentDoc, <String, Object?>{
+        'reactionCounts': counts,
+        'updatedAt': Timestamp.now(),
+      });
+
+      return nextReaction;
+    });
   }
 
   Future<void> deletePostById(String postId) async {
@@ -1502,10 +1612,9 @@ class CommunityRepository {
     final Map<String, String> reactions = <String, String>{};
     final Iterable<List<String>> chunks = _chunk(commentIds, size: 10);
     for (final List<String> chunk in chunks) {
-      final QuerySnapshot<JsonMap> snapshot = await _commentReactionsRef(postId)
-          .where('uid', isEqualTo: uid)
-          .where('commentId', whereIn: chunk)
-          .get();
+      final QuerySnapshot<JsonMap> snapshot = await _commentReactionsRef(
+        postId,
+      ).where('uid', isEqualTo: uid).where('commentId', whereIn: chunk).get();
       for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
         final String? commentId = doc.data()['commentId'] as String?;
         final String? emoji = doc.data()['emoji'] as String?;
@@ -1528,6 +1637,32 @@ class CommunityRepository {
     }
   }
 
+  CareerTrack _careerTrackFromRaw(Object? raw) {
+    if (raw is String) {
+      for (final CareerTrack track in CareerTrack.values) {
+        if (track.name == raw) {
+          return track;
+        }
+      }
+    }
+    return CareerTrack.none;
+  }
+
+  CareerTrack _randomCareerTrack() {
+    final List<CareerTrack> pool = CareerTrack.values
+        .where((CareerTrack track) => track != CareerTrack.none)
+        .toList(growable: false);
+    return pool[_random.nextInt(pool.length)];
+  }
+
+  CareerTrack _resolveSeedTrack(Object? raw) {
+    final CareerTrack resolved = _careerTrackFromRaw(raw);
+    if (resolved != CareerTrack.none) {
+      return resolved;
+    }
+    return _randomCareerTrack();
+  }
+
   List<Post> _generateDummyPosts({int count = 10, String? forceSerial}) {
     final List<String> samples = <String>[
       '출장 다녀온 뒤 정산 보고서를 어떻게 작성하시는지 궁금합니다. 예산과 실제 비용이 다를 때 어떤 식으로 설명을 덧붙이는지 사례가 있다면 공유 부탁드려요. 저는 각 항목마다 증빙 사유를 붙이고 있지만, 과장님이 더 보기 쉬운 양식이 있을 거라고 하시네요.',
@@ -1540,15 +1675,11 @@ class CommunityRepository {
       '최근 교육 연수에서 들은 내용 중 실무에 바로 적용 가능한 부분이 많았는데, 팀 단위 공유 방법을 고민 중입니다. 여러분은 연수나 세미나 내용을 사내에 전파할 때 어떤 자료와 채널을 활용하시나요? 영상 요약이나 카드뉴스 형태로 제작해 보신 분 계시면 조언 부탁드립니다.',
       '새로 도입된 협업 툴을 정착시키기 위해 온보딩 자료를 만들고 있습니다. 기본 기능 소개 외에 실제 업무 흐름을 케이스로 풀어냈을 때 이해도가 확 올라가더군요. 더 효과적인 온보딩 방식을 고민 중인데, 타 부서 성공 사례가 있다면 듣고 싶습니다.',
       '민관 협력 프로젝트를 진행하다 보니 보안과 공유 범위를 어디까지 설정해야 할지 고민이 많습니다. 협약서 작성 시 조항에 반영했던 내용이나, 클라우드 문서 공유 시 유의해야 할 점이 있다면 알려주세요. 실수로 정보가 노출되는 일이 없도록 대비하고 싶네요.',
+      '사내 위키를 새롭게 꾸미려고 합니다. 문서 체계를 어떻게 설계하면 신규 구성원이 헤매지 않을까요? 템플릿 구조나 태그 전략, 검색 키워드 관리 팁이 있다면 공유 부탁드립니다.',
+      '회의록을 작성할 때 자동 요약 도구를 활용해 보신 분 있으신가요? 음성 인식과 연결해 쓰려는데 보안 이슈나 정제 과정에서 주의해야 할 부분이 궁금합니다.',
+      '정책 홍보 영상 제작을 맡게 되었는데, 대내외 이해관계자 모두 공감할 수 있는 메시지를 어떻게 추렸는지 사례를 듣고 싶어요. 제작 일정과 검토 프로세스도 공유해 주시면 감사하겠습니다.',
     ];
 
-    final List<String> serials = <String>[
-      'general',
-      'teacher',
-      'police',
-      'tax',
-      'fire',
-    ];
     final List<List<Map<String, Object?>>> commentSamples =
         <List<Map<String, Object?>>>[
           <Map<String, Object?>>[
@@ -1790,6 +1921,10 @@ class CommunityRepository {
               author: (comment['author'] as String?) ?? '익명',
               text: (comment['text'] as String?) ?? '',
               likes: (comment['likes'] as num?)?.toInt() ?? 0,
+              track: _resolveSeedTrack(comment['track']),
+              supporterLevel:
+                  (comment['supporterLevel'] as num?)?.toInt() ??
+                  (_random.nextInt(12) == 0 ? 1 : 0),
             ),
           )
           .toList(growable: false);
@@ -1814,6 +1949,9 @@ class CommunityRepository {
           text: seed.text,
           likeCount: seed.likes,
           authorNickname: seed.author,
+          authorTrack: seed.track,
+          authorSupporterLevel: seed.supporterLevel,
+          authorIsSupporter: seed.isSupporter,
         );
         seedMap[seed] = cached;
         previewComments.add(cached);
@@ -1825,8 +1963,17 @@ class CommunityRepository {
 
       final int resolvedCommentCount = previewComments.length;
       final int viewCount = likeCount * 8 + _random.nextInt(300);
-      final String serial =
-          forceSerial ?? serials[_random.nextInt(serials.length)];
+      final bool hasForcedSerial =
+          forceSerial != null &&
+          forceSerial.isNotEmpty &&
+          forceSerial != 'unknown';
+      CareerTrack postTrack = hasForcedSerial
+          ? _careerTrackFromRaw(forceSerial)
+          : _randomCareerTrack();
+      if (postTrack == CareerTrack.none) {
+        postTrack = _randomCareerTrack();
+      }
+      final String serial = hasForcedSerial ? forceSerial : postTrack.name;
       final String text = samples[_random.nextInt(samples.length)];
       final double hot = _hotScoreCalculator.calculate(
         likeCount: likeCount,
@@ -1834,6 +1981,7 @@ class CommunityRepository {
         viewCount: viewCount,
         createdAt: createdAt,
       );
+      final int supporterLevel = _random.nextInt(6) == 0 ? 1 : 0;
 
       posts.add(
         Post(
@@ -1846,7 +1994,9 @@ class CommunityRepository {
           boardId: null,
           authorUid: 'dummy_user',
           authorNickname: nicknames[_random.nextInt(nicknames.length)],
-          authorTrack: CareerTrack.none,
+          authorTrack: postTrack,
+          authorSupporterLevel: supporterLevel,
+          authorIsSupporter: supporterLevel > 0,
           text: text,
           media: const <PostMedia>[],
           tags: const <String>[],
@@ -1926,12 +2076,26 @@ class CommunityRepository {
     }
 
     final int likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
+    final String? trackRaw = data['authorTrack'] as String?;
+    final CareerTrack track = trackRaw != null
+        ? CareerTrack.values.firstWhere(
+            (CareerTrack value) => value.name == trackRaw,
+            orElse: () => CareerTrack.none,
+          )
+        : CareerTrack.none;
+    final int supporterLevel =
+        (data['authorSupporterLevel'] as num?)?.toInt() ?? 0;
+    final bool isSupporter =
+        data['authorIsSupporter'] as bool? ?? supporterLevel > 0;
 
     return CachedComment(
       id: doc.id,
       text: text,
       likeCount: likeCount,
       authorNickname: author,
+      authorTrack: track,
+      authorSupporterLevel: supporterLevel,
+      authorIsSupporter: isSupporter,
     );
   }
 
@@ -2001,6 +2165,7 @@ class CommunityRepository {
             ? (track == CareerTrack.none ? 'all' : track.name)
             : serial,
         tags: tags,
+        awardPoints: false,
       );
 
       final int comments = random.nextInt(3);
@@ -2010,9 +2175,141 @@ class CommunityRepository {
           authorUid: uid,
           authorNickname: nickname.isEmpty ? '시드봇' : nickname,
           text: '댓글 ${c + 1}: $text',
+          authorTrack: track,
+          authorSupporterLevel: 0,
+          authorIsSupporter: false,
+          awardPoints: false,
         );
       }
     }
+  }
+
+  Future<void> _dispatchCommentNotifications({
+    required String postId,
+    required String commentId,
+    required String? parentCommentId,
+    required String authorUid,
+    required String authorNickname,
+    required String text,
+  }) async {
+    final List<Future<void>> tasks = <Future<void>>[];
+    final String excerpt = _buildExcerpt(text);
+
+    if (parentCommentId != null && parentCommentId.isNotEmpty) {
+      tasks.add(
+        _notifyParentCommentAuthor(
+          postId: postId,
+          commentId: commentId,
+          parentCommentId: parentCommentId,
+          authorUid: authorUid,
+          authorNickname: authorNickname,
+          excerpt: excerpt,
+        ),
+      );
+    }
+
+    tasks.add(
+      _notifyBookmarkSubscribers(
+        postId: postId,
+        authorUid: authorUid,
+        authorNickname: authorNickname,
+        excerpt: excerpt,
+      ),
+    );
+
+    await Future.wait(tasks);
+  }
+
+  Future<void> _notifyParentCommentAuthor({
+    required String postId,
+    required String commentId,
+    required String parentCommentId,
+    required String authorUid,
+    required String authorNickname,
+    required String excerpt,
+  }) async {
+    try {
+      final DocumentSnapshot<JsonMap> parentSnapshot = await _commentsRef(
+        postId,
+      ).doc(parentCommentId).get();
+      if (!parentSnapshot.exists) {
+        return;
+      }
+      final Map<String, Object?> parentData = parentSnapshot.data()!;
+      final String? targetUid = parentData['authorUid'] as String?;
+      if (targetUid == null || targetUid.isEmpty || targetUid == authorUid) {
+        return;
+      }
+
+      await _notificationRepository.notifyCommentReply(
+        targetUid: targetUid,
+        postId: postId,
+        commentId: commentId,
+        parentCommentId: parentCommentId,
+        replierNickname: authorNickname,
+        excerpt: excerpt,
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Failed to queue comment reply notification: $error\n$stackTrace',
+      );
+    }
+  }
+
+  Future<void> _notifyBookmarkSubscribers({
+    required String postId,
+    required String authorUid,
+    required String authorNickname,
+    required String excerpt,
+  }) async {
+    try {
+      final QuerySnapshot<JsonMap> snapshot = await _firestore
+          .collectionGroup('bookmarks')
+          .where('postId', isEqualTo: postId)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        return;
+      }
+
+      final Set<String> targets = <String>{};
+      for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
+        final String? targetUid = doc.reference.parent.parent?.id;
+        if (targetUid == null || targetUid.isEmpty || targetUid == authorUid) {
+          continue;
+        }
+        targets.add(targetUid);
+      }
+
+      if (targets.isEmpty) {
+        return;
+      }
+
+      await Future.wait(
+        targets.map(
+          (String targetUid) =>
+              _notificationRepository.notifyBookmarkedPostComment(
+                targetUid: targetUid,
+                postId: postId,
+                commenterNickname: authorNickname,
+                excerpt: excerpt,
+              ),
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Failed to notify bookmarked users: $error\n$stackTrace');
+    }
+  }
+
+  String _buildExcerpt(String text, {int maxLength = 40}) {
+    final String normalized = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) {
+      return '내용 없음';
+    }
+    if (normalized.length <= maxLength) {
+      return normalized;
+    }
+    return '${normalized.substring(0, maxLength)}...';
   }
 
   String _syntheticNickname() {

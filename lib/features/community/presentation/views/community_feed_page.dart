@@ -10,6 +10,7 @@ import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
 import '../widgets/inline_post_composer.dart';
 import '../widgets/post_card.dart';
+import '../widgets/lounge_ad_banner.dart';
 
 class CommunityFeedPage extends StatefulWidget {
   const CommunityFeedPage({super.key});
@@ -101,11 +102,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       ),
       const Gap(12),
       const InlinePostComposer(),
+      if (state.showAds) ...[const Gap(12), const LoungeAdBanner()],
       const Gap(12),
-      _SortMenu(
-        currentSort: state.sort,
-        onSelect: cubit.changeSort,
-      ),
+      _SortMenu(currentSort: state.sort, onSelect: cubit.changeSort),
       const Gap(16),
     ];
 
@@ -253,10 +252,7 @@ class _FeedHeader extends StatelessWidget {
 }
 
 class _SortMenu extends StatelessWidget {
-  const _SortMenu({
-    required this.currentSort,
-    required this.onSelect,
-  });
+  const _SortMenu({required this.currentSort, required this.onSelect});
 
   final LoungeSort currentSort;
   final ValueChanged<LoungeSort> onSelect;
@@ -271,22 +267,28 @@ class _SortMenu extends StatelessWidget {
         initialValue: currentSort,
         onSelected: onSelect,
         itemBuilder: (context) {
-          return LoungeSort.values.map((LoungeSort option) {
-            final bool isSelected = option == currentSort;
-            return PopupMenuItem<LoungeSort>(
-              value: option,
-              child: Row(
-                children: [
-                  if (isSelected)
-                    Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
-                  else
-                    const SizedBox(width: 18),
-                  const Gap(8),
-                  Text(option.label),
-                ],
-              ),
-            );
-          }).toList(growable: false);
+          return LoungeSort.values
+              .map((LoungeSort option) {
+                final bool isSelected = option == currentSort;
+                return PopupMenuItem<LoungeSort>(
+                  value: option,
+                  child: Row(
+                    children: [
+                      if (isSelected)
+                        Icon(
+                          Icons.check,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        )
+                      else
+                        const SizedBox(width: 18),
+                      const Gap(8),
+                      Text(option.label),
+                    ],
+                  ),
+                );
+              })
+              .toList(growable: false);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

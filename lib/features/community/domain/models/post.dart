@@ -56,12 +56,18 @@ class CachedComment extends Equatable {
     required this.text,
     required this.likeCount,
     required this.authorNickname,
+    required this.authorTrack,
+    this.authorSupporterLevel = 0,
+    this.authorIsSupporter = false,
   });
 
   final String id;
   final String text;
   final int likeCount;
   final String authorNickname;
+  final CareerTrack authorTrack;
+  final int authorSupporterLevel;
+  final bool authorIsSupporter;
 
   Map<String, Object?> toMap() {
     return <String, Object?>{
@@ -69,6 +75,9 @@ class CachedComment extends Equatable {
       'text': text,
       'likeCount': likeCount,
       'authorNickname': authorNickname,
+      'authorTrack': authorTrack.name,
+      'authorSupporterLevel': authorSupporterLevel,
+      'authorIsSupporter': authorIsSupporter,
     };
   }
 
@@ -81,6 +90,11 @@ class CachedComment extends Equatable {
     final String? text = data['text'] as String?;
     final int likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
     final String? authorNickname = data['authorNickname'] as String?;
+    final CareerTrack authorTrack = Post._parseTrack(data['authorTrack']);
+    final int supporterLevel =
+        (data['authorSupporterLevel'] as num?)?.toInt() ?? 0;
+    final bool isSupporter =
+        data['authorIsSupporter'] as bool? ?? supporterLevel > 0;
     if (id == null || text == null || authorNickname == null) {
       return null;
     }
@@ -90,11 +104,22 @@ class CachedComment extends Equatable {
       text: text,
       likeCount: likeCount,
       authorNickname: authorNickname,
+      authorTrack: authorTrack,
+      authorSupporterLevel: supporterLevel,
+      authorIsSupporter: isSupporter,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[id, text, likeCount, authorNickname];
+  List<Object?> get props => <Object?>[
+    id,
+    text,
+    likeCount,
+    authorNickname,
+    authorTrack,
+    authorSupporterLevel,
+    authorIsSupporter,
+  ];
 }
 
 class Post extends Equatable {
@@ -107,6 +132,8 @@ class Post extends Equatable {
     required this.authorUid,
     required this.authorNickname,
     required this.authorTrack,
+    this.authorSupporterLevel = 0,
+    this.authorIsSupporter = false,
     required this.text,
     required this.media,
     required this.tags,
@@ -132,6 +159,8 @@ class Post extends Equatable {
   final String authorUid;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final int authorSupporterLevel;
+  final bool authorIsSupporter;
   final String text;
   final List<PostMedia> media;
   final List<String> tags;
@@ -163,6 +192,8 @@ class Post extends Equatable {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSupporterLevel': authorSupporterLevel,
+      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'media': media
           .map((PostMedia media) => media.toMap())
@@ -216,6 +247,11 @@ class Post extends Equatable {
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
+      authorSupporterLevel:
+          (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
+      authorIsSupporter:
+          data['authorIsSupporter'] as bool? ??
+          ((data['authorSupporterLevel'] as num?)?.toInt() ?? 0) > 0,
       text: (data['text'] as String?) ?? '',
       media: _parseMedia(data['media']),
       tags: _parseStringList(data['tags']),
@@ -246,6 +282,8 @@ class Post extends Equatable {
     bool? isLiked,
     bool? isBookmarked,
     PostVisibility? visibility,
+    int? authorSupporterLevel,
+    bool? authorIsSupporter,
   }) {
     return Post(
       id: id,
@@ -256,6 +294,8 @@ class Post extends Equatable {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
+      authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
       text: text,
       media: media,
       tags: tags,
@@ -379,6 +419,8 @@ class Post extends Equatable {
     authorUid,
     authorNickname,
     authorTrack,
+    authorSupporterLevel,
+    authorIsSupporter,
     text,
     media,
     tags,

@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
+import '../../../profile/domain/career_track.dart';
 
 part 'post_detail_state.dart';
 
@@ -207,6 +208,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: '',
               likeCount: 0,
               createdAt: DateTime.now(),
+              authorTrack: CareerTrack.none,
+              authorSupporterLevel: 0,
+              authorIsSupporter: false,
             ),
           ),
         )
@@ -218,7 +222,11 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     void emitWith(String? reaction) {
       emit(
         state.copyWith(
-          comments: _updateCommentReactions(state.comments, commentId, reaction),
+          comments: _updateCommentReactions(
+            state.comments,
+            commentId,
+            reaction,
+          ),
           featuredComments: _updateCommentReactions(
             state.featuredComments,
             commentId,
@@ -292,10 +300,13 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               postId: post.id,
               authorUid: 'preview',
               authorNickname: comment.authorNickname,
+              authorTrack: comment.authorTrack,
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
               reactionCounts: const <String, int>{},
+              authorSupporterLevel: comment.authorSupporterLevel,
+              authorIsSupporter: comment.authorIsSupporter,
             ),
           )
           .toList(growable: false);
@@ -312,6 +323,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
           reactionCounts: const <String, int>{},
+          authorTrack: post.topComment!.authorTrack,
+          authorSupporterLevel: post.topComment!.authorSupporterLevel,
+          authorIsSupporter: post.topComment!.authorIsSupporter,
         ),
       ];
     }
@@ -332,6 +346,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
               reactionCounts: const <String, int>{},
+              authorTrack: comment.authorTrack,
+              authorSupporterLevel: comment.authorSupporterLevel,
+              authorIsSupporter: comment.authorIsSupporter,
             ),
           )
           .toList(growable: false);
@@ -348,6 +365,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
           reactionCounts: const <String, int>{},
+          authorTrack: post.topComment!.authorTrack,
+          authorSupporterLevel: post.topComment!.authorSupporterLevel,
+          authorIsSupporter: post.topComment!.authorIsSupporter,
         ),
       ];
     }
@@ -370,7 +390,9 @@ class PostDetailCubit extends Cubit<PostDetailState> {
   }
 
   Comment _adjustCommentReaction(Comment comment, String? reaction) {
-    final Map<String, int> counts = Map<String, int>.from(comment.reactionCounts);
+    final Map<String, int> counts = Map<String, int>.from(
+      comment.reactionCounts,
+    );
     final String? current = comment.viewerReaction;
     if (current != null) {
       counts[current] = (counts[current] ?? 0) - 1;
@@ -381,9 +403,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     if (reaction != null) {
       counts[reaction] = (counts[reaction] ?? 0) + 1;
     }
-    return comment.copyWith(
-      viewerReaction: reaction,
-      reactionCounts: counts,
-    );
+    return comment.copyWith(viewerReaction: reaction, reactionCounts: counts);
   }
 }

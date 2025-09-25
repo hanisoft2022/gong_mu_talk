@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/widgets/auth_dialog.dart';
 import '../../domain/career_track.dart';
+import '../../domain/user_profile.dart';
 import '../../../../routing/app_router.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -55,11 +56,17 @@ class _ProfileLoggedOut extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.lock_outline, size: 56, color: theme.colorScheme.primary),
+            Icon(
+              Icons.lock_outline,
+              size: 56,
+              color: theme.colorScheme.primary,
+            ),
             const Gap(12),
             Text(
               '로그인이 필요합니다',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(8),
             Text(
@@ -90,10 +97,16 @@ class _ProfileLoggedIn extends StatelessWidget {
     final String email = state.preferredEmail ?? state.email ?? '이메일 정보 없음';
     final bool isGovernmentEmail = state.isGovernmentEmail;
     final bool isVerified = state.isGovernmentEmailVerified;
+    final bool isSupporter =
+        state.supporterLevel > 0 || state.premiumTier != PremiumTier.none;
     final IconData statusIcon = isVerified
         ? Icons.verified_outlined
-        : (isGovernmentEmail ? Icons.mark_email_read_outlined : Icons.mail_outline);
-    final Color statusColor = isVerified ? theme.colorScheme.primary : theme.colorScheme.tertiary;
+        : (isGovernmentEmail
+              ? Icons.mark_email_read_outlined
+              : Icons.mail_outline);
+    final Color statusColor = isVerified
+        ? theme.colorScheme.primary
+        : theme.colorScheme.tertiary;
     final String statusTitle;
     final String statusSubtitle;
     if (isVerified) {
@@ -110,14 +123,23 @@ class _ProfileLoggedIn extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text('내 계정', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-        if (state.supporterLevel > 0) ...[
+        Text(
+          '내 계정',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (isSupporter) ...[
           const Gap(12),
           Align(
             alignment: Alignment.centerLeft,
             child: Chip(
               avatar: const Icon(Icons.volunteer_activism, size: 18),
-              label: Text('후원자 레벨 ${state.supporterLevel}'),
+              label: Text(
+                state.supporterLevel > 0
+                    ? '후원자 레벨 ${state.supporterLevel}'
+                    : '프리미엄 이용 중',
+              ),
             ),
           ),
         ],
@@ -132,7 +154,9 @@ class _ProfileLoggedIn extends StatelessWidget {
               children: [
                 Text(
                   '기본 정보',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Gap(12),
                 ListTile(
@@ -146,7 +170,9 @@ class _ProfileLoggedIn extends StatelessWidget {
                   leading: Icon(statusIcon, color: statusColor),
                   title: Text(
                     statusTitle,
-                    style: theme.textTheme.bodyLarge?.copyWith(color: statusColor),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: statusColor,
+                    ),
                   ),
                   subtitle: Text(statusSubtitle),
                 ),
@@ -161,7 +187,8 @@ class _ProfileLoggedIn extends StatelessWidget {
         const Gap(24),
         _ExcludedTrackCard(state: state),
         const Gap(24),
-        if (!state.isGovernmentEmailVerified) const _GovernmentEmailVerificationCard(),
+        if (!state.isGovernmentEmailVerified)
+          const _GovernmentEmailVerificationCard(),
         if (!state.isGovernmentEmailVerified) const Gap(24),
         if (state.isGovernmentEmailVerified) const _MatchingShortcutCard(),
         if (state.isGovernmentEmailVerified) const Gap(24),
@@ -176,15 +203,32 @@ class _ProfileLoggedIn extends StatelessWidget {
                 onTap: () {
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
-                    ..showSnackBar(const SnackBar(content: Text('마이페이지 세부 기능은 준비 중입니다.')));
+                    ..showSnackBar(
+                      const SnackBar(content: Text('마이페이지 세부 기능은 준비 중입니다.')),
+                    );
                 },
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.volunteer_activism_outlined),
-                title: const Text('후원하기'),
-                subtitle: const Text('후원 시 프로필에 특별 배지가 표시됩니다.'),
-                onTap: () => context.read<AuthCubit>().addSupporterBadge(),
+                leading: Icon(
+                  isSupporter
+                      ? Icons.volunteer_activism
+                      : Icons.volunteer_activism_outlined,
+                ),
+                title: Text(isSupporter ? '후원 취소하기' : '후원하기'),
+                subtitle: Text(
+                  isSupporter
+                      ? '후원을 취소하면 광고가 다시 노출됩니다.'
+                      : '후원 시 프로필에 특별 배지가 표시되고 광고가 제거됩니다.',
+                ),
+                onTap: () {
+                  final AuthCubit cubit = context.read<AuthCubit>();
+                  if (isSupporter) {
+                    cubit.disableSupporterMode();
+                  } else {
+                    cubit.enableSupporterMode();
+                  }
+                },
               ),
               const Divider(height: 1),
               ListTile(
@@ -238,7 +282,8 @@ class _ProfileGuidance extends StatelessWidget {
             SizedBox(height: 12),
             _GuidelineRow(
               icon: Icons.badge_outlined,
-              message: '다른 이메일로 가입하셨다면 마이페이지에서 공직자 메일 인증 절차를 진행할 수 있도록 준비 중입니다.',
+              message:
+                  '다른 이메일로 가입하셨다면 마이페이지에서 공직자 메일 인증 절차를 진행할 수 있도록 준비 중입니다.',
             ),
           ],
         ),
@@ -266,13 +311,21 @@ class _CareerTrackSelectorCard extends StatelessWidget {
           children: [
             Text(
               '내 직렬 설정',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(12),
-            Text('직렬을 선택하면 직렬 전용 커뮤니티와 맞춤 기능이 열립니다.', style: theme.textTheme.bodyMedium),
+            Text(
+              '직렬을 선택하면 직렬 전용 커뮤니티와 맞춤 기능이 열립니다.',
+              style: theme.textTheme.bodyMedium,
+            ),
             const Gap(16),
             InputDecorator(
-              decoration: const InputDecoration(labelText: '직렬 선택', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: '직렬 선택',
+                border: OutlineInputBorder(),
+              ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<CareerTrack>(
                   value: currentTrack,
@@ -351,11 +404,19 @@ class _NicknameCardState extends State<_NicknameCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('닉네임', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              '닉네임',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const Gap(12),
             TextField(
               controller: _controller,
-              decoration: const InputDecoration(labelText: '닉네임', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: '닉네임',
+                border: OutlineInputBorder(),
+              ),
             ),
             const Gap(12),
             Text(
@@ -368,14 +429,17 @@ class _NicknameCardState extends State<_NicknameCard> {
                 Expanded(
                   child: FilledButton(
                     onPressed: canChange
-                        ? () => context.read<AuthCubit>().updateNickname(_controller.text)
+                        ? () => context.read<AuthCubit>().updateNickname(
+                            _controller.text,
+                          )
                         : null,
                     child: const Text('닉네임 변경'),
                   ),
                 ),
                 const Gap(12),
                 OutlinedButton(
-                  onPressed: () => context.read<AuthCubit>().purchaseNicknameTicket(),
+                  onPressed: () =>
+                      context.read<AuthCubit>().purchaseNicknameTicket(),
                   child: const Text('변경권 990원'),
                 ),
               ],
@@ -405,10 +469,15 @@ class _ExcludedTrackCard extends StatelessWidget {
           children: [
             Text(
               '매칭 제외 직렬',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(12),
-            Text('같은 직렬과 매칭을 피하고 싶다면 아래에서 제외할 직렬을 선택하세요.', style: theme.textTheme.bodyMedium),
+            Text(
+              '같은 직렬과 매칭을 피하고 싶다면 아래에서 제외할 직렬을 선택하세요.',
+              style: theme.textTheme.bodyMedium,
+            ),
             const Gap(12),
             Wrap(
               spacing: 8,
@@ -419,7 +488,8 @@ class _ExcludedTrackCard extends StatelessWidget {
                     (track) => FilterChip(
                       label: Text('${track.emoji} ${track.displayName}'),
                       selected: excluded.contains(track),
-                      onSelected: (_) => context.read<AuthCubit>().toggleExcludedTrack(track),
+                      onSelected: (_) =>
+                          context.read<AuthCubit>().toggleExcludedTrack(track),
                     ),
                   )
                   .toList(growable: false),
@@ -446,7 +516,9 @@ class _MatchingShortcutCard extends StatelessWidget {
           children: [
             Text(
               '매칭 서비스 이용 준비 완료!',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(8),
             Text(
@@ -470,10 +542,12 @@ class _GovernmentEmailVerificationCard extends StatefulWidget {
   const _GovernmentEmailVerificationCard();
 
   @override
-  State<_GovernmentEmailVerificationCard> createState() => _GovernmentEmailVerificationCardState();
+  State<_GovernmentEmailVerificationCard> createState() =>
+      _GovernmentEmailVerificationCardState();
 }
 
-class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerificationCard> {
+class _GovernmentEmailVerificationCardState
+    extends State<_GovernmentEmailVerificationCard> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
@@ -492,13 +566,17 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
         final bool isLoading = state.isGovernmentEmailVerificationInProgress;
 
         return BlocListener<AuthCubit, AuthState>(
-          listenWhen: (previous, current) => previous.lastMessage != current.lastMessage && current.lastMessage != null,
+          listenWhen: (previous, current) =>
+              previous.lastMessage != current.lastMessage &&
+              current.lastMessage != null,
           listener: (context, authState) {
             final String? message = authState.lastMessage;
             if (message == null || message.isEmpty) {
               return;
             }
-            final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+            final ScaffoldMessengerState messenger = ScaffoldMessenger.of(
+              context,
+            );
             messenger
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(content: Text(message)));
@@ -514,7 +592,9 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                   children: [
                     Text(
                       '공직자 메일 인증',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Gap(12),
                     Text(
@@ -605,7 +685,9 @@ class _GuidelineRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
-        Expanded(child: Text(message, style: Theme.of(context).textTheme.bodySmall)),
+        Expanded(
+          child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+        ),
       ],
     );
   }
@@ -617,7 +699,10 @@ void _showAuthDialog(BuildContext context) {
   showDialog<void>(
     context: context,
     builder: (dialogContext) {
-      return BlocProvider<AuthCubit>.value(value: authCubit, child: const AuthDialog());
+      return BlocProvider<AuthCubit>.value(
+        value: authCubit,
+        child: const AuthDialog(),
+      );
     },
   );
 }

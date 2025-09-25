@@ -31,7 +31,13 @@ class PostMediaDraft extends Equatable {
   String get fileName => file.name;
 
   @override
-  List<Object?> get props => <Object?>[file.path, contentType, width, height, bytes];
+  List<Object?> get props => <Object?>[
+    file.path,
+    contentType,
+    width,
+    height,
+    bytes,
+  ];
 }
 
 class PostComposerState extends Equatable {
@@ -125,7 +131,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   final ImagePicker _picker = ImagePicker();
 
   void updateText(String value) {
-    emit(state.copyWith(text: value, errorMessage: null, submissionSuccess: false));
+    emit(
+      state.copyWith(text: value, errorMessage: null, submissionSuccess: false),
+    );
   }
 
   void updateTags(String raw) {
@@ -177,8 +185,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   }
 
   void removeAttachment(PostMediaDraft draft) {
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)
-      ..remove(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
+      state.attachments,
+    )..remove(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -204,19 +213,29 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       return;
     }
 
-    if (type == PostType.board && (state.selectedBoardId == null || state.selectedBoardId!.isEmpty)) {
+    if (type == PostType.board &&
+        (state.selectedBoardId == null || state.selectedBoardId!.isEmpty)) {
       emit(state.copyWith(errorMessage: '게시판을 선택해주세요.'));
       return;
     }
 
-    emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
+    emit(
+      state.copyWith(
+        isSubmitting: true,
+        errorMessage: null,
+        submissionSuccess: false,
+      ),
+    );
 
     try {
+      final int supporterLevel = authState.supporterLevel;
       final Post post = await _repository.createPost(
         type: type,
         authorUid: uid,
         authorNickname: authState.nickname,
         authorTrack: authState.careerTrack,
+        authorSupporterLevel: supporterLevel,
+        authorIsSupporter: supporterLevel > 0,
         text: text,
         audience: type == PostType.chirp ? state.audience : PostAudience.all,
         serial: authState.serial,
@@ -281,7 +300,8 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       height = null;
     }
 
-    final String contentType = file.mimeType ?? _contentTypeFromExtension(file.name);
+    final String contentType =
+        file.mimeType ?? _contentTypeFromExtension(file.name);
     final PostMediaDraft draft = PostMediaDraft(
       file: file,
       bytes: bytes,
@@ -290,8 +310,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       height: height,
     );
 
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)
-      ..add(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
+      state.attachments,
+    )..add(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -327,26 +348,24 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       final Post? post = await _repository.getPost(postId);
 
       if (post == null) {
-        emit(state.copyWith(
-          isLoading: false,
-          errorMessage: '게시글을 찾을 수 없습니다.',
-        ));
+        emit(state.copyWith(isLoading: false, errorMessage: '게시글을 찾을 수 없습니다.'));
         return;
       }
 
-      emit(state.copyWith(
-        text: post.text,
-        tags: post.tags,
-        audience: post.audience,
-        selectedBoardId: post.boardId,
-        editingPost: post,
-        isLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          text: post.text,
+          tags: post.tags,
+          audience: post.audience,
+          selectedBoardId: post.boardId,
+          editingPost: post,
+          isLoading: false,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: '게시글을 불러올 수 없습니다: $e',
-      ));
+      emit(
+        state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'),
+      );
     }
   }
 }

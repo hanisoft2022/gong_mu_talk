@@ -10,6 +10,7 @@ import '../../../payments/data/bootpay_payment_service.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
+import '../../../notifications/data/notification_repository.dart';
 
 part 'auth_state.dart';
 
@@ -19,10 +20,12 @@ class AuthCubit extends Cubit<AuthState> {
     required FirebaseAuthRepository authRepository,
     required LoginSessionStore sessionStore,
     required UserProfileRepository userProfileRepository,
+    required NotificationRepository notificationRepository,
   }) : _paymentService = paymentService,
        _authRepository = authRepository,
        _sessionStore = sessionStore,
        _userProfileRepository = userProfileRepository,
+       _notificationRepository = notificationRepository,
        super(const AuthState()) {
     _authSubscription = _authRepository.authStateChanges().listen(
       _onAuthUserChanged,
@@ -33,6 +36,7 @@ class AuthCubit extends Cubit<AuthState> {
   final FirebaseAuthRepository _authRepository;
   final LoginSessionStore _sessionStore;
   final UserProfileRepository _userProfileRepository;
+  final NotificationRepository _notificationRepository;
   late final StreamSubscription<AuthUser?> _authSubscription;
   StreamSubscription<UserProfile?>? _profileSubscription;
   static const Duration _sessionMaxAge = Duration(days: 30);
@@ -159,22 +163,16 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     try {
-      final String serial =
-          track == CareerTrack.none ? 'unknown' : track.name;
-      final UserProfile profile = await _userProfileRepository.updateProfileFields(
-        uid: uid,
-        careerTrack: track,
-        serial: serial,
-      );
+      final String serial = track == CareerTrack.none ? 'unknown' : track.name;
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, careerTrack: track, serial: serial);
 
       _applyProfile(profile);
 
       final String message = track == CareerTrack.none
           ? '직렬 설정이 초기화되었습니다.'
           : '직렬이 ${track.displayName}로 설정되었습니다.';
-      emit(
-        state.copyWith(lastMessage: message),
-      );
+      emit(state.copyWith(lastMessage: message));
     } catch (_) {
       emit(state.copyWith(lastMessage: '직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.'));
     }
@@ -202,13 +200,41 @@ class AuthCubit extends Cubit<AuthState> {
       );
       await _userProfileRepository.addNicknameTickets(uid: uid, count: 1);
       emit(
-        state.copyWith(
-          lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.',
-        ),
+        state.copyWith(lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.'),
       );
     } catch (_) {
       emit(state.copyWith(lastMessage: '후원 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
     }
+  }
+
+  void enableSupporterMode() {
+    if (state.supporterLevel > 0) {
+      emit(state.copyWith(lastMessage: '이미 후원 모드가 활성화되어 있습니다.'));
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        supporterLevel: 1,
+        premiumTier: PremiumTier.supporter,
+        lastMessage: '후원 모드가 활성화되었어요! 고맙습니다.',
+      ),
+    );
+  }
+
+  void disableSupporterMode() {
+    if (state.supporterLevel == 0 && state.premiumTier == PremiumTier.none) {
+      emit(state.copyWith(lastMessage: '이미 일반 모드입니다.'));
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        supporterLevel: 0,
+        premiumTier: PremiumTier.none,
+        lastMessage: '후원을 취소했습니다. 언제든 다시 돌아오세요!',
+      ),
+    );
   }
 
   Future<void> updateNickname(String newNickname) async {
@@ -237,12 +263,7 @@ class AuthCubit extends Cubit<AuthState> {
         newNickname: trimmed,
       );
       _applyProfile(profile);
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '닉네임이 변경되었습니다.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '닉네임이 변경되었습니다.'));
     } on StateError catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
     } on ArgumentError catch (error) {
@@ -273,7 +294,9 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> toggleExcludedTrack(CareerTrack track) async {
-    final Set<CareerTrack> updated = Set<CareerTrack>.from(state.excludedTracks);
+    final Set<CareerTrack> updated = Set<CareerTrack>.from(
+      state.excludedTracks,
+    );
     if (!updated.remove(track)) {
       updated.add(track);
     }
@@ -304,7 +327,9 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         state.copyWith(
           excludedTracks: updated,
-          excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
+          excludedSerials: updated
+              .map((CareerTrack track) => track.name)
+              .toSet(),
           lastMessage: '매칭 제외 직렬 설정이 업데이트되었습니다.',
         ),
       );
@@ -312,7 +337,9 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         state.copyWith(
           excludedTracks: updated,
-          excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
+          excludedSerials: updated
+              .map((CareerTrack track) => track.name)
+              .toSet(),
           lastMessage: '매칭 제외 직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.',
         ),
       );
@@ -325,6 +352,7 @@ class AuthCubit extends Cubit<AuthState> {
     if (user == null) {
       unawaited(_sessionStore.clearLoginTimestamp());
       _profileSubscription?.cancel();
+      unawaited(_notificationRepository.stopListening());
 
       String? message = state.lastMessage;
       if (_pendingForcedLogoutMessage != null) {
@@ -384,7 +412,9 @@ class AuthCubit extends Cubit<AuthState> {
     final String? previousEmail = state.email;
     final String? newEmail = user.email;
     if (newEmail != null && newEmail.isNotEmpty) {
-      if (previousEmail != null && previousEmail.isNotEmpty && previousEmail != newEmail) {
+      if (previousEmail != null &&
+          previousEmail.isNotEmpty &&
+          previousEmail != newEmail) {
         unawaited(
           _authRepository.handlePrimaryEmailUpdated(
             userId: user.uid,
@@ -429,12 +459,14 @@ class AuthCubit extends Cubit<AuthState> {
 
     unawaited(_userProfileRepository.recordLogin(user.uid));
     _subscribeToProfile(uid: user.uid, fallbackEmail: newEmail);
+    unawaited(_notificationRepository.startListening(user.uid));
   }
 
   @override
   Future<void> close() async {
     await _authSubscription.cancel();
     await _profileSubscription?.cancel();
+    await _notificationRepository.stopListening();
     await super.close();
   }
 
@@ -482,12 +514,16 @@ class AuthCubit extends Cubit<AuthState> {
     return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
   }
 
-  Future<void> _refreshPrimaryEmail(String userId, String governmentEmail) async {
+  Future<void> _refreshPrimaryEmail(
+    String userId,
+    String governmentEmail,
+  ) async {
     try {
-      final String? legacyEmail = await _authRepository.findLegacyEmailForGovernmentEmail(
-        userId: userId,
-        governmentEmail: governmentEmail,
-      );
+      final String? legacyEmail = await _authRepository
+          .findLegacyEmailForGovernmentEmail(
+            userId: userId,
+            governmentEmail: governmentEmail,
+          );
 
       if (legacyEmail == null || legacyEmail.isEmpty) {
         return;
@@ -503,7 +539,9 @@ class AuthCubit extends Cubit<AuthState> {
 
       emit(state.copyWith(primaryEmail: legacyEmail));
     } catch (error, stackTrace) {
-      debugPrint('Failed to resolve primary email for $governmentEmail: $error\n$stackTrace');
+      debugPrint(
+        'Failed to resolve primary email for $governmentEmail: $error\n$stackTrace',
+      );
     }
   }
 
@@ -511,7 +549,9 @@ class AuthCubit extends Cubit<AuthState> {
     _profileSubscription?.cancel();
     final String fallbackNickname = _deriveNickname(fallbackEmail);
 
-    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((UserProfile? profile) {
+    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((
+      UserProfile? profile,
+    ) {
       if (profile == null) {
         return;
       }

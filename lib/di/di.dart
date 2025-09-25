@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/services/notification_service.dart';
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/data/firebase_auth_repository.dart';
 import '../features/auth/data/government_email_repository.dart';
@@ -24,6 +25,7 @@ import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/board_catalog_cubit.dart';
 import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
+import '../features/notifications/data/notification_repository.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
 import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
@@ -48,16 +50,24 @@ Future<void> configureDependencies() async {
       () => FirebaseAuthRepository(governmentEmailRepository: getIt()),
     )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
+    ..registerLazySingleton<NotificationService>(NotificationService.new)
     ..registerLazySingleton<LoginSessionStore>(
       () => LoginSessionStore(sharedPreferences),
     )
     ..registerLazySingleton<UserProfileRepository>(UserProfileRepository.new)
+    ..registerLazySingleton<NotificationRepository>(
+      () => NotificationRepository(
+        notificationService: getIt(),
+        preferences: getIt(),
+      ),
+    )
     ..registerLazySingleton<AuthCubit>(
       () => AuthCubit(
         paymentService: getIt(),
         authRepository: getIt(),
         sessionStore: getIt(),
         userProfileRepository: getIt(),
+        notificationRepository: getIt(),
       ),
     )
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
@@ -65,6 +75,7 @@ Future<void> configureDependencies() async {
       () => CommunityRepository(
         authCubit: getIt(),
         userProfileRepository: getIt(),
+        notificationRepository: getIt(),
       ),
     )
     ..registerFactory<BoardCatalogCubit>(
@@ -74,7 +85,11 @@ Future<void> configureDependencies() async {
       () => MatchingCubit(repository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<CommunityFeedCubit>(
-      () => CommunityFeedCubit(repository: getIt(), authCubit: getIt()),
+      () => CommunityFeedCubit(
+        repository: getIt(),
+        authCubit: getIt(),
+        notificationRepository: getIt(),
+      ),
     )
     ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt()))

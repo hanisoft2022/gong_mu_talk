@@ -68,11 +68,30 @@ class _PostCardState extends State<PostCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.authorNickname,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (post.authorIsSupporter) ...[
+                            Tooltip(
+                              message: '후원자 레벨 ${post.authorSupporterLevel}',
+                              child: Icon(
+                                Icons.workspace_premium,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const Gap(6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              post.authorNickname,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       Text(
                         '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
@@ -315,7 +334,9 @@ class _PostCardState extends State<PostCard> {
     final String? next = previous == emoji ? null : emoji;
 
     Comment updateComment(Comment current, String? reaction) {
-      final Map<String, int> counts = Map<String, int>.from(current.reactionCounts);
+      final Map<String, int> counts = Map<String, int>.from(
+        current.reactionCounts,
+      );
       final String? currentReaction = current.viewerReaction;
       if (currentReaction != null) {
         counts[currentReaction] = (counts[currentReaction] ?? 0) - 1;
@@ -326,24 +347,23 @@ class _PostCardState extends State<PostCard> {
       if (reaction != null) {
         counts[reaction] = (counts[reaction] ?? 0) + 1;
       }
-      return current.copyWith(
-        viewerReaction: reaction,
-        reactionCounts: counts,
-      );
+      return current.copyWith(viewerReaction: reaction, reactionCounts: counts);
     }
 
     void apply(String? reaction) {
       setState(() {
         _timelineComments = _timelineComments
             .map(
-              (Comment current) =>
-                  current.id == comment.id ? updateComment(current, reaction) : current,
+              (Comment current) => current.id == comment.id
+                  ? updateComment(current, reaction)
+                  : current,
             )
             .toList(growable: false);
         _featuredComments = _featuredComments
             .map(
-              (Comment current) =>
-                  current.id == comment.id ? updateComment(current, reaction) : current,
+              (Comment current) => current.id == comment.id
+                  ? updateComment(current, reaction)
+                  : current,
             )
             .toList(growable: false);
       });
@@ -375,12 +395,15 @@ class _PostCardState extends State<PostCard> {
       postId: post.id,
       authorUid: 'preview',
       authorNickname: cached.authorNickname,
+      authorTrack: cached.authorTrack,
       text: cached.text,
       likeCount: cached.likeCount,
       createdAt: (post.updatedAt ?? post.createdAt).add(
         Duration(minutes: index),
       ),
       reactionCounts: const <String, int>{},
+      authorSupporterLevel: cached.authorSupporterLevel,
+      authorIsSupporter: cached.authorIsSupporter,
     );
   }
 
@@ -449,6 +472,25 @@ class _FeaturedCommentTile extends StatelessWidget {
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
+          ),
+          const Gap(2),
+          Row(
+            children: [
+              Text(
+                '${comment.authorTrack.emoji} ${comment.authorTrack.displayName}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (comment.authorIsSupporter) ...[
+                const Gap(4),
+                Icon(
+                  Icons.workspace_premium,
+                  size: 14,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ],
           ),
           const Gap(4),
           Text(comment.text, style: theme.textTheme.bodyMedium),
@@ -553,14 +595,29 @@ class _CommentTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      comment.authorNickname,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        if (comment.authorIsSupporter) ...[
+                          Icon(
+                            Icons.workspace_premium,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const Gap(4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            comment.authorNickname,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
-                      timestamp,
+                      '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -640,21 +697,24 @@ class _CommentReactionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 6,
-      children: _commentReactionOptions.map((String emoji) {
-        final int count = reactions[emoji] ?? 0;
-        final bool selected = viewerReaction == emoji;
-        return ChoiceChip(
-          label: Text(
-            count > 0 ? '$emoji $count' : emoji,
-            style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
-          ),
-          selected: selected,
-          showCheckmark: false,
-          onSelected: (_) => onReact(emoji),
-          selectedColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
-        );
-      }).toList(growable: false),
+      children: _commentReactionOptions
+          .map((String emoji) {
+            final int count = reactions[emoji] ?? 0;
+            final bool selected = viewerReaction == emoji;
+            return ChoiceChip(
+              label: Text(
+                count > 0 ? '$emoji $count' : emoji,
+                style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
+              ),
+              selected: selected,
+              showCheckmark: false,
+              onSelected: (_) => onReact(emoji),
+              selectedColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.16),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }

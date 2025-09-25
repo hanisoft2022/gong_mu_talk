@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../../profile/domain/career_track.dart';
+
 class Comment extends Equatable {
   static const Object _unset = Object();
 
@@ -9,6 +11,7 @@ class Comment extends Equatable {
     required this.postId,
     required this.authorUid,
     required this.authorNickname,
+    required this.authorTrack,
     required this.text,
     required this.likeCount,
     required this.createdAt,
@@ -17,12 +20,15 @@ class Comment extends Equatable {
     this.isLiked = false,
     this.reactionCounts = const <String, int>{},
     this.viewerReaction,
+    this.authorSupporterLevel = 0,
+    this.authorIsSupporter = false,
   });
 
   final String id;
   final String postId;
   final String authorUid;
   final String authorNickname;
+  final CareerTrack authorTrack;
   final String text;
   final int likeCount;
   final DateTime createdAt;
@@ -31,6 +37,8 @@ class Comment extends Equatable {
   final bool isLiked;
   final Map<String, int> reactionCounts;
   final String? viewerReaction;
+  final int authorSupporterLevel;
+  final bool authorIsSupporter;
 
   bool get isReply => parentCommentId != null && parentCommentId!.isNotEmpty;
 
@@ -38,6 +46,9 @@ class Comment extends Equatable {
     return <String, Object?>{
       'authorUid': authorUid,
       'authorNickname': authorNickname,
+      'authorTrack': authorTrack.name,
+      'authorSupporterLevel': authorSupporterLevel,
+      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'likeCount': likeCount,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -79,6 +90,7 @@ class Comment extends Equatable {
       postId: postId,
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
+      authorTrack: _parseTrack(data['authorTrack']),
       text: (data['text'] as String?) ?? '',
       likeCount: (data['likeCount'] as num?)?.toInt() ?? 0,
       createdAt: _parseTimestamp(data['createdAt']) ?? DateTime.now(),
@@ -86,9 +98,15 @@ class Comment extends Equatable {
       deleted: data['deleted'] as bool? ?? false,
       isLiked: isLiked,
       reactionCounts: _parseReactionCounts(
-        (data['reactionCounts'] as Map<String, Object?>?)?.cast<String, Object?>(),
+        (data['reactionCounts'] as Map<String, Object?>?)
+            ?.cast<String, Object?>(),
       ),
       viewerReaction: viewerReaction,
+      authorSupporterLevel:
+          (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
+      authorIsSupporter:
+          data['authorIsSupporter'] as bool? ??
+          ((data['authorSupporterLevel'] as num?)?.toInt() ?? 0) > 0,
     );
   }
 
@@ -99,12 +117,16 @@ class Comment extends Equatable {
     bool? isLiked,
     Map<String, int>? reactionCounts,
     Object? viewerReaction = _unset,
+    CareerTrack? authorTrack,
+    int? authorSupporterLevel,
+    bool? authorIsSupporter,
   }) {
     return Comment(
       id: id,
       postId: postId,
       authorUid: authorUid,
       authorNickname: authorNickname,
+      authorTrack: authorTrack ?? this.authorTrack,
       text: text ?? this.text,
       likeCount: likeCount ?? this.likeCount,
       createdAt: createdAt,
@@ -115,6 +137,8 @@ class Comment extends Equatable {
       viewerReaction: viewerReaction == _unset
           ? this.viewerReaction
           : viewerReaction as String?,
+      authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
+      authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
     );
   }
 
@@ -140,6 +164,7 @@ class Comment extends Equatable {
     postId,
     authorUid,
     authorNickname,
+    authorTrack,
     text,
     likeCount,
     createdAt,
@@ -148,19 +173,27 @@ class Comment extends Equatable {
     isLiked,
     reactionCounts,
     viewerReaction,
+    authorSupporterLevel,
+    authorIsSupporter,
   ];
 
-  static Map<String, int> _parseReactionCounts(
-    Map<String, Object?>? raw,
-  ) {
+  static CareerTrack _parseTrack(Object? raw) {
+    if (raw is String) {
+      return CareerTrack.values.firstWhere(
+        (CareerTrack track) => track.name == raw,
+        orElse: () => CareerTrack.none,
+      );
+    }
+    return CareerTrack.none;
+  }
+
+  static Map<String, int> _parseReactionCounts(Map<String, Object?>? raw) {
     if (raw == null || raw.isEmpty) {
       return const <String, int>{};
     }
     return raw.map(
-      (String key, Object? value) => MapEntry(
-        key,
-        (value as num?)?.toInt() ?? 0,
-      ),
+      (String key, Object? value) =>
+          MapEntry(key, (value as num?)?.toInt() ?? 0),
     )..removeWhere((_, int count) => count <= 0);
   }
 }

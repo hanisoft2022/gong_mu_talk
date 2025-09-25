@@ -8,6 +8,7 @@ import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../cubit/post_detail_cubit.dart';
 import '../widgets/post_card.dart';
+import '../../../profile/domain/career_track.dart';
 
 class PostDetailPage extends StatefulWidget {
   const PostDetailPage({super.key, required this.postId, this.initialPost});
@@ -313,9 +314,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
 
     final TextEditingValue value = _commentController.value;
-    final int start = value.selection.isValid ? value.selection.start : value.text.length;
-    final int end = value.selection.isValid ? value.selection.end : value.text.length;
-    final bool needsLeadingSpace = start > 0 && !value.text.substring(0, start).endsWith(' ');
+    final int start = value.selection.isValid
+        ? value.selection.start
+        : value.text.length;
+    final int end = value.selection.isValid
+        ? value.selection.end
+        : value.text.length;
+    final bool needsLeadingSpace =
+        start > 0 && !value.text.substring(0, start).endsWith(' ');
     final String mention = '${needsLeadingSpace ? ' ' : ''}@$trimmed ';
     final String newText = value.text.replaceRange(start, end, mention);
     _commentController.value = TextEditingValue(
@@ -358,9 +364,9 @@ class _CommentsSection extends StatelessWidget {
             const Gap(8),
             Text(
               '댓글 ${timelineComments.length}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -515,22 +521,33 @@ class _CommentTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      comment.authorNickname,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    if (comment.authorIsSupporter) ...[
+                      Icon(
+                        Icons.workspace_premium,
+                        size: 16,
+                        color: theme.colorScheme.primary,
                       ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      timestamp,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const Gap(4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        comment.authorNickname,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const Gap(4),
+                const Gap(2),
+                Text(
+                  '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const Gap(6),
                 Text(comment.text, style: theme.textTheme.bodyMedium),
                 const Gap(12),
                 _CommentReactionBar(
@@ -718,21 +735,24 @@ class _CommentReactionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 6,
-      children: _commentReactionOptions.map((String emoji) {
-        final int count = reactions[emoji] ?? 0;
-        final bool selected = viewerReaction == emoji;
-        return ChoiceChip(
-          label: Text(
-            count > 0 ? '$emoji $count' : emoji,
-            style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
-          ),
-          selected: selected,
-          showCheckmark: false,
-          onSelected: (_) => onReact(emoji),
-          selectedColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
-        );
-      }).toList(growable: false),
+      children: _commentReactionOptions
+          .map((String emoji) {
+            final int count = reactions[emoji] ?? 0;
+            final bool selected = viewerReaction == emoji;
+            return ChoiceChip(
+              label: Text(
+                count > 0 ? '$emoji $count' : emoji,
+                style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
+              ),
+              selected: selected,
+              showCheckmark: false,
+              onSelected: (_) => onReact(emoji),
+              selectedColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.16),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }

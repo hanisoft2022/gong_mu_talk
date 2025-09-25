@@ -5,24 +5,36 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/user_profile.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
+import '../../../notifications/data/notification_repository.dart';
 
 part 'community_feed_state.dart';
 
 class CommunityFeedCubit extends Cubit<CommunityFeedState> {
-  CommunityFeedCubit({required CommunityRepository repository, required AuthCubit authCubit})
-    : _repository = repository,
-      _authCubit = authCubit,
-      super(const CommunityFeedState()) {
+  CommunityFeedCubit({
+    required CommunityRepository repository,
+    required AuthCubit authCubit,
+    required NotificationRepository notificationRepository,
+  }) : _repository = repository,
+       _authCubit = authCubit,
+       _notificationRepository = notificationRepository,
+       super(const CommunityFeedState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
-    emit(state.copyWith(careerTrack: _authCubit.state.careerTrack, serial: _authCubit.state.serial));
+    emit(
+      state.copyWith(
+        careerTrack: _authCubit.state.careerTrack,
+        serial: _authCubit.state.serial,
+      ),
+    );
   }
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
+  final NotificationRepository _notificationRepository;
   late final StreamSubscription<AuthState> _authSubscription;
 
   final Map<String, QueryDocumentSnapshotJson?> _cursors =
@@ -33,6 +45,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
   String _cursorKey(LoungeScope scope, LoungeSort sort) =>
       '${scope.name}_${sort.name}';
+
+  bool get _shouldShowAds {
+    final AuthState authState = _authCubit.state;
+    final bool isSupporter =
+        authState.supporterLevel > 0 ||
+        authState.premiumTier != PremiumTier.none;
+    return !isSupporter;
+  }
 
   Future<void> loadInitial({LoungeScope? scope, LoungeSort? sort}) async {
     if (_isFetching) {
@@ -56,9 +76,15 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     _cursors[_cursorKey(targetScope, targetSort)] = null;
 
     try {
-      final PaginatedQueryResult<Post> result =
-          await _fetchPosts(targetScope, targetSort, reset: true);
-      final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
+      final PaginatedQueryResult<Post> result = await _fetchPosts(
+        targetScope,
+        targetSort,
+        reset: true,
+      );
+      final Set<String> liked = result.items
+          .where((Post post) => post.isLiked)
+          .map((Post post) => post.id)
+          .toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
           .map((Post post) => post.id)
@@ -77,10 +103,17 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           errorMessage: null,
           careerTrack: _authCubit.state.careerTrack,
           serial: _authCubit.state.serial,
+          showAds: _shouldShowAds,
         ),
       );
 
       _cursors[_cursorKey(targetScope, targetSort)] = result.lastDocument;
+      unawaited(
+        _notificationRepository.maybeShowWeeklySerialDigest(
+          track: _authCubit.state.careerTrack,
+          posts: result.items,
+        ),
+      );
     } catch (_) {
       emit(
         state.copyWith(
@@ -101,11 +134,22 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
     _isFetching = true;
-    emit(state.copyWith(status: CommunityFeedStatus.refreshing, errorMessage: null));
+    emit(
+      state.copyWith(
+        status: CommunityFeedStatus.refreshing,
+        errorMessage: null,
+      ),
+    );
     try {
-      final PaginatedQueryResult<Post> result =
-          await _fetchPosts(state.scope, state.sort, reset: true);
-      final Set<String> liked = result.items.where((Post post) => post.isLiked).map((Post post) => post.id).toSet();
+      final PaginatedQueryResult<Post> result = await _fetchPosts(
+        state.scope,
+        state.sort,
+        reset: true,
+      );
+      final Set<String> liked = result.items
+          .where((Post post) => post.isLiked)
+          .map((Post post) => post.id)
+          .toSet();
       final Set<String> bookmarked = result.items
           .where((Post post) => post.isBookmarked)
           .map((Post post) => post.id)
@@ -119,11 +163,23 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           likedPostIds: liked,
           bookmarkedPostIds: bookmarked,
           errorMessage: null,
+          showAds: _shouldShowAds,
         ),
       );
       _cursors[_cursorKey(state.scope, state.sort)] = result.lastDocument;
+      unawaited(
+        _notificationRepository.maybeShowWeeklySerialDigest(
+          track: _authCubit.state.careerTrack,
+          posts: result.items,
+        ),
+      );
     } catch (_) {
-      emit(state.copyWith(status: CommunityFeedStatus.error, errorMessage: '새로고침 중 오류가 발생했습니다.'));
+      emit(
+        state.copyWith(
+          status: CommunityFeedStatus.error,
+          errorMessage: '새로고침 중 오류가 발생했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -138,13 +194,25 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final PaginatedQueryResult<Post> result =
-          await _fetchPosts(state.scope, state.sort, reset: false);
-      final List<Post> combined = List<Post>.from(state.posts)..addAll(result.items);
+      final PaginatedQueryResult<Post> result = await _fetchPosts(
+        state.scope,
+        state.sort,
+        reset: false,
+      );
+      final List<Post> combined = List<Post>.from(state.posts)
+        ..addAll(result.items);
       final Set<String> liked = Set<String>.from(state.likedPostIds)
-        ..addAll(result.items.where((Post post) => post.isLiked).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isLiked)
+              .map((Post post) => post.id),
+        );
       final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds)
-        ..addAll(result.items.where((Post post) => post.isBookmarked).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isBookmarked)
+              .map((Post post) => post.id),
+        );
 
       emit(
         state.copyWith(
@@ -160,7 +228,12 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       final String key = _cursorKey(state.scope, state.sort);
       _cursors[key] = result.lastDocument ?? _cursors[key];
     } catch (_) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.'));
+      emit(
+        state.copyWith(
+          isLoadingMore: false,
+          errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -187,13 +260,18 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
 
     try {
-      final bool nowLiked = await _repository.togglePostLike(postId: post.id, uid: uid);
+      final bool nowLiked = await _repository.togglePostLike(
+        postId: post.id,
+        uid: uid,
+      );
       final List<Post> updatedPosts = state.posts
           .map((Post existing) {
             if (existing.id != post.id) {
               return existing;
             }
-            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1)).clamp(0, 1 << 31).toInt();
+            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1))
+                .clamp(0, 1 << 31)
+                .toInt();
             return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
           })
           .toList(growable: false);
@@ -276,8 +354,16 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     final bool serialChanged = authState.serial != state.serial;
     final bool trackChanged = authState.careerTrack != state.careerTrack;
 
-    if (serialChanged || trackChanged) {
-      emit(state.copyWith(careerTrack: authState.careerTrack, serial: authState.serial));
+    final bool supporterChanged = state.showAds != _shouldShowAds;
+
+    if (serialChanged || trackChanged || supporterChanged) {
+      emit(
+        state.copyWith(
+          careerTrack: authState.careerTrack,
+          serial: authState.serial,
+          showAds: _shouldShowAds,
+        ),
+      );
       if (state.scope == LoungeScope.serial && serialChanged) {
         unawaited(loadInitial(scope: LoungeScope.serial));
       }
@@ -295,7 +381,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     final String serial = _authCubit.state.serial;
 
-    if (scope == LoungeScope.serial && (serial == 'unknown' || serial.isEmpty)) {
+    if (scope == LoungeScope.serial &&
+        (serial == 'unknown' || serial.isEmpty)) {
       return const PaginatedQueryResult<Post>(
         items: <Post>[],
         lastDocument: null,
