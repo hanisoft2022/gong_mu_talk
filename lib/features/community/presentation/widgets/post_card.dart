@@ -9,11 +9,12 @@ import '../../../../di/di.dart';
 import '../../data/community_repository.dart';
 import '../../data/mock_social_graph.dart';
 import '../../domain/models/comment.dart';
+import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 
-const List<String> _commentReactionOptions = <String>['👍', '🎉', '😍', '😄'];
+enum _AuthorMenuAction { viewProfile, toggleFollow }
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -21,19 +22,21 @@ class PostCard extends StatefulWidget {
     required this.post,
     required this.onToggleLike,
     required this.onToggleBookmark,
+    this.displayScope = LoungeScope.all,
     this.trailing,
   });
 
   final Post post;
   final VoidCallback onToggleLike;
   final VoidCallback onToggleBookmark;
+  final LoungeScope displayScope;
   final Widget? trailing;
 
   @override
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> {
+class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   bool _isExpanded = false;
   bool _showComments = false;
   bool _isLoadingComments = false;
@@ -59,28 +62,17 @@ class _PostCardState extends State<PostCard> {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: _AuthorInfoHeader(
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                  child: _buildAuthorMenu(
                     post: post,
                     timestamp: timestamp,
-                    onTap: () => _handleMemberTap(
-                      uid: post.authorUid,
-                      nickname: post.authorNickname,
-                    ),
+                    scope: widget.displayScope,
+                  ),
                   ),
                 ),
-                widget.trailing ??
-                    IconButton(
-                      icon: Icon(
-                        post.isBookmarked
-                            ? Icons.bookmark
-                            : Icons.bookmark_outline,
-                        color: post.isBookmarked
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      onPressed: widget.onToggleBookmark,
-                    ),
               ],
             ),
             const Gap(14),
@@ -140,50 +132,94 @@ class _PostCardState extends State<PostCard> {
                   label: '${post.viewCount}',
                   onPressed: null,
                 ),
+                const Spacer(),
+                IconButton(
+                  iconSize: 20,
+                  constraints: const BoxConstraints(
+                    minHeight: 36,
+                    minWidth: 36,
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: '공유하기',
+                  color: theme.colorScheme.onSurfaceVariant,
+                  onPressed: () => _sharePost(post),
+                ),
+                widget.trailing ??
+                    IconButton(
+                      iconSize: 20,
+                      constraints: const BoxConstraints(
+                        minHeight: 36,
+                        minWidth: 36,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      icon: Icon(
+                        post.isBookmarked
+                            ? Icons.bookmark
+                            : Icons.bookmark_outline,
+                      ),
+                      color: post.isBookmarked
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                      onPressed: widget.onToggleBookmark,
+                    ),
               ],
             ),
-            if (_showComments) ...[
-              const Gap(12),
-              if (_isLoadingComments)
-                const Center(child: CircularProgressIndicator())
-              else if (_timelineComments.isEmpty)
-                Text(
-                  '아직 댓글이 없습니다. 첫 댓글을 남겨보세요!',
-                  style: theme.textTheme.bodyMedium,
-                )
-              else ...[
-                if (_featuredComments.isNotEmpty) ...[
-                  Builder(
-                    builder: (BuildContext context) {
-                      final Comment featuredComment = _featuredComments.first;
-                      return _FeaturedCommentTile(
-                        comment: featuredComment,
-                        onToggleLike: _handleCommentLike,
-                        onReact: (String emoji) =>
-                            _handleReaction(featuredComment, emoji),
-                        onOpenProfile: () => _handleMemberTap(
-                          uid: featuredComment.authorUid,
-                          nickname: featuredComment.authorNickname,
-                        ),
-                      );
-                    },
-                  ),
-                  const Gap(12),
-                ],
-                ..._timelineComments.map(
-                  (Comment comment) => _CommentTile(
-                    comment: comment,
-                    highlight: _isFeatured(comment),
-                    onToggleLike: _handleCommentLike,
-                    onReact: (String emoji) => _handleReaction(comment, emoji),
-                    onOpenProfile: () => _handleMemberTap(
-                      uid: comment.authorUid,
-                      nickname: comment.authorNickname,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: !_showComments
+                  ? const SizedBox.shrink()
+                  : AnimatedSize(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.topCenter,
+                      child: Column(
+                        key: const ValueKey<String>('comment-section'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Gap(12),
+                          if (_isLoadingComments)
+                            const Center(child: CircularProgressIndicator())
+                          else if (_timelineComments.isEmpty)
+                            Text(
+                              '아직 댓글이 없습니다. 첫 댓글을 남겨보세요!',
+                              style: theme.textTheme.bodyMedium,
+                            )
+                          else ...[
+                            if (_featuredComments.isNotEmpty) ...[
+                              Builder(
+                                builder: (BuildContext context) {
+                                  final Comment featuredComment = _featuredComments.first;
+                                  return _FeaturedCommentTile(
+                                    comment: featuredComment,
+                                    onToggleLike: _handleCommentLike,
+                                    onOpenProfile: () => _handleMemberTap(
+                                      uid: featuredComment.authorUid,
+                                      nickname: featuredComment.authorNickname,
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Gap(12),
+                            ],
+                            ..._timelineComments.map(
+                              (Comment comment) => _CommentTile(
+                                comment: comment,
+                                highlight: _isFeatured(comment),
+                                onToggleLike: _handleCommentLike,
+                                onOpenProfile: () => _handleMemberTap(
+                                  uid: comment.authorUid,
+                                  nickname: comment.authorNickname,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ],
         ),
       ),
@@ -306,66 +342,6 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
-  Future<void> _handleReaction(Comment comment, String emoji) async {
-    final String? previous = comment.viewerReaction;
-    final String? next = previous == emoji ? null : emoji;
-
-    Comment updateComment(Comment current, String? reaction) {
-      final Map<String, int> counts = Map<String, int>.from(
-        current.reactionCounts,
-      );
-      final String? currentReaction = current.viewerReaction;
-      if (currentReaction != null) {
-        counts[currentReaction] = (counts[currentReaction] ?? 0) - 1;
-        if ((counts[currentReaction] ?? 0) <= 0) {
-          counts.remove(currentReaction);
-        }
-      }
-      if (reaction != null) {
-        counts[reaction] = (counts[reaction] ?? 0) + 1;
-      }
-      return current.copyWith(viewerReaction: reaction, reactionCounts: counts);
-    }
-
-    void apply(String? reaction) {
-      setState(() {
-        _timelineComments = _timelineComments
-            .map(
-              (Comment current) => current.id == comment.id
-                  ? updateComment(current, reaction)
-                  : current,
-            )
-            .toList(growable: false);
-        _featuredComments = _featuredComments
-            .map(
-              (Comment current) => current.id == comment.id
-                  ? updateComment(current, reaction)
-                  : current,
-            )
-            .toList(growable: false);
-      });
-    }
-
-    apply(next);
-
-    if (_isSynthetic(widget.post)) {
-      return;
-    }
-
-    try {
-      final String? confirmed = await _repository.toggleCommentReaction(
-        postId: widget.post.id,
-        commentId: comment.id,
-        emoji: emoji,
-      );
-      if (confirmed != next) {
-        apply(confirmed);
-      }
-    } catch (_) {
-      apply(previous);
-    }
-  }
-
   Future<void> _handleMemberTap({
     required String uid,
     required String nickname,
@@ -382,6 +358,103 @@ class _PostCardState extends State<PostCard> {
     }
 
     await _showMemberActions(uid: uid, nickname: nickname);
+  }
+
+  Widget _buildAuthorMenu({
+    required Post post,
+    required String timestamp,
+    required LoungeScope scope,
+  }) {
+    final MockSocialGraph socialGraph = getIt<MockSocialGraph>();
+    final AuthState authState = getIt<AuthCubit>().state;
+    final String? currentUid = authState.userId;
+    final bool isSelf = currentUid != null && currentUid == post.authorUid;
+    final bool canFollow =
+        authState.isLoggedIn &&
+        currentUid != null &&
+        currentUid.isNotEmpty &&
+        !isSelf &&
+        post.authorUid.isNotEmpty &&
+        post.authorUid != 'preview';
+    final bool isFollowing =
+        canFollow && socialGraph.isFollowing(post.authorUid);
+
+    return PopupMenuButton<_AuthorMenuAction>(
+      tooltip: '작성자 옵션',
+      position: PopupMenuPosition.under,
+      padding: EdgeInsets.zero,
+      itemBuilder: (BuildContext context) {
+        return <PopupMenuEntry<_AuthorMenuAction>>[
+          const PopupMenuItem<_AuthorMenuAction>(
+            value: _AuthorMenuAction.viewProfile,
+            child: Row(
+              children: [
+                Icon(Icons.person_outline, size: 18),
+                Gap(8),
+                Text('프로필 보기'),
+              ],
+            ),
+          ),
+          if (canFollow)
+            PopupMenuItem<_AuthorMenuAction>(
+              value: _AuthorMenuAction.toggleFollow,
+              child: Row(
+                children: [
+                  Icon(
+                    isFollowing
+                        ? Icons.person_remove_alt_1_outlined
+                        : Icons.person_add_alt_1_outlined,
+                    size: 18,
+                  ),
+                  const Gap(8),
+                  Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
+                ],
+              ),
+            ),
+        ];
+      },
+      onSelected: (action) async {
+        switch (action) {
+          case _AuthorMenuAction.viewProfile:
+            if (post.authorUid.isEmpty || post.authorUid == 'preview') {
+              if (mounted) {
+                _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+              }
+              return;
+            }
+            _openMockProfile(
+              context,
+              uid: post.authorUid,
+              nickname: post.authorNickname,
+              socialGraph: socialGraph,
+            );
+            break;
+          case _AuthorMenuAction.toggleFollow:
+            await _toggleFollow(
+              socialGraph: socialGraph,
+              targetUid: post.authorUid,
+              nickname: post.authorNickname,
+              isFollowing: isFollowing,
+            );
+            break;
+        }
+      },
+      child: _AuthorInfoHeader(
+        post: post,
+        timestamp: timestamp,
+        scope: scope,
+      ),
+    );
+  }
+
+  void _sharePost(Post post) {
+    if (!mounted) {
+      return;
+    }
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('공유 기능을 준비 중이에요.')));
   }
 
   Future<void> _showMemberActions({
@@ -558,71 +631,184 @@ class _AuthorInfoHeader extends StatelessWidget {
   const _AuthorInfoHeader({
     required this.post,
     required this.timestamp,
-    required this.onTap,
+    required this.scope,
   });
 
   final Post post;
   final String timestamp;
-  final VoidCallback onTap;
+  final LoungeScope scope;
+
+  bool get _isSerialScope => scope == LoungeScope.serial;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withValues(
-                alpha: 0.12,
-              ),
-              foregroundColor: theme.colorScheme.primary,
-              child: Text(post.authorNickname.substring(0, 1)),
+    return Padding(
+      padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+      child:
+          _isSerialScope ? _buildSerialHeader(theme) : _buildPublicHeader(theme),
+    );
+  }
+
+  Widget _buildSerialHeader(ThemeData theme) {
+    final Widget? supporter = _buildSupporterBadge(theme);
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+          foregroundColor: theme.colorScheme.primary,
+          child: Text(
+            _avatarInitial(),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            const Gap(12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (post.authorIsSupporter) ...[
-                      Tooltip(
-                        message: '후원자 레벨 ${post.authorSupporterLevel}',
-                        child: Icon(
-                          Icons.workspace_premium,
-                          size: 18,
-                          color: theme.colorScheme.primary,
-                        ),
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      post.authorNickname,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      const Gap(6),
-                    ],
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 160),
-                      child: Text(
-                        post.authorNickname,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  if (supporter != null) ...[
+                    const Gap(6),
+                    supporter,
                   ],
+                ],
+              ),
+              const Gap(4),
+              Text(
+                _trackLabel(includeEmoji: true),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                Text(
-                  '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const Gap(12),
+        Text(
+          timestamp,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPublicHeader(ThemeData theme) {
+    final Widget? supporter = _buildSupporterBadge(theme);
+    return Row(
+      children: [
+        _buildTrackTag(theme),
+        const Gap(8),
+        Text(
+          _maskedUid(),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (supporter != null) ...[
+          const Gap(6),
+          supporter,
+        ],
+        const Spacer(),
+        Text(
+          timestamp,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrackTag(ThemeData theme) {
+    final bool hasTrack = post.authorTrack != CareerTrack.none;
+    final Color background = hasTrack
+        ? theme.colorScheme.primary.withValues(alpha: 0.12)
+        : theme.colorScheme.surfaceContainerHighest;
+    final Color foreground = hasTrack
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    final String label =
+        hasTrack ? _trackLabel(includeEmoji: true) : _trackLabel();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
+  }
+
+  Widget? _buildSupporterBadge(ThemeData theme) {
+    if (!post.authorIsSupporter) {
+      return null;
+    }
+    final int level = post.authorSupporterLevel;
+    return Tooltip(
+      message: level > 0 ? '후원자 레벨 $level' : '후원자',
+      child: Icon(
+        Icons.workspace_premium,
+        size: 18,
+        color: theme.colorScheme.primary,
+      ),
+    );
+  }
+
+  String _maskedUid() {
+    final String raw = post.authorUid.trim();
+    if (raw.isEmpty) {
+      return 'USER***';
+    }
+    final String sanitized = raw.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final String source = sanitized.isEmpty ? raw : sanitized;
+    final String upper = source.toUpperCase();
+    final String leading =
+        upper.length <= 3 ? upper : upper.substring(0, 3);
+    return '$leading***';
+  }
+
+  String _trackLabel({bool includeEmoji = false}) {
+    if (post.authorTrack == CareerTrack.none) {
+      return '직렬 비공개';
+    }
+    final String label = post.authorTrack.displayName;
+    if (!includeEmoji) {
+      return label;
+    }
+    return '${post.authorTrack.emoji} $label';
+  }
+
+  String _avatarInitial() {
+    final String normalized = post.authorNickname.trim();
+    if (normalized.isEmpty) {
+      return '공';
+    }
+    return String.fromCharCode(normalized.runes.first).toUpperCase();
   }
 }
 
@@ -630,13 +816,11 @@ class _FeaturedCommentTile extends StatelessWidget {
   const _FeaturedCommentTile({
     required this.comment,
     required this.onToggleLike,
-    required this.onReact,
     required this.onOpenProfile,
   });
 
   final Comment comment;
   final ValueChanged<Comment> onToggleLike;
-  final void Function(String emoji) onReact;
   final VoidCallback onOpenProfile;
 
   @override
@@ -707,12 +891,6 @@ class _FeaturedCommentTile extends StatelessWidget {
           const Gap(4),
           Text(comment.text, style: theme.textTheme.bodyMedium),
           const Gap(12),
-          _CommentReactionBar(
-            reactions: comment.reactionCounts,
-            viewerReaction: comment.viewerReaction,
-            onReact: onReact,
-          ),
-          const Gap(6),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -765,14 +943,12 @@ class _CommentTile extends StatelessWidget {
     required this.comment,
     this.highlight = false,
     required this.onToggleLike,
-    required this.onReact,
     required this.onOpenProfile,
   });
 
   final Comment comment;
   final bool highlight;
   final ValueChanged<Comment> onToggleLike;
-  final void Function(String emoji) onReact;
   final VoidCallback onOpenProfile;
 
   @override
@@ -851,12 +1027,6 @@ class _CommentTile extends StatelessWidget {
             child: Text(comment.text, style: theme.textTheme.bodyMedium),
           ),
           const Gap(12),
-          _CommentReactionBar(
-            reactions: comment.reactionCounts,
-            viewerReaction: comment.viewerReaction,
-            onReact: onReact,
-          ),
-          const Gap(6),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -901,43 +1071,6 @@ class _CommentTile extends StatelessWidget {
       return '${difference.inHours}시간 전';
     }
     return '${createdAt.month}월 ${createdAt.day}일';
-  }
-}
-
-class _CommentReactionBar extends StatelessWidget {
-  const _CommentReactionBar({
-    required this.reactions,
-    required this.viewerReaction,
-    required this.onReact,
-  });
-
-  final Map<String, int> reactions;
-  final String? viewerReaction;
-  final void Function(String emoji) onReact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      children: _commentReactionOptions
-          .map((String emoji) {
-            final int count = reactions[emoji] ?? 0;
-            final bool selected = viewerReaction == emoji;
-            return ChoiceChip(
-              label: Text(
-                count > 0 ? '$emoji $count' : emoji,
-                style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
-              ),
-              selected: selected,
-              showCheckmark: false,
-              onSelected: (_) => onReact(emoji),
-              selectedColor: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.16),
-            );
-          })
-          .toList(growable: false),
-    );
   }
 }
 
@@ -1117,16 +1250,42 @@ class _PostActionButton extends StatelessWidget {
     final Color iconColor = isHighlighted
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18, color: iconColor),
-      label: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+    final Widget iconWidget = AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      scale: isHighlighted ? 1.1 : 1,
+      curve: Curves.easeOutBack,
+      child: Icon(icon, size: 16, color: iconColor),
+    );
+
+    final TextStyle labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
           color: iconColor,
           fontWeight: FontWeight.w600,
-        ),
+        ) ??
+        TextStyle(color: iconColor, fontWeight: FontWeight.w600);
+
+    final Widget labelWidget = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 160),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: Text(
+        label,
+        key: ValueKey<String>(label),
+        style: labelStyle,
       ),
+    );
+
+    return TextButton.icon(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: iconWidget,
+      label: labelWidget,
     );
   }
 }

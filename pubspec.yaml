@@ -72,6 +72,7 @@ flutter:
   assets:
     - assets/data/salary_tables.json
     - assets/logo/
+    - assets/images/
     - assets/animations/
 
 flutter_launcher_icons:

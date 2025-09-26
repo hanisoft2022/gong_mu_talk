@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
-import '../features/community/domain/models/feed_filters.dart';
-import '../features/community/presentation/cubit/community_feed_cubit.dart';
-import '../features/profile/domain/career_track.dart';
+import '../features/life/domain/life_section.dart';
+import '../features/life/presentation/cubit/life_section_cubit.dart';
 import '../routing/app_router.dart';
+import '../common/widgets/global_app_bar_actions.dart';
+import '../common/widgets/app_logo_button.dart';
+import '../features/life/presentation/utils/life_scroll_coordinator.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -15,6 +17,7 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   bool get _isCommunityTab => navigationShell.currentIndex == 0;
+  bool get _isLifeTab => navigationShell.currentIndex == 3;
 
   @override
   Widget build(BuildContext context) {
@@ -40,50 +43,54 @@ class AppShell extends StatelessWidget {
         builder: (context, themeMode) {
           final bool isDark = themeMode == ThemeMode.dark;
           final bool isCommunityTab = _isCommunityTab;
+          final bool isLifeTab = _isLifeTab;
           final ColorScheme colorScheme = Theme.of(context).colorScheme;
           return Scaffold(
-            appBar: AppBar(
-              title: isCommunityTab
-                  ? const _LoungeScopeSelector()
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/images/app_logo.png',
-                          height: 28,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _titleForIndex(navigationShell.currentIndex),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-              actions: [
-                if (isCommunityTab)
-                  IconButton(
-                    tooltip: '검색',
-                    onPressed: () =>
-                        GoRouter.of(context).push(CommunityRoute.searchPath),
-                    icon: const Icon(Icons.search),
+            appBar: isCommunityTab
+                ? null
+                : AppBar(
+                    leadingWidth: isLifeTab ? 56 : null,
+                    leading: isLifeTab
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: AppLogoButton(
+                              compact: true,
+                              onTap: LifeScrollCoordinator.instance.requestScrollToTop,
+                            ),
+                          )
+                        : null,
+                    titleSpacing: isLifeTab ? 0 : null,
+                    title: isLifeTab
+                        ? const _LifeSectionSelector()
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/images/app_logo.png',
+                                height: 28,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  _titleForIndex(navigationShell.currentIndex),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                    actions: [
+                      GlobalAppBarActions(
+                        isDarkMode: isDark,
+                        onToggleTheme: () => context.read<ThemeCubit>().toggle(),
+                        onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+                      ),
+                    ],
                   ),
-                IconButton(
-                  tooltip: isDark ? '라이트 모드' : '다크 모드',
-                  onPressed: () => context.read<ThemeCubit>().toggle(),
-                  icon: Icon(
-                    isDark
-                        ? Icons.light_mode_outlined
-                        : Icons.dark_mode_outlined,
-                  ),
-                ),
-                IconButton(
-                  tooltip: '마이페이지',
-                  onPressed: () => GoRouter.of(context).push(ProfileRoute.path),
-                  icon: const Icon(Icons.person_outline),
-                ),
-              ],
-            ),
             body: navigationShell,
             bottomNavigationBar: NavigationBar(
               height: 64,
@@ -115,8 +122,8 @@ class AppShell extends StatelessWidget {
                   label: '연금',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.favorite_outline),
-                  selectedIcon: Icon(Icons.favorite),
+                  icon: Icon(Icons.groups_outlined),
+                  selectedIcon: Icon(Icons.groups),
                   label: '라이프',
                 ),
               ],
@@ -136,36 +143,33 @@ class AppShell extends StatelessWidget {
       case 2:
         return '연금 계산 서비스';
       case 3:
-        return '라이프';
+        return '모임/매칭';
       default:
         return '공무톡';
     }
   }
 }
 
-class _LoungeScopeSelector extends StatelessWidget {
-  const _LoungeScopeSelector();
+class _LifeSectionSelector extends StatelessWidget {
+  const _LifeSectionSelector();
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-      builder: (context, state) {
+    return BlocBuilder<LifeSectionCubit, LifeSection>(
+      builder: (context, section) {
         final ThemeData theme = Theme.of(context);
-        final bool hasSerialAccess =
-            state.careerTrack != CareerTrack.none && state.serial != 'unknown';
-
         final TextStyle labelStyle =
             theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ) ??
             const TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
 
-        final ButtonStyle compactStyle = ButtonStyle(
+        final ButtonStyle style = ButtonStyle(
           visualDensity: VisualDensity.compact,
           padding: WidgetStateProperty.resolveWith(
             (states) => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
-          textStyle: WidgetStateProperty.resolveWith((states) => labelStyle),
+          textStyle: WidgetStatePropertyAll<TextStyle>(labelStyle),
           shape: WidgetStateProperty.resolveWith(
             (states) => const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -191,27 +195,24 @@ class _LoungeScopeSelector extends StatelessWidget {
           ),
         );
 
-        return SegmentedButton<LoungeScope>(
-          style: compactStyle,
-          segments: [
-            const ButtonSegment<LoungeScope>(
-              value: LoungeScope.all,
-              label: Text('전체'),
-              icon: Icon(Icons.public_outlined),
+        return SegmentedButton<LifeSection>(
+          style: style,
+          segments: const <ButtonSegment<LifeSection>>[
+            ButtonSegment<LifeSection>(
+              value: LifeSection.meetings,
+              label: Text('모임'),
+              icon: Icon(Icons.groups_outlined),
             ),
-            ButtonSegment<LoungeScope>(
-              value: LoungeScope.serial,
-              label: const Text('내 직렬'),
-              icon: const Icon(Icons.group_outlined),
-              enabled: hasSerialAccess,
+            ButtonSegment<LifeSection>(
+              value: LifeSection.matching,
+              label: Text('매칭'),
+              icon: Icon(Icons.favorite_outline),
             ),
           ],
-          selected: <LoungeScope>{state.scope},
-          onSelectionChanged: (selection) {
-            final LoungeScope nextScope = selection.first;
-            if (nextScope != state.scope) {
-              context.read<CommunityFeedCubit>().changeScope(nextScope);
-            }
+          selected: <LifeSection>{section},
+          onSelectionChanged: (Set<LifeSection> value) {
+            final LifeSection next = value.first;
+            context.read<LifeSectionCubit>().setSection(next);
           },
         );
       },
