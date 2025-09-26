@@ -7,7 +7,6 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/constants/engagement_points.dart';
 import '../../../../di/di.dart';
 import '../../../../routing/app_router.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -158,14 +157,10 @@ class _ProfileOverviewTab extends StatelessWidget {
             children: [
               _ProfileHeader(state: state),
               const Gap(16),
-              _FollowerSummary(state: state),
-              const Gap(24),
-              _EngagementPointsCard(state: state, theme: Theme.of(context)),
-              const Gap(24),
-              if (state.userId != null) ...[
-                _PaystubSummary(state: state),
-                const Gap(24),
-              ],
+              _ProfileSummaryCard(state: state),
+              const Gap(16),
+              _CareerInfoCard(state: state),
+              const Gap(16),
               _ProfileBioSection(state: state),
               const Gap(24),
               Text(
@@ -176,23 +171,6 @@ class _ProfileOverviewTab extends StatelessWidget {
               ),
               const Gap(12),
               const _TimelineSection(),
-              const Gap(24),
-              Text(
-                '직렬 & 매칭 설정',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Gap(12),
-              const _CareerTrackSelectorCard(),
-              const Gap(16),
-              const _ExcludedTrackCard(),
-              const Gap(16),
-              const _GovernmentEmailVerificationCard(),
-              const Gap(16),
-              const _MatchingShortcutCard(),
-              const Gap(24),
-              const _ProfileGuidance(),
               const Gap(24),
               Center(
                 child: Column(
@@ -484,6 +462,289 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
+class _ProfileSummaryCard extends StatelessWidget {
+  const _ProfileSummaryCard({required this.state});
+
+  final AuthState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> rows = <Widget>[
+      _SummaryTile(
+        label: '팔로워',
+        value: '${state.followerCount}',
+        onTap: () =>
+            _showRelationsSheet(context, ProfileRelationType.followers),
+      ),
+      _SummaryTile(
+        label: '팔로잉',
+        value: '${state.followingCount}',
+        onTap: () =>
+            _showRelationsSheet(context, ProfileRelationType.following),
+      ),
+      _SummaryTile(
+        label: '활동 포인트',
+        value: '${state.points} pts',
+        valueStyle: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    ];
+
+    if (state.userId != null) {
+      rows.add(_PaystubStatusTile(uid: state.userId!));
+    }
+
+    rows.add(
+      _SummaryTile(
+        label: '공직자 메일 인증',
+        value: state.isGovernmentEmailVerified ? '완료' : '미완료',
+        valueStyle: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: state.isGovernmentEmailVerified
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(children: _withDividers(rows)),
+      ),
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> tiles) {
+    final List<Widget> children = <Widget>[];
+    for (int index = 0; index < tiles.length; index += 1) {
+      children.add(tiles[index]);
+      if (index < tiles.length - 1) {
+        children.add(const Divider(height: 24));
+      }
+    }
+    return children;
+  }
+}
+
+class _PaystubStatusTile extends StatelessWidget {
+  const _PaystubStatusTile({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context) {
+    final PaystubVerificationRepository repository =
+        getIt<PaystubVerificationRepository>();
+    final ThemeData theme = Theme.of(context);
+
+    return StreamBuilder<PaystubVerification>(
+      stream: repository.watchVerification(uid),
+      builder:
+          (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
+            final PaystubVerification verification =
+                snapshot.data ?? PaystubVerification.none;
+            final (String, Color) status = _resolveStatusLabel(
+              verification,
+              theme,
+            );
+            return _SummaryTile(
+              label: '급여명세서 인증',
+              value: status.$1,
+              valueStyle: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: status.$2,
+              ),
+              onTap: () => _showPaystubSheet(context, uid),
+            );
+          },
+    );
+  }
+
+  (String, Color) _resolveStatusLabel(
+    PaystubVerification verification,
+    ThemeData theme,
+  ) {
+    switch (verification.status) {
+      case PaystubVerificationStatus.verified:
+        return ('완료', theme.colorScheme.primary);
+      case PaystubVerificationStatus.processing:
+        return ('검토 중', theme.colorScheme.tertiary);
+      case PaystubVerificationStatus.failed:
+        return ('재확인 필요', theme.colorScheme.error);
+      case PaystubVerificationStatus.none:
+        return ('미완료', theme.colorScheme.onSurfaceVariant);
+    }
+  }
+
+  void _showPaystubSheet(BuildContext context, String uid) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: _PaystubVerificationCard(uid: uid),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    this.valueStyle,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final TextStyle? valueStyle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      title: Text(label, style: theme.textTheme.bodyMedium),
+      trailing: Text(
+        value,
+        style:
+            valueStyle ??
+            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _CareerInfoCard extends StatelessWidget {
+  const _CareerInfoCard({required this.state});
+
+  final AuthState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final CareerTrack currentTrack = state.careerTrack;
+    final String serial = state.serial == 'unknown'
+        ? '미등록'
+        : state.serial.toUpperCase();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.badge_outlined, color: theme.colorScheme.primary),
+                const Gap(8),
+                Text(
+                  '직렬 정보',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(12),
+            _InfoRow(label: '현재 직렬', value: currentTrack.displayName),
+            _InfoRow(label: '직렬 코드', value: serial),
+            _InfoRow(
+              label: '근무 부서',
+              value: state.department == 'unknown' ? '-' : state.department,
+            ),
+            _InfoRow(
+              label: '근무 지역',
+              value: state.region == 'unknown' ? '-' : state.region,
+            ),
+            _InfoRow(
+              label: '근무 연차',
+              value: state.yearsOfService > 0
+                  ? '${state.yearsOfService}년'
+                  : '미입력',
+            ),
+            const Gap(16),
+            Text(
+              '직렬 변경',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Gap(8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: CareerTrack.values
+                  .where((CareerTrack track) => track != CareerTrack.none)
+                  .map(
+                    (CareerTrack track) => ChoiceChip(
+                      label: Text(track.displayName),
+                      selected: track == currentTrack,
+                      onSelected: (bool selected) =>
+                          context.read<AuthCubit>().updateCareerTrack(
+                            selected ? track : CareerTrack.none,
+                          ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({required this.photoUrl, required this.nickname});
 
@@ -536,81 +797,6 @@ class _HeaderChip extends StatelessWidget {
   }
 }
 
-class _FollowerSummary extends StatelessWidget {
-  const _FollowerSummary({required this.state});
-
-  final AuthState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _FollowerCountButton(
-              label: '팔로워',
-              count: state.followerCount,
-              onTap: () =>
-                  _showRelationsSheet(context, ProfileRelationType.followers),
-            ),
-            Container(
-              height: 32,
-              width: 1,
-              color: theme.colorScheme.outlineVariant,
-            ),
-            _FollowerCountButton(
-              label: '팔로잉',
-              count: state.followingCount,
-              onTap: () =>
-                  _showRelationsSheet(context, ProfileRelationType.following),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FollowerCountButton extends StatelessWidget {
-  const _FollowerCountButton({
-    required this.label,
-    required this.count,
-    required this.onTap,
-  });
-
-  final String label;
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$count',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const Gap(4),
-            Text(label, style: theme.textTheme.bodySmall),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileBioSection extends StatelessWidget {
   const _ProfileBioSection({required this.state});
 
@@ -640,27 +826,6 @@ class _ProfileBioSection extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PaystubSummary extends StatelessWidget {
-  const _PaystubSummary({required this.state});
-
-  final AuthState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      initiallyExpanded: false,
-      title: const Text('급여명세서 인증'),
-      subtitle: Text(
-        state.isGovernmentEmailVerified
-            ? '공직자 메일 인증 완료'
-            : '급여 명세서로 직렬 인증을 진행할 수 있습니다.',
-      ),
-      children: [_PaystubVerificationCard(uid: state.userId!)],
     );
   }
 }
@@ -735,7 +900,7 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '프로필 사진을 설정하면 다른 사용자와 더 쉽게 소통할 수 있어요.',
+                              '새로운 프로필 사진을 선택해보세요.',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                             const Gap(12),
@@ -756,7 +921,6 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
               const Gap(24),
               _SettingsSection(
                 title: '닉네임',
-                helper: '닉네임은 한 달에 한 번만 변경할 수 있어요. 변경권이 있다면 추가 변경이 가능합니다.',
                 children: [
                   TextField(
                     controller: _nicknameController,
@@ -804,6 +968,11 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                     child: const Text('자기소개 저장'),
                   ),
                 ],
+              ),
+              const Gap(24),
+              const _SettingsSection(
+                title: '공직자 메일 인증',
+                children: [_GovernmentEmailVerificationCard()],
               ),
               const Gap(24),
               _SettingsSection(
@@ -1024,15 +1193,10 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-    this.helper,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
-  final String? helper;
 
   @override
   Widget build(BuildContext context) {
@@ -1046,15 +1210,6 @@ class _SettingsSection extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (helper != null) ...[
-          const Gap(6),
-          Text(
-            helper!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
         const Gap(16),
         ...children,
       ],
@@ -1237,165 +1392,6 @@ String _formatDate(DateTime dateTime) {
 }
 
 // --- Existing components reused below ---
-
-class _ProfileGuidance extends StatelessWidget {
-  const _ProfileGuidance();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _GuidelineRow(
-              icon: Icons.verified_user_outlined,
-              message: '공직자 메일로 로그인하면 추가 인증 없이 주요 기능을 이용할 수 있습니다.',
-            ),
-            SizedBox(height: 12),
-            _GuidelineRow(
-              icon: Icons.badge_outlined,
-              message:
-                  '다른 이메일로 가입하셨다면 마이페이지에서 공직자 메일 인증 절차를 진행할 수 있도록 준비 중입니다.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuidelineRow extends StatelessWidget {
-  const _GuidelineRow({required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const Gap(12),
-        Expanded(child: Text(message, style: theme.textTheme.bodyMedium)),
-      ],
-    );
-  }
-}
-
-class _EngagementPointsCard extends StatelessWidget {
-  const _EngagementPointsCard({required this.state, required this.theme});
-
-  final AuthState state;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.stars, color: theme.colorScheme.primary),
-                const Gap(8),
-                Text(
-                  '활동 포인트',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(16),
-            Text(
-              '${state.points} pts',
-              style: theme.textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const Gap(4),
-            Text('현재 레벨 ${state.level}', style: theme.textTheme.bodyMedium),
-            const Gap(16),
-            const Divider(height: 24),
-            Text(
-              '포인트는 아래 활동으로 적립됩니다.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Gap(12),
-            const _PointRuleRow(
-              icon: Icons.edit_note_outlined,
-              label: '라운지 글 작성',
-              value: '+${EngagementPoints.postCreation} pts',
-            ),
-            const _PointRuleRow(
-              icon: Icons.chat_bubble_outline,
-              label: '댓글 작성',
-              value: '+${EngagementPoints.commentCreation} pts',
-            ),
-            const _PointRuleRow(
-              icon: Icons.favorite_outline,
-              label: '내 글/댓글에 좋아요 수신',
-              value: '+${EngagementPoints.contentReceivedLike} pts',
-            ),
-            const Gap(8),
-            Text(
-              '포인트는 실시간으로 반영되며, 누적 포인트에 따라 더 많은 혜택이 제공될 예정입니다.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PointRuleRow extends StatelessWidget {
-  const _PointRuleRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: theme.colorScheme.secondary),
-          const Gap(12),
-          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PaystubVerificationCard extends StatefulWidget {
   const _PaystubVerificationCard({required this.uid});
@@ -1615,125 +1611,6 @@ class _PaystubVerificationCardState extends State<_PaystubVerificationCard> {
   }
 }
 
-class _CareerTrackSelectorCard extends StatelessWidget {
-  const _CareerTrackSelectorCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final AuthState authState = context.watch<AuthCubit>().state;
-    final ThemeData theme = Theme.of(context);
-    final CareerTrack currentTrack = authState.careerTrack;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.badge_outlined, color: theme.colorScheme.primary),
-                const Gap(8),
-                Text(
-                  '내 직렬 설정',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            Text(
-              currentTrack == CareerTrack.none
-                  ? '직렬을 설정하면 맞춤 콘텐츠를 추천해드립니다.'
-                  : '현재 직렬: ${currentTrack.displayName}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const Gap(16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: CareerTrack.values
-                  .where((CareerTrack track) => track != CareerTrack.none)
-                  .map(
-                    (CareerTrack track) => ChoiceChip(
-                      label: Text(track.displayName),
-                      selected: currentTrack == track,
-                      onSelected: (bool selected) =>
-                          context.read<AuthCubit>().updateCareerTrack(
-                            selected ? track : CareerTrack.none,
-                          ),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ExcludedTrackCard extends StatelessWidget {
-  const _ExcludedTrackCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final AuthState authState = context.watch<AuthCubit>().state;
-    final ThemeData theme = Theme.of(context);
-    final Set<CareerTrack> excludedTracks = authState.excludedTracks;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.filter_alt_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const Gap(8),
-                Text(
-                  '매칭 제외 직렬',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(12),
-            Text(
-              excludedTracks.isEmpty
-                  ? '제외할 직렬을 선택하여 관심 없는 매칭을 숨길 수 있습니다.'
-                  : '제외 직렬: ${excludedTracks.map((CareerTrack track) => track.displayName).join(', ')}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const Gap(16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: CareerTrack.values
-                  .where((CareerTrack track) => track != CareerTrack.none)
-                  .map(
-                    (CareerTrack track) => FilterChip(
-                      label: Text(track.displayName),
-                      selected: excludedTracks.contains(track),
-                      onSelected: (_) =>
-                          context.read<AuthCubit>().toggleExcludedTrack(track),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _GovernmentEmailVerificationCard extends StatefulWidget {
   const _GovernmentEmailVerificationCard();
 
@@ -1894,23 +1771,5 @@ class _GovernmentEmailVerificationCardState
     }
 
     return null;
-  }
-}
-
-class _MatchingShortcutCard extends StatelessWidget {
-  const _MatchingShortcutCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Card(
-      child: ListTile(
-        leading: Icon(Icons.people_outline, color: theme.colorScheme.primary),
-        title: const Text('맞춤 매칭 둘러보기'),
-        subtitle: const Text('내 직렬/관심사와 유사한 공무원과 연결됩니다.'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.pushNamed(MatchingRoute.name),
-      ),
-    );
   }
 }

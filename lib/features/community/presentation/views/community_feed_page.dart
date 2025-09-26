@@ -217,6 +217,11 @@ class _SortMenu extends StatelessWidget {
                 final bool isSelected = option == currentSort;
                 return PopupMenuItem<LoungeSort>(
                   value: option,
+                  height: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       if (isSelected)
@@ -236,19 +241,24 @@ class _SortMenu extends StatelessWidget {
               .toList(growable: false);
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.tune, size: 18),
-              const Gap(6),
-              Text(currentSort.label, style: theme.textTheme.labelLarge),
+              const Icon(Icons.tune, size: 16),
+              const Gap(4),
+              Text(
+                currentSort.label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const Gap(2),
-              const Icon(Icons.arrow_drop_down, size: 20),
+              const Icon(Icons.arrow_drop_down, size: 18),
             ],
           ),
         ),

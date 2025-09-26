@@ -40,6 +40,7 @@ class AppShell extends StatelessWidget {
         builder: (context, themeMode) {
           final bool isDark = themeMode == ThemeMode.dark;
           final bool isCommunityTab = _isCommunityTab;
+          final ColorScheme colorScheme = Theme.of(context).colorScheme;
           return Scaffold(
             appBar: AppBar(
               title: isCommunityTab
@@ -85,6 +86,11 @@ class AppShell extends StatelessWidget {
             ),
             body: navigationShell,
             bottomNavigationBar: NavigationBar(
+              height: 64,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              backgroundColor: colorScheme.surface,
+              indicatorColor: colorScheme.primary.withAlpha(40),
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) {
                 navigationShell.goBranch(
@@ -144,10 +150,49 @@ class _LoungeScopeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
       builder: (context, state) {
+        final ThemeData theme = Theme.of(context);
         final bool hasSerialAccess =
             state.careerTrack != CareerTrack.none && state.serial != 'unknown';
 
+        final TextStyle labelStyle =
+            theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ) ??
+            const TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
+
+        final ButtonStyle compactStyle = ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          padding: WidgetStateProperty.resolveWith(
+            (states) => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          textStyle: WidgetStateProperty.resolveWith((states) => labelStyle),
+          shape: WidgetStateProperty.resolveWith(
+            (states) => const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return theme.colorScheme.primary.withAlpha(40);
+            }
+            return theme.colorScheme.surfaceContainerHighest;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          side: WidgetStateProperty.resolveWith(
+            (states) => BorderSide(
+              color: states.contains(WidgetState.selected)
+                  ? theme.colorScheme.primary.withAlpha(153)
+                  : theme.dividerColor,
+            ),
+          ),
+        );
+
         return SegmentedButton<LoungeScope>(
+          style: compactStyle,
           segments: [
             const ButtonSegment<LoungeScope>(
               value: LoungeScope.all,

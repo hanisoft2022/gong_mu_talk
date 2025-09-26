@@ -82,8 +82,10 @@ class _SearchPageState extends State<SearchPage> {
           child: BlocBuilder<SearchCubit, SearchState>(
             builder: (context, state) {
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SegmentedButton<SearchScope>(
                   segments: const <ButtonSegment<SearchScope>>[
                     ButtonSegment<SearchScope>(
@@ -109,9 +111,7 @@ class _SearchPageState extends State<SearchPage> {
                   ],
                   selected: <SearchScope>{state.scope},
                   onSelectionChanged: (selection) {
-                    context
-                        .read<SearchCubit>()
-                        .changeScope(selection.first);
+                    context.read<SearchCubit>().changeScope(selection.first);
                   },
                 ),
               );
@@ -210,8 +210,6 @@ class _SearchPageState extends State<SearchPage> {
             Icon(Icons.search_outlined, size: 64),
             Gap(16),
             Text('검색어를 입력하세요'),
-            Gap(8),
-            Text('게시글 제목, 내용, 태그를 검색할 수 있습니다.'),
           ],
         ),
       );
@@ -363,10 +361,7 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ),
                   if (showPosts && showComments)
-                    TextSpan(
-                      text: ' · ',
-                      style: theme.textTheme.titleMedium,
-                    ),
+                    TextSpan(text: ' · ', style: theme.textTheme.titleMedium),
                   if (showComments)
                     TextSpan(
                       text: '댓글 ${state.commentResults.length}개',
@@ -490,9 +485,7 @@ class _CommentSearchResultTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      comment.isLiked
-                          ? Icons.favorite
-                          : Icons.favorite_border,
+                      comment.isLiked ? Icons.favorite : Icons.favorite_border,
                       size: 16,
                       color: comment.isLiked
                           ? theme.colorScheme.primary
@@ -508,18 +501,16 @@ class _CommentSearchResultTile extends StatelessWidget {
               ],
             ),
             const Gap(12),
-            Text(
-              comment.text,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(comment.text, style: theme.textTheme.bodyMedium),
             if (post != null) ...[
               const Gap(16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.6),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(

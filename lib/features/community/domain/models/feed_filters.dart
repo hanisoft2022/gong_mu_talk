@@ -1,6 +1,6 @@
 enum LoungeScope { all, serial }
 
-enum LoungeSort { latest, popular, likes, comments }
+enum LoungeSort { latest, popular, likes }
 
 extension LoungeSortLabel on LoungeSort {
   String get label {
@@ -11,8 +11,6 @@ extension LoungeSortLabel on LoungeSort {
         return '인기순';
       case LoungeSort.likes:
         return '좋아요순';
-      case LoungeSort.comments:
-        return '댓글순';
     }
   }
 }

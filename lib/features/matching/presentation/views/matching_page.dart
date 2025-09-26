@@ -214,6 +214,7 @@ class _MatchingCandidatesView extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          const _MatchingExcludedTrackCard(),
           const Gap(24),
           Center(
             child: Column(
@@ -237,9 +238,16 @@ class _MatchingCandidatesView extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.all(24),
-      itemCount: matches.length,
+      itemCount: matches.length + 1,
       itemBuilder: (context, index) {
-        final CuratedMatch match = matches[index];
+        if (index == 0) {
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_MatchingExcludedTrackCard(), Gap(20)],
+          );
+        }
+
+        final CuratedMatch match = matches[index - 1];
         final bool isProcessing = state.actionInProgressId == match.profile.id;
         return _CuratedMatchCard(
           match: match,
@@ -248,6 +256,68 @@ class _MatchingCandidatesView extends StatelessWidget {
               cubit.requestMatch(match: match, prompt: prompt, answer: answer),
         );
       },
+    );
+  }
+}
+
+class _MatchingExcludedTrackCard extends StatelessWidget {
+  const _MatchingExcludedTrackCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final AuthState authState = context.watch<AuthCubit>().state;
+    final ThemeData theme = Theme.of(context);
+    final Set<CareerTrack> excludedTracks = authState.excludedTracks;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.filter_alt_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const Gap(8),
+                Expanded(
+                  child: Text(
+                    '매칭 제외 직렬',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(12),
+            Text(
+              excludedTracks.isEmpty
+                  ? '관심 없는 직렬을 숨기면 더 맞춤형 추천을 받을 수 있어요.'
+                  : '제외 직렬: ${excludedTracks.map((CareerTrack track) => track.displayName).join(', ')}',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const Gap(16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: CareerTrack.values
+                  .where((CareerTrack track) => track != CareerTrack.none)
+                  .map(
+                    (CareerTrack track) => FilterChip(
+                      label: Text(track.displayName),
+                      selected: excludedTracks.contains(track),
+                      onSelected: (_) =>
+                          context.read<AuthCubit>().toggleExcludedTrack(track),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

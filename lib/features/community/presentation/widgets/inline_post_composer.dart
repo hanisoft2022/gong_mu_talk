@@ -37,7 +37,7 @@ class _AudienceHint extends StatelessWidget {
     final String label = isSerial ? '내 직렬' : '전체 공개';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
@@ -45,9 +45,14 @@ class _AudienceHint extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: theme.colorScheme.primary),
-          const Gap(8),
-          Text('$label로 게시됩니다.', style: theme.textTheme.bodySmall),
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const Gap(6),
+          Text(
+            '$label로 게시됩니다.',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -128,10 +133,10 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
           return Card(
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -144,15 +149,24 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                         ),
                       ),
                       if (state.isSubmitting) ...[
-                        const Gap(8),
+                        const Gap(6),
                         const SizedBox(
-                          height: 16,
-                          width: 16,
+                          height: 14,
+                          width: 14,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ],
                       const Spacer(),
                       FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         onPressed: canSubmit
                             ? () async {
                                 FocusScope.of(context).unfocus();
@@ -163,11 +177,11 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                       ),
                     ],
                   ),
-                  const Gap(12),
+                  const Gap(10),
                   TextField(
                     controller: _controller,
-                    minLines: 3,
-                    maxLines: 6,
+                    minLines: 2,
+                    maxLines: 4,
                     enabled: !state.isSubmitting,
                     onChanged: cubit.updateText,
                     decoration: InputDecoration(
@@ -177,13 +191,17 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       filled: true,
                     ),
                   ),
-                  const Gap(12),
+                  const Gap(10),
                   _AudienceHint(audience: desiredAudience),
                   if (!authState.isLoggedIn) ...[
-                    const Gap(8),
+                    const Gap(6),
                     Text(
                       '로그인 후 글을 등록할 수 있습니다.',
                       style: theme.textTheme.bodySmall?.copyWith(

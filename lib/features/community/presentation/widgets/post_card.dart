@@ -59,12 +59,14 @@ class _PostCardState extends State<PostCard> {
           children: [
             Row(
               children: [
-                _AuthorInfoHeader(
-                  post: post,
-                  timestamp: timestamp,
-                  onTap: () => _handleMemberTap(
-                    uid: post.authorUid,
-                    nickname: post.authorNickname,
+                Expanded(
+                  child: _AuthorInfoHeader(
+                    post: post,
+                    timestamp: timestamp,
+                    onTap: () => _handleMemberTap(
+                      uid: post.authorUid,
+                      nickname: post.authorNickname,
+                    ),
                   ),
                 ),
                 widget.trailing ??

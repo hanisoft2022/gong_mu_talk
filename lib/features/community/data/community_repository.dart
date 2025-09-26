@@ -400,11 +400,6 @@ class CommunityRepository {
         case LoungeSort.likes:
           items.sort((Post a, Post b) => b.likeCount.compareTo(a.likeCount));
           break;
-        case LoungeSort.comments:
-          items.sort(
-            (Post a, Post b) => b.commentCount.compareTo(a.commentCount),
-          );
-          break;
       }
 
       return PaginatedQueryResult<Post>(
@@ -458,10 +453,6 @@ class CommunityRepository {
       case LoungeSort.likes:
         return query
             .orderBy('likeCount', descending: true)
-            .orderBy('createdAt', descending: true);
-      case LoungeSort.comments:
-        return query
-            .orderBy('commentCount', descending: true)
             .orderBy('createdAt', descending: true);
     }
   }
