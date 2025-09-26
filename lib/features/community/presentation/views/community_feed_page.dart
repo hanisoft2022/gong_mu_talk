@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
-import 'package:gong_mu_talk/routing/app_router.dart';
 
 import '../../../profile/domain/career_track.dart';
 import '../../domain/models/feed_filters.dart';
@@ -77,10 +75,6 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  void _openBoardList(BuildContext context) {
-    context.push('/community/boards');
-  }
-
   List<Widget> _buildFeedChildren(
     BuildContext context,
     CommunityFeedState state,
@@ -93,16 +87,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final bool showEmptyPosts = state.posts.isEmpty && !showSerialGuide;
 
     final List<Widget> children = <Widget>[
-      _FeedHeader(
-        scope: state.scope,
-        hasSerialAccess: hasSerialAccess,
-        onScopeChanged: cubit.changeScope,
-        onSearchTap: () => context.push(CommunityRoute.searchPath),
-        onBoardTap: () => _openBoardList(context),
-      ),
-      const Gap(12),
-      const InlinePostComposer(),
-      if (state.showAds) ...[const Gap(12), const LoungeAdBanner()],
+      InlinePostComposer(scope: state.scope),
       const Gap(12),
       _SortMenu(currentSort: state.sort, onSelect: cubit.changeSort),
       const Gap(16),
@@ -127,6 +112,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         ),
       );
     } else {
+      const int adInterval = 10;
+      int renderedCount = 0;
+      final int totalPosts = state.posts.length;
+
       for (final Post post in state.posts) {
         children.add(
           PostCard(
@@ -135,6 +124,19 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             onToggleBookmark: () => cubit.toggleBookmark(post),
           ),
         );
+        renderedCount += 1;
+
+        final bool shouldInsertAd =
+            state.showAds &&
+            renderedCount % adInterval == 0 &&
+            renderedCount < totalPosts;
+
+        if (shouldInsertAd) {
+          children
+            ..add(const Gap(12))
+            ..add(const LoungeAdBanner())
+            ..add(const Gap(12));
+        }
       }
     }
 
@@ -190,63 +192,6 @@ class _CommunityErrorView extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _FeedHeader extends StatelessWidget {
-  const _FeedHeader({
-    required this.scope,
-    required this.hasSerialAccess,
-    required this.onScopeChanged,
-    required this.onSearchTap,
-    required this.onBoardTap,
-  });
-
-  final LoungeScope scope;
-  final bool hasSerialAccess;
-  final ValueChanged<LoungeScope> onScopeChanged;
-  final VoidCallback onSearchTap;
-  final VoidCallback onBoardTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: SegmentedButton<LoungeScope>(
-            segments: [
-              const ButtonSegment<LoungeScope>(
-                value: LoungeScope.all,
-                label: Text('전체'),
-                icon: Icon(Icons.public_outlined),
-              ),
-              ButtonSegment<LoungeScope>(
-                value: LoungeScope.serial,
-                label: const Text('내 직렬'),
-                icon: const Icon(Icons.group_outlined),
-                enabled: hasSerialAccess,
-              ),
-            ],
-            selected: <LoungeScope>{scope},
-            onSelectionChanged: (selection) {
-              onScopeChanged(selection.first);
-            },
-          ),
-        ),
-        const Gap(12),
-        IconButton(
-          tooltip: '검색',
-          onPressed: onSearchTap,
-          icon: const Icon(Icons.search),
-        ),
-        const Gap(8),
-        IconButton(
-          tooltip: '게시판 보기',
-          onPressed: onBoardTap,
-          icon: const Icon(Icons.view_list_outlined),
-        ),
-      ],
     );
   }
 }

@@ -12,13 +12,15 @@ import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/community/presentation/views/post_detail_page.dart';
-import '../features/matching/presentation/cubit/matching_cubit.dart';
-import '../features/matching/presentation/views/matching_page.dart';
+import '../features/life/presentation/life_home_page.dart';
+import '../features/monetization/presentation/views/monetization_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
 import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
+import '../features/profile/presentation/views/member_profile_page.dart';
+import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import 'router_refresh_stream.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -58,17 +60,17 @@ GoRouter createRouter() {
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
-            AppShell(navigationShell: navigationShell),
+            BlocProvider<CommunityFeedCubit>(
+              create: (_) => getIt<CommunityFeedCubit>(),
+              child: AppShell(navigationShell: navigationShell),
+            ),
         branches: [
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: CommunityRoute.path,
                 name: CommunityRoute.name,
-                builder: (context, state) => BlocProvider<CommunityFeedCubit>(
-                  create: (_) => getIt<CommunityFeedCubit>(),
-                  child: const CommunityFeedPage(),
-                ),
+                builder: (context, state) => const CommunityFeedPage(),
               ),
             ],
           ),
@@ -77,7 +79,14 @@ GoRouter createRouter() {
               GoRoute(
                 path: SalaryCalculatorRoute.path,
                 name: SalaryCalculatorRoute.name,
-                builder: (context, state) => const SalaryCalculatorPage(),
+                builder: (context, state) => const TeacherSalaryInsightPage(),
+                routes: [
+                  GoRoute(
+                    path: SalaryDetailCalculatorRoute.path,
+                    name: SalaryDetailCalculatorRoute.name,
+                    builder: (context, state) => const SalaryCalculatorPage(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -95,9 +104,9 @@ GoRouter createRouter() {
               GoRoute(
                 path: MatchingRoute.path,
                 name: MatchingRoute.name,
-                builder: (context, state) => BlocProvider<MatchingCubit>(
-                  create: (_) => getIt<MatchingCubit>(),
-                  child: const MatchingPage(),
+                builder: (context, state) => BlocProvider<AuthCubit>.value(
+                  value: getIt<AuthCubit>(),
+                  child: const LifeHomePage(),
                 ),
               ),
             ],
@@ -109,6 +118,21 @@ GoRouter createRouter() {
         path: ProfileRoute.path,
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: MonetizationRoute.path,
+        name: MonetizationRoute.name,
+        builder: (context, state) => const MonetizationPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/user/:uid',
+        name: MemberProfileRoute.name,
+        builder: (context, state) {
+          final String uid = state.pathParameters['uid']!;
+          return MemberProfilePage(uid: uid);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -169,7 +193,14 @@ class SalaryCalculatorRoute {
   const SalaryCalculatorRoute._();
 
   static const String name = 'salary-calculator';
-  static const String path = '/';
+  static const String path = '/salary';
+}
+
+class SalaryDetailCalculatorRoute {
+  const SalaryDetailCalculatorRoute._();
+
+  static const String name = 'salary-calculator-detail';
+  static const String path = 'calculator';
 }
 
 class PensionCalculatorRoute {
@@ -186,11 +217,24 @@ class ProfileRoute {
   static const String path = '/profile';
 }
 
+class MemberProfileRoute {
+  const MemberProfileRoute._();
+
+  static const String name = 'member-profile';
+}
+
 class MatchingRoute {
   const MatchingRoute._();
 
   static const String name = 'matching';
   static const String path = '/matching';
+}
+
+class MonetizationRoute {
+  const MonetizationRoute._();
+
+  static const String name = 'monetization';
+  static const String path = '/monetization';
 }
 
 class CommunityRoute {
