@@ -37,11 +37,11 @@ class _MonetizationPageState extends State<MonetizationPage> {
       animation: _controller,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Supporter 990 · 수익화')),
+          appBar: AppBar(title: const Text('후원하기')),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             children: [
-              _SupporterPlanCard(controller: _controller),
+              _DonationPlanCard(controller: _controller),
               const Gap(24),
               _ReferralPolicyCard(
                 controller: _controller,
@@ -59,8 +59,8 @@ class _MonetizationPageState extends State<MonetizationPage> {
   }
 }
 
-class _SupporterPlanCard extends StatelessWidget {
-  const _SupporterPlanCard({required this.controller});
+class _DonationPlanCard extends StatelessWidget {
+  const _DonationPlanCard({required this.controller});
 
   final MonetizationController controller;
 
@@ -115,7 +115,7 @@ class _SupporterPlanCard extends StatelessWidget {
                         ..hideCurrentSnackBar()
                         ..showSnackBar(
                           const SnackBar(
-                            content: Text('Supporter 990 구독이 해지되었습니다.'),
+                            content: Text('후원하기 990 구독이 해지되었습니다.'),
                           ),
                         );
                     }

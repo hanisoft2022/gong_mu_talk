@@ -16,8 +16,7 @@ class TeacherSalaryInsightPage extends StatefulWidget {
   const TeacherSalaryInsightPage({super.key});
 
   @override
-  State<TeacherSalaryInsightPage> createState() =>
-      _TeacherSalaryInsightPageState();
+  State<TeacherSalaryInsightPage> createState() => _TeacherSalaryInsightPageState();
 }
 
 class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
@@ -37,11 +36,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
   @override
   void initState() {
     super.initState();
-    _currencyFormat = NumberFormat.currency(
-      locale: 'ko_KR',
-      symbol: '₩',
-      decimalDigits: 0,
-    );
+    _currencyFormat = NumberFormat.currency(locale: 'ko_KR', symbol: '₩', decimalDigits: 0);
     _currentYear = DateTime.now().year;
     _currentSalary = const MonthlySalary(
       basePay: 2567600,
@@ -65,9 +60,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
     _retirementYear = _defaultRetirementYear;
 
     _performanceController = TextEditingController(
-      text: _performanceAmountForGrade(
-        _selectedPerformanceGrade,
-      ).round().toString(),
+      text: _performanceAmountForGrade(_selectedPerformanceGrade).round().toString(),
     );
     _holidayController = TextEditingController(
       text: (_currentSalary.basePay * 1.2 * 2).round().toString(),
@@ -96,7 +89,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
     final int netMonthly = _currentSalary.netPay;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -106,12 +99,6 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              Text(
-                '월급 리포트 & 연봉 시뮬레이션',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
               TextButton.icon(
                 onPressed: _resetToDefaults,
                 icon: const Icon(Icons.refresh_outlined),
@@ -121,10 +108,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
           ),
           if (authState.nickname.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(
-              '대상자: ${authState.nickname}',
-              style: theme.textTheme.bodySmall,
-            ),
+            Text('대상자: ${authState.nickname}', style: theme.textTheme.bodySmall),
           ],
           const SizedBox(height: 6),
           Text(
@@ -140,50 +124,31 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                 children: [
                   Text(
                     '이번 달 급여 요약',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: [
-                      _SummaryMetric(
-                        label: '세전 월급',
-                        value: _formatCurrency(grossMonthly),
-                      ),
-                      _SummaryMetric(
-                        label: '총 공제액',
-                        value: _formatCurrency(deductionsMonthly),
-                      ),
-                      _SummaryMetric(
-                        label: '실수령액',
-                        value: _formatCurrency(netMonthly),
-                      ),
+                      _SummaryMetric(label: '세전 월급', value: _formatCurrency(grossMonthly)),
+                      _SummaryMetric(label: '총 공제액', value: _formatCurrency(deductionsMonthly)),
+                      _SummaryMetric(label: '실수령액', value: _formatCurrency(netMonthly)),
                       _SummaryMetric(
                         label: '올해 세전 연봉',
-                        value: _formatCurrency(
-                          _profile.currentGrossAnnual.round(),
-                        ),
+                        value: _formatCurrency(_profile.currentGrossAnnual.round()),
                       ),
                       _SummaryMetric(
                         label: '올해 세후 연봉',
-                        value: _formatCurrency(
-                          _profile.currentNetAnnual.round(),
-                        ),
+                        value: _formatCurrency(_profile.currentNetAnnual.round()),
                       ),
                       _SummaryMetric(
                         label: '정년까지 세전 총소득',
-                        value: _formatCurrency(
-                          _profile.projectedLifetimeGross.round(),
-                        ),
+                        value: _formatCurrency(_profile.projectedLifetimeGross.round()),
                       ),
                       _SummaryMetric(
                         label: '정년까지 실수령 합계',
-                        value: _formatCurrency(
-                          _profile.projectedLifetimeNet.round(),
-                        ),
+                        value: _formatCurrency(_profile.projectedLifetimeNet.round()),
                       ),
                     ],
                   ),
@@ -209,12 +174,8 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
   }
 
   Widget _buildInputsCard(ThemeData theme) {
-    final String holidayDefault = _formatCurrency(
-      (_currentSalary.basePay * 1.2 * 2).round(),
-    );
-    final String longevityDefault = _formatCurrency(
-      (_currentSalary.basePay * 0.05 * 2).round(),
-    );
+    final String holidayDefault = _formatCurrency((_currentSalary.basePay * 1.2 * 2).round());
+    final String longevityDefault = _formatCurrency((_currentSalary.basePay * 0.05 * 2).round());
 
     return Card(
       child: Padding(
@@ -224,15 +185,10 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
           children: [
             Text(
               '누락된 급여 구성요소 입력',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
-            Text(
-              '성과상여금, 명절휴가비, 정근수당(본) 등은 직접 확인 후 입력해주세요.',
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text('성과상여금, 명절휴가비, 정근수당(본) 등은 직접 확인 후 입력해주세요.', style: theme.textTheme.bodyMedium),
             const SizedBox(height: 20),
             Wrap(
               spacing: 16,
@@ -247,22 +203,10 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                         value: _selectedPerformanceGrade,
                         isExpanded: true,
                         items: const <DropdownMenuItem<String>>[
-                          DropdownMenuItem<String>(
-                            value: 'S',
-                            child: Text('S 등급 (약 1.5개월)'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'A',
-                            child: Text('A 등급 (약 1.2개월)'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'B',
-                            child: Text('B 등급 (약 1개월)'),
-                          ),
-                          DropdownMenuItem<String>(
-                            value: 'custom',
-                            child: Text('직접 입력'),
-                          ),
+                          DropdownMenuItem<String>(value: 'S', child: Text('S 등급 (약 1.5개월)')),
+                          DropdownMenuItem<String>(value: 'A', child: Text('A 등급 (약 1.2개월)')),
+                          DropdownMenuItem<String>(value: 'B', child: Text('B 등급 (약 1개월)')),
+                          DropdownMenuItem<String>(value: 'custom', child: Text('직접 입력')),
                         ],
                         onChanged: (String? grade) {
                           if (grade == null) {
@@ -271,10 +215,9 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                           setState(() {
                             _selectedPerformanceGrade = grade;
                             if (grade != 'custom') {
-                              _performanceController.text =
-                                  _performanceAmountForGrade(
-                                    grade,
-                                  ).round().toString();
+                              _performanceController.text = _performanceAmountForGrade(
+                                grade,
+                              ).round().toString();
                             }
                             _profile = _buildProfileFromState();
                           });
@@ -292,9 +235,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                       helperText: '필요 시 등급 대신 직접 입력하세요.',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) {
                       setState(() {
                         if (_selectedPerformanceGrade != 'custom') {
@@ -314,9 +255,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                       helperText: '기본값 예시: $holidayDefault',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => _updateProfile(),
                   ),
                 ),
@@ -329,9 +268,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                       helperText: '기본값 예시: $longevityDefault',
                     ),
                     keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => _updateProfile(),
                   ),
                 ),
@@ -344,15 +281,8 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                         value: _retirementYear,
                         isExpanded: true,
                         items: <DropdownMenuItem<int>>[
-                          for (
-                            int year = _currentYear + 10;
-                            year <= _currentYear + 40;
-                            year++
-                          )
-                            DropdownMenuItem<int>(
-                              value: year,
-                              child: Text('$year년'),
-                            ),
+                          for (int year = _currentYear + 10; year <= _currentYear + 40; year++)
+                            DropdownMenuItem<int>(value: year, child: Text('$year년')),
                         ],
                         onChanged: (int? value) {
                           if (value == null) {
@@ -403,11 +333,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    raiseSlider,
-                    const SizedBox(height: 20),
-                    allowanceSlider,
-                  ],
+                  children: [raiseSlider, const SizedBox(height: 20), allowanceSlider],
                 );
               },
             ),
@@ -427,16 +353,11 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
           children: [
             Text(
               '연도별 연봉 예측',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             if (data.isEmpty)
-              Text(
-                '예측 데이터를 계산할 수 없습니다. 입력값을 확인해주세요.',
-                style: theme.textTheme.bodyMedium,
-              )
+              Text('예측 데이터를 계산할 수 없습니다. 입력값을 확인해주세요.', style: theme.textTheme.bodyMedium)
             else
               SizedBox(
                 height: min(360, 56.0 * data.length + 56),
@@ -454,12 +375,8 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                             (AnnualSalary entry) => DataRow(
                               cells: <DataCell>[
                                 DataCell(Text('${entry.year}년')),
-                                DataCell(
-                                  Text(_formatCurrency(entry.gross.round())),
-                                ),
-                                DataCell(
-                                  Text(_formatCurrency(entry.net.round())),
-                                ),
+                                DataCell(Text(_formatCurrency(entry.gross.round()))),
+                                DataCell(Text(_formatCurrency(entry.net.round()))),
                               ],
                             ),
                           )
@@ -480,10 +397,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Text(
-            '연도별 추세를 표시하려면 최소 2년 이상의 데이터가 필요합니다.',
-            style: theme.textTheme.bodyMedium,
-          ),
+          child: Text('연도별 추세를 표시하려면 최소 2년 이상의 데이터가 필요합니다.', style: theme.textTheme.bodyMedium),
         ),
       );
     }
@@ -507,9 +421,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
           children: [
             Text(
               '연도별 연봉 추이 (단위: 백만원)',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -518,30 +430,18 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                 LineChartData(
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      tooltipBgColor: theme.colorScheme.surface.withValues(
-                        alpha: 0.94,
-                      ),
+                      tooltipBgColor: theme.colorScheme.surface.withValues(alpha: 0.94),
                       getTooltipItems: (List<LineBarSpot> spots) {
                         return spots
                             .map((LineBarSpot spot) {
-                              final int index = spot.x.round().clamp(
-                                0,
-                                data.length - 1,
-                              );
+                              final int index = spot.x.round().clamp(0, data.length - 1);
                               final AnnualSalary entry = data[index];
                               final bool isGross = spot.barIndex == 0;
-                              final num amount = isGross
-                                  ? entry.gross
-                                  : entry.net;
-                              final Color color = isGross
-                                  ? grossColor
-                                  : netColor;
+                              final num amount = isGross ? entry.gross : entry.net;
+                              final Color color = isGross ? grossColor : netColor;
                               return LineTooltipItem(
                                 '${entry.year}년 ${isGross ? '세전' : '세후'}\n${_formatCurrency(amount.round())}',
-                                TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                TextStyle(color: color, fontWeight: FontWeight.w600),
                               );
                             })
                             .toList(growable: false);
@@ -570,14 +470,10 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                   gridData: FlGridData(
                     show: true,
                     horizontalInterval: _horizontalInterval(data),
-                    getDrawingHorizontalLine: (double value) => FlLine(
-                      color: theme.colorScheme.outlineVariant,
-                      strokeWidth: 0.6,
-                    ),
-                    getDrawingVerticalLine: (double value) => FlLine(
-                      color: theme.colorScheme.outlineVariant,
-                      strokeWidth: 0.6,
-                    ),
+                    getDrawingHorizontalLine: (double value) =>
+                        FlLine(color: theme.colorScheme.outlineVariant, strokeWidth: 0.6),
+                    getDrawingVerticalLine: (double value) =>
+                        FlLine(color: theme.colorScheme.outlineVariant, strokeWidth: 0.6),
                   ),
                   borderData: FlBorderData(
                     show: true,
@@ -613,12 +509,8 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
                         },
                       ),
                     ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                 ),
               ),
@@ -635,15 +527,9 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
       _raiseRate = 0.02;
       _allowanceGrowthRate = 0.01;
       _retirementYear = _defaultRetirementYear;
-      _performanceController.text = _performanceAmountForGrade(
-        'A',
-      ).round().toString();
-      _holidayController.text = (_currentSalary.basePay * 1.2 * 2)
-          .round()
-          .toString();
-      _longevityController.text = (_currentSalary.basePay * 0.05 * 2)
-          .round()
-          .toString();
+      _performanceController.text = _performanceAmountForGrade('A').round().toString();
+      _holidayController.text = (_currentSalary.basePay * 1.2 * 2).round().toString();
+      _longevityController.text = (_currentSalary.basePay * 0.05 * 2).round().toString();
       _profile = _buildProfileFromState();
     });
   }
@@ -655,9 +541,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
   }
 
   TeacherSalaryProfile _buildProfileFromState() {
-    final double performance = _parseAmount(
-      _performanceController.text,
-    ).toDouble();
+    final double performance = _parseAmount(_performanceController.text).toDouble();
     final double holiday = _parseAmount(_holidayController.text).toDouble();
     final double longevity = _parseAmount(_longevityController.text).toDouble();
 
@@ -723,18 +607,11 @@ class _SummaryMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -743,11 +620,7 @@ class _SummaryMetric extends StatelessWidget {
 }
 
 class _ProjectionSlider extends StatelessWidget {
-  const _ProjectionSlider({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
+  const _ProjectionSlider({required this.label, required this.value, required this.onChanged});
 
   final String label;
   final double value;
@@ -760,10 +633,7 @@ class _ProjectionSlider extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$label (${(value * 100).toStringAsFixed(1)}%)',
-          style: theme.textTheme.bodyLarge,
-        ),
+        Text('$label (${(value * 100).toStringAsFixed(1)}%)', style: theme.textTheme.bodyLarge),
         Slider(
           value: value,
           min: 0,

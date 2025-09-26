@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../di/di.dart';
 import '../../../../routing/app_router.dart';
@@ -845,8 +844,6 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
   late final TextEditingController _confirmPasswordController;
   late final TextEditingController _deletePasswordController;
 
-  final ImagePicker _imagePicker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -907,9 +904,9 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                             OutlinedButton.icon(
                               onPressed: isProcessing
                                   ? null
-                                  : _pickProfileImage,
+                                  : () => _showProfileImageSheet(state),
                               icon: const Icon(Icons.photo_library_outlined),
-                              label: const Text('앨범에서 선택'),
+                              label: const Text('프로필 이미지 편집'),
                             ),
                           ],
                         ),
@@ -968,11 +965,6 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                     child: const Text('자기소개 저장'),
                   ),
                 ],
-              ),
-              const Gap(24),
-              const _SettingsSection(
-                title: '공직자 메일 인증',
-                children: [_GovernmentEmailVerificationCard()],
               ),
               const Gap(24),
               _SettingsSection(
@@ -1062,13 +1054,13 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
               ),
               const Gap(24),
               _SettingsSection(
-                title: '수익화 & 후원',
+                title: '후원하기',
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.workspace_premium_outlined),
-                    title: const Text('Supporter 990 · 광고 제거'),
-                    subtitle: const Text('정기 후원, IAP 결제, 리퍼럴 보상을 확인하세요.'),
+                    title: const Text('후원하기 990 · 광고 제거'),
+                    subtitle: const Text('후원 혜택과 리퍼럴 보상을 확인하세요.'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () =>
                         GoRouter.of(context).push(MonetizationRoute.path),
@@ -1109,23 +1101,73 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
     );
   }
 
-  Future<void> _pickProfileImage() async {
+  Future<void> _showProfileImageSheet(AuthState authState) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        final ThemeData theme = Theme.of(sheetContext);
+        final bool hasProfileImage =
+            (authState.photoUrl != null && authState.photoUrl!.isNotEmpty);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('앨범에서 선택'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _pickProfileImageFromPicker();
+                },
+              ),
+              if (hasProfileImage)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error,
+                  ),
+                  title: Text(
+                    '기본 이미지로 변경',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await context.read<AuthCubit>().removeProfileImage();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickProfileImageFromPicker() async {
     final AuthCubit authCubit = context.read<AuthCubit>();
     try {
-      final XFile? file = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
       );
-      if (file == null) {
+      if (result == null) {
         return;
       }
-      final Uint8List bytes = await file.readAsBytes();
+      final PlatformFile file = result.files.single;
+      final Uint8List? bytes = file.bytes;
+      if (bytes == null) {
+        throw PlatformException(
+          code: 'bytes-unavailable',
+          message: '선택한 파일 데이터를 불러오지 못했습니다.',
+        );
+      }
+      final String extension = (file.extension ?? '').toLowerCase();
+      final String contentType = extension.isNotEmpty
+          ? 'image/$extension'
+          : 'image/jpeg';
       await authCubit.updateProfileImage(
         bytes: bytes,
         fileName: file.name,
-        contentType: file.mimeType ?? 'image/jpeg',
+        contentType: contentType,
       );
     } on PlatformException catch (error) {
       if (!mounted) {

@@ -208,7 +208,6 @@ class AuthCubit extends Cubit<AuthState> {
         delta: 50,
         levelDelta: 1,
       );
-      await _userProfileRepository.addNicknameTickets(uid: uid, count: 1);
       emit(
         state.copyWith(lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.'),
       );
@@ -261,11 +260,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     if (!state.canChangeNickname) {
-      emit(
-        state.copyWith(
-          lastMessage: '닉네임은 한 달에 한 번만 변경할 수 있어요. 변경권이 있다면 사용해주세요.',
-        ),
-      );
+      emit(state.copyWith(lastMessage: '닉네임은 한 달에 한 번만 변경할 수 있어요.'));
       return;
     }
 
@@ -289,21 +284,6 @@ class AuthCubit extends Cubit<AuthState> {
           lastMessage: '닉네임 변경 중 오류가 발생했습니다. 다시 시도해주세요.',
         ),
       );
-    }
-  }
-
-  Future<void> purchaseNicknameTicket() async {
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 닉네임 변경권을 구매할 수 있습니다.'));
-      return;
-    }
-
-    try {
-      await _userProfileRepository.addNicknameTickets(uid: uid, count: 1);
-      emit(state.copyWith(lastMessage: '닉네임 변경권이 추가되었습니다.'));
-    } catch (_) {
-      emit(state.copyWith(lastMessage: '닉네임 변경권 추가 중 오류가 발생했습니다.'));
     }
   }
 
@@ -415,6 +395,34 @@ class AuthCubit extends Cubit<AuthState> {
       _applyProfile(profile);
       emit(
         state.copyWith(isProcessing: false, lastMessage: '프로필 이미지가 변경되었습니다.'),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '프로필 이미지를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
+  Future<void> removeProfileImage() async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 프로필 이미지를 변경할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, photoUrl: null);
+      _applyProfile(profile);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '프로필 이미지를 기본 이미지로 변경했습니다.',
+        ),
       );
     } catch (_) {
       emit(

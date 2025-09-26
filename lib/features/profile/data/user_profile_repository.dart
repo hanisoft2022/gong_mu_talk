@@ -21,6 +21,7 @@ class UserProfileRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
+  static const Object _unset = Object();
 
   CollectionReference<JsonMap> get _usersRef => _firestore.collection('users');
 
@@ -140,7 +141,7 @@ class UserProfileRepository {
       final UserProfile profile = UserProfile.fromSnapshot(userSnapshot);
       final DateTime now = DateTime.now();
       if (!profile.canChangeNickname) {
-        throw StateError('닉네임 변경 가능 횟수가 부족합니다.');
+        throw StateError('닉네임은 한 달에 한 번만 변경할 수 있어요. 다음 달에 다시 시도해주세요.');
       }
 
       final String newHandle = _normalizeHandle(trimmedNickname, fallback: uid);
@@ -158,7 +159,6 @@ class UserProfileRepository {
       }
 
       int changeCount = profile.nicknameChangeCount;
-      int extraTickets = profile.extraNicknameTickets;
       final DateTime? previousReset = profile.nicknameResetAt;
       if (previousReset == null ||
           previousReset.year != now.year ||
@@ -167,12 +167,7 @@ class UserProfileRepository {
       }
 
       if (changeCount >= 1) {
-        if (extraTickets <= 0) {
-          throw StateError(
-            '닉네임은 한 달에 한 번만 변경할 수 있어요. 변경권을 사용하거나 다음 달에 다시 시도해주세요.',
-          );
-        }
-        extraTickets -= 1;
+        throw StateError('닉네임은 한 달에 한 번만 변경할 수 있어요. 다음 달에 다시 시도해주세요.');
       }
 
       changeCount += 1;
@@ -185,7 +180,6 @@ class UserProfileRepository {
         'nicknameLastChangedAt': Timestamp.fromDate(now),
         'nicknameResetAt': Timestamp.fromDate(resetAnchor),
         'nicknameChangeCount': changeCount,
-        'extraNicknameTickets': extraTickets,
         'keywords': _tokenizer.buildPrefixes(title: trimmedNickname),
       };
 
@@ -197,7 +191,7 @@ class UserProfileRepository {
         nicknameLastChangedAt: now,
         nicknameResetAt: resetAnchor,
         nicknameChangeCount: changeCount,
-        extraNicknameTickets: extraTickets,
+        extraNicknameTickets: profile.extraNicknameTickets,
       );
     });
   }
@@ -213,7 +207,7 @@ class UserProfileRepository {
     bool? isAnonymousDefault,
     String? jobTitle,
     int? yearsOfService,
-    String? photoUrl,
+    Object? photoUrl = _unset,
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
   }) async {
@@ -246,7 +240,7 @@ class UserProfileRepository {
     if (yearsOfService != null) {
       updates['yearsOfService'] = yearsOfService;
     }
-    if (photoUrl != null) {
+    if (photoUrl != _unset) {
       updates['photoUrl'] = photoUrl;
     }
     if (notificationsEnabled != null) {
@@ -312,13 +306,6 @@ class UserProfileRepository {
       'label': label,
       'description': description,
       'awardedAt': Timestamp.now(),
-    });
-  }
-
-  Future<void> addNicknameTickets({required String uid, int count = 1}) async {
-    await _userDoc(uid).update(<String, Object?>{
-      'extraNicknameTickets': FieldValue.increment(count),
-      'updatedAt': Timestamp.now(),
     });
   }
 

@@ -245,9 +245,6 @@ class AuthState extends Equatable {
         resetAnchor.month != now.month) {
       return true;
     }
-    if (nicknameChangeCount < 1) {
-      return true;
-    }
-    return hasNicknameTickets;
+    return nicknameChangeCount < 1;
   }
 }

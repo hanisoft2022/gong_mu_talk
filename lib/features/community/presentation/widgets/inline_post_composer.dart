@@ -198,6 +198,45 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                       filled: true,
                     ),
                   ),
+                  if (state.attachments.isNotEmpty) ...[
+                    const Gap(10),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: state.attachments
+                          .map(
+                            (PostMediaDraft draft) => _AttachmentPreview(
+                              draft: draft,
+                              onRemove: () => cubit.removeAttachment(draft),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                  const Gap(10),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: state.isSubmitting
+                            ? null
+                            : () async {
+                                await cubit.addAttachmentFromGallery();
+                              },
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('앨범'),
+                      ),
+                      const Gap(8),
+                      OutlinedButton.icon(
+                        onPressed: state.isSubmitting
+                            ? null
+                            : () async {
+                                await cubit.addAttachmentFromCamera();
+                              },
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        label: const Text('카메라'),
+                      ),
+                    ],
+                  ),
                   const Gap(10),
                   _AudienceHint(audience: desiredAudience),
                   if (!authState.isLoggedIn) ...[
@@ -224,6 +263,47 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
           );
         },
       ),
+    );
+  }
+}
+
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({required this.draft, required this.onRemove});
+
+  final PostMediaDraft draft;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topRight,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            draft.bytes,
+            width: 72,
+            height: 72,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          right: 4,
+          top: 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
+              icon: const Icon(Icons.close, size: 16, color: Colors.white),
+              onPressed: onRemove,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

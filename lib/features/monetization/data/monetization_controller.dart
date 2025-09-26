@@ -17,20 +17,23 @@ class MonetizationController extends ChangeNotifier {
 
   static const PricingPlan supporterPlanTemplate = PricingPlan(
     id: 'supporter_990',
-    name: 'Supporter 990',
+    name: '후원하기 990',
     price: 990,
     currency: '₩',
     billingPeriod: '월 정기 후원',
     benefits: <PricingBenefit>[
       PricingBenefit(
         title: '커뮤니티 전용 후원 배지',
-        description: '닉네임 옆에 Supporter 배지가 표시됩니다.',
+        description: '닉네임 옆에 후원 배지가 표시됩니다.',
       ),
       PricingBenefit(
         title: '앱 내 광고 제거',
         description: '모든 광고가 제거되어 쾌적한 사용이 가능합니다.',
       ),
-      PricingBenefit(title: '매칭 기능 향상', description: '매칭 추천이 하루 2회 추가 제공됩니다.'),
+      PricingBenefit(
+        title: '서비스 유지 보수에 기여',
+        description: '후원해 주신 금액은 커뮤니티 품질 개선에 사용됩니다.',
+      ),
     ],
   );
 

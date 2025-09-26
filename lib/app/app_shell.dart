@@ -55,7 +55,7 @@ class AppShell extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '공무톡 · ${_titleForIndex(navigationShell.currentIndex)}',
+                          _titleForIndex(navigationShell.currentIndex),
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ],
@@ -132,7 +132,7 @@ class AppShell extends StatelessWidget {
       case 0:
         return '라운지';
       case 1:
-        return '나의 월급';
+        return '월급 리포트 & 연봉 시뮬레이션';
       case 2:
         return '연금 계산 서비스';
       case 3:
