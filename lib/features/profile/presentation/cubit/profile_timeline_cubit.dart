@@ -57,14 +57,17 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
   ProfileTimelineCubit({
     required CommunityRepository repository,
     required AuthCubit authCubit,
+    String? targetUserId,
   }) : _repository = repository,
        _authCubit = authCubit,
+       _targetUserId = targetUserId,
        super(const ProfileTimelineState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
   }
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
+  final String? _targetUserId;
   late final StreamSubscription<AuthState> _authSubscription;
   QueryDocumentSnapshotJson? _cursor;
   bool _isFetching = false;
@@ -75,8 +78,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
       return;
     }
 
-    final String? uid = _authCubit.state.userId;
-    if (uid == null) {
+    final String? authorUid = _targetUserId ?? _authCubit.state.userId;
+    if (authorUid == null) {
       emit(
         state.copyWith(
           status: ProfileTimelineStatus.error,
@@ -102,8 +105,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     try {
       final PaginatedQueryResult<Post> result = await _repository
           .fetchPostsByAuthor(
-            authorUid: uid,
-            currentUid: uid,
+            authorUid: authorUid,
+            currentUid: _authCubit.state.userId,
             limit: _pageSize,
           );
       _cursor = result.lastDocument;
@@ -136,8 +139,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
       return;
     }
 
-    final String? uid = _authCubit.state.userId;
-    if (uid == null) {
+    final String? authorUid = _targetUserId ?? _authCubit.state.userId;
+    if (authorUid == null) {
       emit(
         state.copyWith(
           status: ProfileTimelineStatus.error,
@@ -155,8 +158,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     try {
       final PaginatedQueryResult<Post> result = await _repository
           .fetchPostsByAuthor(
-            authorUid: uid,
-            currentUid: uid,
+            authorUid: authorUid,
+            currentUid: _authCubit.state.userId,
             limit: _pageSize,
           );
       _cursor = result.lastDocument;
@@ -186,8 +189,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
       return;
     }
 
-    final String? uid = _authCubit.state.userId;
-    if (uid == null) {
+    final String? authorUid = _targetUserId ?? _authCubit.state.userId;
+    if (authorUid == null) {
       return;
     }
 
@@ -197,8 +200,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     try {
       final PaginatedQueryResult<Post> result = await _repository
           .fetchPostsByAuthor(
-            authorUid: uid,
-            currentUid: uid,
+            authorUid: authorUid,
+            currentUid: _authCubit.state.userId,
             limit: _pageSize,
             startAfter: _cursor,
           );
@@ -225,9 +228,61 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
   }
 
   void _handleAuthChanged(AuthState authState) {
-    if (!authState.isLoggedIn) {
+    if (_targetUserId == null && !authState.isLoggedIn) {
       _cursor = null;
       emit(const ProfileTimelineState());
+    }
+  }
+
+  Future<void> toggleLike(Post post) async {
+    final String? currentUid = _authCubit.state.userId;
+    if (currentUid == null) {
+      return;
+    }
+
+    try {
+      final bool nowLiked = await _repository.togglePostLike(
+        postId: post.id,
+        uid: currentUid,
+      );
+      final int delta = nowLiked ? 1 : -1;
+      final List<Post> updated = state.posts
+          .map(
+            (Post existing) => existing.id == post.id
+                ? existing.copyWith(
+                    likeCount: (existing.likeCount + delta)
+                        .clamp(0, 1 << 31)
+                        .toInt(),
+                    isLiked: nowLiked,
+                  )
+                : existing,
+          )
+          .toList(growable: false);
+      emit(state.copyWith(posts: updated));
+    } catch (_) {
+      // Swallow errors silently; UI will remain unchanged.
+    }
+  }
+
+  Future<void> toggleBookmark(Post post) async {
+    final String? currentUid = _authCubit.state.userId;
+    if (currentUid == null) {
+      return;
+    }
+
+    try {
+      await _repository.toggleBookmark(uid: currentUid, postId: post.id);
+      final bool nowBookmarked = !post.isBookmarked;
+      final List<Post> updated = state.posts
+          .map(
+            (Post existing) => existing.id == post.id
+                ? existing.copyWith(isBookmarked: nowBookmarked)
+                : existing,
+          )
+          .toList(growable: false);
+      emit(state.copyWith(posts: updated));
+    } catch (_) {
+      // Ignore errors for now.
     }
   }
 

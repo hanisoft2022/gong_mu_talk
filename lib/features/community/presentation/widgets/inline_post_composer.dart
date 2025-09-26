@@ -4,15 +4,54 @@ import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
 import '../cubit/post_composer_cubit.dart';
 
 class InlinePostComposer extends StatefulWidget {
-  const InlinePostComposer({super.key});
+  const InlinePostComposer({super.key, required this.scope});
+
+  final LoungeScope scope;
 
   @override
   State<InlinePostComposer> createState() => _InlinePostComposerState();
+}
+
+PostAudience _audienceForScope(LoungeScope scope) {
+  return scope == LoungeScope.serial ? PostAudience.serial : PostAudience.all;
+}
+
+class _AudienceHint extends StatelessWidget {
+  const _AudienceHint({required this.audience});
+
+  final PostAudience audience;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isSerial = audience == PostAudience.serial;
+    final IconData icon = isSerial
+        ? Icons.badge_outlined
+        : Icons.public_outlined;
+    final String label = isSerial ? '내 직렬' : '전체 공개';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const Gap(8),
+          Text('$label로 게시됩니다.', style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
 }
 
 class _InlinePostComposerState extends State<InlinePostComposer> {
@@ -36,6 +75,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
       create: (_) => PostComposerCubit(
         communityRepository: getIt(),
         authCubit: getIt<AuthCubit>(),
+        initialAudience: _audienceForScope(widget.scope),
       ),
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
@@ -73,8 +113,17 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
           final AuthState authState = context.watch<AuthCubit>().state;
           final bool hasSerial =
               authState.serial.isNotEmpty && authState.serial != 'unknown';
-          final bool canSubmit = state.text.trim().isNotEmpty &&
-              !state.isSubmitting && authState.isLoggedIn;
+          final PostAudience desiredAudience = _audienceForScope(widget.scope);
+
+          if (state.audience != desiredAudience) {
+            cubit.selectAudience(desiredAudience);
+          }
+
+          final bool canSubmit =
+              state.text.trim().isNotEmpty &&
+              !state.isSubmitting &&
+              authState.isLoggedIn &&
+              (desiredAudience != PostAudience.serial || hasSerial);
 
           return Card(
             margin: EdgeInsets.zero,
@@ -132,29 +181,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     ),
                   ),
                   const Gap(12),
-                  Row(
-                    children: [
-                      SegmentedButton<PostAudience>(
-                        segments: [
-                          const ButtonSegment<PostAudience>(
-                            value: PostAudience.all,
-                            label: Text('전체 공개'),
-                            icon: Icon(Icons.public_outlined),
-                          ),
-                          ButtonSegment<PostAudience>(
-                            value: PostAudience.serial,
-                            label: const Text('내 직렬'),
-                            icon: const Icon(Icons.badge_outlined),
-                            enabled: hasSerial,
-                          ),
-                        ],
-                        selected: <PostAudience>{state.audience},
-                        onSelectionChanged: (selection) {
-                          cubit.selectAudience(selection.first);
-                        },
-                      ),
-                    ],
-                  ),
+                  _AudienceHint(audience: desiredAudience),
                   if (!authState.isLoggedIn) ...[
                     const Gap(8),
                     Text(
@@ -163,7 +190,8 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                         color: theme.colorScheme.error,
                       ),
                     ),
-                  ] else if (!hasSerial && state.audience == PostAudience.serial) ...[
+                  ] else if (!hasSerial &&
+                      desiredAudience == PostAudience.serial) ...[
                     const Gap(8),
                     Text(
                       '마이페이지에서 직렬 정보를 등록하면 직렬 전용으로 공유할 수 있어요.',

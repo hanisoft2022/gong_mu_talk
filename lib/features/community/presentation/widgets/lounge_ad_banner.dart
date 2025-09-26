@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class LoungeAdBanner extends StatefulWidget {
@@ -14,6 +15,7 @@ class _LoungeAdBannerState extends State<LoungeAdBanner> {
   static bool _mobileAdsInitialized = false;
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _LoungeAdBannerState extends State<LoungeAdBanner> {
           setState(() {
             _bannerAd = ad as BannerAd;
             _isLoaded = true;
+            _loadFailed = false;
           });
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
@@ -52,6 +55,7 @@ class _LoungeAdBannerState extends State<LoungeAdBanner> {
             setState(() {
               _bannerAd = null;
               _isLoaded = false;
+              _loadFailed = true;
             });
           }
         },
@@ -78,10 +82,35 @@ class _LoungeAdBannerState extends State<LoungeAdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _bannerAd == null) {
-      return const SizedBox.shrink();
+    if (_isLoaded && _bannerAd != null) {
+      return Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: SizedBox(
+            width: double.infinity,
+            height: _bannerAd!.size.height.toDouble(),
+            child: AdWidget(ad: _bannerAd!),
+          ),
+        ),
+      );
     }
 
+    if (_loadFailed) {
+      return const _AdFallback();
+    }
+
+    return const _AdLoadingPlaceholder();
+  }
+}
+
+class _AdLoadingPlaceholder extends StatelessWidget {
+  const _AdLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -89,8 +118,45 @@ class _LoungeAdBannerState extends State<LoungeAdBanner> {
         padding: const EdgeInsets.all(8),
         child: SizedBox(
           width: double.infinity,
-          height: _bannerAd!.size.height.toDouble(),
-          child: AdWidget(ad: _bannerAd!),
+          height: 50,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdFallback extends StatelessWidget {
+  const _AdFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.campaign_outlined, color: theme.colorScheme.primary),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                '광고를 불러오는 중이에요. 네트워크 상태를 확인해주세요.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../matching/domain/entities/match_preferences.dart';
 import 'career_track.dart';
 
 enum UserRole { member, moderator, admin }
@@ -27,6 +28,7 @@ class UserProfile extends Equatable {
     this.level = 1,
     this.badges = const <String>[],
     this.careerTrack = CareerTrack.none,
+    this.matchPreferences = const MatchPreferences(),
     this.excludedSerials = const <String>{},
     this.excludedDepartments = const <String>{},
     this.excludedRegions = const <String>{},
@@ -67,6 +69,7 @@ class UserProfile extends Equatable {
   final int level;
   final List<String> badges;
   final CareerTrack careerTrack;
+  final MatchPreferences matchPreferences;
   final Set<String> excludedSerials;
   final Set<String> excludedDepartments;
   final Set<String> excludedRegions;
@@ -126,6 +129,7 @@ class UserProfile extends Equatable {
     int? level,
     List<String>? badges,
     CareerTrack? careerTrack,
+    MatchPreferences? matchPreferences,
     Set<String>? excludedSerials,
     Set<String>? excludedDepartments,
     Set<String>? excludedRegions,
@@ -165,6 +169,7 @@ class UserProfile extends Equatable {
       level: level ?? this.level,
       badges: badges ?? this.badges,
       careerTrack: careerTrack ?? this.careerTrack,
+      matchPreferences: matchPreferences ?? this.matchPreferences,
       excludedSerials: excludedSerials ?? this.excludedSerials,
       excludedDepartments: excludedDepartments ?? this.excludedDepartments,
       excludedRegions: excludedRegions ?? this.excludedRegions,
@@ -211,6 +216,7 @@ class UserProfile extends Equatable {
       'level': level,
       'badges': badges,
       'careerTrack': careerTrack.name,
+      'matchPreferences': matchPreferences.toMap(),
       'excludedSerials': excludedSerials.toList(growable: false),
       'excludedDepartments': excludedDepartments.toList(growable: false),
       'excludedRegions': excludedRegions.toList(growable: false),
@@ -270,6 +276,10 @@ class UserProfile extends Equatable {
       level: (data['level'] as num?)?.toInt() ?? 1,
       badges: _parseStringList(data['badges']),
       careerTrack: _parseCareerTrack(data['careerTrack']),
+      matchPreferences: MatchPreferences.fromMap(
+        (data['matchPreferences'] as Map<String, Object?>?) ??
+            (data['matchingSurvey'] as Map<String, Object?>?),
+      ),
       excludedSerials: _parseStringSet(data['excludedSerials']),
       excludedDepartments: _parseStringSet(data['excludedDepartments']),
       excludedRegions: _parseStringSet(data['excludedRegions']),
@@ -371,6 +381,7 @@ class UserProfile extends Equatable {
     level,
     badges,
     careerTrack,
+    matchPreferences,
     excludedSerials,
     excludedDepartments,
     excludedRegions,

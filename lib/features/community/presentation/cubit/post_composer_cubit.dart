@@ -120,9 +120,10 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   PostComposerCubit({
     required CommunityRepository communityRepository,
     required AuthCubit authCubit,
+    PostAudience initialAudience = PostAudience.all,
   }) : _repository = communityRepository,
        _authCubit = authCubit,
-       super(const PostComposerState()) {
+       super(PostComposerState(audience: initialAudience)) {
     unawaited(_loadBoards());
   }
 

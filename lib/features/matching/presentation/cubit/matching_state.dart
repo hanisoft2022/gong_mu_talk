@@ -5,13 +5,13 @@ enum MatchingStatus { initial, loading, loaded, error, locked }
 class MatchingState extends Equatable {
   const MatchingState({
     this.status = MatchingStatus.initial,
-    this.candidates = const <MatchProfile>[],
+    this.candidates = const <CuratedMatch>[],
     this.actionInProgressId,
     this.lastActionMessage,
   });
 
   final MatchingStatus status;
-  final List<MatchProfile> candidates;
+  final List<CuratedMatch> candidates;
   final String? actionInProgressId;
   final String? lastActionMessage;
 
@@ -19,7 +19,7 @@ class MatchingState extends Equatable {
 
   MatchingState copyWith({
     MatchingStatus? status,
-    List<MatchProfile>? candidates,
+    List<CuratedMatch>? candidates,
     Object? actionInProgressId = _unset,
     Object? lastActionMessage = _unset,
   }) {

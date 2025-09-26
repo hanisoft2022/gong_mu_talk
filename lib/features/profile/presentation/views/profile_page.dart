@@ -893,39 +893,16 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
               ),
               const Gap(24),
               _SettingsSection(
-                title: '후원 설정',
+                title: '수익화 & 후원',
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      state.supporterLevel > 0 ||
-                              state.premiumTier != PremiumTier.none
-                          ? Icons.volunteer_activism
-                          : Icons.volunteer_activism_outlined,
-                    ),
-                    title: Text(
-                      state.supporterLevel > 0 ||
-                              state.premiumTier != PremiumTier.none
-                          ? '후원 취소하기'
-                          : '공무톡 후원하기',
-                    ),
-                    subtitle: Text(
-                      state.supporterLevel > 0 ||
-                              state.premiumTier != PremiumTier.none
-                          ? '후원을 취소하면 광고가 다시 노출됩니다.'
-                          : '후원 시 배지를 획득하고 광고가 제거됩니다.',
-                    ),
-                    onTap: isProcessing
-                        ? null
-                        : () {
-                            final AuthCubit cubit = context.read<AuthCubit>();
-                            if (state.supporterLevel > 0 ||
-                                state.premiumTier != PremiumTier.none) {
-                              cubit.disableSupporterMode();
-                            } else {
-                              cubit.enableSupporterMode();
-                            }
-                          },
+                    leading: const Icon(Icons.workspace_premium_outlined),
+                    title: const Text('Supporter 990 · 광고 제거'),
+                    subtitle: const Text('정기 후원, IAP 결제, 리퍼럴 보상을 확인하세요.'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        GoRouter.of(context).push(MonetizationRoute.path),
                   ),
                 ],
               ),

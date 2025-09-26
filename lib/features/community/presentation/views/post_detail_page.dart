@@ -408,6 +408,8 @@ class _CommentsSection extends StatelessWidget {
               onToggleLike: () => onToggleLike(comment.id),
               onReact: (String emoji) => onReact(comment.id, emoji),
               onReply: () => onReply(comment.authorNickname),
+              onOpenProfile: () =>
+                  _openMemberProfile(context, comment.authorUid),
             ),
           ),
         ],
@@ -467,6 +469,8 @@ class _FeaturedCommentsSection extends StatelessWidget {
                     onReact: (String emoji) => onReact(comment.id, emoji),
                     onReply: () => onReply(comment.authorNickname),
                     highlight: true,
+                    onOpenProfile: () =>
+                        _openMemberProfile(context, comment.authorUid),
                   ),
                 ),
               ),
@@ -482,6 +486,7 @@ class _CommentTile extends StatelessWidget {
     required this.onToggleLike,
     required this.onReact,
     required this.onReply,
+    required this.onOpenProfile,
     this.highlight = false,
   });
 
@@ -489,6 +494,7 @@ class _CommentTile extends StatelessWidget {
   final VoidCallback onToggleLike;
   final void Function(String emoji) onReact;
   final VoidCallback onReply;
+  final VoidCallback onOpenProfile;
   final bool highlight;
 
   @override
@@ -505,101 +511,110 @@ class _CommentTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             )
           : null,
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-            foregroundColor: theme.colorScheme.primary,
-            child: Text(comment.authorNickname.substring(0, 1)),
-          ),
-          const Gap(12),
-          Expanded(
-            child: Column(
+          InkWell(
+            onTap: onOpenProfile,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    if (comment.authorIsSupporter) ...[
-                      Icon(
-                        Icons.workspace_premium,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const Gap(4),
-                    ],
-                    Expanded(
-                      child: Text(
-                        comment.authorNickname,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(2),
-                Text(
-                  '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
                   ),
+                  foregroundColor: theme.colorScheme.primary,
+                  child: Text(comment.authorNickname.substring(0, 1)),
                 ),
-                const Gap(6),
-                Text(comment.text, style: theme.textTheme.bodyMedium),
                 const Gap(12),
-                _CommentReactionBar(
-                  reactions: comment.reactionCounts,
-                  viewerReaction: comment.viewerReaction,
-                  onReact: onReact,
-                ),
-                const Gap(8),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: onToggleLike,
-                      icon: Icon(
-                        comment.isLiked
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        size: 16,
-                        color: comment.isLiked
-                            ? Colors.red
-                            : theme.colorScheme.onSurfaceVariant,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (comment.authorIsSupporter) ...[
+                            Icon(
+                              Icons.workspace_premium,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const Gap(4),
+                          ],
+                          Expanded(
+                            child: Text(
+                              comment.authorNickname,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      label: Text(
-                        '${comment.likeCount}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                      style: TextButton.styleFrom(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                      const Gap(2),
+                      Text(
+                        '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                    ),
-                    const Gap(8),
-                    TextButton.icon(
-                      onPressed: onReply,
-                      icon: const Icon(Icons.reply_outlined, size: 16),
-                      label: const Text('답글'),
-                      style: TextButton.styleFrom(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
+          ),
+          const Gap(6),
+          Text(comment.text, style: theme.textTheme.bodyMedium),
+          const Gap(12),
+          _CommentReactionBar(
+            reactions: comment.reactionCounts,
+            viewerReaction: comment.viewerReaction,
+            onReact: onReact,
+          ),
+          const Gap(8),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: onToggleLike,
+                icon: Icon(
+                  comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                  size: 16,
+                  color: comment.isLiked
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  '${comment.likeCount}',
+                  style: theme.textTheme.labelSmall,
+                ),
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              const Gap(8),
+              TextButton.icon(
+                onPressed: onReply,
+                icon: const Icon(Icons.reply_outlined, size: 16),
+                label: const Text('답글'),
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -755,6 +770,16 @@ class _CommentReactionBar extends StatelessWidget {
           .toList(growable: false),
     );
   }
+}
+
+void _openMemberProfile(BuildContext context, String uid) {
+  if (uid.isEmpty || uid == 'dummy_user') {
+    return;
+  }
+  context.pushNamed(
+    MemberProfileRoute.name,
+    pathParameters: <String, String>{'uid': uid},
+  );
 }
 
 class _ErrorView extends StatelessWidget {

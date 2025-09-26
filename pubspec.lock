@@ -585,6 +585,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  fl_chart:
+    dependency: "direct main"
+    description:
+      name: fl_chart
+      sha256: "00b74ae680df6b1135bdbea00a7d1fc072a9180b7c3f3702e4b19a9943f5ed7d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.66.2"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -1587,7 +1595,7 @@ packages:
     source: hosted
     version: "1.2.2"
   test:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: test
       sha256: "65e29d831719be0591f7b3b1a32a3cda258ec98c58c7b25f7b84241bc31215bb"

@@ -7,7 +7,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../data/matching_repository.dart';
-import '../../domain/entities/match_profile.dart';
+import '../../domain/entities/curated_match.dart';
 
 part 'matching_state.dart';
 
@@ -24,17 +24,17 @@ class MatchingCubit extends Cubit<MatchingState> {
   final MatchingRepository _repository;
   final AuthCubit _authCubit;
   late final StreamSubscription<AuthState> _authSubscription;
-  List<MatchProfile> _allCandidates = const <MatchProfile>[];
+  List<CuratedMatch> _allCandidates = const <CuratedMatch>[];
   bool _pendingProfile = false;
 
   Future<void> loadCandidates() async {
     final AuthState authState = _authCubit.state;
     if (!authState.isGovernmentEmailVerified) {
-      _allCandidates = const <MatchProfile>[];
+      _allCandidates = const <CuratedMatch>[];
       emit(
         state.copyWith(
           status: MatchingStatus.locked,
-          candidates: const <MatchProfile>[],
+          candidates: const <CuratedMatch>[],
           lastActionMessage: '공직자 이메일 인증을 완료하면 매칭을 이용할 수 있습니다.',
         ),
       );
@@ -47,7 +47,7 @@ class MatchingCubit extends Cubit<MatchingState> {
       emit(
         state.copyWith(
           status: MatchingStatus.loading,
-          candidates: const <MatchProfile>[],
+          candidates: const <CuratedMatch>[],
           lastActionMessage: '프로필 정보를 불러오는 중입니다...',
         ),
       );
@@ -60,13 +60,8 @@ class MatchingCubit extends Cubit<MatchingState> {
     );
 
     try {
-      _allCandidates = await _repository.fetchCandidates(
-        currentUser: profile,
-      );
-      _filterCandidates(
-        authState,
-        status: MatchingStatus.loaded,
-      );
+      _allCandidates = await _repository.fetchCandidates(currentUser: profile);
+      _filterCandidates(authState, status: MatchingStatus.loaded);
     } catch (_) {
       emit(
         state.copyWith(status: MatchingStatus.error, lastActionMessage: null),
@@ -78,7 +73,11 @@ class MatchingCubit extends Cubit<MatchingState> {
     await loadCandidates();
   }
 
-  Future<void> requestMatch(String candidateId) async {
+  Future<void> requestMatch({
+    required CuratedMatch match,
+    required String prompt,
+    required String answer,
+  }) async {
     if (state.status != MatchingStatus.loaded) {
       return;
     }
@@ -89,13 +88,19 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
+    final String candidateId = match.profile.id;
     emit(
       state.copyWith(actionInProgressId: candidateId, lastActionMessage: null),
     );
     try {
+      final String formattedMessage =
+          'Q: ${prompt.trim()}\nA: ${answer.trim()}';
       final MatchRequestResult result = await _repository.requestMatch(
         currentUser: profile,
         targetUid: candidateId,
+        message: formattedMessage,
+        firstQuestionPrompt: prompt.trim(),
+        firstQuestionAnswer: answer.trim(),
       );
       emit(
         state.copyWith(
@@ -119,16 +124,14 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   void _filterCandidates(AuthState authState, {MatchingStatus? status}) {
     final Set<CareerTrack> excludedTracks = authState.excludedTracks;
-    final List<MatchProfile> filtered = _allCandidates
-        .where((MatchProfile profile) => !excludedTracks.contains(profile.careerTrack))
+    final List<CuratedMatch> filtered = _allCandidates
+        .where(
+          (CuratedMatch match) =>
+              !excludedTracks.contains(match.profile.careerTrack),
+        )
         .toList(growable: false);
 
-    emit(
-      state.copyWith(
-        candidates: filtered,
-        status: status ?? state.status,
-      ),
-    );
+    emit(state.copyWith(candidates: filtered, status: status ?? state.status));
   }
 
   @override
@@ -139,12 +142,12 @@ class MatchingCubit extends Cubit<MatchingState> {
 
   void _handleAuthStateChanged(AuthState authState) {
     if (!authState.isLoggedIn) {
-      _allCandidates = const <MatchProfile>[];
+      _allCandidates = const <CuratedMatch>[];
       _pendingProfile = false;
       emit(
         state.copyWith(
           status: MatchingStatus.initial,
-          candidates: const <MatchProfile>[],
+          candidates: const <CuratedMatch>[],
           actionInProgressId: null,
           lastActionMessage: null,
         ),
@@ -153,11 +156,11 @@ class MatchingCubit extends Cubit<MatchingState> {
     }
 
     if (!authState.isGovernmentEmailVerified) {
-      _allCandidates = const <MatchProfile>[];
+      _allCandidates = const <CuratedMatch>[];
       emit(
         state.copyWith(
           status: MatchingStatus.locked,
-          candidates: const <MatchProfile>[],
+          candidates: const <CuratedMatch>[],
           actionInProgressId: null,
           lastActionMessage: null,
         ),
@@ -165,7 +168,9 @@ class MatchingCubit extends Cubit<MatchingState> {
       return;
     }
 
-    if (_pendingProfile && authState.userProfile != null && authState.isGovernmentEmailVerified) {
+    if (_pendingProfile &&
+        authState.userProfile != null &&
+        authState.isGovernmentEmailVerified) {
       unawaited(loadCandidates());
       return;
     }

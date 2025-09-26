@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,8 +7,10 @@ import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
 import '../../data/community_repository.dart';
+import '../../data/mock_social_graph.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 
 const List<String> _commentReactionOptions = <String>['👍', '🎉', '😍', '😄'];
@@ -56,48 +59,12 @@ class _PostCardState extends State<PostCard> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
-                  ),
-                  foregroundColor: theme.colorScheme.primary,
-                  child: Text(post.authorNickname.substring(0, 1)),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (post.authorIsSupporter) ...[
-                            Tooltip(
-                              message: '후원자 레벨 ${post.authorSupporterLevel}',
-                              child: Icon(
-                                Icons.workspace_premium,
-                                size: 18,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            const Gap(6),
-                          ],
-                          Expanded(
-                            child: Text(
-                              post.authorNickname,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+                _AuthorInfoHeader(
+                  post: post,
+                  timestamp: timestamp,
+                  onTap: () => _handleMemberTap(
+                    uid: post.authorUid,
+                    nickname: post.authorNickname,
                   ),
                 ),
                 widget.trailing ??
@@ -192,6 +159,10 @@ class _PostCardState extends State<PostCard> {
                         onToggleLike: _handleCommentLike,
                         onReact: (String emoji) =>
                             _handleReaction(featuredComment, emoji),
+                        onOpenProfile: () => _handleMemberTap(
+                          uid: featuredComment.authorUid,
+                          nickname: featuredComment.authorNickname,
+                        ),
                       );
                     },
                   ),
@@ -203,6 +174,10 @@ class _PostCardState extends State<PostCard> {
                     highlight: _isFeatured(comment),
                     onToggleLike: _handleCommentLike,
                     onReact: (String emoji) => _handleReaction(comment, emoji),
+                    onOpenProfile: () => _handleMemberTap(
+                      uid: comment.authorUid,
+                      nickname: comment.authorNickname,
+                    ),
                   ),
                 ),
               ],
@@ -389,6 +364,160 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
+  Future<void> _handleMemberTap({
+    required String uid,
+    required String nickname,
+  }) async {
+    if (uid.isEmpty) {
+      return;
+    }
+
+    if (uid == 'preview') {
+      if (mounted) {
+        _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+      }
+      return;
+    }
+
+    await _showMemberActions(uid: uid, nickname: nickname);
+  }
+
+  Future<void> _showMemberActions({
+    required String uid,
+    required String nickname,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+
+    final BuildContext hostContext = context;
+    final MockSocialGraph socialGraph = getIt<MockSocialGraph>();
+    final AuthState authState = getIt<AuthCubit>().state;
+    final String? currentUid = authState.userId;
+    final bool isSelf = currentUid != null && currentUid == uid;
+    final bool canFollow =
+        authState.isLoggedIn &&
+        currentUid != null &&
+        currentUid.isNotEmpty &&
+        !isSelf;
+
+    if (!mounted) {
+      return;
+    }
+
+    return showModalBottomSheet<void>(
+      context: hostContext,
+      useRootNavigator: true,
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('프로필 보기'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _openMockProfile(
+                    hostContext,
+                    uid: uid,
+                    nickname: nickname,
+                    socialGraph: socialGraph,
+                  );
+                },
+              ),
+              if (canFollow)
+                ListTile(
+                  leading: Icon(
+                    socialGraph.isFollowing(uid)
+                        ? Icons.person_remove_alt_1_outlined
+                        : Icons.person_add_alt_1_outlined,
+                  ),
+                  title: Text(
+                    socialGraph.isFollowing(uid) ? '팔로우 취소하기' : '팔로우하기',
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _toggleFollow(
+                      socialGraph: socialGraph,
+                      targetUid: uid,
+                      nickname: nickname,
+                      isFollowing: socialGraph.isFollowing(uid),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleFollow({
+    required MockSocialGraph socialGraph,
+    required String targetUid,
+    required String nickname,
+    required bool isFollowing,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+
+    final AuthState authState = getIt<AuthCubit>().state;
+    final String? currentUid = authState.userId;
+    if (currentUid == null || currentUid.isEmpty) {
+      _showSnack(context, '로그인이 필요합니다.');
+      return;
+    }
+
+    try {
+      final bool nowFollowing = await socialGraph.toggleFollow(
+        targetUid,
+        shouldFollow: !isFollowing,
+      );
+      if (!mounted) {
+        return;
+      }
+      _showSnack(
+        context,
+        nowFollowing ? '$nickname 님을 팔로우했어요.' : '$nickname 님을 팔로우 취소했어요.',
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnack(context, '요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  void _openMockProfile(
+    BuildContext context, {
+    required String uid,
+    required String nickname,
+    required MockSocialGraph socialGraph,
+  }) {
+    final MockMemberProfileData? profile = socialGraph.getProfile(uid);
+    if (profile == null) {
+      _showSnack(context, '$nickname 님의 정보를 찾을 수 없어요.');
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _MockMemberProfileScreen(
+          profile: profile,
+          socialGraph: socialGraph,
+        ),
+      ),
+    );
+  }
+
+  void _showSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Comment _fromCached(Post post, CachedComment cached, int index) {
     return Comment(
       id: cached.id,
@@ -423,16 +552,90 @@ class _PostCardState extends State<PostCard> {
   }
 }
 
+class _AuthorInfoHeader extends StatelessWidget {
+  const _AuthorInfoHeader({
+    required this.post,
+    required this.timestamp,
+    required this.onTap,
+  });
+
+  final Post post;
+  final String timestamp;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              backgroundColor: theme.colorScheme.primary.withValues(
+                alpha: 0.12,
+              ),
+              foregroundColor: theme.colorScheme.primary,
+              child: Text(post.authorNickname.substring(0, 1)),
+            ),
+            const Gap(12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (post.authorIsSupporter) ...[
+                      Tooltip(
+                        message: '후원자 레벨 ${post.authorSupporterLevel}',
+                        child: Icon(
+                          Icons.workspace_premium,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const Gap(6),
+                    ],
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 160),
+                      child: Text(
+                        post.authorNickname,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${post.authorTrack.emoji} ${post.authorTrack.displayName} · $timestamp',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FeaturedCommentTile extends StatelessWidget {
   const _FeaturedCommentTile({
     required this.comment,
     required this.onToggleLike,
     required this.onReact,
+    required this.onOpenProfile,
   });
 
   final Comment comment;
   final ValueChanged<Comment> onToggleLike;
   final void Function(String emoji) onReact;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -467,10 +670,17 @@ class _FeaturedCommentTile extends StatelessWidget {
             ],
           ),
           const Gap(10),
-          Text(
-            comment.authorNickname,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: onOpenProfile,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                comment.authorNickname,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
           const Gap(2),
@@ -554,12 +764,14 @@ class _CommentTile extends StatelessWidget {
     this.highlight = false,
     required this.onToggleLike,
     required this.onReact,
+    required this.onOpenProfile,
   });
 
   final Comment comment;
   final bool highlight;
   final ValueChanged<Comment> onToggleLike;
   final void Function(String emoji) onReact;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -580,86 +792,94 @@ class _CommentTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: theme.colorScheme.primary.withValues(
-                  alpha: 0.12,
+          InkWell(
+            onTap: onOpenProfile,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
+                  ),
+                  foregroundColor: theme.colorScheme.primary,
+                  child: Text(comment.authorNickname.substring(0, 1)),
                 ),
-                foregroundColor: theme.colorScheme.primary,
-                child: Text(comment.authorNickname.substring(0, 1)),
-              ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        if (comment.authorIsSupporter) ...[
-                          Icon(
-                            Icons.workspace_premium,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const Gap(4),
-                        ],
-                        Expanded(
-                          child: Text(
-                            comment.authorNickname,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (comment.authorIsSupporter) ...[
+                            Icon(
+                              Icons.workspace_premium,
+                              size: 16,
+                              color: theme.colorScheme.primary,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            const Gap(4),
+                          ],
+                          Expanded(
+                            child: Text(
+                              comment.authorNickname,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () => onToggleLike(comment),
-                icon: Icon(
-                  comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: 16,
-                  color: comment.isLiked
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                label: Text(
-                  '${comment.likeCount}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: comment.isLiked
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
+                      Text(
+                        '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Gap(8),
-          Text(comment.text, style: theme.textTheme.bodyMedium),
+          const Gap(12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(comment.text, style: theme.textTheme.bodyMedium),
+          ),
           const Gap(12),
           _CommentReactionBar(
             reactions: comment.reactionCounts,
             viewerReaction: comment.viewerReaction,
             onReact: onReact,
+          ),
+          const Gap(6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => onToggleLike(comment),
+              icon: Icon(
+                comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                size: 16,
+                color: comment.isLiked
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              label: Text(
+                '${comment.likeCount}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: comment.isLiked
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -716,6 +936,163 @@ class _CommentReactionBar extends StatelessWidget {
           })
           .toList(growable: false),
     );
+  }
+}
+
+class _MockMemberProfileScreen extends StatefulWidget {
+  const _MockMemberProfileScreen({
+    required this.profile,
+    required this.socialGraph,
+  });
+
+  final MockMemberProfileData profile;
+  final MockSocialGraph socialGraph;
+
+  @override
+  State<_MockMemberProfileScreen> createState() =>
+      _MockMemberProfileScreenState();
+}
+
+class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
+  bool _isProcessing = false;
+
+  bool get _isFollowing => widget.socialGraph.isFollowing(widget.profile.uid);
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.profile.nickname),
+        actions: [
+          TextButton.icon(
+            onPressed: _isProcessing ? null : _handleFollowToggle,
+            icon: _isProcessing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    _isFollowing
+                        ? Icons.person_remove_alt_1_outlined
+                        : Icons.person_add_alt_1_outlined,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+            label: Text(
+              _isFollowing ? '팔로잉' : '팔로우',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  child: Text(widget.profile.nickname.substring(0, 1)),
+                ),
+                const Gap(20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.profile.nickname,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        '${widget.profile.track.emoji} ${widget.profile.track.displayName}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const Gap(4),
+                      Text(
+                        '${widget.profile.department} · ${widget.profile.region}',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Gap(24),
+            Text(
+              '소개',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Gap(8),
+            Text(widget.profile.bio, style: theme.textTheme.bodyLarge),
+            if (widget.profile.tags.isNotEmpty) ...[
+              const Gap(16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.profile.tags
+                    .map((String tag) => Chip(label: Text('#$tag')))
+                    .toList(growable: false),
+              ),
+            ],
+            const Gap(24),
+            Text(
+              '최근 이야기',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Gap(12),
+            if (widget.profile.recentPosts.isEmpty)
+              Text('아직 공유된 글이 없어요.', style: theme.textTheme.bodyMedium)
+            else
+              ...widget.profile.recentPosts.map(
+                (String post) => Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(post, style: theme.textTheme.bodyLarge),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleFollowToggle() async {
+    setState(() => _isProcessing = true);
+    try {
+      await widget.socialGraph.toggleFollow(
+        widget.profile.uid,
+        shouldFollow: !_isFollowing,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(_isFollowing ? '팔로우를 취소했어요.' : '새로 팔로우하기 시작했어요.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
   }
 }
 
