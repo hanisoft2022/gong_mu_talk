@@ -12,6 +12,7 @@ import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/community/presentation/views/post_detail_page.dart';
+import '../features/life/presentation/cubit/life_section_cubit.dart';
 import '../features/life/presentation/life_home_page.dart';
 import '../features/monetization/presentation/views/monetization_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
@@ -60,8 +61,15 @@ GoRouter createRouter() {
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
-            BlocProvider<CommunityFeedCubit>(
-              create: (_) => getIt<CommunityFeedCubit>(),
+            MultiBlocProvider(
+              providers: [
+                BlocProvider<CommunityFeedCubit>(
+                  create: (_) => getIt<CommunityFeedCubit>(),
+                ),
+                BlocProvider<LifeSectionCubit>(
+                  create: (_) => LifeSectionCubit(),
+                ),
+              ],
               child: AppShell(navigationShell: navigationShell),
             ),
         branches: [

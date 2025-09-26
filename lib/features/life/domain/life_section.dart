@@ -1,0 +1,1 @@
+enum LifeSection { meetings, matching }

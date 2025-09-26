@@ -26,6 +26,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
     super.initState();
     _postType = widget.postType ?? PostType.chirp;
   }
+
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _tagController = TextEditingController();
 
@@ -40,7 +41,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
   Widget build(BuildContext context) {
     return BlocProvider<PostComposerCubit>(
       create: (_) {
-        final cubit = PostComposerCubit(communityRepository: getIt(), authCubit: getIt<AuthCubit>());
+        final cubit = PostComposerCubit(
+          communityRepository: getIt(),
+          authCubit: getIt<AuthCubit>(),
+        );
         if (widget.postId != null) {
           cubit.loadPostForEditing(widget.postId!);
         }
@@ -48,7 +52,8 @@ class _PostCreatePageState extends State<PostCreatePage> {
       },
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
-            previous.submissionSuccess != current.submissionSuccess || previous.errorMessage != current.errorMessage,
+            previous.submissionSuccess != current.submissionSuccess ||
+            previous.errorMessage != current.errorMessage,
         listener: (context, state) {
           if (state.errorMessage != null) {
             ScaffoldMessenger.of(context)
@@ -94,7 +99,11 @@ class _PostCreatePageState extends State<PostCreatePage> {
                           }
                         },
                   child: state.isSubmitting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('등록'),
                 ),
               ],
@@ -135,7 +144,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                     onChanged: cubit.updateText,
                     decoration: const InputDecoration(
                       labelText: '내용',
-                      hintText: '동료 공무원들과 나누고 싶은 이야기를 작성해주세요.',
+                      hintText: '나누고 싶은 이야기를 작성해주세요.',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -162,7 +171,12 @@ class _PostCreatePageState extends State<PostCreatePage> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.memory(draft.bytes, width: 96, height: 96, fit: BoxFit.cover),
+                              child: Image.memory(
+                                draft.bytes,
+                                width: 96,
+                                height: 96,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                             Positioned(
                               right: 4,
@@ -227,15 +241,7 @@ class _PostCreatePageState extends State<PostCreatePage> {
                 await cubit.addAttachmentFromGallery();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('카메라 촬영'),
-              onTap: () async {
-                Navigator.of(context).pop();
-                await cubit.addAttachmentFromCamera();
-              },
-            ),
-            const Divider(height: 1),
+
             ListTile(
               leading: Icon(Icons.close, color: theme.colorScheme.error),
               title: Text('취소', style: TextStyle(color: theme.colorScheme.error)),
@@ -339,7 +345,10 @@ class _BoardSelector extends StatelessWidget {
         const Gap(8),
         Row(
           children: [
-            Switch.adaptive(value: state.isAnonymous, onChanged: (value) => cubit.toggleAnonymous(value)),
+            Switch.adaptive(
+              value: state.isAnonymous,
+              onChanged: (value) => cubit.toggleAnonymous(value),
+            ),
             const Gap(6),
             Text(state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시', style: theme.textTheme.bodyMedium),
           ],

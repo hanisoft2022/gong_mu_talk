@@ -18,54 +18,60 @@ class InlinePostComposer extends StatefulWidget {
   State<InlinePostComposer> createState() => _InlinePostComposerState();
 }
 
-PostAudience _audienceForScope(LoungeScope scope) {
-  return scope == LoungeScope.serial ? PostAudience.serial : PostAudience.all;
-}
-
-class _AudienceHint extends StatelessWidget {
-  const _AudienceHint({required this.audience});
+class _AudienceSelector extends StatelessWidget {
+  const _AudienceSelector({
+    required this.audience,
+  });
 
   final PostAudience audience;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool isSerial = audience == PostAudience.serial;
-    final IconData icon = isSerial
-        ? Icons.badge_outlined
-        : Icons.public_outlined;
-    final String label = isSerial ? '내 직렬' : '전체 공개';
+    final bool isSerialAudience = audience == PostAudience.serial;
+    final IconData icon = isSerialAudience ? Icons.badge_outlined : Icons.public_outlined;
+    final String message = isSerialAudience ? '내 직렬만 공개' : '전체 공개';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const Gap(6),
-          Text(
-            '$label로 게시됩니다.',
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+    final BorderRadius radius = BorderRadius.circular(10);
+    final Widget chip = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: radius,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: theme.colorScheme.primary),
+            const Gap(4),
+            Flexible(
+              child: Text(
+                message,
+                style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+
+    return chip;
   }
 }
 
 class _InlinePostComposerState extends State<InlinePostComposer> {
   late final TextEditingController _controller;
+  late LoungeScope _lastScope;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    _lastScope = widget.scope;
   }
 
   @override
@@ -80,7 +86,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
       create: (_) => PostComposerCubit(
         communityRepository: getIt(),
         authCubit: getIt<AuthCubit>(),
-        initialAudience: _audienceForScope(widget.scope),
+        initialAudience: widget.scope == LoungeScope.serial
+            ? PostAudience.serial
+            : PostAudience.all,
       ),
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
@@ -116,25 +124,32 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
 
           final ThemeData theme = Theme.of(context);
           final AuthState authState = context.watch<AuthCubit>().state;
-          final bool hasSerial =
-              authState.serial.isNotEmpty && authState.serial != 'unknown';
-          final PostAudience desiredAudience = _audienceForScope(widget.scope);
+          final bool hasSerial = authState.serial.isNotEmpty && authState.serial != 'unknown';
 
-          if (state.audience != desiredAudience) {
-            cubit.selectAudience(desiredAudience);
+          if (_lastScope != widget.scope) {
+            final PostAudience desiredAudience = _audienceForScope(
+              scope: widget.scope,
+              hasSerial: hasSerial,
+            );
+            if (state.audience != desiredAudience) {
+              cubit.selectAudience(desiredAudience);
+            }
+            _lastScope = widget.scope;
+          }
+
+          if (!hasSerial && state.audience == PostAudience.serial) {
+            cubit.selectAudience(PostAudience.all);
           }
 
           final bool canSubmit =
               state.text.trim().isNotEmpty &&
               !state.isSubmitting &&
               authState.isLoggedIn &&
-              (desiredAudience != PostAudience.serial || hasSerial);
+              (state.audience != PostAudience.serial || hasSerial);
 
           return Card(
             margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -144,9 +159,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     children: [
                       Text(
                         '라운지에 글 남기기',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       if (state.isSubmitting) ...[
                         const Gap(6),
@@ -157,23 +170,13 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                         ),
                       ],
                       const Spacer(),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
-                          ),
-                          textStyle: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _AudienceSelector(
+                            audience: state.audience,
                           ),
                         ),
-                        onPressed: canSubmit
-                            ? () async {
-                                FocusScope.of(context).unfocus();
-                                await cubit.submitChirp();
-                              }
-                            : null,
-                        child: const Text('등록'),
                       ),
                     ],
                   ),
@@ -185,16 +188,13 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     enabled: !state.isSubmitting,
                     onChanged: cubit.updateText,
                     decoration: InputDecoration(
-                      hintText: authState.isLoggedIn
-                          ? '동료 공무원들과 나누고 싶은 이야기를 적어보세요.'
-                          : '로그인 후 글을 작성할 수 있어요.',
+                      hintText: authState.isLoggedIn ? '나누고 싶은 이야기를 적어보세요.' : '로그인 후 글을 작성할 수 있어요.',
+                      hintStyle: theme.textTheme.bodyMedium,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       filled: true,
                     ),
                   ),
@@ -215,40 +215,51 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                   ],
                   const Gap(10),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      OutlinedButton.icon(
+                      IconButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          minimumSize: const Size(0, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         onPressed: state.isSubmitting
                             ? null
                             : () async {
                                 await cubit.addAttachmentFromGallery();
                               },
-                        icon: const Icon(Icons.photo_library_outlined),
-                        label: const Text('앨범'),
+                        icon: const Icon(Icons.photo_library_outlined, size: 18),
                       ),
-                      const Gap(8),
-                      OutlinedButton.icon(
-                        onPressed: state.isSubmitting
-                            ? null
-                            : () async {
-                                await cubit.addAttachmentFromCamera();
-                              },
-                        icon: const Icon(Icons.photo_camera_outlined),
-                        label: const Text('카메라'),
+                      const Spacer(),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          minimumSize: const Size(0, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: canSubmit
+                            ? () async {
+                                FocusScope.of(context).unfocus();
+                                await cubit.submitChirp();
+                              }
+                            : null,
+                        child: const Text('등록'),
                       ),
                     ],
                   ),
-                  const Gap(10),
-                  _AudienceHint(audience: desiredAudience),
                   if (!authState.isLoggedIn) ...[
                     const Gap(6),
                     Text(
                       '로그인 후 글을 등록할 수 있습니다.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                     ),
-                  ] else if (!hasSerial &&
-                      desiredAudience == PostAudience.serial) ...[
+                  ] else if (!hasSerial && state.audience == PostAudience.serial) ...[
                     const Gap(8),
                     Text(
                       '마이페이지에서 직렬 정보를 등록하면 직렬 전용으로 공유할 수 있어요.',
@@ -265,6 +276,13 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
       ),
     );
   }
+
+  PostAudience _audienceForScope({required LoungeScope scope, required bool hasSerial}) {
+    if (scope == LoungeScope.serial && hasSerial) {
+      return PostAudience.serial;
+    }
+    return PostAudience.all;
+  }
 }
 
 class _AttachmentPreview extends StatelessWidget {
@@ -280,12 +298,7 @@ class _AttachmentPreview extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.memory(
-            draft.bytes,
-            width: 72,
-            height: 72,
-            fit: BoxFit.cover,
-          ),
+          child: Image.memory(draft.bytes, width: 72, height: 72, fit: BoxFit.cover),
         ),
         Positioned(
           right: 4,

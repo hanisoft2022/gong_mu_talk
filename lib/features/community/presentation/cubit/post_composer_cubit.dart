@@ -31,13 +31,7 @@ class PostMediaDraft extends Equatable {
   String get fileName => file.name;
 
   @override
-  List<Object?> get props => <Object?>[
-    file.path,
-    contentType,
-    width,
-    height,
-    bytes,
-  ];
+  List<Object?> get props => <Object?>[file.path, contentType, width, height, bytes];
 }
 
 class PostComposerState extends Equatable {
@@ -132,9 +126,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   final ImagePicker _picker = ImagePicker();
 
   void updateText(String value) {
-    emit(
-      state.copyWith(text: value, errorMessage: null, submissionSuccess: false),
-    );
+    emit(state.copyWith(text: value, errorMessage: null, submissionSuccess: false));
   }
 
   void updateTags(String raw) {
@@ -172,23 +164,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     await _addAttachment(file);
   }
 
-  Future<void> addAttachmentFromCamera() async {
-    final XFile? file = await _picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 2048,
-      imageQuality: 85,
-    );
-    if (file == null) {
-      return;
-    }
-
-    await _addAttachment(file);
-  }
-
   void removeAttachment(PostMediaDraft draft) {
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
-      state.attachments,
-    )..remove(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)
+      ..remove(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -220,13 +198,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       return;
     }
 
-    emit(
-      state.copyWith(
-        isSubmitting: true,
-        errorMessage: null,
-        submissionSuccess: false,
-      ),
-    );
+    emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
 
     try {
       final int supporterLevel = authState.supporterLevel;
@@ -260,11 +232,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
           uploaded.add(media);
         }
 
-        await _repository.updatePost(
-          postId: post.id,
-          authorUid: uid,
-          media: uploaded,
-        );
+        await _repository.updatePost(postId: post.id, authorUid: uid, media: uploaded);
       }
 
       emit(
@@ -277,12 +245,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         ),
       );
     } catch (_) {
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isSubmitting: false, errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.'));
     }
   }
 
@@ -301,8 +264,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       height = null;
     }
 
-    final String contentType =
-        file.mimeType ?? _contentTypeFromExtension(file.name);
+    final String contentType = file.mimeType ?? _contentTypeFromExtension(file.name);
     final PostMediaDraft draft = PostMediaDraft(
       file: file,
       bytes: bytes,
@@ -311,9 +273,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       height: height,
     );
 
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
-      state.attachments,
-    )..add(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)..add(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -364,9 +324,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         ),
       );
     } catch (e) {
-      emit(
-        state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'),
-      );
+      emit(state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'));
     }
   }
 }

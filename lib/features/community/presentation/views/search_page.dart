@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
 import '../../domain/models/post.dart';
-import '../../domain/models/comment.dart';
 import '../../domain/models/search_suggestion.dart';
 import '../../domain/models/search_result.dart';
 import '../cubit/search_cubit.dart';
+import '../widgets/comment_search_result_card.dart';
 import '../widgets/post_card.dart';
 
 class SearchPage extends StatefulWidget {
@@ -60,7 +60,6 @@ class _SearchPageState extends State<SearchPage> {
         title: TextField(
           controller: _searchController,
           decoration: const InputDecoration(
-            hintText: '게시글 검색...',
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,
           ),
@@ -187,7 +186,7 @@ class _SearchPageState extends State<SearchPage> {
               ...state.commentResults.map(
                 (CommentSearchResult result) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _CommentSearchResultTile(result: result),
+                  child: CommentSearchResultCard(result: result),
                 ),
               ),
           ],
@@ -428,137 +427,5 @@ class _SearchPageState extends State<SearchPage> {
   void _clearSearch() {
     _searchController.clear();
     context.read<SearchCubit>().clearSearch();
-  }
-}
-
-class _CommentSearchResultTile extends StatelessWidget {
-  const _CommentSearchResultTile({required this.result});
-
-  final CommentSearchResult result;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Comment comment = result.comment;
-    final Post? post = result.post;
-    final String timestamp = _formatTimestamp(comment.createdAt);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
-                  ),
-                  foregroundColor: theme.colorScheme.primary,
-                  child: Text(comment.authorNickname.substring(0, 1)),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        comment.authorNickname,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        timestamp,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 16,
-                      color: comment.isLiked
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const Gap(4),
-                    Text(
-                      '${comment.likeCount}',
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Gap(12),
-            Text(comment.text, style: theme.textTheme.bodyMedium),
-            if (post != null) ...[
-              const Gap(16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.6,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '원글 · ${post.authorNickname}',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(6),
-                    Text(
-                      post.text,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              const Gap(16),
-              Text(
-                '원글을 찾을 수 없습니다.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatTimestamp(DateTime createdAt) {
-    final DateTime now = DateTime.now();
-    final Duration diff = now.difference(createdAt);
-    if (diff.inMinutes < 1) {
-      return '방금 전';
-    }
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}분 전';
-    }
-    if (diff.inHours < 24) {
-      return '${diff.inHours}시간 전';
-    }
-    return '${createdAt.month}월 ${createdAt.day}일';
   }
 }

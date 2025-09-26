@@ -259,33 +259,70 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
+    final List<Post> previousPosts = List<Post>.from(state.posts);
+    final Set<String> previousLiked = Set<String>.from(state.likedPostIds);
+    final bool willLike = !previousLiked.contains(post.id);
+
+    final List<Post> optimisticPosts = previousPosts
+        .map((Post existing) {
+          if (existing.id != post.id) {
+            return existing;
+          }
+          final int delta = willLike ? 1 : -1;
+          final int nextCount = (existing.likeCount + delta).clamp(0, 1 << 31);
+          return existing.copyWith(likeCount: nextCount, isLiked: willLike);
+        })
+        .toList(growable: false);
+
+    final Set<String> optimisticLiked = Set<String>.from(previousLiked);
+    if (willLike) {
+      optimisticLiked.add(post.id);
+    } else {
+      optimisticLiked.remove(post.id);
+    }
+
+    emit(state.copyWith(posts: optimisticPosts, likedPostIds: optimisticLiked));
+
     try {
       final bool nowLiked = await _repository.togglePostLike(
         postId: post.id,
         uid: uid,
       );
-      final List<Post> updatedPosts = state.posts
+
+      if (nowLiked == willLike) {
+        return;
+      }
+
+      final List<Post> correctedPosts = state.posts
           .map((Post existing) {
             if (existing.id != post.id) {
               return existing;
             }
-            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1))
-                .clamp(0, 1 << 31)
-                .toInt();
+            if (existing.isLiked == nowLiked) {
+              return existing;
+            }
+            final int delta = nowLiked ? 1 : -1;
+            final int nextCount = (existing.likeCount + delta).clamp(0, 1 << 31);
             return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
           })
           .toList(growable: false);
 
-      final Set<String> liked = Set<String>.from(state.likedPostIds);
+      final Set<String> correctedLiked = Set<String>.from(state.likedPostIds);
       if (nowLiked) {
-        liked.add(post.id);
+        correctedLiked.add(post.id);
       } else {
-        liked.remove(post.id);
+        correctedLiked.remove(post.id);
       }
 
-      emit(state.copyWith(posts: updatedPosts, likedPostIds: liked));
+      emit(state.copyWith(posts: correctedPosts, likedPostIds: correctedLiked));
     } catch (_) {
-      emit(state.copyWith(errorMessage: '좋아요 처리 중 오류가 발생했습니다.'));
+      emit(
+        state.copyWith(
+          posts: previousPosts,
+          likedPostIds: previousLiked,
+          errorMessage: '좋아요 처리 중 오류가 발생했습니다.',
+        ),
+      );
     }
   }
 

@@ -9,8 +9,9 @@ import '../../matching/presentation/cubit/matching_cubit.dart';
 import '../../matching/presentation/views/matching_page.dart';
 import '../data/mock_life_repository.dart';
 import '../domain/life_meeting.dart';
-
-enum LifeSection { meetings, matching }
+import '../domain/life_section.dart';
+import 'cubit/life_section_cubit.dart';
+import 'utils/life_scroll_coordinator.dart';
 
 class LifeHomePage extends StatefulWidget {
   const LifeHomePage({super.key});
@@ -20,10 +21,11 @@ class LifeHomePage extends StatefulWidget {
 }
 
 class _LifeHomePageState extends State<LifeHomePage> {
-  LifeSection _section = LifeSection.meetings;
   late final MockLifeRepository _lifeRepository;
   late final MatchingCubit _matchingCubit;
   late final MockSocialGraph _socialGraph;
+  late final ScrollController _scrollController;
+  int _lastScrollRequestId = 0;
 
   @override
   void initState() {
@@ -32,70 +34,61 @@ class _LifeHomePageState extends State<LifeHomePage> {
     _socialGraph = getIt<MockSocialGraph>();
     _matchingCubit = getIt<MatchingCubit>()..loadCandidates();
     getIt<AuthCubit>().refreshAuthStatus();
+    _scrollController = ScrollController();
+    _lastScrollRequestId = LifeScrollCoordinator.instance.lastRequestId;
+    LifeScrollCoordinator.instance.addListener(_handleScrollRequest);
   }
 
   @override
   void dispose() {
+    LifeScrollCoordinator.instance.removeListener(_handleScrollRequest);
+    _scrollController.dispose();
     _matchingCubit.close();
     super.dispose();
   }
 
+  void _handleScrollRequest() {
+    final int requestId = LifeScrollCoordinator.instance.lastRequestId;
+    if (requestId == _lastScrollRequestId) {
+      return;
+    }
+    _lastScrollRequestId = requestId;
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final LifeSection section = context.watch<LifeSectionCubit>().state;
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Text(
-                    '라이프',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  SegmentedButton<LifeSection>(
-                    segments: const <ButtonSegment<LifeSection>>[
-                      ButtonSegment<LifeSection>(
-                        value: LifeSection.meetings,
-                        label: Text('모임'),
-                        icon: Icon(Icons.groups_outlined),
-                      ),
-                      ButtonSegment<LifeSection>(
-                        value: LifeSection.matching,
-                        label: Text('매칭'),
-                        icon: Icon(Icons.favorite_outline),
-                      ),
-                    ],
-                    selected: <LifeSection>{_section},
-                    onSelectionChanged: (Set<LifeSection> value) {
-                      setState(() => _section = value.first);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _section == LifeSection.meetings
-                    ? _MeetingsView(
-                        repository: _lifeRepository,
-                        socialGraph: _socialGraph,
-                      )
-                    : BlocProvider<MatchingCubit>.value(
-                        value: _matchingCubit,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: MatchingPage(),
+        child: PrimaryScrollController(
+          controller: _scrollController,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: section == LifeSection.meetings
+                      ? _MeetingsView(repository: _lifeRepository, socialGraph: _socialGraph)
+                      : BlocProvider<MatchingCubit>.value(
+                          value: _matchingCubit,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: MatchingPage(),
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -115,8 +108,7 @@ class _MeetingsView extends StatelessWidget {
     return StreamBuilder<List<LifeMeeting>>(
       stream: repository.watchMeetings(),
       builder: (context, snapshot) {
-        final List<LifeMeeting> meetings =
-            snapshot.data ?? const <LifeMeeting>[];
+        final List<LifeMeeting> meetings = snapshot.data ?? const <LifeMeeting>[];
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -126,28 +118,19 @@ class _MeetingsView extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
               _MeetingCreateCard(
-                onCreate: () => _openCreateSheet(
-                  context,
-                  repository: repository,
-                  authState: authState,
-                ),
+                onCreate: () =>
+                    _openCreateSheet(context, repository: repository, authState: authState),
               ),
               const Gap(20),
               if (meetings.isEmpty)
                 _EmptyMeetingsView(
-                  onCreate: () => _openCreateSheet(
-                    context,
-                    repository: repository,
-                    authState: authState,
-                  ),
+                  onCreate: () =>
+                      _openCreateSheet(context, repository: repository, authState: authState),
                 )
               else
                 ...meetings.map(
-                  (LifeMeeting meeting) => _MeetingTile(
-                    meeting: meeting,
-                    authState: authState,
-                    repository: repository,
-                  ),
+                  (LifeMeeting meeting) =>
+                      _MeetingTile(meeting: meeting, authState: authState, repository: repository),
                 ),
             ],
           ),
@@ -164,8 +147,7 @@ class _MeetingsView extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) =>
-          MeetingCreationSheet(repository: repository, authState: authState),
+      builder: (context) => MeetingCreationSheet(repository: repository, authState: authState),
     );
   }
 }
@@ -188,15 +170,10 @@ class _MeetingCreateCard extends StatelessWidget {
           children: [
             Text(
               '새로운 모임 만들기',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const Gap(8),
-            Text(
-              '함께 배우고 즐길 동료를 찾아보세요. 직접 모임을 만들 수도 있어요!',
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text('함께 배우고 즐길 동료를 찾아보세요. 직접 모임을 만들 수도 있어요!', style: theme.textTheme.bodyMedium),
             const Gap(12),
             FilledButton.icon(
               onPressed: onCreate,
@@ -223,11 +200,7 @@ class _EmptyMeetingsView extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 48,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.people_outline, size: 48, color: theme.colorScheme.primary),
             const Gap(12),
             Text('아직 등록된 모임이 없어요.', style: theme.textTheme.titleMedium),
             const Gap(8),
@@ -242,11 +215,7 @@ class _EmptyMeetingsView extends StatelessWidget {
 }
 
 class _MeetingTile extends StatelessWidget {
-  const _MeetingTile({
-    required this.meeting,
-    required this.authState,
-    required this.repository,
-  });
+  const _MeetingTile({required this.meeting, required this.authState, required this.repository});
 
   final LifeMeeting meeting;
   final AuthState authState;
@@ -270,21 +239,14 @@ class _MeetingTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Chip(
-                  label: Text(
-                    '${meeting.category.emoji} ${meeting.category.label}',
-                  ),
-                ),
+                Chip(label: Text('${meeting.category.emoji} ${meeting.category.label}')),
                 const Spacer(),
                 if (meeting.schedule != null)
                   Row(
                     children: [
                       const Icon(Icons.calendar_today_outlined, size: 16),
                       const Gap(4),
-                      Text(
-                        _formatSchedule(meeting.schedule!),
-                        style: theme.textTheme.labelMedium,
-                      ),
+                      Text(_formatSchedule(meeting.schedule!), style: theme.textTheme.labelMedium),
                     ],
                   ),
               ],
@@ -292,19 +254,14 @@ class _MeetingTile extends StatelessWidget {
             const Gap(12),
             Text(
               meeting.title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const Gap(8),
             Text(meeting.description, style: theme.textTheme.bodyMedium),
             const Gap(12),
             Row(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  child: Text(meeting.host.nickname.substring(0, 1)),
-                ),
+                CircleAvatar(radius: 16, child: Text(meeting.host.nickname.substring(0, 1))),
                 const Gap(8),
                 Expanded(
                   child: Text(
@@ -314,12 +271,8 @@ class _MeetingTile extends StatelessWidget {
                 ),
                 if (!isHost)
                   FilledButton.icon(
-                    onPressed: isFull
-                        ? null
-                        : () => _handleJoin(context, isJoined: isJoined),
-                    icon: Icon(
-                      isJoined ? Icons.check : Icons.group_add_outlined,
-                    ),
+                    onPressed: isFull ? null : () => _handleJoin(context, isJoined: isJoined),
+                    icon: Icon(isJoined ? Icons.check : Icons.group_add_outlined),
                     label: Text(isJoined ? '참여 중' : '참여하기'),
                   ),
               ],
@@ -330,12 +283,7 @@ class _MeetingTile extends StatelessWidget {
                 children: [
                   const Icon(Icons.place_outlined, size: 16),
                   const Gap(6),
-                  Expanded(
-                    child: Text(
-                      meeting.location!,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
+                  Expanded(child: Text(meeting.location!, style: theme.textTheme.bodySmall)),
                 ],
               ),
             ],
@@ -346,10 +294,8 @@ class _MeetingTile extends StatelessWidget {
                 runSpacing: 6,
                 children: meeting.tags
                     .map(
-                      (String tag) => Chip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text('#$tag'),
-                      ),
+                      (String tag) =>
+                          Chip(visualDensity: VisualDensity.compact, label: Text('#$tag')),
                     )
                     .toList(growable: false),
               ),
@@ -360,10 +306,7 @@ class _MeetingTile extends StatelessWidget {
     );
   }
 
-  Future<void> _handleJoin(
-    BuildContext context, {
-    required bool isJoined,
-  }) async {
+  Future<void> _handleJoin(BuildContext context, {required bool isJoined}) async {
     if (authState.userId == null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -381,10 +324,7 @@ class _MeetingTile extends StatelessWidget {
     try {
       await repository.joinMeeting(
         meetingId: meeting.id,
-        member: MeetingMember(
-          uid: authState.userId!,
-          nickname: authState.nickname,
-        ),
+        member: MeetingMember(uid: authState.userId!, nickname: authState.nickname),
       );
       if (!context.mounted) {
         return;
@@ -398,11 +338,7 @@ class _MeetingTile extends StatelessWidget {
       }
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceAll('StateError: ', '')),
-          ),
-        );
+        ..showSnackBar(SnackBar(content: Text(error.toString().replaceAll('StateError: ', ''))));
     }
   }
 
@@ -416,11 +352,7 @@ class _MeetingTile extends StatelessWidget {
 }
 
 class MeetingCreationSheet extends StatefulWidget {
-  const MeetingCreationSheet({
-    super.key,
-    required this.repository,
-    required this.authState,
-  });
+  const MeetingCreationSheet({super.key, required this.repository, required this.authState});
 
   final MockLifeRepository repository;
   final AuthState authState;
@@ -433,9 +365,7 @@ class _MeetingCreationSheetState extends State<MeetingCreationSheet> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _capacityController = TextEditingController(
-    text: '8',
-  );
+  final TextEditingController _capacityController = TextEditingController(text: '8');
   final TextEditingController _locationController = TextEditingController();
   MeetingCategory _category = MeetingCategory.fitness;
   DateTime? _schedule;
@@ -475,11 +405,10 @@ class _MeetingCreationSheetState extends State<MeetingCreationSheet> {
                 initialValue: _category,
                 items: MeetingCategory.values
                     .map(
-                      (MeetingCategory category) =>
-                          DropdownMenuItem<MeetingCategory>(
-                            value: category,
-                            child: Text('${category.emoji} ${category.label}'),
-                          ),
+                      (MeetingCategory category) => DropdownMenuItem<MeetingCategory>(
+                        value: category,
+                        child: Text('${category.emoji} ${category.label}'),
+                      ),
                     )
                     .toList(growable: false),
                 onChanged: (MeetingCategory? value) {
@@ -589,13 +518,7 @@ class _MeetingCreationSheetState extends State<MeetingCreationSheet> {
       return;
     }
     setState(() {
-      _schedule = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
+      _schedule = DateTime(date.year, date.month, date.day, time.hour, time.minute);
     });
   }
 
@@ -622,9 +545,7 @@ class _MeetingCreationSheetState extends State<MeetingCreationSheet> {
         description: _descriptionController.text.trim(),
         host: host,
         capacity: int.parse(_capacityController.text.trim()),
-        location: _locationController.text.trim().isEmpty
-            ? null
-            : _locationController.text.trim(),
+        location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
         schedule: _schedule,
       );
       if (!mounted) {
