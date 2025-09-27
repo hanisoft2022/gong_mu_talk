@@ -230,6 +230,26 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 ),
               ],
             ),
+            // Comment writing UI positioned directly below action buttons
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: !_showComments
+                  ? const SizedBox.shrink()
+                  : Builder(
+                      builder: (BuildContext context) {
+                        final Widget? composer = _buildCommentComposer(context);
+                        if (composer != null) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: composer,
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+            ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 260),
               switchInCurve: Curves.easeOutCubic,
@@ -243,14 +263,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       child: Builder(
                         builder: (BuildContext context) {
                           final ThemeData theme = Theme.of(context);
-                          final Widget? composer = _buildCommentComposer(context);
                           final List<Widget> sectionChildren = <Widget>[const Gap(12)];
-
-                          if (composer != null) {
-                            sectionChildren
-                              ..add(composer)
-                              ..add(const Gap(12));
-                          }
 
                           if (_isLoadingComments) {
                             sectionChildren.add(const Center(child: CircularProgressIndicator()));
@@ -331,178 +344,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                             );
                           }
 
-                          // 댓글 작성 UI를 댓글들 위에 추가
-                          if (!_isLoadingComments) {
-                            sectionChildren.addAll([
-                              const Gap(16),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextField(
-                                              controller: _commentController,
-                                              focusNode: _commentFocusNode,
-                                              minLines: 1,
-                                              maxLines: 4,
-                                              textInputAction: TextInputAction.newline,
-                                              decoration: InputDecoration(
-                                                hintText: '댓글을 작성해보세요...',
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(
-                                                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                                                  ),
-                                                ),
-                                                enabledBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(
-                                                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                                                  ),
-                                                ),
-                                                focusedBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide(
-                                                    color: theme.colorScheme.primary,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                isDense: true,
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                                                  color: theme.colorScheme.onSurfaceVariant,
-                                                ),
-                                                filled: true,
-                                                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                              ),
-                                              style: theme.textTheme.bodyMedium,
-                                            ),
-                                          ),
-                                          IconButton(
-                                            onPressed: _pickImages,
-                                            icon: Icon(
-                                              Icons.image_outlined,
-                                              color: theme.colorScheme.primary,
-                                            ),
-                                            tooltip: '이미지 첨부',
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: _canSubmitComment && !_isSubmittingComment
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme.surfaceContainerHighest,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                borderRadius: BorderRadius.circular(8),
-                                                onTap: _canSubmitComment && !_isSubmittingComment
-                                                    ? _submitComment
-                                                    : null,
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                  child: _isSubmittingComment
-                                                      ? SizedBox(
-                                                          width: 16,
-                                                          height: 16,
-                                                          child: CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color: theme.colorScheme.onPrimary,
-                                                          ),
-                                                        )
-                                                      : Text(
-                                                          '게시',
-                                                          style: theme.textTheme.labelMedium?.copyWith(
-                                                            color: _canSubmitComment && !_isSubmittingComment
-                                                                ? theme.colorScheme.onPrimary
-                                                                : theme.colorScheme.onSurfaceVariant,
-                                                            fontWeight: FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    // 선택된 이미지 미리보기
-                                    if (_selectedImages.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                                        height: 80,
-                                        child: ListView.builder(
-                                          scrollDirection: Axis.horizontal,
-                                          itemCount: _selectedImages.length,
-                                          itemBuilder: (context, index) {
-                                            final XFile image = _selectedImages[index];
-                                            return Container(
-                                              margin: const EdgeInsets.only(right: 8),
-                                              child: Stack(
-                                                children: [
-                                                  ClipRRect(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    child: Image.file(
-                                                      File(image.path),
-                                                      width: 80,
-                                                      height: 80,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 4,
-                                                    right: 4,
-                                                    child: GestureDetector(
-                                                      onTap: () => _removeImage(index),
-                                                      child: Container(
-                                                        width: 20,
-                                                        height: 20,
-                                                        decoration: BoxDecoration(
-                                                          color: Colors.black.withValues(alpha: 0.6),
-                                                          shape: BoxShape.circle,
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.close,
-                                                          size: 14,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const Gap(16),
-                            ]);
-                          }
 
                           return Column(
                             key: const ValueKey<String>('comment-section'),
@@ -654,7 +495,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
           controller: _commentController,
@@ -667,21 +508,91 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.image_outlined),
+              onPressed: _pickImages,
+              tooltip: '이미지 첨부',
+            ),
           ),
         ),
+        if (_selectedImages.isNotEmpty) ...[
+          const Gap(8),
+          SizedBox(
+            height: 80,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedImages.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: EdgeInsets.only(right: index < _selectedImages.length - 1 ? 8 : 0),
+                  width: 80,
+                  height: 80,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(_selectedImages[index].path),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
         const Gap(8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton(
-            onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
-            child: _isSubmittingComment
-                ? const SizedBox(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (_isUploadingImages)
+              const Row(
+                children: [
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('등록'),
-          ),
+                  ),
+                  Gap(8),
+                  Text('이미지 업로드 중...'),
+                ],
+              )
+            else
+              const SizedBox.shrink(),
+            FilledButton(
+              onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
+              child: _isSubmittingComment
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('등록'),
+            ),
+          ],
         ),
       ],
     );
@@ -1177,7 +1088,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  void _sharePost(Post post) {
+  Future<void> _sharePost(Post post) async {
     final String source = post.text.trim();
     final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
     final String snippet = truncated.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -1189,7 +1100,24 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         ? shareUri.toString()
         : '$snippet\n\n${shareUri.toString()}';
 
-    unawaited(Share.share(message, subject: '공뮤톡 라운지 글 공유'));
+    try {
+      await Share.share(
+        message,
+        subject: '공뮤톡 라운지 글 공유',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('공유하기를 실행할 수 없습니다'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    }
   }
 
   Future<void> _showMemberActions({required String uid, required String nickname}) async {

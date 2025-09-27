@@ -16,7 +16,9 @@
       "Bash(dart:*)",
       "Bash(/Users/shaunkim/.local/bin/uv run --directory /Users/shaunkim/serena serena project index)",
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
