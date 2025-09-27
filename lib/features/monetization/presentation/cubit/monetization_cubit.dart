@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
-import '../domain/pricing_plan.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../domain/pricing_plan.dart';
 
 class ReferralResult {
   const ReferralResult({required this.success, required this.message});
@@ -10,10 +12,47 @@ class ReferralResult {
   final String message;
 }
 
-class MonetizationController extends ChangeNotifier {
-  MonetizationController()
+class MonetizationState extends Equatable {
+  const MonetizationState({
+    this.isSupporter = false,
+    this.supporterSince,
+    this.rewardsThisYear = 0,
+    this.lastReferralRewardAt,
+  });
+
+  final bool isSupporter;
+  final DateTime? supporterSince;
+  final int rewardsThisYear;
+  final DateTime? lastReferralRewardAt;
+
+  MonetizationState copyWith({
+    bool? isSupporter,
+    DateTime? supporterSince,
+    int? rewardsThisYear,
+    DateTime? lastReferralRewardAt,
+  }) {
+    return MonetizationState(
+      isSupporter: isSupporter ?? this.isSupporter,
+      supporterSince: supporterSince ?? this.supporterSince,
+      rewardsThisYear: rewardsThisYear ?? this.rewardsThisYear,
+      lastReferralRewardAt: lastReferralRewardAt ?? this.lastReferralRewardAt,
+    );
+  }
+
+  @override
+  List<Object?> get props => <Object?>[
+    isSupporter,
+    supporterSince,
+    rewardsThisYear,
+    lastReferralRewardAt,
+  ];
+}
+
+class MonetizationCubit extends Cubit<MonetizationState> {
+  MonetizationCubit()
     : supporterPlan = supporterPlanTemplate,
-      referralPolicy = defaultReferralPolicy;
+      referralPolicy = defaultReferralPolicy,
+      super(const MonetizationState());
 
   static const PricingPlan supporterPlanTemplate = PricingPlan(
     id: 'supporter_990',
@@ -48,16 +87,6 @@ class MonetizationController extends ChangeNotifier {
   final PricingPlan supporterPlan;
   final ReferralRewardPolicy referralPolicy;
 
-  bool get isSupporter => _isSupporter;
-  DateTime? get supporterSince => _supporterSince;
-  int get rewardsThisYear => _rewardsThisYear;
-  DateTime? get lastReferralRewardAt => _lastReferralRewardAt;
-
-  bool _isSupporter = false;
-  DateTime? _supporterSince;
-  int _rewardsThisYear = 0;
-  DateTime? _lastReferralRewardAt;
-
   static const List<String> allowedReferralDomains = <String>[
     'korea.kr',
     'go.kr',
@@ -89,22 +118,28 @@ class MonetizationController extends ChangeNotifier {
     'af.mil.kr',
   ];
 
+  static const Duration _operationDelay = Duration(milliseconds: 350);
+
   Future<void> purchaseSupporterPlan() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    _isSupporter = true;
-    _supporterSince ??= DateTime.now();
-    notifyListeners();
+    await Future<void>.delayed(_operationDelay);
+    final DateTime now = DateTime.now();
+    emit(
+      state.copyWith(
+        isSupporter: true,
+        supporterSince: state.supporterSince ?? now,
+      ),
+    );
   }
 
   Future<void> cancelSupporterPlan() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    _isSupporter = false;
-    notifyListeners();
+    await Future<void>.delayed(_operationDelay);
+    emit(state.copyWith(isSupporter: false));
   }
 
   ReferralResult redeemReferralReward({required DateTime now}) {
-    if (_lastReferralRewardAt != null) {
-      final DateTime nextAvailable = _lastReferralRewardAt!.add(
+    final DateTime? lastRewardedAt = state.lastReferralRewardAt;
+    if (lastRewardedAt != null) {
+      final DateTime nextAvailable = lastRewardedAt.add(
         Duration(days: referralPolicy.cooldownDays),
       );
       if (now.isBefore(nextAvailable)) {
@@ -116,16 +151,19 @@ class MonetizationController extends ChangeNotifier {
       }
     }
 
-    if (_rewardsThisYear >= referralPolicy.maxRewardsPerYear) {
+    if (state.rewardsThisYear >= referralPolicy.maxRewardsPerYear) {
       return const ReferralResult(
         success: false,
         message: '올해 리퍼럴 보상 한도(6회)를 모두 사용했어요.',
       );
     }
 
-    _rewardsThisYear += 1;
-    _lastReferralRewardAt = now;
-    notifyListeners();
+    emit(
+      state.copyWith(
+        rewardsThisYear: state.rewardsThisYear + 1,
+        lastReferralRewardAt: now,
+      ),
+    );
     return ReferralResult(
       success: true,
       message: '리퍼럴 보상이 적용되었습니다. +${referralPolicy.referrerDays}일!',
@@ -149,9 +187,9 @@ class MonetizationController extends ChangeNotifier {
 
   void resetAnnualCounter({DateTime? reference}) {
     final DateTime now = reference ?? DateTime.now();
-    if (_lastReferralRewardAt != null &&
-        _lastReferralRewardAt!.year != now.year) {
-      _rewardsThisYear = 0;
+    final DateTime? lastRewardedAt = state.lastReferralRewardAt;
+    if (lastRewardedAt != null && lastRewardedAt.year != now.year) {
+      emit(state.copyWith(rewardsThisYear: 0));
     }
   }
 

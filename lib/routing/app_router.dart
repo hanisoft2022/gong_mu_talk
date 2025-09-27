@@ -22,6 +22,7 @@ import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
+import '../features/matching/presentation/cubit/matching_cubit.dart';
 import 'router_refresh_stream.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -109,8 +110,8 @@ GoRouter createRouter() {
               GoRoute(
                 path: MatchingRoute.path,
                 name: MatchingRoute.name,
-                builder: (context, state) => BlocProvider<AuthCubit>.value(
-                  value: getIt<AuthCubit>(),
+                builder: (context, state) => BlocProvider<MatchingCubit>(
+                  create: (_) => getIt<MatchingCubit>()..loadCandidates(),
                   child: const LifeHomePage(),
                 ),
               ),

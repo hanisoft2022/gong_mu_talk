@@ -343,64 +343,49 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   onPressed: _clearSearchQuery,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-              PopupMenuButton<SearchScope>(
-                tooltip: '검색 범위 설정',
-                initialValue: searchState.scope,
-                onSelected: (SearchScope scope) {
-                  if (scope != searchState.scope) {
-                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(
-                      scope,
-                    );
-                  }
-                },
-                itemBuilder: (BuildContext context) {
-                  return SearchScope.values
-                      .map(
-                        (SearchScope scope) => PopupMenuItem<SearchScope>(
-                          value: scope,
-                          child: Row(
-                            children: [
-                              if (scope == searchState.scope)
-                                Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: theme.colorScheme.primary,
-                                )
-                              else
-                                const SizedBox(width: 16),
-                              const Gap(8),
-                              Text(scope.label),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(growable: false);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.tune,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const Gap(6),
-                      Text(
-                        searchState.scope.label,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(2),
-                      Icon(
-                        Icons.expand_more,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
+              SizedBox(
+                height: double.infinity,
+                child: Tooltip(
+                  message: '검색 범위: ${searchState.scope.label}',
+                  child: PopupMenuButton<SearchScope>(
+                    tooltip: '검색 범위 설정',
+                    initialValue: searchState.scope,
+                    position: PopupMenuPosition.under,
+                    offset: const Offset(0, 6),
+                    itemBuilder: (BuildContext context) {
+                      return SearchScope.values
+                          .map(
+                            (SearchScope scope) => PopupMenuItem<SearchScope>(
+                              value: scope,
+                              child: Row(
+                                children: [
+                                  if (scope == searchState.scope)
+                                    Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: theme.colorScheme.primary,
+                                    )
+                                  else
+                                    const SizedBox(width: 16),
+                                  const Gap(8),
+                                  Text(scope.label),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(growable: false);
+                    },
+                    onSelected: (SearchScope scope) {
+                      if (scope != searchState.scope) {
+                        (_searchCubit ?? context.read<SearchCubit>())
+                            .changeScope(scope);
+                      }
+                    },
+                    icon: Icon(
+                      Icons.tune,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),

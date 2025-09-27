@@ -7,6 +7,10 @@ import '../core/theme/app_theme.dart';
 import '../core/theme/theme_cubit.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
+import '../features/community/data/community_repository.dart';
+import '../features/community/data/mock_social_graph.dart';
+import '../features/life/data/mock_life_repository.dart';
+import '../features/monetization/presentation/cubit/monetization_cubit.dart';
 
 class GongMuTalkApp extends StatelessWidget {
   const GongMuTalkApp({super.key});
@@ -15,32 +19,45 @@ class GongMuTalkApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final GoRouter router = getIt<GoRouter>();
 
-    return MultiBlocProvider(
+    return MultiRepositoryProvider(
       providers: [
-        BlocProvider<ThemeCubit>.value(value: getIt<ThemeCubit>()),
-        BlocProvider<AuthCubit>.value(value: getIt<AuthCubit>()),
+        RepositoryProvider<CommunityRepository>.value(
+          value: getIt<CommunityRepository>(),
+        ),
+        RepositoryProvider<MockSocialGraph>.value(
+          value: getIt<MockSocialGraph>(),
+        ),
+        RepositoryProvider<MockLifeRepository>.value(
+          value: getIt<MockLifeRepository>(),
+        ),
       ],
-      child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, themeMode) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: '공무톡',
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeMode,
-            routerConfig: router,
-            locale: const Locale('ko'),
-            supportedLocales: const [
-              Locale('ko'),
-              Locale('en'),
-            ],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-            ],
-          );
-        },
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<ThemeCubit>.value(value: getIt<ThemeCubit>()),
+          BlocProvider<AuthCubit>.value(value: getIt<AuthCubit>()),
+          BlocProvider<MonetizationCubit>.value(
+            value: getIt<MonetizationCubit>(),
+          ),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (context, themeMode) {
+            return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              title: '공무톡',
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: themeMode,
+              routerConfig: router,
+              locale: const Locale('ko'),
+              supportedLocales: const [Locale('ko'), Locale('en')],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+            );
+          },
+        ),
       ),
     );
   }

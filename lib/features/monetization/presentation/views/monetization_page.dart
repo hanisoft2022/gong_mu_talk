@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
-import '../../../../di/di.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../data/monetization_controller.dart';
 import '../../domain/pricing_plan.dart';
+import '../cubit/monetization_cubit.dart';
 
 class MonetizationPage extends StatefulWidget {
   const MonetizationPage({super.key});
@@ -15,14 +15,14 @@ class MonetizationPage extends StatefulWidget {
 }
 
 class _MonetizationPageState extends State<MonetizationPage> {
-  late final MonetizationController _controller;
+  late final MonetizationCubit _cubit;
   final TextEditingController _referralEmailController =
       TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _controller = getIt<MonetizationController>()..resetAnnualCounter();
+    _cubit = context.read<MonetizationCubit>()..resetAnnualCounter();
   }
 
   @override
@@ -33,23 +33,23 @@ class _MonetizationPageState extends State<MonetizationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
+    return BlocBuilder<MonetizationCubit, MonetizationState>(
+      builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: const Text('후원하기')),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             children: [
-              _DonationPlanCard(controller: _controller),
+              _DonationPlanCard(cubit: _cubit, state: state),
               const Gap(24),
               _ReferralPolicyCard(
-                controller: _controller,
+                cubit: _cubit,
+                state: state,
                 emailController: _referralEmailController,
               ),
               const Gap(24),
               const _AllowedDomainList(
-                domains: MonetizationController.allowedReferralDomains,
+                domains: MonetizationCubit.allowedReferralDomains,
               ),
             ],
           ),
@@ -60,14 +60,17 @@ class _MonetizationPageState extends State<MonetizationPage> {
 }
 
 class _DonationPlanCard extends StatelessWidget {
-  const _DonationPlanCard({required this.controller});
+  const _DonationPlanCard({required this.cubit, required this.state});
 
-  final MonetizationController controller;
+  final MonetizationCubit cubit;
+  final MonetizationState state;
 
   @override
   Widget build(BuildContext context) {
-    final PricingPlan plan = controller.supporterPlan;
-    final bool isSupporter = controller.isSupporter;
+    final PricingPlan plan = cubit.supporterPlan;
+    final bool isSupporter = state.isSupporter;
+    final DateTime? supporterSince = state.supporterSince;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -107,7 +110,7 @@ class _DonationPlanCard extends StatelessWidget {
             FilledButton(
               onPressed: isSupporter
                   ? () async {
-                      await controller.cancelSupporterPlan();
+                      await cubit.cancelSupporterPlan();
                       if (!context.mounted) {
                         return;
                       }
@@ -120,7 +123,7 @@ class _DonationPlanCard extends StatelessWidget {
                         );
                     }
                   : () async {
-                      await controller.purchaseSupporterPlan();
+                      await cubit.purchaseSupporterPlan();
                       if (!context.mounted) {
                         return;
                       }
@@ -136,10 +139,10 @@ class _DonationPlanCard extends StatelessWidget {
                     },
               child: Text(isSupporter ? '후원 해지' : '스토어 결제로 후원 시작'),
             ),
-            if (controller.supporterSince != null) ...[
+            if (supporterSince != null) ...[
               const Gap(8),
               Text(
-                '후원 시작일: ${controller.supporterSince!.year}.${controller.supporterSince!.month.toString().padLeft(2, '0')}.${controller.supporterSince!.day.toString().padLeft(2, '0')}',
+                '후원 시작일: ${supporterSince.year}.${supporterSince.month.toString().padLeft(2, '0')}.${supporterSince.day.toString().padLeft(2, '0')}',
               ),
             ],
           ],
@@ -151,18 +154,22 @@ class _DonationPlanCard extends StatelessWidget {
 
 class _ReferralPolicyCard extends StatelessWidget {
   const _ReferralPolicyCard({
-    required this.controller,
+    required this.cubit,
+    required this.state,
     required this.emailController,
   });
 
-  final MonetizationController controller;
+  final MonetizationCubit cubit;
+  final MonetizationState state;
   final TextEditingController emailController;
 
   @override
   Widget build(BuildContext context) {
-    final ReferralRewardPolicy policy = controller.referralPolicy;
-    final String currentUserId = getIt<AuthCubit>().state.userId ?? 'user';
-    final String link = controller.generateReferralLink(currentUserId);
+    final ReferralRewardPolicy policy = cubit.referralPolicy;
+    final String currentUserId =
+        context.read<AuthCubit>().state.userId ?? 'user';
+    final String link = cubit.generateReferralLink(currentUserId);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -228,7 +235,7 @@ class _ReferralPolicyCard extends StatelessWidget {
                     );
                   return;
                 }
-                final bool allowed = controller.isAllowedEmail(input);
+                final bool allowed = cubit.isAllowedEmail(input);
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
@@ -246,7 +253,7 @@ class _ReferralPolicyCard extends StatelessWidget {
             const Gap(16),
             FilledButton.icon(
               onPressed: () {
-                final ReferralResult result = controller.redeemReferralReward(
+                final ReferralResult result = cubit.redeemReferralReward(
                   now: DateTime.now(),
                 );
                 ScaffoldMessenger.of(context)
@@ -256,6 +263,8 @@ class _ReferralPolicyCard extends StatelessWidget {
               icon: const Icon(Icons.card_giftcard_outlined),
               label: const Text('리퍼럴 보상 수령'),
             ),
+            const Gap(8),
+            Text('올해 받은 리퍼럴 보상: ${state.rewardsThisYear}회'),
           ],
         ),
       ),

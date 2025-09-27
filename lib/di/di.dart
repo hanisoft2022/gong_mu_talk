@@ -7,6 +7,8 @@ import '../core/theme/theme_cubit.dart';
 import '../features/auth/data/firebase_auth_repository.dart';
 import '../features/auth/data/government_email_repository.dart';
 import '../features/auth/data/login_session_store.dart';
+import '../features/auth/data/auth_user_session.dart';
+import '../features/auth/domain/user_session.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/calculator/data/datasources/calculator_local_data_source.dart';
 import '../features/calculator/data/datasources/salary_reference_local_data_source.dart';
@@ -23,7 +25,7 @@ import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
 import '../features/community/data/mock_social_graph.dart';
 import '../features/life/data/mock_life_repository.dart';
-import '../features/monetization/data/monetization_controller.dart';
+import '../features/monetization/presentation/cubit/monetization_cubit.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/board_catalog_cubit.dart';
 import '../features/community/presentation/cubit/post_detail_cubit.dart';
@@ -83,15 +85,18 @@ Future<void> configureDependencies() async {
         notificationRepository: getIt(),
       ),
     )
+    ..registerLazySingleton<UserSession>(
+      () => AuthUserSession(getIt<AuthCubit>()),
+    )
     ..registerLazySingleton<MockSocialGraph>(MockSocialGraph.new)
     ..registerLazySingleton<MockLifeRepository>(
       () => MockLifeRepository(socialGraph: getIt()),
     )
-    ..registerLazySingleton<MonetizationController>(MonetizationController.new)
+    ..registerLazySingleton<MonetizationCubit>(MonetizationCubit.new)
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
     ..registerLazySingleton<CommunityRepository>(
       () => CommunityRepository(
-        authCubit: getIt(),
+        userSession: getIt(),
         userProfileRepository: getIt(),
         notificationRepository: getIt(),
       ),

@@ -8,9 +8,9 @@ extension LoungeSortLabel on LoungeSort {
       case LoungeSort.latest:
         return '최신순';
       case LoungeSort.popular:
-        return '인기순';
+        return '오늘의 인기순';
       case LoungeSort.likes:
-        return '좋아요순';
+        return '오늘의 좋아요순';
     }
   }
 }

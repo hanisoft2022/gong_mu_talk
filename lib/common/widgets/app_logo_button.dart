@@ -36,15 +36,16 @@ class _AppLogoButtonState extends State<AppLogoButton> {
     final BorderRadius borderRadius = BorderRadius.circular(widget.compact ? 14 : 18);
     final InteractiveInkFeatureFactory splashFactory = Theme.of(context).splashFactory;
     final EdgeInsets padding = widget.compact ? const EdgeInsets.all(4) : const EdgeInsets.all(6);
-    final double containerSize = diameter + padding.horizontal;
+    final double paddedWidth = diameter + padding.horizontal;
+    final double paddedHeight = diameter + padding.vertical;
+    final double containerSize = paddedWidth > paddedHeight ? paddedWidth : paddedHeight;
 
     return AnimatedScale(
       scale: _isPressed ? 0.94 : 1,
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
-      child: SizedBox(
-        width: containerSize,
-        height: containerSize,
+      child: SizedBox.square(
+        dimension: containerSize,
         child: Material(
           color: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: borderRadius),

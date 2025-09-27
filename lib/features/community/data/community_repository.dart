@@ -18,8 +18,9 @@ import '../domain/models/post.dart';
 import '../domain/models/report.dart';
 import '../domain/models/search_suggestion.dart';
 import '../domain/models/search_result.dart';
-import '../../auth/presentation/cubit/auth_cubit.dart';
+import '../../auth/domain/user_session.dart';
 import '../../profile/data/user_profile_repository.dart';
+import '../../../core/firebase/firestore_refs.dart';
 
 typedef JsonMap = Map<String, Object?>;
 
@@ -49,18 +50,18 @@ class CommunityRepository {
   CommunityRepository({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-    required AuthCubit authCubit,
+    required UserSession userSession,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _storage = storage ?? FirebaseStorage.instance,
-       _authCubit = authCubit,
+       _userSession = userSession,
        _userProfileRepository = userProfileRepository,
        _notificationRepository = notificationRepository;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
-  final AuthCubit _authCubit;
+  final UserSession _userSession;
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
   final Random _random = Random();
@@ -104,23 +105,24 @@ class CommunityRepository {
   ];
 
   static const int _maxSyntheticComments = 10;
+  static const Duration _loungeLookback = Duration(hours: 24);
 
-  String get currentUserId => _authCubit.state.userId ?? 'anonymous';
+  String get currentUserId => _userSession.userId;
 
   Future<String> get currentUserNickname async {
     final profile = await _userProfileRepository.fetchProfile(currentUserId);
     return profile?.nickname ?? 'Unknown User';
   }
 
-  CollectionReference<JsonMap> get _postsRef => _firestore.collection('posts');
+  CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
 
-  CollectionReference<JsonMap> get _likesRef => _firestore.collection('likes');
+  CollectionReference<JsonMap> get _likesRef => _firestore.collection(Fs.likes);
 
   CollectionReference<JsonMap> get _boardsRef =>
-      _firestore.collection('boards');
+      _firestore.collection(Fs.boards);
 
   CollectionReference<JsonMap> get _searchSuggestionRef =>
-      _firestore.collection('search_suggestions');
+      _firestore.collection(Fs.suggestions);
 
   CollectionReference<JsonMap> get _reportsRef =>
       _firestore.collection('reports');
@@ -128,19 +130,19 @@ class CommunityRepository {
   DocumentReference<JsonMap> _postDoc(String postId) => _postsRef.doc(postId);
 
   CollectionReference<JsonMap> _commentsRef(String postId) =>
-      _postDoc(postId).collection('comments');
+      _postDoc(postId).collection(Fs.comments);
 
   CollectionReference<JsonMap> _commentLikesRef(String postId) =>
       _postDoc(postId).collection('comment_likes');
 
   CollectionReference<JsonMap> _postCounterShard(String postId) =>
-      _firestore.collection('post_counters').doc(postId).collection('shards');
+      _firestore.collection(Fs.postCounters).doc(postId).collection(Fs.shards);
 
   CollectionReference<JsonMap> _bookmarksRef(String uid) =>
       _userDoc(uid).collection('bookmarks');
 
   DocumentReference<JsonMap> _userDoc(String uid) =>
-      _firestore.collection('users').doc(uid);
+      _firestore.collection(Fs.users).doc(uid);
 
   Future<Post> createPost({
     required PostType type,
@@ -389,20 +391,36 @@ class CommunityRepository {
         forceSerial: scope == LoungeScope.serial ? serial : null,
       );
 
+      final DateTime cutoff = _popularCutoff();
+      late final List<Post> working;
+
       switch (sort) {
         case LoungeSort.latest:
-          items.sort((Post a, Post b) => b.createdAt.compareTo(a.createdAt));
+          working = List<Post>.from(items)
+            ..sort((Post a, Post b) => b.createdAt.compareTo(a.createdAt));
           break;
         case LoungeSort.popular:
-          items.sort((Post a, Post b) => b.hotScore.compareTo(a.hotScore));
+          working =
+              items
+                  .where(
+                    (Post post) => _isWithinLookback(post.createdAt, cutoff),
+                  )
+                  .toList()
+                ..sort((Post a, Post b) => b.hotScore.compareTo(a.hotScore));
           break;
         case LoungeSort.likes:
-          items.sort((Post a, Post b) => b.likeCount.compareTo(a.likeCount));
+          working =
+              items
+                  .where(
+                    (Post post) => _isWithinLookback(post.createdAt, cutoff),
+                  )
+                  .toList()
+                ..sort((Post a, Post b) => b.likeCount.compareTo(a.likeCount));
           break;
       }
 
       return PaginatedQueryResult<Post>(
-        items: items,
+        items: working,
         hasMore: false,
         lastDocument: null,
       );
@@ -446,14 +464,26 @@ class CommunityRepository {
       case LoungeSort.latest:
         return query.orderBy('createdAt', descending: true);
       case LoungeSort.popular:
+        final Timestamp since = _popularCutoffTimestamp();
         return query
-            .orderBy('hotScore', descending: true)
-            .orderBy('createdAt', descending: true);
+            .where('createdAt', isGreaterThanOrEqualTo: since)
+            .orderBy('createdAt', descending: true)
+            .orderBy('hotScore', descending: true);
       case LoungeSort.likes:
+        final Timestamp since = _popularCutoffTimestamp();
         return query
-            .orderBy('likeCount', descending: true)
-            .orderBy('createdAt', descending: true);
+            .where('createdAt', isGreaterThanOrEqualTo: since)
+            .orderBy('createdAt', descending: true)
+            .orderBy('likeCount', descending: true);
     }
+  }
+
+  Timestamp _popularCutoffTimestamp() => Timestamp.fromDate(_popularCutoff());
+
+  DateTime _popularCutoff() => DateTime.now().subtract(_loungeLookback);
+
+  bool _isWithinLookback(DateTime dateTime, DateTime cutoff) {
+    return !dateTime.isBefore(cutoff);
   }
 
   Future<PaginatedQueryResult<Post>> fetchHotFeed({
@@ -1274,10 +1304,8 @@ class CommunityRepository {
 
     return snapshot.docs
         .map(
-          (QueryDocumentSnapshot<JsonMap> doc) => Comment.fromSnapshot(
-            doc,
-            isLiked: likedIds.contains(doc.id),
-          ),
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Comment.fromSnapshot(doc, isLiked: likedIds.contains(doc.id)),
         )
         .toList();
   }
@@ -1301,10 +1329,8 @@ class CommunityRepository {
 
     return snapshot.docs
         .map(
-          (QueryDocumentSnapshot<JsonMap> doc) => Comment.fromSnapshot(
-            doc,
-            isLiked: likedIds.contains(doc.id),
-          ),
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Comment.fromSnapshot(doc, isLiked: likedIds.contains(doc.id)),
         )
         .toList(growable: false);
   }
@@ -1340,9 +1366,9 @@ class CommunityRepository {
     String? parentCommentId,
   }) async {
     final nickname = await currentUserNickname;
-    final CareerTrack track = _authCubit.state.careerTrack;
-    final int supporterLevel = _authCubit.state.supporterLevel;
-    final bool serialVisible = _authCubit.state.serialVisible;
+    final CareerTrack track = _userSession.careerTrack;
+    final int supporterLevel = _userSession.supporterLevel;
+    final bool serialVisible = _userSession.serialVisible;
     await createComment(
       postId: postId,
       authorUid: currentUserId,
@@ -2070,7 +2096,12 @@ class CommunityRepository {
       '말씀 덕분에 방향이 잡히네요.',
       '곧 적용해서 공유드릴게요.',
     ];
-    final List<String> commentAuthors = <String>['행정요정', '현장달인', '조용한고수', '친절한선배'];
+    final List<String> commentAuthors = <String>[
+      '행정요정',
+      '현장달인',
+      '조용한고수',
+      '친절한선배',
+    ];
     final List<CareerTrack> availableTracks = CareerTrack.values
         .where((CareerTrack value) => value != CareerTrack.none)
         .toList(growable: false);
@@ -2103,7 +2134,8 @@ class CommunityRepository {
       final int commentCount = max(1, random.nextInt(3));
       final List<Comment> createdComments = <Comment>[];
       for (int c = 0; c < commentCount; c += 1) {
-        final String authorName = commentAuthors[random.nextInt(commentAuthors.length)];
+        final String authorName =
+            commentAuthors[random.nextInt(commentAuthors.length)];
         final CareerTrack authorTrack = availableTracks.isEmpty
             ? CareerTrack.none
             : availableTracks[random.nextInt(availableTracks.length)];

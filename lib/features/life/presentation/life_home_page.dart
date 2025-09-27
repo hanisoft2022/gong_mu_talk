@@ -3,10 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../di/di.dart';
 import '../../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../../community/data/mock_social_graph.dart';
-import '../../matching/presentation/cubit/matching_cubit.dart';
 import '../../matching/presentation/views/matching_page.dart';
 import '../data/mock_life_repository.dart';
 import '../domain/life_meeting.dart';
@@ -27,7 +25,6 @@ class LifeHomePage extends StatefulWidget {
 
 class _LifeHomePageState extends State<LifeHomePage> {
   late final MockLifeRepository _lifeRepository;
-  late final MatchingCubit _matchingCubit;
   late final MockSocialGraph _socialGraph;
   late final ScrollController _scrollController;
   int _lastScrollRequestId = 0;
@@ -36,10 +33,9 @@ class _LifeHomePageState extends State<LifeHomePage> {
   @override
   void initState() {
     super.initState();
-    _lifeRepository = getIt<MockLifeRepository>();
-    _socialGraph = getIt<MockSocialGraph>();
-    _matchingCubit = getIt<MatchingCubit>()..loadCandidates();
-    getIt<AuthCubit>().refreshAuthStatus();
+    _lifeRepository = context.read<MockLifeRepository>();
+    _socialGraph = context.read<MockSocialGraph>();
+    context.read<AuthCubit>().refreshAuthStatus();
     _scrollController = ScrollController();
     _scrollController.addListener(_handleScrollOffset);
     _lastScrollRequestId = LifeScrollCoordinator.instance.lastRequestId;
@@ -52,7 +48,6 @@ class _LifeHomePageState extends State<LifeHomePage> {
     _scrollController
       ..removeListener(_handleScrollOffset)
       ..dispose();
-    _matchingCubit.close();
     super.dispose();
   }
 
@@ -140,12 +135,9 @@ class _LifeHomePageState extends State<LifeHomePage> {
               repository: _lifeRepository,
               socialGraph: _socialGraph,
             )
-          : BlocProvider<MatchingCubit>.value(
-              value: _matchingCubit,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: MatchingPage(),
-              ),
+          : const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: MatchingPage(),
             ),
     );
 

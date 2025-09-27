@@ -2,10 +2,9 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:injectable/injectable.dart';
 import 'package:logger/logger.dart';
 
-@singleton
+/// Singleton managed manually via service locator registration.
 class NotificationService {
   NotificationService() {
     _initializeLocalNotifications();
@@ -23,10 +22,10 @@ class NotificationService {
 
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -52,22 +51,27 @@ class NotificationService {
       importance: Importance.defaultImportance,
     );
 
-    const AndroidNotificationChannel commentsChannel = AndroidNotificationChannel(
-      'comments_channel',
-      '댓글 알림',
-      description: '내 게시글에 댓글이 달렸을 때 알림',
-      importance: Importance.defaultImportance,
-    );
+    const AndroidNotificationChannel commentsChannel =
+        AndroidNotificationChannel(
+          'comments_channel',
+          '댓글 알림',
+          description: '내 게시글에 댓글이 달렸을 때 알림',
+          importance: Importance.defaultImportance,
+        );
 
-    const AndroidNotificationChannel generalChannel = AndroidNotificationChannel(
-      'general_channel',
-      '일반 알림',
-      description: '일반적인 앱 알림',
-      importance: Importance.defaultImportance,
-    );
+    const AndroidNotificationChannel generalChannel =
+        AndroidNotificationChannel(
+          'general_channel',
+          '일반 알림',
+          description: '일반적인 앱 알림',
+          importance: Importance.defaultImportance,
+        );
 
     final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-        _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
     await androidPlugin?.createNotificationChannel(likesChannel);
     await androidPlugin?.createNotificationChannel(commentsChannel);
@@ -76,12 +80,13 @@ class NotificationService {
 
   Future<void> _initializeFirebaseMessaging() async {
     // Request permission for notifications
-    final NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    final NotificationSettings settings = await _firebaseMessaging
+        .requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       _logger.i('User granted notification permission');
@@ -99,7 +104,8 @@ class NotificationService {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // Get initial message if app was opened from notification
-    final RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    final RemoteMessage? initialMessage = await _firebaseMessaging
+        .getInitialMessage();
     if (initialMessage != null) {
       _handleMessageOpenedApp(initialMessage);
     }
@@ -198,14 +204,15 @@ class NotificationService {
     String channelId = 'general_channel',
     String? payload,
   }) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'general_channel',
-      '일반 알림',
-      channelDescription: '일반적인 앱 알림',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      showWhen: true,
-    );
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'general_channel',
+          '일반 알림',
+          channelDescription: '일반적인 앱 알림',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          showWhen: true,
+        );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
       presentAlert: true,
