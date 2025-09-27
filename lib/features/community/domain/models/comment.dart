@@ -12,6 +12,7 @@ class Comment extends Equatable {
     required this.authorUid,
     required this.authorNickname,
     required this.authorTrack,
+    required this.authorSerialVisible,
     required this.text,
     required this.likeCount,
     required this.createdAt,
@@ -29,6 +30,7 @@ class Comment extends Equatable {
   final String authorUid;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final bool authorSerialVisible;
   final String text;
   final int likeCount;
   final DateTime createdAt;
@@ -47,6 +49,7 @@ class Comment extends Equatable {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSerialVisible': authorSerialVisible,
       'authorSupporterLevel': authorSupporterLevel,
       'authorIsSupporter': authorIsSupporter,
       'text': text,
@@ -91,6 +94,7 @@ class Comment extends Equatable {
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
+      authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
       text: (data['text'] as String?) ?? '',
       likeCount: (data['likeCount'] as num?)?.toInt() ?? 0,
       createdAt: _parseTimestamp(data['createdAt']) ?? DateTime.now(),
@@ -118,6 +122,7 @@ class Comment extends Equatable {
     Map<String, int>? reactionCounts,
     Object? viewerReaction = _unset,
     CareerTrack? authorTrack,
+    bool? authorSerialVisible,
     int? authorSupporterLevel,
     bool? authorIsSupporter,
   }) {
@@ -127,6 +132,7 @@ class Comment extends Equatable {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack ?? this.authorTrack,
+      authorSerialVisible: authorSerialVisible ?? this.authorSerialVisible,
       text: text ?? this.text,
       likeCount: likeCount ?? this.likeCount,
       createdAt: createdAt,
@@ -165,6 +171,7 @@ class Comment extends Equatable {
     authorUid,
     authorNickname,
     authorTrack,
+    authorSerialVisible,
     text,
     likeCount,
     createdAt,

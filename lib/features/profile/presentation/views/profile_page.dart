@@ -994,6 +994,22 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
               ),
               const Gap(24),
               _SettingsSection(
+                title: '공개 설정',
+                children: [
+                  SwitchListTile.adaptive(
+                    value: state.serialVisible,
+                    onChanged: isProcessing
+                        ? null
+                        : (bool value) => context
+                              .read<AuthCubit>()
+                              .updateSerialVisibility(value),
+                    title: const Text('직렬 공개'),
+                    subtitle: const Text('라운지와 댓글에 내 직렬을 표시할지 선택할 수 있습니다.'),
+                  ),
+                ],
+              ),
+              const Gap(24),
+              _SettingsSection(
                 title: '비밀번호 변경',
                 children: [
                   TextField(

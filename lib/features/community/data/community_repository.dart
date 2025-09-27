@@ -150,6 +150,7 @@ class CommunityRepository {
     required String authorUid,
     required String authorNickname,
     required CareerTrack authorTrack,
+    bool authorSerialVisible = true,
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
     required String text,
@@ -176,6 +177,7 @@ class CommunityRepository {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSerialVisible': authorSerialVisible,
       'authorSupporterLevel': authorSupporterLevel,
       'authorIsSupporter': authorIsSupporter,
       'text': text,
@@ -640,6 +642,7 @@ class CommunityRepository {
     required String text,
     String? parentCommentId,
     CareerTrack authorTrack = CareerTrack.none,
+    bool authorSerialVisible = true,
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
     bool awardPoints = true,
@@ -653,6 +656,7 @@ class CommunityRepository {
         'authorUid': authorUid,
         'authorNickname': authorNickname,
         'authorTrack': authorTrack.name,
+        'authorSerialVisible': authorSerialVisible,
         'authorSupporterLevel': authorSupporterLevel,
         'authorIsSupporter': authorIsSupporter,
         'text': text,
@@ -710,6 +714,7 @@ class CommunityRepository {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSerialVisible: authorSerialVisible,
       text: text,
       likeCount: 0,
       createdAt: now,
@@ -1361,12 +1366,14 @@ class CommunityRepository {
     final nickname = await currentUserNickname;
     final CareerTrack track = _authCubit.state.careerTrack;
     final int supporterLevel = _authCubit.state.supporterLevel;
+    final bool serialVisible = _authCubit.state.serialVisible;
     await createComment(
       postId: postId,
       authorUid: currentUserId,
       authorNickname: nickname,
       text: text,
       authorTrack: track,
+      authorSerialVisible: serialVisible,
       authorSupporterLevel: supporterLevel,
       authorIsSupporter: supporterLevel > 0,
     );
@@ -1969,6 +1976,7 @@ class CommunityRepository {
           likeCount: seed.likes,
           authorNickname: seed.author,
           authorTrack: seed.track,
+          authorSerialVisible: true,
           authorSupporterLevel: seed.supporterLevel,
           authorIsSupporter: seed.isSupporter,
         );
@@ -2014,6 +2022,7 @@ class CommunityRepository {
           authorUid: 'dummy_user',
           authorNickname: nicknames[_random.nextInt(nicknames.length)],
           authorTrack: postTrack,
+          authorSerialVisible: true,
           authorSupporterLevel: supporterLevel,
           authorIsSupporter: supporterLevel > 0,
           text: text,
@@ -2106,6 +2115,7 @@ class CommunityRepository {
         (data['authorSupporterLevel'] as num?)?.toInt() ?? 0;
     final bool isSupporter =
         data['authorIsSupporter'] as bool? ?? supporterLevel > 0;
+    final bool serialVisible = data['authorSerialVisible'] as bool? ?? true;
 
     return CachedComment(
       id: doc.id,
@@ -2113,6 +2123,7 @@ class CommunityRepository {
       likeCount: likeCount,
       authorNickname: author,
       authorTrack: track,
+      authorSerialVisible: serialVisible,
       authorSupporterLevel: supporterLevel,
       authorIsSupporter: isSupporter,
     );

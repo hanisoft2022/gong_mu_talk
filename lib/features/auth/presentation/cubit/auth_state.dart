@@ -32,6 +32,7 @@ class AuthState extends Equatable {
     this.followingCount = 0,
     this.notificationsEnabled = true,
     this.supporterBadgeVisible = true,
+    this.serialVisible = true,
     this.excludedTracks = const <CareerTrack>{},
     this.excludedSerials = const <String>{},
     this.excludedDepartments = const <String>{},
@@ -73,6 +74,7 @@ class AuthState extends Equatable {
   final int followingCount;
   final bool notificationsEnabled;
   final bool supporterBadgeVisible;
+  final bool serialVisible;
   final Set<CareerTrack> excludedTracks;
   final Set<String> excludedSerials;
   final Set<String> excludedDepartments;
@@ -116,6 +118,7 @@ class AuthState extends Equatable {
     int? followingCount,
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
+    bool? serialVisible,
     Set<CareerTrack>? excludedTracks,
     Set<String>? excludedSerials,
     Set<String>? excludedDepartments,
@@ -161,6 +164,7 @@ class AuthState extends Equatable {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       supporterBadgeVisible:
           supporterBadgeVisible ?? this.supporterBadgeVisible,
+      serialVisible: serialVisible ?? this.serialVisible,
       excludedTracks: excludedTracks ?? this.excludedTracks,
       excludedSerials: excludedSerials ?? this.excludedSerials,
       excludedDepartments: excludedDepartments ?? this.excludedDepartments,
@@ -209,6 +213,7 @@ class AuthState extends Equatable {
     followingCount,
     notificationsEnabled,
     supporterBadgeVisible,
+    serialVisible,
     excludedTracks,
     excludedSerials,
     excludedDepartments,

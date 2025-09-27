@@ -48,6 +48,7 @@ class UserProfile extends Equatable {
     this.followingCount = 0,
     this.notificationsEnabled = true,
     this.supporterBadgeVisible = true,
+    this.serialVisible = true,
   });
 
   final String uid;
@@ -88,6 +89,7 @@ class UserProfile extends Equatable {
   final int followingCount;
   final bool notificationsEnabled;
   final bool supporterBadgeVisible;
+  final bool serialVisible;
 
   bool get isBlocked =>
       blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
@@ -145,6 +147,7 @@ class UserProfile extends Equatable {
     int? followingCount,
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
+    bool? serialVisible,
   }) {
     return UserProfile(
       uid: uid,
@@ -188,6 +191,7 @@ class UserProfile extends Equatable {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       supporterBadgeVisible:
           supporterBadgeVisible ?? this.supporterBadgeVisible,
+      serialVisible: serialVisible ?? this.serialVisible,
     );
   }
 
@@ -238,6 +242,7 @@ class UserProfile extends Equatable {
       'followingCount': followingCount,
       'notificationsEnabled': notificationsEnabled,
       'supporterBadgeVisible': supporterBadgeVisible,
+      'serialVisible': serialVisible,
     };
   }
 
@@ -297,6 +302,7 @@ class UserProfile extends Equatable {
       followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
       notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
       supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
+      serialVisible: data['serialVisible'] as bool? ?? true,
     );
   }
 
@@ -397,5 +403,6 @@ class UserProfile extends Equatable {
     followingCount,
     notificationsEnabled,
     supporterBadgeVisible,
+    serialVisible,
   ];
 }

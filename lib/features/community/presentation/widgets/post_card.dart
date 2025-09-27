@@ -66,11 +66,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   fit: FlexFit.loose,
                   child: Align(
                     alignment: Alignment.centerLeft,
-                  child: _buildAuthorMenu(
-                    post: post,
-                    timestamp: timestamp,
-                    scope: widget.displayScope,
-                  ),
+                    child: _buildAuthorMenu(
+                      post: post,
+                      timestamp: timestamp,
+                      scope: widget.displayScope,
+                    ),
                   ),
                 ),
               ],
@@ -191,7 +191,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                             if (_featuredComments.isNotEmpty) ...[
                               Builder(
                                 builder: (BuildContext context) {
-                                  final Comment featuredComment = _featuredComments.first;
+                                  final Comment featuredComment =
+                                      _featuredComments.first;
                                   return _FeaturedCommentTile(
                                     comment: featuredComment,
                                     onToggleLike: _handleCommentLike,
@@ -439,11 +440,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             break;
         }
       },
-      child: _AuthorInfoHeader(
-        post: post,
-        timestamp: timestamp,
-        scope: scope,
-      ),
+      child: _AuthorInfoHeader(post: post, timestamp: timestamp, scope: scope),
     );
   }
 
@@ -600,6 +597,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorUid: 'preview',
       authorNickname: cached.authorNickname,
       authorTrack: cached.authorTrack,
+      authorSerialVisible: cached.authorSerialVisible,
       text: cached.text,
       likeCount: cached.likeCount,
       createdAt: (post.updatedAt ?? post.createdAt).add(
@@ -627,6 +625,23 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 }
 
+String _serialLabel(
+  CareerTrack track,
+  bool serialVisible, {
+  bool includeEmoji = true,
+}) {
+  if (!serialVisible) {
+    return '공무원';
+  }
+  if (track == CareerTrack.none) {
+    return '직렬 비공개';
+  }
+  if (!includeEmoji) {
+    return track.displayName;
+  }
+  return '${track.emoji} ${track.displayName}';
+}
+
 class _AuthorInfoHeader extends StatelessWidget {
   const _AuthorInfoHeader({
     required this.post,
@@ -645,8 +660,9 @@ class _AuthorInfoHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
-      child:
-          _isSerialScope ? _buildSerialHeader(theme) : _buildPublicHeader(theme),
+      child: _isSerialScope
+          ? _buildSerialHeader(theme)
+          : _buildPublicHeader(theme),
     );
   }
 
@@ -682,15 +698,16 @@ class _AuthorInfoHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (supporter != null) ...[
-                    const Gap(6),
-                    supporter,
-                  ],
+                  if (supporter != null) ...[const Gap(6), supporter],
                 ],
               ),
               const Gap(4),
               Text(
-                _trackLabel(includeEmoji: true),
+                _serialLabel(
+                  post.authorTrack,
+                  post.authorSerialVisible,
+                  includeEmoji: true,
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -723,10 +740,7 @@ class _AuthorInfoHeader extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (supporter != null) ...[
-          const Gap(6),
-          supporter,
-        ],
+        if (supporter != null) ...[const Gap(6), supporter],
         const Spacer(),
         Text(
           timestamp,
@@ -739,15 +753,19 @@ class _AuthorInfoHeader extends StatelessWidget {
   }
 
   Widget _buildTrackTag(ThemeData theme) {
-    final bool hasTrack = post.authorTrack != CareerTrack.none;
+    final bool hasTrack =
+        post.authorSerialVisible && post.authorTrack != CareerTrack.none;
     final Color background = hasTrack
         ? theme.colorScheme.primary.withValues(alpha: 0.12)
         : theme.colorScheme.surfaceContainerHighest;
     final Color foreground = hasTrack
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
-    final String label =
-        hasTrack ? _trackLabel(includeEmoji: true) : _trackLabel();
+    final String label = _serialLabel(
+      post.authorTrack,
+      post.authorSerialVisible,
+      includeEmoji: hasTrack,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -787,20 +805,8 @@ class _AuthorInfoHeader extends StatelessWidget {
     final String sanitized = raw.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     final String source = sanitized.isEmpty ? raw : sanitized;
     final String upper = source.toUpperCase();
-    final String leading =
-        upper.length <= 3 ? upper : upper.substring(0, 3);
+    final String leading = upper.length <= 3 ? upper : upper.substring(0, 3);
     return '$leading***';
-  }
-
-  String _trackLabel({bool includeEmoji = false}) {
-    if (post.authorTrack == CareerTrack.none) {
-      return '직렬 비공개';
-    }
-    final String label = post.authorTrack.displayName;
-    if (!includeEmoji) {
-      return label;
-    }
-    return '${post.authorTrack.emoji} $label';
   }
 
   String _avatarInitial() {
@@ -827,6 +833,10 @@ class _FeaturedCommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String timestamp = _formatTimestamp(comment.createdAt);
+    final String trackLabel = _serialLabel(
+      comment.authorTrack,
+      comment.authorSerialVisible,
+    );
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -873,7 +883,7 @@ class _FeaturedCommentTile extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${comment.authorTrack.emoji} ${comment.authorTrack.displayName}',
+                trackLabel,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -955,6 +965,10 @@ class _CommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String timestamp = _formatTimestamp(comment.createdAt);
+    final String trackLabel = _serialLabel(
+      comment.authorTrack,
+      comment.authorSerialVisible,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1010,7 +1024,7 @@ class _CommentTile extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
+                        '$trackLabel · $timestamp',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -1257,7 +1271,8 @@ class _PostActionButton extends StatelessWidget {
       child: Icon(icon, size: 16, color: iconColor),
     );
 
-    final TextStyle labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+    final TextStyle labelStyle =
+        Theme.of(context).textTheme.labelMedium?.copyWith(
           color: iconColor,
           fontWeight: FontWeight.w600,
         ) ??
@@ -1270,11 +1285,7 @@ class _PostActionButton extends StatelessWidget {
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(opacity: animation, child: child);
       },
-      child: Text(
-        label,
-        key: ValueKey<String>(label),
-        style: labelStyle,
-      ),
+      child: Text(label, key: ValueKey<String>(label), style: labelStyle),
     );
 
     return TextButton.icon(

@@ -111,6 +111,7 @@ class UserProfileRepository {
         followingCount: 0,
         notificationsEnabled: true,
         supporterBadgeVisible: true,
+        serialVisible: true,
       );
 
       transaction.set(userRef, profile.toMap());
@@ -210,6 +211,7 @@ class UserProfileRepository {
     Object? photoUrl = _unset,
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
+    bool? serialVisible,
   }) async {
     final DocumentReference<JsonMap> doc = _userDoc(uid);
     final Map<String, Object?> updates = <String, Object?>{};
@@ -248,6 +250,9 @@ class UserProfileRepository {
     }
     if (supporterBadgeVisible != null) {
       updates['supporterBadgeVisible'] = supporterBadgeVisible;
+    }
+    if (serialVisible != null) {
+      updates['serialVisible'] = serialVisible;
     }
     updates['updatedAt'] = Timestamp.now();
 

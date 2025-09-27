@@ -57,6 +57,7 @@ class CachedComment extends Equatable {
     required this.likeCount,
     required this.authorNickname,
     required this.authorTrack,
+    required this.authorSerialVisible,
     this.authorSupporterLevel = 0,
     this.authorIsSupporter = false,
   });
@@ -66,6 +67,7 @@ class CachedComment extends Equatable {
   final int likeCount;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final bool authorSerialVisible;
   final int authorSupporterLevel;
   final bool authorIsSupporter;
 
@@ -76,6 +78,7 @@ class CachedComment extends Equatable {
       'likeCount': likeCount,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSerialVisible': authorSerialVisible,
       'authorSupporterLevel': authorSupporterLevel,
       'authorIsSupporter': authorIsSupporter,
     };
@@ -91,6 +94,8 @@ class CachedComment extends Equatable {
     final int likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
     final String? authorNickname = data['authorNickname'] as String?;
     final CareerTrack authorTrack = Post._parseTrack(data['authorTrack']);
+    final bool authorSerialVisible =
+        data['authorSerialVisible'] as bool? ?? true;
     final int supporterLevel =
         (data['authorSupporterLevel'] as num?)?.toInt() ?? 0;
     final bool isSupporter =
@@ -105,6 +110,7 @@ class CachedComment extends Equatable {
       likeCount: likeCount,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSerialVisible: authorSerialVisible,
       authorSupporterLevel: supporterLevel,
       authorIsSupporter: isSupporter,
     );
@@ -117,6 +123,7 @@ class CachedComment extends Equatable {
     likeCount,
     authorNickname,
     authorTrack,
+    authorSerialVisible,
     authorSupporterLevel,
     authorIsSupporter,
   ];
@@ -132,6 +139,7 @@ class Post extends Equatable {
     required this.authorUid,
     required this.authorNickname,
     required this.authorTrack,
+    required this.authorSerialVisible,
     this.authorSupporterLevel = 0,
     this.authorIsSupporter = false,
     required this.text,
@@ -159,6 +167,7 @@ class Post extends Equatable {
   final String authorUid;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final bool authorSerialVisible;
   final int authorSupporterLevel;
   final bool authorIsSupporter;
   final String text;
@@ -192,6 +201,7 @@ class Post extends Equatable {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSerialVisible': authorSerialVisible,
       'authorSupporterLevel': authorSupporterLevel,
       'authorIsSupporter': authorIsSupporter,
       'text': text,
@@ -247,6 +257,7 @@ class Post extends Equatable {
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
+      authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
       authorSupporterLevel:
           (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
       authorIsSupporter:
@@ -284,6 +295,7 @@ class Post extends Equatable {
     PostVisibility? visibility,
     int? authorSupporterLevel,
     bool? authorIsSupporter,
+    bool? authorSerialVisible,
   }) {
     return Post(
       id: id,
@@ -294,6 +306,7 @@ class Post extends Equatable {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSerialVisible: authorSerialVisible ?? this.authorSerialVisible,
       authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
       authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
       text: text,
@@ -419,6 +432,7 @@ class Post extends Equatable {
     authorUid,
     authorNickname,
     authorTrack,
+    authorSerialVisible,
     authorSupporterLevel,
     authorIsSupporter,
     text,

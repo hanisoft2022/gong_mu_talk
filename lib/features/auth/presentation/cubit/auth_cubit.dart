@@ -367,6 +367,34 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> updateSerialVisibility(bool visible) async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      emit(state.copyWith(lastMessage: '로그인 후 직렬 공개 여부를 설정할 수 있습니다.'));
+      return;
+    }
+
+    emit(state.copyWith(isProcessing: true, lastMessage: null));
+    try {
+      final UserProfile profile = await _userProfileRepository
+          .updateProfileFields(uid: uid, serialVisible: visible);
+      _applyProfile(profile);
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: visible ? '직렬을 다시 공개합니다.' : '직렬을 비공개로 설정했습니다.',
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isProcessing: false,
+          lastMessage: '직렬 공개 설정 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        ),
+      );
+    }
+  }
+
   Future<void> updateProfileImage({
     required Uint8List bytes,
     String? fileName,
@@ -801,6 +829,7 @@ class AuthCubit extends Cubit<AuthState> {
         followingCount: profile.followingCount,
         notificationsEnabled: profile.notificationsEnabled,
         supporterBadgeVisible: profile.supporterBadgeVisible,
+        serialVisible: profile.serialVisible,
         excludedTracks: excludedTracks,
         excludedSerials: profile.excludedSerials,
         excludedDepartments: profile.excludedDepartments,

@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../profile/domain/career_track.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
@@ -19,18 +20,25 @@ class InlinePostComposer extends StatefulWidget {
 }
 
 class _AudienceSelector extends StatelessWidget {
-  const _AudienceSelector({
-    required this.audience,
-  });
+  const _AudienceSelector({required this.audience, this.serialName});
 
   final PostAudience audience;
+  final String? serialName;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool isSerialAudience = audience == PostAudience.serial;
-    final IconData icon = isSerialAudience ? Icons.badge_outlined : Icons.public_outlined;
-    final String message = isSerialAudience ? '내 직렬만 공개' : '전체 공개';
+    final IconData icon = isSerialAudience
+        ? Icons.badge_outlined
+        : Icons.public_outlined;
+    final bool hasSerialName =
+        serialName != null && serialName!.isNotEmpty && serialName != 'unknown';
+    final String message = isSerialAudience
+        ? hasSerialName
+              ? '${serialName!}에게만 공개'
+              : '내 직렬만 공개'
+        : '전체 공개';
 
     final BorderRadius radius = BorderRadius.circular(10);
     final Widget chip = ConstrainedBox(
@@ -49,9 +57,11 @@ class _AudienceSelector extends StatelessWidget {
             Flexible(
               child: Text(
                 message,
-                style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                softWrap: false,
               ),
             ),
           ],
@@ -124,7 +134,11 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
 
           final ThemeData theme = Theme.of(context);
           final AuthState authState = context.watch<AuthCubit>().state;
-          final bool hasSerial = authState.serial.isNotEmpty && authState.serial != 'unknown';
+          final bool hasSerial =
+              authState.serial.isNotEmpty && authState.serial != 'unknown';
+          final String? serialDisplayName = hasSerial
+              ? _serialDisplayName(authState)
+              : null;
 
           if (_lastScope != widget.scope) {
             final PostAudience desiredAudience = _audienceForScope(
@@ -149,7 +163,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
 
           return Card(
             margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -159,7 +175,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     children: [
                       Text(
                         '라운지에 글 남기기',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       if (state.isSubmitting) ...[
                         const Gap(6),
@@ -169,12 +187,12 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ],
-                      const Spacer(),
                       Flexible(
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: _AudienceSelector(
                             audience: state.audience,
+                            serialName: serialDisplayName,
                           ),
                         ),
                       ),
@@ -188,13 +206,18 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     enabled: !state.isSubmitting,
                     onChanged: cubit.updateText,
                     decoration: InputDecoration(
-                      hintText: authState.isLoggedIn ? '나누고 싶은 이야기를 적어보세요.' : '로그인 후 글을 작성할 수 있어요.',
+                      hintText: authState.isLoggedIn
+                          ? '나누고 싶은 이야기를 적어보세요.'
+                          : '로그인 후 글을 작성할 수 있어요.',
                       hintStyle: theme.textTheme.bodyMedium,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       filled: true,
                     ),
                   ),
@@ -231,7 +254,10 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                             : () async {
                                 await cubit.addAttachmentFromGallery();
                               },
-                        icon: const Icon(Icons.photo_library_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          size: 18,
+                        ),
                       ),
                       const Spacer(),
                       FilledButton(
@@ -257,9 +283,12 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     const Gap(6),
                     Text(
                       '로그인 후 글을 등록할 수 있습니다.',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
                     ),
-                  ] else if (!hasSerial && state.audience == PostAudience.serial) ...[
+                  ] else if (!hasSerial &&
+                      state.audience == PostAudience.serial) ...[
                     const Gap(8),
                     Text(
                       '마이페이지에서 직렬 정보를 등록하면 직렬 전용으로 공유할 수 있어요.',
@@ -277,11 +306,34 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
     );
   }
 
-  PostAudience _audienceForScope({required LoungeScope scope, required bool hasSerial}) {
+  PostAudience _audienceForScope({
+    required LoungeScope scope,
+    required bool hasSerial,
+  }) {
     if (scope == LoungeScope.serial && hasSerial) {
       return PostAudience.serial;
     }
     return PostAudience.all;
+  }
+
+  String? _serialDisplayName(AuthState authState) {
+    final CareerTrack track = authState.careerTrack;
+    if (track != CareerTrack.none) {
+      return track.displayName;
+    }
+
+    final String serial = authState.serial;
+    final String normalized = serial.trim().toLowerCase();
+    for (final CareerTrack candidate in CareerTrack.values) {
+      if (candidate == CareerTrack.none) {
+        continue;
+      }
+      if (normalized.contains(candidate.name.toLowerCase())) {
+        return candidate.displayName;
+      }
+    }
+
+    return null;
   }
 }
 
@@ -298,7 +350,12 @@ class _AttachmentPreview extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.memory(draft.bytes, width: 72, height: 72, fit: BoxFit.cover),
+          child: Image.memory(
+            draft.bytes,
+            width: 72,
+            height: 72,
+            fit: BoxFit.cover,
+          ),
         ),
         Positioned(
           right: 4,

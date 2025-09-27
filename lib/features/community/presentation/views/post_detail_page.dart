@@ -501,6 +501,13 @@ class _CommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timestamp = _formatTimestamp(comment.createdAt);
+    final bool hasTrack =
+        comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
+    final String trackLabel = !comment.authorSerialVisible
+        ? '공무원'
+        : hasTrack
+        ? '${comment.authorTrack.emoji} ${comment.authorTrack.displayName}'
+        : '직렬 비공개';
 
     return Container(
       padding: const EdgeInsets.only(bottom: 16),
@@ -556,7 +563,7 @@ class _CommentTile extends StatelessWidget {
                       ),
                       const Gap(2),
                       Text(
-                        '${comment.authorTrack.emoji} ${comment.authorTrack.displayName} · $timestamp',
+                        '$trackLabel · $timestamp',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
