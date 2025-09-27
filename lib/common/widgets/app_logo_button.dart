@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'app_logo.dart';
+
 class AppLogoButton extends StatefulWidget {
-  const AppLogoButton({
-    super.key,
-    required this.onTap,
-    this.compact = false,
-  });
+  const AppLogoButton({super.key, required this.onTap, this.compact = false});
 
   final VoidCallback onTap;
   final bool compact;
@@ -34,32 +32,39 @@ class _AppLogoButtonState extends State<AppLogoButton> {
 
   @override
   Widget build(BuildContext context) {
-    final double diameter = widget.compact ? 36 : 40;
+    final double diameter = widget.compact ? 44 : 52;
+    final BorderRadius borderRadius = BorderRadius.circular(widget.compact ? 14 : 18);
     final InteractiveInkFeatureFactory splashFactory = Theme.of(context).splashFactory;
+    final EdgeInsets padding = widget.compact ? const EdgeInsets.all(4) : const EdgeInsets.all(6);
+    final double containerSize = diameter + padding.horizontal;
 
     return AnimatedScale(
       scale: _isPressed ? 0.94 : 1,
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
-      child: Material(
-        color: Colors.transparent,
-        child: InkResponse(
-          onTap: _handleTap,
-          onTapDown: _handleTapDown,
-          onTapCancel: _handleTapCancel,
-          radius: diameter,
-          containedInkWell: true,
-          splashFactory: splashFactory,
-          child: Padding(
-            padding: widget.compact
-                ? const EdgeInsets.symmetric(horizontal: 4)
-                : const EdgeInsets.symmetric(horizontal: 6),
-            child: Image.asset(
-              'assets/images/app_logo.png',
-              height: diameter,
-              width: diameter,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
+      child: SizedBox(
+        width: containerSize,
+        height: containerSize,
+        child: Material(
+          color: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: borderRadius),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: _handleTap,
+            onTapDown: _handleTapDown,
+            onTapCancel: _handleTapCancel,
+            splashFactory: splashFactory,
+            customBorder: RoundedRectangleBorder(borderRadius: borderRadius),
+            borderRadius: borderRadius,
+            child: Padding(
+              padding: padding,
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: SizedBox.square(
+                  dimension: diameter,
+                  child: Center(child: AppLogo(size: diameter * 0.9)),
+                ),
+              ),
             ),
           ),
         ),

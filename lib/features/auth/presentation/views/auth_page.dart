@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../common/widgets/app_logo.dart';
 import '../widgets/auth_content.dart';
 
 class AuthPage extends StatelessWidget {
@@ -24,14 +25,7 @@ class AuthPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    child: Image.asset(
-                      'assets/images/app_logo.png',
-                      height: 72,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ),
+                  const Align(child: AppLogo(size: 72)),
 
                   const Gap(32),
                   AuthContent(

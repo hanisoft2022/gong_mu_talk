@@ -3,6 +3,8 @@ part of 'post_detail_cubit.dart';
 enum PostDetailStatus { initial, loading, loaded, error }
 
 class PostDetailState extends Equatable {
+  static const Object _replyingToUnset = Object();
+
   const PostDetailState({
     this.status = PostDetailStatus.initial,
     this.post,
@@ -11,6 +13,7 @@ class PostDetailState extends Equatable {
     this.isLoadingComments = false,
     this.isSubmittingComment = false,
     this.errorMessage,
+    this.replyingTo,
   });
 
   final PostDetailStatus status;
@@ -20,6 +23,7 @@ class PostDetailState extends Equatable {
   final bool isLoadingComments;
   final bool isSubmittingComment;
   final String? errorMessage;
+  final Comment? replyingTo;
 
   PostDetailState copyWith({
     PostDetailStatus? status,
@@ -29,6 +33,7 @@ class PostDetailState extends Equatable {
     bool? isLoadingComments,
     bool? isSubmittingComment,
     String? errorMessage,
+    Object? replyingTo = _replyingToUnset,
   }) {
     return PostDetailState(
       status: status ?? this.status,
@@ -38,6 +43,9 @@ class PostDetailState extends Equatable {
       isLoadingComments: isLoadingComments ?? this.isLoadingComments,
       isSubmittingComment: isSubmittingComment ?? this.isSubmittingComment,
       errorMessage: errorMessage ?? this.errorMessage,
+      replyingTo: replyingTo == _replyingToUnset
+          ? this.replyingTo
+          : replyingTo as Comment?,
     );
   }
 
@@ -50,5 +58,6 @@ class PostDetailState extends Equatable {
     isLoadingComments,
     isSubmittingComment,
     errorMessage,
+    replyingTo,
   ];
 }

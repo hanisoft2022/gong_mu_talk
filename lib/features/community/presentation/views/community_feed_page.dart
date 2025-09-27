@@ -43,7 +43,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode()
       ..addListener(() {
-        if (!_searchFocusNode.hasFocus && mounted && _searchController.text.trim().isEmpty) {
+        if (!_searchFocusNode.hasFocus &&
+            mounted &&
+            _searchController.text.trim().isEmpty) {
           setState(() {
             _isSearchExpanded = false;
           });
@@ -63,7 +65,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   void _onScroll() {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       cubit.fetchMore();
     }
 
@@ -100,13 +103,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
               }
 
               final bool showSearchResults =
-                  _isSearchExpanded && (searchState.query.isNotEmpty || searchState.isLoading);
+                  _isSearchExpanded &&
+                  (searchState.query.isNotEmpty || searchState.isLoading);
 
               if (!showSearchResults &&
                   (feedState.status == CommunityFeedStatus.initial ||
                       feedState.status == CommunityFeedStatus.loading) &&
                   feedState.posts.isEmpty) {
-                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
               }
 
               if (!showSearchResults &&
@@ -115,13 +121,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 return Scaffold(
                   body: _CommunityErrorView(
                     message: feedState.errorMessage,
-                    onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
+                    onRetry: () =>
+                        context.read<CommunityFeedCubit>().loadInitial(),
                   ),
                 );
               }
 
               final Future<void> Function() onRefresh = showSearchResults
-                  ? () => (_searchCubit ?? context.read<SearchCubit>()).refresh()
+                  ? () =>
+                        (_searchCubit ?? context.read<SearchCubit>()).refresh()
                   : () => context.read<CommunityFeedCubit>().refresh();
 
               final List<Widget> children = <Widget>[
@@ -132,7 +140,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
               ];
 
               if (_isSearchExpanded && !showSearchResults) {
-                final Widget? suggestionsCard = _buildSearchSuggestionsCard(context, searchState);
+                final Widget? suggestionsCard = _buildSearchSuggestionsCard(
+                  context,
+                  searchState,
+                );
                 if (suggestionsCard != null) {
                   children
                     ..add(suggestionsCard)
@@ -140,7 +151,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 }
                 children.addAll(_buildFeedSection(context, feedState));
               } else if (showSearchResults) {
-                children.addAll(_buildSearchResultsSection(context, searchState));
+                children.addAll(
+                  _buildSearchResultsSection(context, searchState),
+                );
               } else {
                 children.addAll(_buildFeedSection(context, feedState));
               }
@@ -153,10 +166,18 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   ],
                   body: RefreshIndicator(
                     onRefresh: onRefresh,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: children,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 260),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: ListView(
+                        key: ValueKey<String>(
+                          'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
+                        ),
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: children,
+                      ),
                     ),
                   ),
                 ),
@@ -191,13 +212,19 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         const Gap(12),
         SizedBox(
           height: 44,
-          child: _SortMenu(currentSort: feedState.sort, onSelect: feedCubit.changeSort),
+          child: _SortMenu(
+            currentSort: feedState.sort,
+            onSelect: feedCubit.changeSort,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCollapsedSearchTrigger(ThemeData theme, SearchState searchState) {
+  Widget _buildCollapsedSearchTrigger(
+    ThemeData theme,
+    SearchState searchState,
+  ) {
     final BorderRadius radius = BorderRadius.circular(12);
     final TextStyle labelStyle =
         theme.textTheme.bodySmall?.copyWith(
@@ -206,7 +233,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         ) ??
         TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant);
     final String placeholder = _searchController.text.trim();
-    final bool showPlaceholder = placeholder.isNotEmpty;
+    final String displayText = placeholder.isNotEmpty
+        ? placeholder
+        : '${searchState.scope.label} 검색';
 
     return SizedBox(
       height: 44,
@@ -214,7 +243,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         key: ValueKey<String>('collapsed_${searchState.scope.name}'),
         borderRadius: radius,
         child: DecoratedBox(
-          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
           child: Material(
             type: MaterialType.transparency,
             child: InkWell(
@@ -224,11 +255,19 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
-                    Icon(Icons.search, size: 18, color: theme.colorScheme.onSurfaceVariant),
-                    if (showPlaceholder) ...[
-                      const Gap(8),
-                      Flexible(child: Text(placeholder, style: labelStyle)),
-                    ],
+                    Icon(
+                      Icons.search,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const Gap(8),
+                    Expanded(
+                      child: Text(
+                        displayText,
+                        style: labelStyle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -239,7 +278,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildExpandedSearchField(BuildContext context, SearchState searchState) {
+  Widget _buildExpandedSearchField(
+    BuildContext context,
+    SearchState searchState,
+  ) {
     final ThemeData theme = Theme.of(context);
     final BorderRadius radius = BorderRadius.circular(12);
     final bool hasText = _searchController.text.trim().isNotEmpty;
@@ -247,10 +289,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     return SizedBox(
       height: 44,
       child: ClipRRect(
-        key: ValueKey<String>('expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}'),
+        key: ValueKey<String>(
+          'expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}',
+        ),
         borderRadius: radius,
         child: DecoratedBox(
-          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
           child: Row(
             children: [
               _SearchIconButton(
@@ -302,7 +348,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 initialValue: searchState.scope,
                 onSelected: (SearchScope scope) {
                   if (scope != searchState.scope) {
-                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(scope);
+                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(
+                      scope,
+                    );
                   }
                 },
                 itemBuilder: (BuildContext context) {
@@ -313,7 +361,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                           child: Row(
                             children: [
                               if (scope == searchState.scope)
-                                Icon(Icons.check, size: 16, color: theme.colorScheme.primary)
+                                Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                )
                               else
                                 const SizedBox(width: 16),
                               const Gap(8),
@@ -325,8 +377,31 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                       .toList(growable: false);
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.tune, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const Gap(6),
+                      Text(
+                        searchState.scope.label,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Gap(2),
+                      Icon(
+                        Icons.expand_more,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -336,10 +411,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  List<Widget> _buildFeedSection(BuildContext context, CommunityFeedState state) {
+  List<Widget> _buildFeedSection(
+    BuildContext context,
+    CommunityFeedState state,
+  ) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    final bool hasSerialAccess = state.careerTrack != CareerTrack.none && state.serial != 'unknown';
-    final bool showSerialGuide = state.scope == LoungeScope.serial && !hasSerialAccess;
+    final bool hasSerialAccess =
+        state.careerTrack != CareerTrack.none && state.serial != 'unknown';
+    final bool showSerialGuide =
+        state.scope == LoungeScope.serial && !hasSerialAccess;
     final bool showEmptyPosts = state.posts.isEmpty && !showSerialGuide;
 
     if (showSerialGuide) {
@@ -376,12 +456,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           onToggleLike: () => cubit.toggleLike(post),
           onToggleBookmark: () => cubit.toggleBookmark(post),
           displayScope: state.scope,
+          showShare: false,
+          showBookmark: false,
         ),
       );
       renderedCount += 1;
 
       final bool shouldInsertAd =
-          state.showAds && renderedCount % adInterval == 0 && renderedCount < totalPosts;
+          state.showAds &&
+          renderedCount % adInterval == 0 &&
+          renderedCount < totalPosts;
 
       if (shouldInsertAd) {
         children
@@ -402,7 +486,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     return children;
   }
 
-  Widget? _buildSearchSuggestionsCard(BuildContext context, SearchState searchState) {
+  Widget? _buildSearchSuggestionsCard(
+    BuildContext context,
+    SearchState searchState,
+  ) {
     final ThemeData theme = Theme.of(context);
     final List<SearchSuggestion> suggestions = searchState.suggestions;
 
@@ -426,7 +513,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 const Gap(8),
                 Text(
                   '인기 검색어',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -449,18 +538,25 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  List<Widget> _buildSearchResultsSection(BuildContext context, SearchState state) {
+  List<Widget> _buildSearchResultsSection(
+    BuildContext context,
+    SearchState state,
+  ) {
     if (state.error != null) {
       return <Widget>[_buildSearchErrorCard(context, state.error!)];
     }
 
     final SearchCubit searchCubit = _searchCubit ?? context.read<SearchCubit>();
     final bool showPosts = state.scope != SearchScope.comments;
-    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showComments =
+        state.scope == SearchScope.all || state.scope == SearchScope.comments;
     final bool noPosts = !showPosts || state.postResults.isEmpty;
     final bool noComments = !showComments || state.commentResults.isEmpty;
 
-    final List<Widget> widgets = <Widget>[_buildSearchResultsHeader(context, state), const Gap(12)];
+    final List<Widget> widgets = <Widget>[
+      _buildSearchResultsHeader(context, state),
+      const Gap(12),
+    ];
 
     if (!state.isLoading && noPosts && noComments) {
       widgets.add(_buildSearchEmptyResults(context, state));
@@ -468,7 +564,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     }
 
     if (showPosts) {
-      widgets.add(_buildSearchSectionHeader(context, '글 결과', state.postResults.length));
+      widgets.add(
+        _buildSearchSectionHeader(context, '글 결과', state.postResults.length),
+      );
       if (state.postResults.isEmpty && !state.isLoading) {
         widgets.add(_buildNoSectionResults(context, '글'));
       } else {
@@ -489,7 +587,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     }
 
     if (showComments) {
-      widgets.add(_buildSearchSectionHeader(context, '댓글 결과', state.commentResults.length));
+      widgets.add(
+        _buildSearchSectionHeader(
+          context,
+          '댓글 결과',
+          state.commentResults.length,
+        ),
+      );
       if (state.commentResults.isEmpty && !state.isLoading) {
         widgets.add(_buildNoSectionResults(context, '댓글'));
       } else {
@@ -526,7 +630,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             Expanded(
               child: Text(
                 "'${state.query}' 검색 결과",
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             TextButton.icon(
@@ -555,17 +661,28 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildSearchSectionHeader(BuildContext context, String title, int count) {
+  Widget _buildSearchSectionHeader(
+    BuildContext context,
+    String title,
+    int count,
+  ) {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const Gap(6),
           Text(
             '$count',
-            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -577,9 +694,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         '$target 결과가 없습니다.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -608,11 +725,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("'${state.query}'에 대한 $target 결과가 없습니다.", style: theme.textTheme.titleMedium),
+            Text(
+              "'${state.query}'에 대한 $target 결과가 없습니다.",
+              style: theme.textTheme.titleMedium,
+            ),
             const Gap(8),
             Text(
               '검색어를 바꾸거나 범위를 조정해보세요.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const Gap(12),
             TextButton.icon(
@@ -638,7 +760,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 const Icon(Icons.error_outline, color: Colors.red),
                 const Gap(8),
                 Expanded(
-                  child: Text('검색 중 오류가 발생했습니다.', style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    '검색 중 오류가 발생했습니다.',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -646,7 +771,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             Text(message, style: Theme.of(context).textTheme.bodySmall),
             const Gap(12),
             FilledButton.icon(
-              onPressed: () => (_searchCubit ?? context.read<SearchCubit>()).refresh(),
+              onPressed: () =>
+                  (_searchCubit ?? context.read<SearchCubit>()).refresh(),
               icon: const Icon(Icons.refresh),
               label: const Text('다시 시도'),
             ),
@@ -711,7 +837,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     (_searchCubit ?? context.read<SearchCubit>()).search(trimmed);
   }
 
-  SliverAppBar _buildLoungeSliverAppBar(BuildContext context, CommunityFeedState state) {
+  SliverAppBar _buildLoungeSliverAppBar(
+    BuildContext context,
+    CommunityFeedState state,
+  ) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color background = Color.lerp(
@@ -720,6 +849,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       _isAppBarElevated ? 1 : 0,
     )!;
     final double radius = _isAppBarElevated ? 12 : 18;
+    const double toolbarHeight = 64;
     return SliverAppBar(
       floating: true,
       snap: true,
@@ -728,22 +858,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       elevation: _isAppBarElevated ? 3 : 0,
       scrolledUnderElevation: 6,
       titleSpacing: 12,
-      toolbarHeight: 64,
-      leadingWidth: 56,
+      toolbarHeight: toolbarHeight,
+      leadingWidth: toolbarHeight,
       backgroundColor: background,
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.black.withValues(alpha: _isAppBarElevated ? 0.08 : 0),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(radius),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(radius)),
       ),
       leading: Padding(
         padding: const EdgeInsets.only(left: 8),
-        child: AppLogoButton(
-          compact: true,
-          onTap: _scrollToTop,
-        ),
+        child: AppLogoButton(compact: true, onTap: _scrollToTop),
       ),
       title: _buildScopeSelector(context, state),
       actions: [
@@ -771,7 +896,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   Widget _buildScopeSelector(BuildContext context, CommunityFeedState state) {
     final ThemeData theme = Theme.of(context);
-    final bool hasSerialAccess = state.careerTrack != CareerTrack.none && state.serial != 'unknown';
+    final bool hasSerialAccess =
+        state.careerTrack != CareerTrack.none && state.serial != 'unknown';
     final String serialLabel = hasSerialAccess
         ? state.careerTrack.displayName
         : '내 직렬';
@@ -787,8 +913,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       ),
       textStyle: WidgetStatePropertyAll<TextStyle>(labelStyle),
       shape: WidgetStateProperty.resolveWith(
-        (states) =>
-            const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+        (states) => const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
       ),
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -838,7 +965,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   void _useSuggestion(String token) {
     _searchController
       ..text = token
-      ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
+      ..selection = TextSelection.fromPosition(
+        TextPosition(offset: token.length),
+      );
     _onSearchSubmitted(token);
   }
 }
@@ -865,7 +994,10 @@ class _SearchIconButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
       splashRadius: 22,
-      style: IconButton.styleFrom(splashFactory: NoSplash.splashFactory, foregroundColor: color),
+      style: IconButton.styleFrom(
+        splashFactory: NoSplash.splashFactory,
+        foregroundColor: color,
+      ),
     );
   }
 }
@@ -933,11 +1065,18 @@ class _SortMenu extends StatelessWidget {
               return PopupMenuItem<LoungeSort>(
                 value: option,
                 height: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     if (isSelected)
-                      Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
+                      Icon(
+                        Icons.check,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      )
                     else
                       const SizedBox(width: 18),
                     const Gap(8),
@@ -961,7 +1100,9 @@ class _SortMenu extends StatelessWidget {
             const Gap(4),
             Text(
               currentSort.label,
-              style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(2),
             const Icon(Icons.arrow_drop_down, size: 18),
@@ -1000,12 +1141,21 @@ class _EmptyStateView extends StatelessWidget {
             children: [
               Icon(icon, size: 56, color: theme.colorScheme.primary),
               const Gap(12),
-              Text(title, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
               const Gap(8),
-              Text(message, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+              Text(
+                message,
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
               const Gap(16),
               FilledButton.icon(
-                onPressed: () => context.read<CommunityFeedCubit>().seedDummyChirps(),
+                onPressed: () =>
+                    context.read<CommunityFeedCubit>().seedDummyChirps(),
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('더미 데이터 채우기'),
               ),

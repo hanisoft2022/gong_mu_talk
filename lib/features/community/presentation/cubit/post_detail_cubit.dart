@@ -5,7 +5,6 @@ import 'package:injectable/injectable.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
-import '../../../profile/domain/career_track.dart';
 
 part 'post_detail_state.dart';
 
@@ -14,6 +13,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
   PostDetailCubit(this._repository) : super(const PostDetailState());
 
   final CommunityRepository _repository;
+  String? _pendingReplyCommentId;
 
   String get currentUserId => _repository.currentUserId;
 
@@ -96,6 +96,7 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           isLoadingComments: false,
         ),
       );
+      _fulfillPendingReply();
     } catch (e) {
       emit(state.copyWith(isLoadingComments: false));
     }
@@ -147,20 +148,84 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     emit(state.copyWith(isSubmittingComment: true));
 
     try {
-      await _repository.addComment(post.id, text.trim());
+      final Comment? replyTarget = state.replyingTo;
+      final String? parentCommentId = replyTarget == null
+          ? null
+          : (replyTarget.parentCommentId?.isNotEmpty ?? false)
+          ? replyTarget.parentCommentId
+          : replyTarget.id;
+
+      await _repository.addComment(
+        post.id,
+        text.trim(),
+        parentCommentId: parentCommentId,
+      );
 
       // Refresh comments
       await _loadComments(post.id);
 
       // Update post comment count
       final updatedPost = post.copyWith(commentCount: post.commentCount + 1);
-      emit(state.copyWith(post: updatedPost, isSubmittingComment: false));
+      emit(
+        state.copyWith(
+          post: updatedPost,
+          isSubmittingComment: false,
+          replyingTo: null,
+        ),
+      );
 
       return true;
     } catch (e) {
       emit(state.copyWith(isSubmittingComment: false));
       return false;
     }
+  }
+
+  void setReplyTarget(Comment comment) {
+    _pendingReplyCommentId = null;
+    emit(state.copyWith(replyingTo: comment));
+  }
+
+  void clearReplyTarget() {
+    if (state.replyingTo != null) {
+      emit(state.copyWith(replyingTo: null));
+    }
+  }
+
+  void setPendingReply(String? commentId) {
+    if (commentId == null || commentId.isEmpty) {
+      _pendingReplyCommentId = null;
+      return;
+    }
+    _pendingReplyCommentId = commentId;
+    _fulfillPendingReply();
+  }
+
+  void _fulfillPendingReply() {
+    final String? targetId = _pendingReplyCommentId;
+    if (targetId == null) {
+      return;
+    }
+
+    final Comment? match = _findCommentById(targetId);
+    if (match != null) {
+      _pendingReplyCommentId = null;
+      emit(state.copyWith(replyingTo: match));
+    }
+  }
+
+  Comment? _findCommentById(String id) {
+    for (final Comment comment in state.comments) {
+      if (comment.id == id) {
+        return comment;
+      }
+    }
+    for (final Comment comment in state.featuredComments) {
+      if (comment.id == id) {
+        return comment;
+      }
+    }
+    return null;
   }
 
   Future<void> toggleCommentLike(String commentId) async {
@@ -186,70 +251,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
       // Revert on error
       comments[index] = comment;
       emit(state.copyWith(comments: comments));
-    }
-  }
-
-  Future<void> toggleCommentReaction(String commentId, String emoji) async {
-    final Post? post = state.post;
-    if (post == null) {
-      return;
-    }
-
-    final String? current = state.comments
-        .firstWhere(
-          (Comment comment) => comment.id == commentId,
-          orElse: () => state.featuredComments.firstWhere(
-            (Comment comment) => comment.id == commentId,
-            orElse: () => Comment(
-              id: commentId,
-              postId: post.id,
-              authorUid: '',
-              authorNickname: '',
-              text: '',
-              likeCount: 0,
-              createdAt: DateTime.now(),
-              authorTrack: CareerTrack.none,
-              authorSerialVisible: true,
-              authorSupporterLevel: 0,
-              authorIsSupporter: false,
-            ),
-          ),
-        )
-        .viewerReaction;
-
-    final String? previous = current;
-    final String? next = previous == emoji ? null : emoji;
-
-    void emitWith(String? reaction) {
-      emit(
-        state.copyWith(
-          comments: _updateCommentReactions(
-            state.comments,
-            commentId,
-            reaction,
-          ),
-          featuredComments: _updateCommentReactions(
-            state.featuredComments,
-            commentId,
-            reaction,
-          ),
-        ),
-      );
-    }
-
-    emitWith(next);
-
-    try {
-      final String? confirmed = await _repository.toggleCommentReaction(
-        postId: post.id,
-        commentId: commentId,
-        emoji: emoji,
-      );
-      if (confirmed != next) {
-        emitWith(confirmed);
-      }
-    } catch (_) {
-      emitWith(previous);
     }
   }
 
@@ -306,7 +307,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
-              reactionCounts: const <String, int>{},
               authorSupporterLevel: comment.authorSupporterLevel,
               authorIsSupporter: comment.authorIsSupporter,
             ),
@@ -324,7 +324,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           text: post.topComment!.text,
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
-          reactionCounts: const <String, int>{},
           authorTrack: post.topComment!.authorTrack,
           authorSerialVisible: post.topComment!.authorSerialVisible,
           authorSupporterLevel: post.topComment!.authorSupporterLevel,
@@ -348,7 +347,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
-              reactionCounts: const <String, int>{},
               authorTrack: comment.authorTrack,
               authorSerialVisible: comment.authorSerialVisible,
               authorSupporterLevel: comment.authorSupporterLevel,
@@ -368,7 +366,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           text: post.topComment!.text,
           likeCount: post.topComment!.likeCount,
           createdAt: post.updatedAt ?? post.createdAt,
-          reactionCounts: const <String, int>{},
           authorTrack: post.topComment!.authorTrack,
           authorSerialVisible: post.topComment!.authorSerialVisible,
           authorSupporterLevel: post.topComment!.authorSupporterLevel,
@@ -380,34 +377,4 @@ class PostDetailCubit extends Cubit<PostDetailState> {
     return const <Comment>[];
   }
 
-  List<Comment> _updateCommentReactions(
-    List<Comment> source,
-    String commentId,
-    String? reaction,
-  ) {
-    return source
-        .map(
-          (Comment comment) => comment.id == commentId
-              ? _adjustCommentReaction(comment, reaction)
-              : comment,
-        )
-        .toList(growable: false);
-  }
-
-  Comment _adjustCommentReaction(Comment comment, String? reaction) {
-    final Map<String, int> counts = Map<String, int>.from(
-      comment.reactionCounts,
-    );
-    final String? current = comment.viewerReaction;
-    if (current != null) {
-      counts[current] = (counts[current] ?? 0) - 1;
-      if ((counts[current] ?? 0) <= 0) {
-        counts.remove(current);
-      }
-    }
-    if (reaction != null) {
-      counts[reaction] = (counts[reaction] ?? 0) + 1;
-    }
-    return comment.copyWith(viewerReaction: reaction, reactionCounts: counts);
-  }
 }

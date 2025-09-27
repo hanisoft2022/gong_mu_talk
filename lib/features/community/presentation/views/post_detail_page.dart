@@ -5,16 +5,24 @@ import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/routing/app_router.dart';
 
 import '../../domain/models/comment.dart';
+import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../cubit/post_detail_cubit.dart';
 import '../widgets/post_card.dart';
+import '../widgets/comment_utils.dart';
 import '../../../profile/domain/career_track.dart';
 
 class PostDetailPage extends StatefulWidget {
-  const PostDetailPage({super.key, required this.postId, this.initialPost});
+  const PostDetailPage({
+    super.key,
+    required this.postId,
+    this.initialPost,
+    this.replyCommentId,
+  });
 
   final String postId;
   final Post? initialPost;
+  final String? replyCommentId;
 
   @override
   State<PostDetailPage> createState() => _PostDetailPageState();
@@ -31,10 +39,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     _commentController = TextEditingController();
     _commentFocusNode = FocusNode();
     _scrollController = ScrollController();
-    context.read<PostDetailCubit>().loadPost(
-      widget.postId,
-      fallback: widget.initialPost,
-    );
+    final PostDetailCubit cubit = context.read<PostDetailCubit>();
+    cubit.loadPost(widget.postId, fallback: widget.initialPost);
+    cubit.setPendingReply(widget.replyCommentId);
   }
 
   @override
@@ -48,132 +55,129 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('게시글'),
-        actions: [
-          BlocBuilder<PostDetailCubit, PostDetailState>(
-            builder: (context, state) {
-              if (state.post != null) {
-                return IconButton(
-                  icon: Icon(
-                    state.post!.isBookmarked
-                        ? Icons.bookmark
-                        : Icons.bookmark_outline,
-                  ),
-                  onPressed: () {
-                    context.read<PostDetailCubit>().toggleBookmark();
-                  },
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<PostDetailCubit, PostDetailState>(
-        builder: (context, state) {
-          if (state.status == PostDetailStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+      appBar: AppBar(title: const Text('게시글')),
+      body: BlocListener<PostDetailCubit, PostDetailState>(
+        listenWhen: (previous, current) =>
+            previous.replyingTo != current.replyingTo,
+        listener: (context, state) {
+          final Comment? target = state.replyingTo;
+          if (target != null) {
+            _ensureReplyMention(target);
           }
+        },
+        child: BlocBuilder<PostDetailCubit, PostDetailState>(
+          builder: (context, state) {
+            if (state.status == PostDetailStatus.loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state.status == PostDetailStatus.error) {
-            return _ErrorView(
-              message: state.errorMessage ?? '게시글을 불러올 수 없습니다.',
-              onRetry: () =>
-                  context.read<PostDetailCubit>().loadPost(widget.postId),
-            );
-          }
+            if (state.status == PostDetailStatus.error) {
+              return _ErrorView(
+                message: state.errorMessage ?? '게시글을 불러올 수 없습니다.',
+                onRetry: () =>
+                    context.read<PostDetailCubit>().loadPost(widget.postId),
+              );
+            }
 
-          if (state.post == null) {
-            return const Center(child: Text('게시글을 찾을 수 없습니다.'));
-          }
+            if (state.post == null) {
+              return const Center(child: Text('게시글을 찾을 수 없습니다.'));
+            }
 
-          return Column(
-            children: [
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () => context.read<PostDetailCubit>().refresh(),
-                  child: ListView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      PostCard(
-                        post: state.post!,
-                        onToggleLike: () =>
-                            context.read<PostDetailCubit>().toggleLike(),
-                        onToggleBookmark: () =>
-                            context.read<PostDetailCubit>().toggleBookmark(),
-                        trailing: PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
-                          itemBuilder: (context) => [
-                            if (state.post!.authorUid ==
-                                context
-                                    .read<PostDetailCubit>()
-                                    .currentUserId) ...[
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: ListTile(
-                                  leading: Icon(Icons.edit_outlined),
-                                  title: Text('수정'),
-                                  contentPadding: EdgeInsets.zero,
+            final LoungeScope scope =
+                state.post!.audience == PostAudience.serial
+                ? LoungeScope.serial
+                : LoungeScope.all;
+
+            return Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => context.read<PostDetailCubit>().refresh(),
+                    child: ListView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        PostCard(
+                          post: state.post!,
+                          onToggleLike: () =>
+                              context.read<PostDetailCubit>().toggleLike(),
+                          onToggleBookmark: () =>
+                              context.read<PostDetailCubit>().toggleBookmark(),
+                          showShare: false,
+                          showBookmark: false,
+                          trailing: PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert),
+                            itemBuilder: (context) => [
+                              if (state.post!.authorUid ==
+                                  context
+                                      .read<PostDetailCubit>()
+                                      .currentUserId) ...[
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit_outlined),
+                                    title: Text('수정'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
                                 ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: ListTile(
-                                  leading: Icon(Icons.delete_outline),
-                                  title: Text('삭제'),
-                                  contentPadding: EdgeInsets.zero,
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete_outline),
+                                    title: Text('삭제'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
                                 ),
-                              ),
-                            ] else ...[
-                              const PopupMenuItem(
-                                value: 'report',
-                                child: ListTile(
-                                  leading: Icon(Icons.report_outlined),
-                                  title: Text('신고'),
-                                  contentPadding: EdgeInsets.zero,
+                              ] else ...[
+                                const PopupMenuItem(
+                                  value: 'report',
+                                  child: ListTile(
+                                    leading: Icon(Icons.report_outlined),
+                                    title: Text('신고'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
                                 ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'block',
-                                child: ListTile(
-                                  leading: Icon(Icons.block_outlined),
-                                  title: Text('차단'),
-                                  contentPadding: EdgeInsets.zero,
+                                const PopupMenuItem(
+                                  value: 'block',
+                                  child: ListTile(
+                                    leading: Icon(Icons.block_outlined),
+                                    title: Text('차단'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                          onSelected: _handleMenuAction,
+                            onSelected: _handleMenuAction,
+                          ),
                         ),
-                      ),
-                      const Gap(24),
-                      _CommentsSection(
-                        featuredComments: state.featuredComments,
-                        timelineComments: state.comments,
-                        isLoading: state.isLoadingComments,
-                        onToggleLike: (commentId) => context
-                            .read<PostDetailCubit>()
-                            .toggleCommentLike(commentId),
-                        onReact: (commentId, emoji) => context
-                            .read<PostDetailCubit>()
-                            .toggleCommentReaction(commentId, emoji),
-                        onReply: _insertMention,
-                      ),
-                    ],
+                        const Gap(24),
+                        _CommentsSection(
+                          featuredComments: state.featuredComments,
+                          timelineComments: state.comments,
+                          isLoading: state.isLoadingComments,
+                          scope: scope,
+                          onToggleLike: (commentId) => context
+                              .read<PostDetailCubit>()
+                              .toggleCommentLike(commentId),
+                          onReply: _handleReply,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _CommentComposer(
-                controller: _commentController,
-                isSubmitting: state.isSubmittingComment,
-                onSubmit: _submitComment,
-                focusNode: _commentFocusNode,
-              ),
-            ],
-          );
-        },
+                _CommentComposer(
+                  controller: _commentController,
+                  isSubmitting: state.isSubmittingComment,
+                  onSubmit: _submitComment,
+                  focusNode: _commentFocusNode,
+                  replyingTo: state.replyingTo,
+                  onCancelReply: _cancelReply,
+                  scope: scope,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -307,6 +311,31 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
+  void _handleReply(Comment comment) {
+    context.read<PostDetailCubit>().setReplyTarget(comment);
+  }
+
+  void _cancelReply() {
+    final PostDetailCubit cubit = context.read<PostDetailCubit>();
+    final Comment? replyingTo = cubit.state.replyingTo;
+    cubit.clearReplyTarget();
+
+    if (replyingTo == null) {
+      return;
+    }
+
+    final String mention = '@${replyingTo.authorNickname.trim()} ';
+    final String current = _commentController.text;
+    if (current.endsWith(mention)) {
+      final String updated = current
+          .substring(0, current.length - mention.length)
+          .trimRight();
+      _commentController
+        ..text = updated
+        ..selection = TextSelection.collapsed(offset: updated.length);
+    }
+  }
+
   void _insertMention(String nickname) {
     final String trimmed = nickname.trim();
     if (trimmed.isEmpty) {
@@ -330,6 +359,23 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
     _commentFocusNode.requestFocus();
   }
+
+  void _ensureReplyMention(Comment comment) {
+    final String nickname = comment.authorNickname.trim();
+    if (nickname.isEmpty) {
+      return;
+    }
+    final String mentionToken = '@$nickname';
+    final TextEditingValue value = _commentController.value;
+    if (!value.text.contains(mentionToken)) {
+      _insertMention(nickname);
+    } else {
+      _commentFocusNode.requestFocus();
+      _commentController.selection = TextSelection.collapsed(
+        offset: value.text.length,
+      );
+    }
+  }
 }
 
 class _CommentsSection extends StatelessWidget {
@@ -337,20 +383,57 @@ class _CommentsSection extends StatelessWidget {
     required this.featuredComments,
     required this.timelineComments,
     required this.isLoading,
+    required this.scope,
     required this.onToggleLike,
-    required this.onReact,
     required this.onReply,
   });
 
   final List<Comment> featuredComments;
   final List<Comment> timelineComments;
   final bool isLoading;
+  final LoungeScope scope;
   final void Function(String commentId) onToggleLike;
-  final void Function(String commentId, String emoji) onReact;
-  final void Function(String nickname) onReply;
+  final void Function(Comment comment) onReply;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Set<String> featuredIds = featuredComments
+        .map((Comment c) => c.id)
+        .toSet();
+
+    final Map<String, List<Comment>> replies = <String, List<Comment>>{};
+    final List<Comment> roots = <Comment>[];
+    final List<Comment> orphans = <Comment>[];
+
+    for (final Comment comment in timelineComments) {
+      final String? parentId = comment.parentCommentId;
+      if (comment.isReply && parentId != null && parentId.isNotEmpty) {
+        replies.putIfAbsent(parentId, () => <Comment>[]).add(comment);
+      } else if (!comment.isReply) {
+        roots.add(comment);
+      } else {
+        orphans.add(comment);
+      }
+    }
+
+    if (orphans.isNotEmpty) {
+      roots.addAll(orphans);
+    }
+
+    final List<Widget> threads = roots
+        .map(
+          (Comment parent) => _CommentThread(
+            parent: parent,
+            replies: replies[parent.id] ?? const <Comment>[],
+            scope: scope,
+            featuredIds: featuredIds,
+            onToggleLike: onToggleLike,
+            onReply: onReply,
+          ),
+        )
+        .toList(growable: false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -359,21 +442,21 @@ class _CommentsSection extends StatelessWidget {
             Icon(
               Icons.mode_comment_outlined,
               size: 20,
-              color: Theme.of(context).colorScheme.primary,
+              color: theme.colorScheme.primary,
             ),
             const Gap(8),
             Text(
               '댓글 ${timelineComments.length}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
         const Gap(16),
-        if (isLoading) ...[
-          const Center(child: CircularProgressIndicator()),
-        ] else if (timelineComments.isEmpty) ...[
+        if (isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (timelineComments.isEmpty)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32),
             alignment: Alignment.center,
@@ -382,37 +465,79 @@ class _CommentsSection extends StatelessWidget {
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 48,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 const Gap(8),
-                Text(
-                  '첫 번째 댓글을 남겨보세요!',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                Text('첫 번째 댓글을 남겨보세요!', style: theme.textTheme.bodyLarge),
               ],
             ),
-          ),
-        ] else ...[
+          )
+        else ...[
           if (featuredComments.isNotEmpty) ...[
             _FeaturedCommentsSection(
               comments: featuredComments,
+              scope: scope,
               onToggleLike: onToggleLike,
-              onReact: onReact,
               onReply: onReply,
             ),
             const Gap(16),
           ],
-          ...timelineComments.map(
-            (Comment comment) => _CommentTile(
-              comment: comment,
-              onToggleLike: () => onToggleLike(comment.id),
-              onReact: (String emoji) => onReact(comment.id, emoji),
-              onReply: () => onReply(comment.authorNickname),
-              onOpenProfile: () =>
-                  _openMemberProfile(context, comment.authorUid),
+          ...threads,
+        ],
+      ],
+    );
+  }
+}
+
+class _CommentThread extends StatelessWidget {
+  const _CommentThread({
+    required this.parent,
+    required this.replies,
+    required this.scope,
+    required this.featuredIds,
+    required this.onToggleLike,
+    required this.onReply,
+  });
+
+  final Comment parent;
+  final List<Comment> replies;
+  final LoungeScope scope;
+  final Set<String> featuredIds;
+  final void Function(String commentId) onToggleLike;
+  final void Function(Comment comment) onReply;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _CommentTile(
+          comment: parent,
+          scope: scope,
+          highlight: featuredIds.contains(parent.id),
+          onToggleLike: () => onToggleLike(parent.id),
+          onReply: onReply,
+          onOpenProfile: () => _openMemberProfile(context, parent.authorUid),
+        ),
+        if (replies.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: Column(
+              children: replies
+                  .map(
+                    (Comment reply) => _CommentTile(
+                      comment: reply,
+                      scope: scope,
+                      isReply: true,
+                      highlight: featuredIds.contains(reply.id),
+                      onToggleLike: () => onToggleLike(reply.id),
+                      onReply: onReply,
+                      onOpenProfile: () =>
+                          _openMemberProfile(context, reply.authorUid),
+                    ),
+                  )
+                  .toList(growable: false),
             ),
           ),
-        ],
       ],
     );
   }
@@ -421,19 +546,19 @@ class _CommentsSection extends StatelessWidget {
 class _FeaturedCommentsSection extends StatelessWidget {
   const _FeaturedCommentsSection({
     required this.comments,
+    required this.scope,
     required this.onToggleLike,
-    required this.onReact,
     required this.onReply,
   });
 
   final List<Comment> comments;
+  final LoungeScope scope;
   final void Function(String commentId) onToggleLike;
-  final void Function(String commentId, String emoji) onReact;
-  final void Function(String nickname) onReply;
+  final void Function(Comment comment) onReply;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final ThemeData theme = Theme.of(context);
     final Set<String> rendered = <String>{};
     return Container(
       padding: const EdgeInsets.all(16),
@@ -465,10 +590,10 @@ class _FeaturedCommentsSection extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _CommentTile(
                     comment: comment,
-                    onToggleLike: () => onToggleLike(comment.id),
-                    onReact: (String emoji) => onReact(comment.id, emoji),
-                    onReply: () => onReply(comment.authorNickname),
+                    scope: scope,
                     highlight: true,
+                    onToggleLike: () => onToggleLike(comment.id),
+                    onReply: onReply,
                     onOpenProfile: () =>
                         _openMemberProfile(context, comment.authorUid),
                   ),
@@ -483,59 +608,63 @@ class _FeaturedCommentsSection extends StatelessWidget {
 class _CommentTile extends StatelessWidget {
   const _CommentTile({
     required this.comment,
+    required this.scope,
     required this.onToggleLike,
-    required this.onReact,
     required this.onReply,
     required this.onOpenProfile,
     this.highlight = false,
+    this.isReply = false,
   });
 
   final Comment comment;
+  final LoungeScope scope;
   final VoidCallback onToggleLike;
-  final void Function(String emoji) onReact;
-  final VoidCallback onReply;
+  final void Function(Comment comment) onReply;
   final VoidCallback onOpenProfile;
   final bool highlight;
+  final bool isReply;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final timestamp = _formatTimestamp(comment.createdAt);
+    final ThemeData theme = Theme.of(context);
+    final bool isSerialScope = scope == LoungeScope.serial;
     final bool hasTrack =
         comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
-    final String trackLabel = !comment.authorSerialVisible
-        ? '공무원'
-        : hasTrack
-        ? '${comment.authorTrack.emoji} ${comment.authorTrack.displayName}'
-        : '직렬 비공개';
+    final String trackLabel = serialLabel(
+      comment.authorTrack,
+      comment.authorSerialVisible,
+      includeEmoji: isSerialScope ? true : hasTrack,
+    );
+    final String timestamp = _formatTimestamp(comment.createdAt);
+    final String nicknameSource = comment.authorNickname.isNotEmpty
+        ? comment.authorNickname
+        : comment.authorUid;
+    final String maskedNickname = maskNickname(nicknameSource);
+    final String displayName = isSerialScope
+        ? comment.authorNickname
+        : maskedNickname;
+    final String displayInitial = displayName.trim().isEmpty
+        ? '공'
+        : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
 
-    return Container(
-      padding: const EdgeInsets.only(bottom: 16),
-      margin: highlight ? const EdgeInsets.only(bottom: 4) : EdgeInsets.zero,
-      decoration: highlight
-          ? BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(12),
-            )
-          : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
+    final Widget header = isSerialScope
+        ? InkWell(
             onTap: onOpenProfile,
             borderRadius: BorderRadius.circular(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
+                if (!isReply) ...[
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.12,
+                    ),
+                    foregroundColor: theme.colorScheme.primary,
+                    child: Text(displayInitial),
                   ),
-                  foregroundColor: theme.colorScheme.primary,
-                  child: Text(comment.authorNickname.substring(0, 1)),
-                ),
-                const Gap(12),
+                  const Gap(12),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,7 +681,7 @@ class _CommentTile extends StatelessWidget {
                           ],
                           Expanded(
                             child: Text(
-                              comment.authorNickname,
+                              displayName,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -563,7 +692,7 @@ class _CommentTile extends StatelessWidget {
                       ),
                       const Gap(2),
                       Text(
-                        '$trackLabel · $timestamp',
+                        timestamp,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -573,62 +702,137 @@ class _CommentTile extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          const Gap(6),
-          Text(comment.text, style: theme.textTheme.bodyMedium),
-          const Gap(12),
-          _CommentReactionBar(
-            reactions: comment.reactionCounts,
-            viewerReaction: comment.viewerReaction,
-            onReact: onReact,
-          ),
-          const Gap(8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: onToggleLike,
-                icon: Icon(
-                  comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: 16,
-                  color: comment.isLiked
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                label: Text(
-                  '${comment.likeCount}',
-                  style: theme.textTheme.labelSmall,
-                ),
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
+          )
+        : InkWell(
+            onTap: onOpenProfile,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              const Gap(8),
-              TextButton.icon(
-                onPressed: onReply,
-                icon: const Icon(Icons.reply_outlined, size: 16),
-                label: const Text('답글'),
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                  decoration: BoxDecoration(
+                    color: hasTrack
+                        ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  child: Text(
+                    trackLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: hasTrack
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const Gap(8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (comment.authorIsSupporter) ...[
+                        const Gap(6),
+                        Icon(
+                          Icons.workspace_premium,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Gap(8),
+                Text(
+                  timestamp,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          );
+
+    final EdgeInsetsGeometry containerPadding = highlight
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+        : const EdgeInsets.symmetric(vertical: 12);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isReply ? 12 : 16),
+      child: Container(
+        decoration: highlight
+            ? BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
+        padding: containerPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header,
+            const Gap(8),
+            Text(comment.text, style: theme.textTheme.bodyMedium),
+            const Gap(12),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onToggleLike,
+                  icon: Icon(
+                    comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                    size: 16,
+                    color: comment.isLiked
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    '${comment.likeCount}',
+                    style: theme.textTheme.labelSmall,
+                  ),
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                const Gap(8),
+                TextButton.icon(
+                  onPressed: () => onReply(comment),
+                  icon: const Icon(Icons.reply_outlined, size: 16),
+                  label: const Text('답글'),
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  String _formatTimestamp(DateTime createdAt) {
+  static String _formatTimestamp(DateTime createdAt) {
     final DateTime now = DateTime.now();
     final Duration difference = now.difference(createdAt);
     if (difference.inMinutes < 1) {
@@ -650,12 +854,18 @@ class _CommentComposer extends StatefulWidget {
     required this.isSubmitting,
     required this.onSubmit,
     required this.focusNode,
+    required this.replyingTo,
+    required this.onCancelReply,
+    required this.scope,
   });
 
   final TextEditingController controller;
   final bool isSubmitting;
   final Future<void> Function() onSubmit;
   final FocusNode focusNode;
+  final Comment? replyingTo;
+  final VoidCallback onCancelReply;
+  final LoungeScope scope;
 
   @override
   State<_CommentComposer> createState() => _CommentComposerState();
@@ -677,7 +887,7 @@ class _CommentComposerState extends State<_CommentComposer> {
   }
 
   void _updateSubmitState() {
-    final canSubmit = widget.controller.text.trim().isNotEmpty;
+    final bool canSubmit = widget.controller.text.trim().isNotEmpty;
     if (_canSubmit != canSubmit) {
       setState(() {
         _canSubmit = canSubmit;
@@ -687,22 +897,65 @@ class _CommentComposerState extends State<_CommentComposer> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+    final ThemeData theme = Theme.of(context);
+    final Comment? replyingTo = widget.replyingTo;
+    final bool isSerialScope = widget.scope == LoungeScope.serial;
+
+    final List<Widget> children = <Widget>[];
+
+    if (replyingTo != null) {
+      final String nicknameSource = replyingTo.authorNickname.isNotEmpty
+          ? replyingTo.authorNickname
+          : replyingTo.authorUid;
+      final String displayName = isSerialScope
+          ? replyingTo.authorNickname
+          : maskNickname(nicknameSource);
+      final String preview = replyingTo.text.trim();
+      children.add(
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$displayName 님에게 답글 작성 중',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (preview.isNotEmpty)
+                      Text(
+                        preview,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: widget.onCancelReply,
+                child: const Text('취소'),
+              ),
+            ],
           ),
         ),
-      ),
-      child: Row(
+      );
+    }
+
+    children.add(
+      Row(
         children: [
           Expanded(
             child: TextField(
@@ -718,7 +971,6 @@ class _CommentComposerState extends State<_CommentComposer> {
               ),
               maxLines: null,
               textInputAction: TextInputAction.newline,
-              enabled: !widget.isSubmitting,
             ),
           ),
           const Gap(12),
@@ -737,44 +989,27 @@ class _CommentComposerState extends State<_CommentComposer> {
         ],
       ),
     );
-  }
-}
 
-const List<String> _commentReactionOptions = <String>['👍', '🎉', '😍', '😄'];
-
-class _CommentReactionBar extends StatelessWidget {
-  const _CommentReactionBar({
-    required this.reactions,
-    required this.viewerReaction,
-    required this.onReact,
-  });
-
-  final Map<String, int> reactions;
-  final String? viewerReaction;
-  final void Function(String emoji) onReact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      children: _commentReactionOptions
-          .map((String emoji) {
-            final int count = reactions[emoji] ?? 0;
-            final bool selected = viewerReaction == emoji;
-            return ChoiceChip(
-              label: Text(
-                count > 0 ? '$emoji $count' : emoji,
-                style: TextStyle(fontWeight: selected ? FontWeight.w600 : null),
-              ),
-              selected: selected,
-              showCheckmark: false,
-              onSelected: (_) => onReact(emoji),
-              selectedColor: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.16),
-            );
-          })
-          .toList(growable: false),
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
     );
   }
 }

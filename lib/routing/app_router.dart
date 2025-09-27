@@ -60,18 +60,15 @@ GoRouter createRouter() {
     },
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            MultiBlocProvider(
-              providers: [
-                BlocProvider<CommunityFeedCubit>(
-                  create: (_) => getIt<CommunityFeedCubit>(),
-                ),
-                BlocProvider<LifeSectionCubit>(
-                  create: (_) => LifeSectionCubit(),
-                ),
-              ],
-              child: AppShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) => MultiBlocProvider(
+          providers: [
+            BlocProvider<CommunityFeedCubit>(
+              create: (_) => getIt<CommunityFeedCubit>(),
             ),
+            BlocProvider<LifeSectionCubit>(create: (_) => LifeSectionCubit()),
+          ],
+          child: AppShell(navigationShell: navigationShell),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -162,9 +159,14 @@ GoRouter createRouter() {
           final Post? initialPost = state.extra is Post
               ? state.extra as Post
               : null;
+          final String? replyCommentId = state.uri.queryParameters['reply'];
           return BlocProvider<PostDetailCubit>(
             create: (_) => getIt<PostDetailCubit>(),
-            child: PostDetailPage(postId: postId, initialPost: initialPost),
+            child: PostDetailPage(
+              postId: postId,
+              initialPost: initialPost,
+              replyCommentId: replyCommentId,
+            ),
           );
         },
       ),

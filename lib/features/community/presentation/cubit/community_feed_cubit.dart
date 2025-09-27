@@ -289,32 +289,20 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         uid: uid,
       );
 
-      if (nowLiked == willLike) {
-        return;
+      if (nowLiked != willLike) {
+        try {
+          await _repository.togglePostLike(postId: post.id, uid: uid);
+        } catch (_) {
+          emit(
+            state.copyWith(
+              posts: previousPosts,
+              likedPostIds: previousLiked,
+              errorMessage: '좋아요 처리 중 오류가 발생했습니다.',
+            ),
+          );
+          return;
+        }
       }
-
-      final List<Post> correctedPosts = state.posts
-          .map((Post existing) {
-            if (existing.id != post.id) {
-              return existing;
-            }
-            if (existing.isLiked == nowLiked) {
-              return existing;
-            }
-            final int delta = nowLiked ? 1 : -1;
-            final int nextCount = (existing.likeCount + delta).clamp(0, 1 << 31);
-            return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
-          })
-          .toList(growable: false);
-
-      final Set<String> correctedLiked = Set<String>.from(state.likedPostIds);
-      if (nowLiked) {
-        correctedLiked.add(post.id);
-      } else {
-        correctedLiked.remove(post.id);
-      }
-
-      emit(state.copyWith(posts: correctedPosts, likedPostIds: correctedLiked));
     } catch (_) {
       emit(
         state.copyWith(

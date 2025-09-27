@@ -4,7 +4,6 @@ import 'package:equatable/equatable.dart';
 import '../../../profile/domain/career_track.dart';
 
 class Comment extends Equatable {
-  static const Object _unset = Object();
 
   const Comment({
     required this.id,
@@ -19,8 +18,6 @@ class Comment extends Equatable {
     this.parentCommentId,
     this.deleted = false,
     this.isLiked = false,
-    this.reactionCounts = const <String, int>{},
-    this.viewerReaction,
     this.authorSupporterLevel = 0,
     this.authorIsSupporter = false,
   });
@@ -37,8 +34,6 @@ class Comment extends Equatable {
   final String? parentCommentId;
   final bool deleted;
   final bool isLiked;
-  final Map<String, int> reactionCounts;
-  final String? viewerReaction;
   final int authorSupporterLevel;
   final bool authorIsSupporter;
 
@@ -57,7 +52,6 @@ class Comment extends Equatable {
       'createdAt': Timestamp.fromDate(createdAt),
       'parentCommentId': parentCommentId,
       'deleted': deleted,
-      'reactionCounts': reactionCounts,
     };
   }
 
@@ -65,7 +59,6 @@ class Comment extends Equatable {
     DocumentSnapshot<Map<String, Object?>> snapshot, {
     String? postId,
     bool isLiked = false,
-    String? viewerReaction,
   }) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
@@ -77,7 +70,6 @@ class Comment extends Equatable {
       postId: postId ?? snapshot.reference.parent.parent?.id ?? '',
       data: data,
       isLiked: isLiked,
-      viewerReaction: viewerReaction,
     );
   }
 
@@ -86,7 +78,6 @@ class Comment extends Equatable {
     required String postId,
     required Map<String, Object?> data,
     bool isLiked = false,
-    String? viewerReaction,
   }) {
     return Comment(
       id: id,
@@ -101,11 +92,6 @@ class Comment extends Equatable {
       parentCommentId: data['parentCommentId'] as String?,
       deleted: data['deleted'] as bool? ?? false,
       isLiked: isLiked,
-      reactionCounts: _parseReactionCounts(
-        (data['reactionCounts'] as Map<String, Object?>?)
-            ?.cast<String, Object?>(),
-      ),
-      viewerReaction: viewerReaction,
       authorSupporterLevel:
           (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
       authorIsSupporter:
@@ -119,8 +105,6 @@ class Comment extends Equatable {
     int? likeCount,
     bool? deleted,
     bool? isLiked,
-    Map<String, int>? reactionCounts,
-    Object? viewerReaction = _unset,
     CareerTrack? authorTrack,
     bool? authorSerialVisible,
     int? authorSupporterLevel,
@@ -139,10 +123,6 @@ class Comment extends Equatable {
       parentCommentId: parentCommentId,
       deleted: deleted ?? this.deleted,
       isLiked: isLiked ?? this.isLiked,
-      reactionCounts: reactionCounts ?? this.reactionCounts,
-      viewerReaction: viewerReaction == _unset
-          ? this.viewerReaction
-          : viewerReaction as String?,
       authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
       authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
     );
@@ -178,8 +158,6 @@ class Comment extends Equatable {
     parentCommentId,
     deleted,
     isLiked,
-    reactionCounts,
-    viewerReaction,
     authorSupporterLevel,
     authorIsSupporter,
   ];
@@ -192,15 +170,5 @@ class Comment extends Equatable {
       );
     }
     return CareerTrack.none;
-  }
-
-  static Map<String, int> _parseReactionCounts(Map<String, Object?>? raw) {
-    if (raw == null || raw.isEmpty) {
-      return const <String, int>{};
-    }
-    return raw.map(
-      (String key, Object? value) =>
-          MapEntry(key, (value as num?)?.toInt() ?? 0),
-    )..removeWhere((_, int count) => count <= 0);
   }
 }
