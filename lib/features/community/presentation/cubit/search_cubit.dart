@@ -13,7 +13,8 @@ part 'search_state.dart';
 
 @injectable
 class SearchCubit extends Cubit<SearchState> {
-  SearchCubit(this._repository) : super(const SearchState());
+  SearchCubit(this._repository) : super(const SearchState()) {
+  }
 
   final CommunityRepository _repository;
   Timer? _autocompleteDebounce;
@@ -83,8 +84,7 @@ class SearchCubit extends Cubit<SearchState> {
         query: normalizedQuery,
         scope: state.scope,
         postLimit: state.scope == SearchScope.comments ? 0 : 20,
-        commentLimit: state.scope == SearchScope.posts ||
-                state.scope == SearchScope.author
+        commentLimit: state.scope == SearchScope.posts || state.scope == SearchScope.author
             ? 0
             : 20,
         currentUid: _repository.currentUserId,
@@ -112,9 +112,7 @@ class SearchCubit extends Cubit<SearchState> {
     try {
       emit(state.copyWith(isLoading: false, hasMore: false));
     } catch (e) {
-      emit(
-        state.copyWith(isLoading: false, error: '추가 검색 결과를 불러오는 중 오류가 발생했습니다.'),
-      );
+      emit(state.copyWith(isLoading: false, error: '추가 검색 결과를 불러오는 중 오류가 발생했습니다.'));
     }
   }
 
@@ -128,7 +126,7 @@ class SearchCubit extends Cubit<SearchState> {
 
   void clearSearch() {
     _autocompleteDebounce?.cancel();
-    emit(const SearchState());
+    emit(SearchState(scope: state.scope)); // Keep the current scope
     loadSuggestions();
   }
 
@@ -138,7 +136,7 @@ class SearchCubit extends Cubit<SearchState> {
     }
     emit(state.copyWith(scope: scope));
     if (state.query.trim().isNotEmpty) {
-      unawaited(search(state.query));
+      search(state.query);
     }
   }
 

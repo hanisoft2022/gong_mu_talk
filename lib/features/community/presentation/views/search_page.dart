@@ -57,17 +57,38 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          textInputAction: TextInputAction.search,
-          onSubmitted: (query) => _performSearch(query.trim()),
-          onChanged: (value) =>
-              context.read<SearchCubit>().onQueryChanged(value),
-          autofocus: widget.initialQuery?.isEmpty ?? true,
+        title: BlocBuilder<SearchCubit, SearchState>(
+          builder: (context, state) {
+            String hintText;
+            switch (state.scope) {
+              case SearchScope.all:
+                hintText = '글+댓글 검색';
+                break;
+              case SearchScope.posts:
+                hintText = '글 검색';
+                break;
+              case SearchScope.comments:
+                hintText = '댓글 검색';
+                break;
+              case SearchScope.author:
+                hintText = '글 작성자 검색';
+                break;
+            }
+
+            return TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                hintText: hintText,
+              ),
+              textInputAction: TextInputAction.search,
+              onSubmitted: (query) => _performSearch(query.trim()),
+              onChanged: (value) =>
+                  context.read<SearchCubit>().onQueryChanged(value),
+              autofocus: widget.initialQuery?.isEmpty ?? true,
+            );
+          },
         ),
         actions: [
           IconButton(

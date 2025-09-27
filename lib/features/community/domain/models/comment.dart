@@ -20,6 +20,7 @@ class Comment extends Equatable {
     this.isLiked = false,
     this.authorSupporterLevel = 0,
     this.authorIsSupporter = false,
+    this.imageUrls = const [],
   });
 
   final String id;
@@ -36,6 +37,7 @@ class Comment extends Equatable {
   final bool isLiked;
   final int authorSupporterLevel;
   final bool authorIsSupporter;
+  final List<String> imageUrls;
 
   bool get isReply => parentCommentId != null && parentCommentId!.isNotEmpty;
 
@@ -97,6 +99,7 @@ class Comment extends Equatable {
       authorIsSupporter:
           data['authorIsSupporter'] as bool? ??
           ((data['authorSupporterLevel'] as num?)?.toInt() ?? 0) > 0,
+      imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 

@@ -379,7 +379,7 @@ class _CuratedMatchCard extends StatelessWidget {
                           if (profile.isPremium) ...[
                             const Gap(8),
                             Icon(
-                              Icons.workspace_premium_outlined,
+                              Icons.verified_outlined,
                               size: 18,
                               color: theme.colorScheme.primary,
                             ),

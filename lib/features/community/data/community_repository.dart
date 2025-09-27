@@ -664,6 +664,7 @@ class CommunityRepository {
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
     bool awardPoints = true,
+    List<String>? imageUrls,
   }) async {
     final CollectionReference<JsonMap> comments = _commentsRef(postId);
     final DocumentReference<JsonMap> commentDoc = comments.doc();
@@ -683,6 +684,7 @@ class CommunityRepository {
         'parentCommentId': parentCommentId,
         'deleted': false,
         'keywords': _tokenizer.buildPrefixes(title: authorNickname, body: text),
+        'imageUrls': imageUrls ?? [],
       });
 
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
@@ -1364,6 +1366,7 @@ class CommunityRepository {
     String postId,
     String text, {
     String? parentCommentId,
+    List<String>? imageUrls,
   }) async {
     final nickname = await currentUserNickname;
     final CareerTrack track = _userSession.careerTrack;
@@ -1379,6 +1382,7 @@ class CommunityRepository {
       authorSerialVisible: serialVisible,
       authorSupporterLevel: supporterLevel,
       authorIsSupporter: supporterLevel > 0,
+      imageUrls: imageUrls,
     );
   }
 

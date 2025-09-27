@@ -1,0 +1,40 @@
+name: gong_mu_talk
+display_name: GongMuTalk Flutter App
+language: dart
+language_server_config:
+  dart:
+    command: dart
+    args: ["language-server", "--protocol=lsp"]
+    root_path: /Users/shaunkim/Documents/gong_mu_talk/gong_mu_talk
+include_paths:
+  - lib/
+  - test/
+  - pubspec.yaml
+exclude_paths:
+  - .dart_tool/
+  - build/
+  - .packages
+  - .flutter-plugins
+  - .flutter-plugins-dependencies
+read_only: false
+record_tool_usage_stats: true
+enabled_tools:
+  - find_symbol
+  - find_referencing_symbols
+  - get_symbols_overview
+  - replace_symbol_body
+  - insert_after_symbol
+  - insert_before_symbol
+  - search_for_pattern
+  - read_file
+  - create_text_file
+  - replace_regex
+  - write_memory
+  - read_memory
+  - list_memories
+  - delete_memory
+  - onboarding
+  - check_onboarding_performed
+  - think_about_collected_information
+  - think_about_task_adherence
+  - think_about_whether_you_are_done

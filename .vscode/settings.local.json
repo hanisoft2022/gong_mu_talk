@@ -1,0 +1,5 @@
+{
+  "claude.autoCommit": true,
+  "claude.language": "ko",
+  "claude.permissions": "allow_all"
+}

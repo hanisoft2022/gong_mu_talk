@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../data/community_repository.dart';
@@ -56,6 +60,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late final FocusNode _commentFocusNode;
   bool _canSubmitComment = false;
   bool _isSubmittingComment = false;
+  List<XFile> _selectedImages = [];
+  bool _isUploadingImages = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
   late final CommunityRepository _repository;
   late final MockSocialGraph _socialGraph;
@@ -68,8 +75,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _socialGraph = context.read<MockSocialGraph>();
     _authCubit = context.read<AuthCubit>();
     _commentCount = widget.post.commentCount;
-    _commentController = TextEditingController()
-      ..addListener(_handleCommentInputChanged);
+    _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
   }
 
@@ -115,7 +121,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final Post post = widget.post;
     final ThemeData theme = Theme.of(context);
     final String timestamp = _formatTimestamp(post.createdAt);
-    final bool showMoreButton = !_isExpanded && _shouldShowMore(post.text);
+    final bool showMoreButton = !_isExpanded && _shouldShowMore(post.text, context);
     final Widget? trailingActions = _buildTrailingActions(theme, post);
 
     return Card(
@@ -141,19 +147,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
               ],
             ),
             const Gap(14),
-            Text(
-              post.text,
-              style: theme.textTheme.bodyLarge,
-              maxLines: _isExpanded ? null : 3,
-              overflow: _isExpanded ? null : TextOverflow.ellipsis,
-            ),
-            if (showMoreButton)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _handleExpand,
-                  child: const Text('더보기'),
-                ),
+            if (_isExpanded)
+              Text(post.text, style: theme.textTheme.bodyLarge)
+            else if (showMoreButton)
+              _buildTextWithInlineMore(
+                post.text,
+                theme.textTheme.bodyLarge!,
+                theme.colorScheme.primary,
+              )
+            else
+              Text(
+                post.text,
+                style: theme.textTheme.bodyLarge,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
               ),
             if (post.tags.isNotEmpty) ...[
               const Gap(10),
@@ -162,18 +169,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 runSpacing: -8,
                 children: post.tags
                     .map(
-                      (String tag) => Chip(
-                        label: Text('#$tag'),
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      (String tag) =>
+                          Chip(label: Text('#$tag'), visualDensity: VisualDensity.compact),
                     )
                     .toList(growable: false),
               ),
             ],
-            if (post.media.isNotEmpty) ...[
-              const Gap(12),
-              _PostMediaPreview(mediaList: post.media),
-            ],
+            if (post.media.isNotEmpty) ...[const Gap(12), _PostMediaPreview(mediaList: post.media)],
             const Gap(16),
             Row(
               children: [
@@ -184,10 +186,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   onPressed: _handleLikeTap,
                 ),
                 const Gap(16),
-                _PostActionButton(
-                  icon: Icons.mode_comment_outlined,
-                  label: '$_commentCount',
+                IconButton(
+                  icon: const Icon(Icons.mode_comment_outlined, size: 16),
                   onPressed: _handleCommentButton,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                  iconSize: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const Gap(16),
                 _PostActionButton(
@@ -196,7 +201,33 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   onPressed: null,
                 ),
                 const Spacer(),
-                if (trailingActions != null) trailingActions,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        size: 16,
+                      ),
+                      onPressed: _handleBookmarkTap,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                      iconSize: 16,
+                      color: post.isBookmarked
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 16),
+                      onPressed: () => _handleShare(post),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                      iconSize: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    if (trailingActions != null) trailingActions,
+                  ],
+                ),
               ],
             ),
             AnimatedSwitcher(
@@ -212,12 +243,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       child: Builder(
                         builder: (BuildContext context) {
                           final ThemeData theme = Theme.of(context);
-                          final Widget? composer = _buildCommentComposer(
-                            context,
-                          );
-                          final List<Widget> sectionChildren = <Widget>[
-                            const Gap(12),
-                          ];
+                          final Widget? composer = _buildCommentComposer(context);
+                          final List<Widget> sectionChildren = <Widget>[const Gap(12)];
 
                           if (composer != null) {
                             sectionChildren
@@ -226,49 +253,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                           }
 
                           if (_isLoadingComments) {
-                            sectionChildren.add(
-                              const Center(child: CircularProgressIndicator()),
-                            );
+                            sectionChildren.add(const Center(child: CircularProgressIndicator()));
                           } else if (_timelineComments.isEmpty) {
                             sectionChildren.add(
-                              Text(
-                                '아직 댓글이 없습니다. 첫 댓글을 남겨보세요!',
-                                style: theme.textTheme.bodyMedium,
-                              ),
+                              Text('아직 댓글이 없습니다. 첫 댓글을 남겨보세요!', style: theme.textTheme.bodyMedium),
                             );
                           } else {
-                            if (_featuredComments.isNotEmpty) {
-                              final Comment featuredComment =
-                                  _featuredComments.first;
-                              sectionChildren
-                                ..add(
-                                  _FeaturedCommentTile(
-                                    comment: featuredComment,
-                                    scope: widget.displayScope,
-                                    onToggleLike: _handleCommentLike,
-                                    onReply: _handleReplyTap,
-                                    onOpenProfile: () => _handleMemberTap(
-                                      uid: featuredComment.authorUid,
-                                      nickname: featuredComment.authorNickname,
-                                    ),
-                                  ),
-                                )
-                                ..add(const Gap(12));
-                            }
-
-                            final Map<String, List<Comment>> replies =
-                                <String, List<Comment>>{};
+                            final Map<String, List<Comment>> replies = <String, List<Comment>>{};
                             final List<Comment> roots = <Comment>[];
                             final List<Comment> orphans = <Comment>[];
 
                             for (final Comment comment in _timelineComments) {
                               final String? parentId = comment.parentCommentId;
-                              if (comment.isReply &&
-                                  parentId != null &&
-                                  parentId.isNotEmpty) {
-                                replies
-                                    .putIfAbsent(parentId, () => <Comment>[])
-                                    .add(comment);
+                              if (comment.isReply && parentId != null && parentId.isNotEmpty) {
+                                replies.putIfAbsent(parentId, () => <Comment>[]).add(comment);
                               } else if (!comment.isReply) {
                                 roots.add(comment);
                               } else {
@@ -285,8 +283,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                   final List<Comment> children =
                                       replies[comment.id] ?? const <Comment>[];
                                   return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       _CommentTile(
                                         comment: comment,
@@ -301,30 +298,21 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                       ),
                                       if (children.isNotEmpty)
                                         Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 24,
-                                          ),
+                                          padding: const EdgeInsets.only(left: 24),
                                           child: Column(
                                             children: children
                                                 .map(
-                                                  (
-                                                    Comment reply,
-                                                  ) => _CommentTile(
+                                                  (Comment reply) => _CommentTile(
                                                     comment: reply,
-                                                    highlight: _isFeatured(
-                                                      reply,
-                                                    ),
+                                                    highlight: _isFeatured(reply),
                                                     scope: widget.displayScope,
                                                     isReply: true,
-                                                    onToggleLike:
-                                                        _handleCommentLike,
+                                                    onToggleLike: _handleCommentLike,
                                                     onReply: _handleReplyTap,
-                                                    onOpenProfile: () =>
-                                                        _handleMemberTap(
-                                                          uid: reply.authorUid,
-                                                          nickname: reply
-                                                              .authorNickname,
-                                                        ),
+                                                    onOpenProfile: () => _handleMemberTap(
+                                                      uid: reply.authorUid,
+                                                      nickname: reply.authorNickname,
+                                                    ),
                                                   ),
                                                 )
                                                 .toList(growable: false),
@@ -343,6 +331,179 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                             );
                           }
 
+                          // 댓글 작성 UI를 댓글들 위에 추가
+                          if (!_isLoadingComments) {
+                            sectionChildren.addAll([
+                              const Gap(16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextField(
+                                              controller: _commentController,
+                                              focusNode: _commentFocusNode,
+                                              minLines: 1,
+                                              maxLines: 4,
+                                              textInputAction: TextInputAction.newline,
+                                              decoration: InputDecoration(
+                                                hintText: '댓글을 작성해보세요...',
+                                                border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                                                  ),
+                                                ),
+                                                enabledBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                                                  ),
+                                                ),
+                                                focusedBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: theme.colorScheme.primary,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                isDense: true,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                                filled: true,
+                                                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                              ),
+                                              style: theme.textTheme.bodyMedium,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: _pickImages,
+                                            icon: Icon(
+                                              Icons.image_outlined,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            tooltip: '이미지 첨부',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: _canSubmitComment && !_isSubmittingComment
+                                                  ? theme.colorScheme.primary
+                                                  : theme.colorScheme.surfaceContainerHighest,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                borderRadius: BorderRadius.circular(8),
+                                                onTap: _canSubmitComment && !_isSubmittingComment
+                                                    ? _submitComment
+                                                    : null,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  child: _isSubmittingComment
+                                                      ? SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: theme.colorScheme.onPrimary,
+                                                          ),
+                                                        )
+                                                      : Text(
+                                                          '게시',
+                                                          style: theme.textTheme.labelMedium?.copyWith(
+                                                            color: _canSubmitComment && !_isSubmittingComment
+                                                                ? theme.colorScheme.onPrimary
+                                                                : theme.colorScheme.onSurfaceVariant,
+                                                            fontWeight: FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // 선택된 이미지 미리보기
+                                    if (_selectedImages.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        height: 80,
+                                        child: ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: _selectedImages.length,
+                                          itemBuilder: (context, index) {
+                                            final XFile image = _selectedImages[index];
+                                            return Container(
+                                              margin: const EdgeInsets.only(right: 8),
+                                              child: Stack(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Image.file(
+                                                      File(image.path),
+                                                      width: 80,
+                                                      height: 80,
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    top: 4,
+                                                    right: 4,
+                                                    child: GestureDetector(
+                                                      onTap: () => _removeImage(index),
+                                                      child: Container(
+                                                        width: 20,
+                                                        height: 20,
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.black.withValues(alpha: 0.6),
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.close,
+                                                          size: 14,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const Gap(16),
+                            ]);
+                          }
+
                           return Column(
                             key: const ValueKey<String>('comment-section'),
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,18 +519,131 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  bool _shouldShowMore(String text) {
-    if (text.trim().split('\n').length > 3) {
-      return true;
-    }
-    return text.trim().length > 120;
+  bool _shouldShowMore(String text, BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodyLarge!;
+    final textSpan = TextSpan(text: text, style: textStyle);
+    final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr, maxLines: 5);
+
+    // Get the available width (approximate card content width)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardPadding = 32.0; // Card padding (16 * 2)
+    final cardMargin = 24.0; // Card margin
+    final availableWidth = screenWidth - cardPadding - cardMargin;
+
+    textPainter.layout(maxWidth: availableWidth);
+    return textPainter.didExceedMaxLines;
+  }
+
+  Widget _buildTextWithInlineMore(String text, TextStyle textStyle, Color primaryColor) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 간단한 접근: 먼저 기본 5줄 텍스트 표시하고 "더보기" 버튼 추가
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(text, style: textStyle, maxLines: 5, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: _handleExpand,
+              child: Text(
+                '더보기',
+                style: textStyle.copyWith(color: primaryColor, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _handleCommentInputChanged() {
-    final bool canSubmit = _commentController.text.trim().isNotEmpty;
+    final bool canSubmit = _commentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
     if (canSubmit != _canSubmitComment) {
       setState(() {
         _canSubmitComment = canSubmit;
+      });
+    }
+  }
+
+  Future<void> _pickImages() async {
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      // 최대 4개 이미지까지만 허용
+      final List<XFile> limitedImages = images.take(4).toList();
+
+      setState(() {
+        _selectedImages = limitedImages;
+      });
+
+      _handleCommentInputChanged(); // 제출 버튼 상태 업데이트
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('이미지를 선택하는 중 오류가 발생했습니다'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+    _handleCommentInputChanged();
+  }
+
+  Future<List<String>> _uploadImages() async {
+    if (_selectedImages.isEmpty) return [];
+
+    setState(() {
+      _isUploadingImages = true;
+    });
+
+    try {
+      final List<String> imageUrls = [];
+      final String userId = _authCubit.state.userId ?? 'anonymous';
+      final String postId = widget.post.id;
+
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final XFile image = _selectedImages[i];
+        final String fileName = 'comments/$postId/${userId}_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+
+        final Reference ref = FirebaseStorage.instance.ref().child(fileName);
+        final UploadTask uploadTask = ref.putFile(File(image.path));
+        final TaskSnapshot snapshot = await uploadTask;
+        final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        imageUrls.add(downloadUrl);
+      }
+
+      return imageUrls;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('이미지 업로드 중 오류가 발생했습니다'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+      return [];
+    } finally {
+      setState(() {
+        _isUploadingImages = false;
       });
     }
   }
@@ -392,19 +666,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             hintText: '댓글을 입력하세요...',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
         const Gap(8),
         Align(
           alignment: Alignment.centerRight,
           child: FilledButton(
-            onPressed: _canSubmitComment && !_isSubmittingComment
-                ? _submitComment
-                : null,
+            onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
             child: _isSubmittingComment
                 ? const SizedBox(
                     width: 16,
@@ -442,12 +711,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           iconSize: 20,
           constraints: const BoxConstraints(minHeight: 36, minWidth: 36),
           padding: const EdgeInsets.all(6),
-          icon: Icon(
-            post.isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-          ),
-          color: post.isBookmarked
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurfaceVariant,
+          icon: Icon(post.isBookmarked ? Icons.bookmark : Icons.bookmark_outline),
+          color: post.isBookmarked ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
           onPressed: _handleBookmarkTap,
         ),
       );
@@ -465,10 +730,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (int i = 0; i < grouped.length; i++) ...[
-                    if (i > 0) const Gap(4),
-                    grouped[i],
-                  ],
+                  for (int i = 0; i < grouped.length; i++) ...[if (i > 0) const Gap(4), grouped[i]],
                 ],
               ),
             ),
@@ -503,9 +765,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   bool _isFeatured(Comment comment) {
-    return _featuredComments.any(
-      (Comment featured) => featured.id == comment.id,
-    );
+    return _featuredComments.any((Comment featured) => featured.id == comment.id);
+  }
+
+  List<Comment> _applyRandomLikes(List<Comment> comments) {
+    final Random random = Random();
+    return comments.map((Comment comment) {
+      final int randomLikes = random.nextInt(50) + 1; // 1-50 사이의 무작위 좋아요 수
+      return comment.copyWith(likeCount: randomLikes);
+    }).toList();
   }
 
   Future<void> _loadComments({bool force = false}) async {
@@ -517,12 +785,19 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     final Post post = widget.post;
     if (_isSynthetic(post)) {
-      final List<Comment> syntheticTimeline = List<Comment>.generate(
-        post.previewComments.length,
-        (int index) => _fromCached(post, post.previewComments[index], index),
+      final List<Comment> syntheticTimeline = _applyRandomLikes(
+        List<Comment>.generate(
+          post.previewComments.length,
+          (int index) => _fromCached(post, post.previewComments[index], index),
+        ),
       );
+
+      // 가장 많은 좋아요를 받은 댓글을 베스트로 선택
+      final List<Comment> sortedByLikes = List<Comment>.from(syntheticTimeline)
+        ..sort((a, b) => b.likeCount.compareTo(a.likeCount));
+
       setState(() {
-        _featuredComments = syntheticTimeline.take(1).toList(growable: false);
+        _featuredComments = sortedByLikes.take(1).toList(growable: false);
         _timelineComments = syntheticTimeline;
         _commentsLoaded = true;
         _isLoadingComments = false;
@@ -535,17 +810,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     });
 
     try {
-      final List<Comment> featured = await _repository.getTopComments(
-        widget.post.id,
-        limit: 1,
-      );
-      final List<Comment> timeline = await _repository.getComments(
-        widget.post.id,
-      );
+      final List<Comment> featured = await _repository.getTopComments(widget.post.id, limit: 1);
+      final List<Comment> timeline = await _repository.getComments(widget.post.id);
 
-      final Set<String> featuredIds = featured
-          .map((Comment comment) => comment.id)
-          .toSet();
+      final Set<String> featuredIds = featured.map((Comment comment) => comment.id).toSet();
       final List<Comment> mergedTimeline = timeline
           .map((Comment comment) {
             if (featuredIds.contains(comment.id)) {
@@ -562,8 +830,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         return;
       }
       setState(() {
-        _featuredComments = featured;
-        _timelineComments = mergedTimeline;
+        _featuredComments = _applyRandomLikes(featured);
+        _timelineComments = _applyRandomLikes(mergedTimeline);
         _commentsLoaded = true;
         _isLoadingComments = false;
       });
@@ -592,17 +860,98 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _handleBookmarkTap() {
     _registerInteraction();
+    final bool isCurrentlyBookmarked = widget.post.isBookmarked;
+
     widget.onToggleBookmark();
+
+    // 스낵바 표시
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              isCurrentlyBookmarked ? '북마크가 해제되었습니다' : '북마크에 추가되었습니다',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   void _handleShare(Post post) {
     _registerInteraction();
-    _sharePost(post);
+    _showShareOptions(post);
   }
+
+  void _showShareOptions(Post post) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        final ThemeData theme = Theme.of(context);
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '공유하기',
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: const Text('링크 복사'),
+                onTap: () {
+                  _copyLinkToClipboard(post);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text('다른 앱으로 공유'),
+                onTap: () {
+                  _sharePost(post);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _copyLinkToClipboard(Post post) {
+    final Uri shareUri = Uri.parse(
+      'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
+    );
+
+    Clipboard.setData(ClipboardData(text: shareUri.toString()));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('링크가 클립보드에 복사되었습니다'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
 
   Future<void> _submitComment() async {
     final String text = _commentController.text.trim();
-    if (text.isEmpty || _isSubmittingComment) {
+    if ((text.isEmpty && _selectedImages.isEmpty) || _isSubmittingComment) {
       return;
     }
 
@@ -610,26 +959,39 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     setState(() => _isSubmittingComment = true);
 
     try {
-      await _repository.addComment(widget.post.id, text);
+      // 이미지 업로드 먼저 처리
+      List<String> imageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        imageUrls = await _uploadImages();
+        if (imageUrls.isEmpty && _selectedImages.isNotEmpty) {
+          // 이미지 업로드에 실패했다면 중단
+          setState(() => _isSubmittingComment = false);
+          return;
+        }
+      }
+
+      // 댓글 작성 (이미지 URL 포함)
+      await _repository.addComment(widget.post.id, text, imageUrls: imageUrls);
+
       if (!mounted) {
         return;
       }
 
+      // UI 상태 초기화
       _commentController.clear();
       _commentFocusNode.unfocus();
       setState(() {
         _commentCount += 1;
         _canSubmitComment = false;
         _showComments = true;
+        _selectedImages.clear(); // 선택된 이미지들 클리어
       });
       await _loadComments(force: true);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
-          );
+          ..showSnackBar(const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')));
       }
     } finally {
       if (mounted) {
@@ -684,16 +1046,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     void updateLists(bool liked, int likeCount) {
       _timelineComments = _timelineComments
           .map(
-            (Comment c) => c.id == comment.id
-                ? c.copyWith(isLiked: liked, likeCount: likeCount)
-                : c,
+            (Comment c) =>
+                c.id == comment.id ? c.copyWith(isLiked: liked, likeCount: likeCount) : c,
           )
           .toList(growable: false);
       _featuredComments = _featuredComments
           .map(
-            (Comment c) => c.id == comment.id
-                ? c.copyWith(isLiked: liked, likeCount: likeCount)
-                : c,
+            (Comment c) =>
+                c.id == comment.id ? c.copyWith(isLiked: liked, likeCount: likeCount) : c,
           )
           .toList(growable: false);
     }
@@ -711,10 +1071,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleMemberTap({
-    required String uid,
-    required String nickname,
-  }) async {
+  Future<void> _handleMemberTap({required String uid, required String nickname}) async {
     if (uid.isEmpty) {
       return;
     }
@@ -745,14 +1102,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         !isSelf &&
         post.authorUid.isNotEmpty &&
         post.authorUid != 'preview';
-    final bool isFollowing =
-        canFollow && socialGraph.isFollowing(post.authorUid);
+    final bool isFollowing = canFollow && socialGraph.isFollowing(post.authorUid);
 
     final ThemeData theme = Theme.of(context);
     final TextStyle timestampStyle =
-        theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ) ??
+        theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant) ??
         TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11);
 
     final Widget timestampLabel = Text(timestamp, style: timestampStyle);
@@ -764,13 +1118,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         return <PopupMenuEntry<_AuthorMenuAction>>[
           const PopupMenuItem<_AuthorMenuAction>(
             value: _AuthorMenuAction.viewProfile,
-            child: Row(
-              children: [
-                Icon(Icons.person_outline, size: 18),
-                Gap(8),
-                Text('프로필 보기'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
           ),
           if (canFollow)
             PopupMenuItem<_AuthorMenuAction>(
@@ -831,9 +1179,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _sharePost(Post post) {
     final String source = post.text.trim();
-    final String truncated = source.length > 120
-        ? '${source.substring(0, 120)}...'
-        : source;
+    final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
     final String snippet = truncated.replaceAll(RegExp(r'\s+'), ' ').trim();
     final Uri shareUri = Uri.parse(
       'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
@@ -846,10 +1192,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     unawaited(Share.share(message, subject: '공뮤톡 라운지 글 공유'));
   }
 
-  Future<void> _showMemberActions({
-    required String uid,
-    required String nickname,
-  }) async {
+  Future<void> _showMemberActions({required String uid, required String nickname}) async {
     if (!mounted) {
       return;
     }
@@ -860,10 +1203,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == uid;
     final bool canFollow =
-        authState.isLoggedIn &&
-        currentUid != null &&
-        currentUid.isNotEmpty &&
-        !isSelf;
+        authState.isLoggedIn && currentUid != null && currentUid.isNotEmpty && !isSelf;
 
     if (!mounted) {
       return;
@@ -897,9 +1237,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                         ? Icons.person_remove_alt_1_outlined
                         : Icons.person_add_alt_1_outlined,
                   ),
-                  title: Text(
-                    socialGraph.isFollowing(uid) ? '팔로우 취소하기' : '팔로우하기',
-                  ),
+                  title: Text(socialGraph.isFollowing(uid) ? '팔로우 취소하기' : '팔로우하기'),
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await _toggleFollow(
@@ -942,10 +1280,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (!mounted) {
         return;
       }
-      _showSnack(
-        context,
-        nowFollowing ? '$nickname 님을 팔로우했어요.' : '$nickname 님을 팔로우 취소했어요.',
-      );
+      _showSnack(context, nowFollowing ? '$nickname 님을 팔로우했어요.' : '$nickname 님을 팔로우 취소했어요.');
     } catch (_) {
       if (!mounted) {
         return;
@@ -968,10 +1303,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => _MockMemberProfileScreen(
-          profile: profile,
-          socialGraph: socialGraph,
-        ),
+        builder: (_) => _MockMemberProfileScreen(profile: profile, socialGraph: socialGraph),
       ),
     );
   }
@@ -992,9 +1324,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorSerialVisible: cached.authorSerialVisible,
       text: cached.text,
       likeCount: cached.likeCount,
-      createdAt: (post.updatedAt ?? post.createdAt).add(
-        Duration(minutes: index),
-      ),
+      createdAt: (post.updatedAt ?? post.createdAt).add(Duration(minutes: index)),
       authorSupporterLevel: cached.authorSupporterLevel,
       authorIsSupporter: cached.authorIsSupporter,
     );
@@ -1028,12 +1358,6 @@ Widget _buildCommentIdentityRow({
   final bool isSerialScope = scope == LoungeScope.serial;
 
   if (isSerialScope) {
-    final String trackLabel = serialLabel(
-      comment.authorTrack,
-      comment.authorSerialVisible,
-      includeEmoji: true,
-    );
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1047,36 +1371,28 @@ Widget _buildCommentIdentityRow({
           const Gap(12),
         ],
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  if (comment.authorIsSupporter) ...[
-                    Icon(
-                      Icons.workspace_premium,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const Gap(4),
-                  ],
-                  Expanded(
-                    child: Text(
-                      comment.authorNickname,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                showTimestamp ? '$trackLabel · $timestamp' : trackLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              if (comment.authorIsSupporter) ...[
+                Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
+                const Gap(4),
+              ],
+              Expanded(
+                child: Text(
+                  comment.authorNickname,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (isSerialScope && showTimestamp) ...[
+                Text(
+                  timestamp,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1084,8 +1400,7 @@ Widget _buildCommentIdentityRow({
     );
   }
 
-  final bool hasTrack =
-      comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
+  final bool hasTrack = comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
   final Color background = hasTrack
       ? theme.colorScheme.primary.withValues(alpha: 0.12)
       : theme.colorScheme.surfaceContainerHighest;
@@ -1098,26 +1413,17 @@ Widget _buildCommentIdentityRow({
     includeEmoji: hasTrack,
   );
   final Widget? supporterIcon = comment.authorIsSupporter
-      ? Icon(
-          Icons.workspace_premium,
-          size: 16,
-          color: theme.colorScheme.primary,
-        )
+      ? Icon(Icons.verified, size: 16, color: theme.colorScheme.primary)
       : null;
   final String maskedName = maskNickname(
-    comment.authorNickname.isNotEmpty
-        ? comment.authorNickname
-        : comment.authorUid,
+    comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
   );
 
   return Row(
     children: [
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-        ),
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
         child: Text(
           trackLabel,
           style: theme.textTheme.labelSmall?.copyWith(
@@ -1130,16 +1436,14 @@ Widget _buildCommentIdentityRow({
       Expanded(
         child: Row(
           children: [
+            if (supporterIcon != null) ...[supporterIcon, const Gap(6)],
             Expanded(
               child: Text(
                 maskedName,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (supporterIcon != null) ...[const Gap(6), supporterIcon],
           ],
         ),
       ),
@@ -1147,9 +1451,7 @@ Widget _buildCommentIdentityRow({
         const Gap(8),
         Text(
           timestamp,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],
     ],
@@ -1169,9 +1471,7 @@ class _AuthorInfoHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
-      child: _isSerialScope
-          ? _buildSerialHeader(theme)
-          : _buildPublicHeader(theme),
+      child: _isSerialScope ? _buildSerialHeader(theme) : _buildPublicHeader(theme),
     );
   }
 
@@ -1182,7 +1482,7 @@ class _AuthorInfoHeader extends StatelessWidget {
         const TextStyle(fontSize: 15, fontWeight: FontWeight.w600);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         CircleAvatar(
           radius: 18,
@@ -1199,6 +1499,7 @@ class _AuthorInfoHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  if (supporter != null) ...[supporter, const Gap(6)],
                   Expanded(
                     child: Text(
                       post.authorNickname,
@@ -1207,23 +1508,20 @@ class _AuthorInfoHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (supporter != null) ...[const Gap(6), supporter],
                 ],
               ),
-              const Gap(2),
-              Text(
-                serialLabel(
-                  post.authorTrack,
-                  post.authorSerialVisible,
-                  includeEmoji: true,
+              if (scope != LoungeScope.serial) ...[
+                const Gap(2),
+                Text(
+                  serialLabel(post.authorTrack, post.authorSerialVisible, includeEmoji: true),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
             ],
           ),
         ),
@@ -1247,14 +1545,10 @@ class _AuthorInfoHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (supporter != null) ...[supporter, const Gap(6)],
               Flexible(
-                child: Text(
-                  _maskedUid(),
-                  style: nameStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(_maskedUid(), style: nameStyle, overflow: TextOverflow.ellipsis),
               ),
-              if (supporter != null) ...[const Gap(6), supporter],
             ],
           ),
         ),
@@ -1263,8 +1557,7 @@ class _AuthorInfoHeader extends StatelessWidget {
   }
 
   Widget _buildTrackTag(ThemeData theme) {
-    final bool hasTrack =
-        post.authorSerialVisible && post.authorTrack != CareerTrack.none;
+    final bool hasTrack = post.authorSerialVisible && post.authorTrack != CareerTrack.none;
     final Color background = hasTrack
         ? theme.colorScheme.primary.withValues(alpha: 0.12)
         : theme.colorScheme.surfaceContainerHighest;
@@ -1278,16 +1571,10 @@ class _AuthorInfoHeader extends StatelessWidget {
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
       child: Text(
         label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w600,
-        ),
+        style: theme.textTheme.labelSmall?.copyWith(color: foreground, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -1299,18 +1586,12 @@ class _AuthorInfoHeader extends StatelessWidget {
     final int level = post.authorSupporterLevel;
     return Tooltip(
       message: level > 0 ? '후원자 레벨 $level' : '후원자',
-      child: Icon(
-        Icons.workspace_premium,
-        size: 18,
-        color: theme.colorScheme.primary,
-      ),
+      child: Icon(Icons.verified, size: 18, color: theme.colorScheme.primary),
     );
   }
 
   String _maskedUid() {
-    final String fallback = post.authorNickname.isNotEmpty
-        ? post.authorNickname
-        : post.authorUid;
+    final String fallback = post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid;
     return maskNickname(fallback);
   }
 
@@ -1320,149 +1601,6 @@ class _AuthorInfoHeader extends StatelessWidget {
       return '공';
     }
     return String.fromCharCode(normalized.runes.first).toUpperCase();
-  }
-}
-
-class _FeaturedCommentTile extends StatelessWidget {
-  const _FeaturedCommentTile({
-    required this.comment,
-    required this.scope,
-    required this.onToggleLike,
-    required this.onOpenProfile,
-    this.onReply,
-  });
-
-  final Comment comment;
-  final LoungeScope scope;
-  final ValueChanged<Comment> onToggleLike;
-  final VoidCallback onOpenProfile;
-  final ValueChanged<Comment>? onReply;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String timestamp = _formatTimestamp(comment.createdAt);
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: FractionallySizedBox(
-        widthFactor: 0.95,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.local_fire_department_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const Gap(6),
-                  Text(
-                    '베스트 댓글',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(timestamp, style: theme.textTheme.bodySmall),
-                ],
-              ),
-              const Gap(10),
-              InkWell(
-                onTap: onOpenProfile,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: _buildCommentIdentityRow(
-                    theme: theme,
-                    comment: comment,
-                    timestamp: timestamp,
-                    scope: scope,
-                    includeAvatar: scope == LoungeScope.serial,
-                    showTimestamp: false,
-                  ),
-                ),
-              ),
-              const Gap(12),
-              Text(
-                comment.text,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.3),
-              ),
-              const Gap(12),
-              Row(
-                children: [
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => onToggleLike(comment),
-                    icon: Icon(
-                      comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 16,
-                      color: comment.isLiked
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    label: Text(
-                      '${comment.likeCount}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: comment.isLiked
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  if (onReply != null)
-                    IconButton(
-                      tooltip: '답글 달기',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minHeight: 32,
-                        minWidth: 32,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      iconSize: 18,
-                      onPressed: () => onReply!(comment),
-                      icon: const Icon(Icons.reply_outlined),
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatTimestamp(DateTime createdAt) {
-    final DateTime now = DateTime.now();
-    final Duration difference = now.difference(createdAt);
-    if (difference.inMinutes < 1) {
-      return '방금 전';
-    }
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}분 전';
-    }
-    if (difference.inHours < 24) {
-      return '${difference.inHours}시간 전';
-    }
-    return '${createdAt.month}월 ${createdAt.day}일';
   }
 }
 
@@ -1493,57 +1631,87 @@ class _CommentTile extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
-        widthFactor: isReply ? 0.88 : 0.94,
+        widthFactor: isReply ? 0.92 : 0.98,
         child: Container(
-          margin: EdgeInsets.only(bottom: isReply ? 8 : 12),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          decoration: highlight
-              ? BoxDecoration(
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                )
-              : null,
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.fromLTRB(6, 2, 6, 0),
+          decoration: null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InkWell(
-                onTap: onOpenProfile,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  child: _buildCommentIdentityRow(
-                    theme: theme,
-                    comment: comment,
-                    timestamp: timestamp,
-                    scope: scope,
-                    includeAvatar: scope == LoungeScope.serial && !isReply,
-                    isReply: isReply,
-                  ),
-                ),
-              ),
-              const Gap(8),
+              scope == LoungeScope.serial
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: onOpenProfile,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: _buildCommentIdentityRow(
+                                theme: theme,
+                                comment: comment,
+                                timestamp: timestamp,
+                                scope: scope,
+                                includeAvatar: scope == LoungeScope.serial && !isReply,
+                                showTimestamp: false,
+                                isReply: isReply,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            timestamp,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : InkWell(
+                      onTap: onOpenProfile,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: _buildCommentIdentityRow(
+                          theme: theme,
+                          comment: comment,
+                          timestamp: timestamp,
+                          scope: scope,
+                          includeAvatar: scope == LoungeScope.serial && !isReply,
+                          isReply: isReply,
+                        ),
+                      ),
+                    ),
+              const Gap(4),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  comment.text,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.3),
-                ),
+                child: Text(comment.text, style: theme.textTheme.bodyMedium?.copyWith(height: 1.3)),
               ),
-              const Gap(8),
+              const Gap(4),
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (highlight) ...[
+                    Icon(
+                      Icons.local_fire_department,
+                      size: 16,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors
+                                .orange
+                                .shade300 // 다크모드에서 더 밝은 주황색
+                          : Colors.deepOrange.shade600, // 라이트모드에서 진한 주황색
+                    ),
+                    const Gap(4),
+                  ],
                   TextButton.icon(
                     style: TextButton.styleFrom(
                       minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => onToggleLike(comment),
@@ -1567,10 +1735,7 @@ class _CommentTile extends StatelessWidget {
                     IconButton(
                       tooltip: '답글 달기',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minHeight: 32,
-                        minWidth: 32,
-                      ),
+                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
                       visualDensity: VisualDensity.compact,
                       iconSize: 18,
                       onPressed: () => onReply!(comment),
@@ -1657,9 +1822,7 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
     final String nicknameSource = target.authorNickname.isNotEmpty
         ? target.authorNickname
         : target.authorUid;
-    final String displayName = isSerialScope
-        ? target.authorNickname
-        : maskNickname(nicknameSource);
+    final String displayName = isSerialScope ? target.authorNickname : maskNickname(nicknameSource);
     final String preview = target.text.trim();
 
     return Padding(
@@ -1674,9 +1837,7 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
             children: [
               Text(
                 '답글 작성',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const Gap(12),
               Container(
@@ -1691,9 +1852,7 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
                   children: [
                     Text(
                       displayName,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Gap(6),
@@ -1715,18 +1874,14 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
                 textInputAction: TextInputAction.newline,
                 decoration: InputDecoration(
                   hintText: '답글을 입력하세요',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const Gap(12),
               Row(
                 children: [
                   TextButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(false),
+                    onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
                     child: const Text('취소'),
                   ),
                   const Spacer(),
@@ -1761,11 +1916,7 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
       final String? parentId = target.parentCommentId?.isNotEmpty == true
           ? target.parentCommentId
           : target.id;
-      await widget.repository.addComment(
-        widget.postId,
-        text,
-        parentCommentId: parentId,
-      );
+      await widget.repository.addComment(widget.postId, text, parentCommentId: parentId);
       if (!mounted) {
         return;
       }
@@ -1777,25 +1928,19 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('답글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
-        );
+        ..showSnackBar(const SnackBar(content: Text('답글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')));
     }
   }
 }
 
 class _MockMemberProfileScreen extends StatefulWidget {
-  const _MockMemberProfileScreen({
-    required this.profile,
-    required this.socialGraph,
-  });
+  const _MockMemberProfileScreen({required this.profile, required this.socialGraph});
 
   final MockMemberProfileData profile;
   final MockSocialGraph socialGraph;
 
   @override
-  State<_MockMemberProfileScreen> createState() =>
-      _MockMemberProfileScreenState();
+  State<_MockMemberProfileScreen> createState() => _MockMemberProfileScreenState();
 }
 
 class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
@@ -1841,10 +1986,7 @@ class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  child: Text(widget.profile.nickname.substring(0, 1)),
-                ),
+                CircleAvatar(radius: 32, child: Text(widget.profile.nickname.substring(0, 1))),
                 const Gap(20),
                 Expanded(
                   child: Column(
@@ -1852,9 +1994,7 @@ class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
                     children: [
                       Text(
                         widget.profile.nickname,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const Gap(8),
                       Text(
@@ -1872,12 +2012,7 @@ class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
               ],
             ),
             const Gap(24),
-            Text(
-              '소개',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text('소개', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
             const Gap(8),
             Text(widget.profile.bio, style: theme.textTheme.bodyLarge),
             if (widget.profile.tags.isNotEmpty) ...[
@@ -1893,9 +2028,7 @@ class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
             const Gap(24),
             Text(
               '최근 이야기',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const Gap(12),
             if (widget.profile.recentPosts.isEmpty)
@@ -1919,20 +2052,13 @@ class _MockMemberProfileScreenState extends State<_MockMemberProfileScreen> {
   Future<void> _handleFollowToggle() async {
     setState(() => _isProcessing = true);
     try {
-      await widget.socialGraph.toggleFollow(
-        widget.profile.uid,
-        shouldFollow: !_isFollowing,
-      );
+      await widget.socialGraph.toggleFollow(widget.profile.uid, shouldFollow: !_isFollowing);
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(_isFollowing ? '팔로우를 취소했어요.' : '새로 팔로우하기 시작했어요.'),
-          ),
-        );
+        ..showSnackBar(SnackBar(content: Text(_isFollowing ? '팔로우를 취소했어요.' : '새로 팔로우하기 시작했어요.')));
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -1957,9 +2083,7 @@ class _PostActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color iconColor = isHighlighted
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
+    final Color iconColor = isHighlighted ? colorScheme.primary : colorScheme.onSurfaceVariant;
     final Widget iconWidget = AnimatedScale(
       duration: const Duration(milliseconds: 180),
       scale: isHighlighted ? 1.1 : 1,
@@ -1968,10 +2092,9 @@ class _PostActionButton extends StatelessWidget {
     );
 
     final TextStyle labelStyle =
-        Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: iconColor,
-          fontWeight: FontWeight.w600,
-        ) ??
+        Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: iconColor, fontWeight: FontWeight.w600) ??
         TextStyle(color: iconColor, fontWeight: FontWeight.w600);
 
     final Widget labelWidget = AnimatedSwitcher(
@@ -2013,12 +2136,9 @@ class _PostMediaPreview extends StatelessWidget {
           placeholder: (context, url) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             height: 180,
-            child: const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
-          errorWidget: (context, url, error) =>
-              const Icon(Icons.broken_image_outlined, size: 48),
+          errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
           fit: BoxFit.cover,
         ),
       );
@@ -2042,12 +2162,9 @@ class _PostMediaPreview extends StatelessWidget {
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
-            errorWidget: (context, url, error) =>
-                const Icon(Icons.broken_image_outlined),
+            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
           );
         },
       ),

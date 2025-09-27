@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter:*)",
+      "Bash(pkill:*)",
+      "Read(//Users/shaunkim/Desktop/**)",
+      "Bash(r)",
+      "Bash(npm install:*)",
+      "Read(//Users/shaunkim/**)",
+      "Bash(curl -LsSf https://astral.sh/uv/install.sh)",
+      "Bash(sh)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "Bash(/Users/shaunkim/.local/bin/uv run --directory /Users/shaunkim/serena serena project generate-yml)",
+      "Bash(dart:*)",
+      "Bash(/Users/shaunkim/.local/bin/uv run --directory /Users/shaunkim/serena serena project index)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

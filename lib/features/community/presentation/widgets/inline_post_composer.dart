@@ -19,59 +19,6 @@ class InlinePostComposer extends StatefulWidget {
   State<InlinePostComposer> createState() => _InlinePostComposerState();
 }
 
-class _AudienceSelector extends StatelessWidget {
-  const _AudienceSelector({required this.audience, this.serialName});
-
-  final PostAudience audience;
-  final String? serialName;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isSerialAudience = audience == PostAudience.serial;
-    final IconData icon = isSerialAudience
-        ? Icons.badge_outlined
-        : Icons.public_outlined;
-    final bool hasSerialName =
-        serialName != null && serialName!.isNotEmpty && serialName != 'unknown';
-    final String message = isSerialAudience
-        ? hasSerialName
-              ? '${serialName!}에게만 공개'
-              : '내 직렬만 공개'
-        : '전체 공개';
-
-    final BorderRadius radius = BorderRadius.circular(10);
-    final Widget chip = ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 220),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: radius,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const Gap(4),
-            Flexible(
-              child: Text(
-                message,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                softWrap: false,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return chip;
-  }
-}
 
 class _InlinePostComposerState extends State<InlinePostComposer> {
   late final TextEditingController _controller;
@@ -174,7 +121,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                   Row(
                     children: [
                       Text(
-                        '라운지에 글 남기기',
+                        _getTitleForScope(widget.scope, serialDisplayName),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -187,15 +134,6 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ],
-                      Flexible(
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _AudienceSelector(
-                            audience: state.audience,
-                            serialName: serialDisplayName,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                   const Gap(10),
@@ -314,6 +252,13 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
       return PostAudience.serial;
     }
     return PostAudience.all;
+  }
+
+  String _getTitleForScope(LoungeScope scope, String? serialDisplayName) {
+    if (scope == LoungeScope.serial && serialDisplayName != null) {
+      return '$serialDisplayName 라운지에 글 남기기';
+    }
+    return '전체 라운지에 글 남기기';
   }
 
   String? _serialDisplayName(AuthState authState) {

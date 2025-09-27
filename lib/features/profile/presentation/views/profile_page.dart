@@ -417,7 +417,7 @@ class _ProfileHeader extends StatelessWidget {
                               ? '후원자 레벨 ${state.supporterLevel}'
                               : '프리미엄 이용 중',
                           child: Icon(
-                            Icons.workspace_premium,
+                            Icons.verified,
                             color: theme.colorScheme.primary,
                           ),
                         ),
@@ -1074,7 +1074,7 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.workspace_premium_outlined),
+                    leading: const Icon(Icons.verified_outlined),
                     title: const Text('후원하기 990 · 광고 제거'),
                     subtitle: const Text('후원 혜택과 리퍼럴 보상을 확인하세요.'),
                     trailing: const Icon(Icons.chevron_right),

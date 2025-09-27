@@ -281,7 +281,7 @@ class _MemberHeader extends StatelessWidget {
                       if (profile.supporterLevel > 0 &&
                           profile.supporterBadgeVisible)
                         _HeaderChip(
-                          icon: Icons.workspace_premium,
+                          icon: Icons.verified,
                           label: '후원자 레벨 ${profile.supporterLevel}',
                         ),
                     ],

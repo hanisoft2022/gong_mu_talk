@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +36,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   LoungeScope? _lastScope;
   SearchCubit? _searchCubit;
   bool _isAppBarElevated = false;
+  bool _isModalOpen = false;
+  static SearchScope _persistentSearchScope = SearchScope.all;
 
   @override
   void initState() {
@@ -45,7 +48,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       ..addListener(() {
         if (!_searchFocusNode.hasFocus &&
             mounted &&
-            _searchController.text.trim().isEmpty) {
+            _searchController.text.trim().isEmpty &&
+            !_isModalOpen) {
           setState(() {
             _isSearchExpanded = false;
           });
@@ -80,7 +84,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SearchCubit>(
-      create: (_) => getIt<SearchCubit>()..loadSuggestions(),
+      create: (_) {
+        final cubit = getIt<SearchCubit>();
+        cubit.loadSuggestions();
+        // Apply persistent scope after the initial state is set
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_persistentSearchScope != SearchScope.all) {
+            cubit.changeScope(_persistentSearchScope);
+          }
+        });
+        return cubit;
+      },
       child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
         builder: (context, feedState) {
           return BlocBuilder<SearchCubit, SearchState>(
@@ -167,9 +181,24 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   body: RefreshIndicator(
                     onRefresh: onRefresh,
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutQuart,
+                      switchOutCurve: Curves.easeInQuart,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.0, 0.03),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutQuart,
+                            )),
+                            child: child,
+                          ),
+                        );
+                      },
                       child: ListView(
                         key: ValueKey<String>(
                           'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
@@ -199,24 +228,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     return Row(
       children: [
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: _isSearchExpanded
-                ? _buildExpandedSearchField(context, searchState)
-                : _buildCollapsedSearchTrigger(theme, searchState),
+        if (!_isSearchExpanded)
+          _buildCollapsedSearchTrigger(theme, searchState)
+        else
+          Expanded(
+            child: _buildExpandedSearchField(context, searchState),
           ),
-        ),
-        const Gap(12),
-        SizedBox(
-          height: 44,
-          child: _SortMenu(
-            currentSort: feedState.sort,
-            onSelect: feedCubit.changeSort,
-          ),
-        ),
+        if (!_isSearchExpanded) ...[
+          const Spacer(),
+          _buildSortButtons(feedState.sort, feedCubit.changeSort),
+        ],
       ],
     );
   }
@@ -225,56 +246,59 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     ThemeData theme,
     SearchState searchState,
   ) {
-    final BorderRadius radius = BorderRadius.circular(12);
-    final TextStyle labelStyle =
-        theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w500,
-        ) ??
-        TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant);
     final String placeholder = _searchController.text.trim();
-    final String displayText = placeholder.isNotEmpty
-        ? placeholder
-        : '${searchState.scope.label} 검색';
 
-    return SizedBox(
-      height: 44,
-      child: ClipRRect(
-        key: ValueKey<String>('collapsed_${searchState.scope.name}'),
-        borderRadius: radius,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              borderRadius: radius,
-              onTap: _expandSearchField,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const Gap(8),
-                    Expanded(
-                      child: Text(
-                        displayText,
-                        style: labelStyle,
-                        overflow: TextOverflow.ellipsis,
+    // If there's search text, show it in a compact form
+    if (placeholder.isNotEmpty) {
+      return SizedBox(
+        height: 44,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _expandSearchField,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ],
+                      const Gap(8),
+                      Expanded(
+                        child: Text(
+                          placeholder,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
+      );
+    }
+
+    // Otherwise, show just a search icon
+    return _SearchIconButton(
+      icon: Icons.search,
+      tooltip: '검색',
+      onPressed: _expandSearchField,
+      color: theme.colorScheme.onSurfaceVariant,
     );
   }
 
@@ -285,6 +309,26 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final ThemeData theme = Theme.of(context);
     final BorderRadius radius = BorderRadius.circular(12);
     final bool hasText = _searchController.text.trim().isNotEmpty;
+
+    // Get current hint text based on search scope
+    String getHintText(SearchScope scope) {
+      String hintText;
+      switch (scope) {
+        case SearchScope.all:
+          hintText = '글+댓글 검색';
+          break;
+        case SearchScope.posts:
+          hintText = '글 검색';
+          break;
+        case SearchScope.comments:
+          hintText = '댓글 검색';
+          break;
+        case SearchScope.author:
+          hintText = '글 작성자 검색';
+          break;
+      }
+      return hintText;
+    }
 
     return SizedBox(
       height: 44,
@@ -307,6 +351,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
               ),
               Expanded(
                 child: TextField(
+                  key: ValueKey('search_field_${searchState.scope.name}'),
                   controller: _searchController,
                   focusNode: _searchFocusNode,
                   textInputAction: TextInputAction.search,
@@ -314,7 +359,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   onChanged: _onQueryChanged,
                   style: theme.textTheme.bodyMedium,
                   decoration: InputDecoration(
-                    hintText: '${searchState.scope.label} 검색',
+                    hintText: () {
+                      final hint = getHintText(searchState.scope);
+                      return hint;
+                    }(),
                     hintStyle: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -343,51 +391,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   onPressed: _clearSearchQuery,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-              SizedBox(
-                height: double.infinity,
-                child: Tooltip(
-                  message: '검색 범위: ${searchState.scope.label}',
-                  child: PopupMenuButton<SearchScope>(
-                    tooltip: '검색 범위 설정',
-                    initialValue: searchState.scope,
-                    position: PopupMenuPosition.under,
-                    offset: const Offset(0, 6),
-                    itemBuilder: (BuildContext context) {
-                      return SearchScope.values
-                          .map(
-                            (SearchScope scope) => PopupMenuItem<SearchScope>(
-                              value: scope,
-                              child: Row(
-                                children: [
-                                  if (scope == searchState.scope)
-                                    Icon(
-                                      Icons.check,
-                                      size: 16,
-                                      color: theme.colorScheme.primary,
-                                    )
-                                  else
-                                    const SizedBox(width: 16),
-                                  const Gap(8),
-                                  Text(scope.label),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(growable: false);
-                    },
-                    onSelected: (SearchScope scope) {
-                      if (scope != searchState.scope) {
-                        (_searchCubit ?? context.read<SearchCubit>())
-                            .changeScope(scope);
-                      }
-                    },
-                    icon: Icon(
-                      Icons.tune,
-                      size: 20,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
+              _SearchIconButton(
+                icon: Icons.tune,
+                tooltip: '검색 옵션',
+                onPressed: () {
+                  _showSearchOptionsBottomSheet(context, searchState);
+                },
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -799,6 +809,35 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     (_searchCubit ?? context.read<SearchCubit>()).clearSearch();
   }
 
+  Widget _buildSortButtons(LoungeSort currentSort, ValueChanged<LoungeSort> onSelect) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      children: [
+        _SortButton(
+          sortType: LoungeSort.latest,
+          isSelected: currentSort == LoungeSort.latest,
+          onPressed: () => onSelect(LoungeSort.latest),
+          theme: theme,
+        ),
+        const Gap(8),
+        _SortButton(
+          sortType: LoungeSort.popular,
+          isSelected: currentSort == LoungeSort.popular,
+          onPressed: () => onSelect(LoungeSort.popular),
+          theme: theme,
+        ),
+        const Gap(8),
+        _SortButton(
+          sortType: LoungeSort.likes,
+          isSelected: currentSort == LoungeSort.likes,
+          onPressed: () => onSelect(LoungeSort.likes),
+          theme: theme,
+        ),
+      ],
+    );
+  }
+
   void _clearSearchQuery() {
     _searchController.clear();
     (_searchCubit ?? context.read<SearchCubit>()).clearSearch();
@@ -820,6 +859,62 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       return;
     }
     (_searchCubit ?? context.read<SearchCubit>()).search(trimmed);
+  }
+
+  void _showSearchOptionsBottomSheet(BuildContext context, SearchState searchState) {
+    setState(() {
+      _isModalOpen = true;
+    });
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext bottomSheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '검색 옵션',
+                  style: Theme.of(bottomSheetContext).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ...SearchScope.values.map((SearchScope scope) {
+                final bool isSelected = scope == searchState.scope;
+                return ListTile(
+                  leading: isSelected
+                    ? Icon(Icons.check, color: Theme.of(bottomSheetContext).colorScheme.primary)
+                    : const SizedBox(width: 24),
+                  title: Text(scope.label),
+                  onTap: () {
+                    Navigator.of(bottomSheetContext).pop();
+                    // Use the original context that has access to SearchCubit
+                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(scope);
+                  },
+                );
+              }),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      // Modal closed - reset the flag and refocus on search field
+      setState(() {
+        _isModalOpen = false;
+      });
+      if (_isSearchExpanded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _searchFocusNode.requestFocus();
+          }
+        });
+      }
+    });
   }
 
   SliverAppBar _buildLoungeSliverAppBar(
@@ -872,9 +967,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     if (!_scrollController.hasClients) {
       return;
     }
+
+    // 스크롤 시작 시 햅틱 피드백
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {
+      // 햅틱 피드백이 지원되지 않는 경우 무시
+    }
+
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 360),
+      duration: const Duration(milliseconds: 500),
       curve: Curves.easeOutCubic,
     );
   }
@@ -1030,71 +1133,77 @@ class _CommunityErrorView extends StatelessWidget {
   }
 }
 
-class _SortMenu extends StatelessWidget {
-  const _SortMenu({required this.currentSort, required this.onSelect});
+class _SortButton extends StatelessWidget {
+  const _SortButton({
+    required this.sortType,
+    required this.isSelected,
+    required this.onPressed,
+    required this.theme,
+  });
 
-  final LoungeSort currentSort;
-  final ValueChanged<LoungeSort> onSelect;
+  final LoungeSort sortType;
+  final bool isSelected;
+  final VoidCallback onPressed;
+  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return PopupMenuButton<LoungeSort>(
-      tooltip: '정렬 방법',
-      initialValue: currentSort,
-      onSelected: onSelect,
-      itemBuilder: (context) {
-        return LoungeSort.values
-            .map((LoungeSort option) {
-              final bool isSelected = option == currentSort;
-              return PopupMenuItem<LoungeSort>(
-                value: option,
-                height: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    if (isSelected)
-                      Icon(
-                        Icons.check,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      )
-                    else
-                      const SizedBox(width: 18),
-                    const Gap(8),
-                    Text(option.label),
-                  ],
-                ),
-              );
-            })
-            .toList(growable: false);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    final IconData icon = sortType.icon;
+    final String label = sortType.label;
+    final Color iconColor = sortType.getColor(context);
+
+    if (isSelected) {
+      // Show icon + text for selected button
+      return Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.tune, size: 16),
-            const Gap(4),
-            Text(
-              currentSort.label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: iconColor,
               ),
-            ),
-            const Gap(2),
-            const Icon(Icons.arrow_drop_down, size: 18),
-          ],
+              const Gap(6),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Show only icon for unselected button
+      return SizedBox(
+        height: 44,
+        width: 44,
+        child: Material(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onPressed,
+            child: Icon(
+              icon,
+              size: 18,
+              color: iconColor,
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 

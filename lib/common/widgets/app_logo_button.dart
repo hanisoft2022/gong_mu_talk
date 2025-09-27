@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_logo.dart';
 
@@ -12,8 +13,29 @@ class AppLogoButton extends StatefulWidget {
   State<AppLogoButton> createState() => _AppLogoButtonState();
 }
 
-class _AppLogoButtonState extends State<AppLogoButton> {
+class _AppLogoButtonState extends State<AppLogoButton> with TickerProviderStateMixin {
   bool _isPressed = false;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.ease));
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   void _handleTapDown(TapDownDetails details) {
     setState(() => _isPressed = true);
@@ -26,6 +48,18 @@ class _AppLogoButtonState extends State<AppLogoButton> {
   }
 
   Future<void> _handleTap() async {
+    // 매우 미묘한 햅틱 피드백
+    try {
+      await HapticFeedback.selectionClick();
+    } catch (_) {
+      // 햅틱 피드백이 지원되지 않는 경우 무시
+    }
+
+    // 부드러운 펄스 애니메이션 실행
+    _pulseController.forward().then((_) {
+      _pulseController.reverse();
+    });
+
     setState(() => _isPressed = false);
     widget.onTap();
   }
@@ -33,43 +67,37 @@ class _AppLogoButtonState extends State<AppLogoButton> {
   @override
   Widget build(BuildContext context) {
     final double diameter = widget.compact ? 44 : 52;
-    final BorderRadius borderRadius = BorderRadius.circular(widget.compact ? 14 : 18);
-    final InteractiveInkFeatureFactory splashFactory = Theme.of(context).splashFactory;
+    final double cornerRadius = widget.compact ? 14 : 18;
     final EdgeInsets padding = widget.compact ? const EdgeInsets.all(4) : const EdgeInsets.all(6);
-    final double paddedWidth = diameter + padding.horizontal;
-    final double paddedHeight = diameter + padding.vertical;
-    final double containerSize = paddedWidth > paddedHeight ? paddedWidth : paddedHeight;
+    final double containerSize = diameter + padding.horizontal;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return AnimatedScale(
-      scale: _isPressed ? 0.94 : 1,
-      duration: const Duration(milliseconds: 140),
-      curve: Curves.easeOutCubic,
-      child: SizedBox.square(
-        dimension: containerSize,
-        child: Material(
-          color: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: borderRadius),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: _handleTap,
-            onTapDown: _handleTapDown,
-            onTapCancel: _handleTapCancel,
-            splashFactory: splashFactory,
-            customBorder: RoundedRectangleBorder(borderRadius: borderRadius),
-            borderRadius: borderRadius,
-            child: Padding(
-              padding: padding,
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: SizedBox.square(
-                  dimension: diameter,
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return AnimatedScale(
+          scale: (_isPressed ? 0.94 : 1) * _pulseAnimation.value,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: SizedBox(
+            width: containerSize,
+            height: containerSize,
+            child: GestureDetector(
+              onTap: _handleTap,
+              onTapDown: _handleTapDown,
+              onTapCancel: _handleTapCancel,
+              child: Container(
+                width: containerSize,
+                height: containerSize,
+                child: Container(
+                  padding: padding,
                   child: Center(child: AppLogo(size: diameter * 0.9)),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

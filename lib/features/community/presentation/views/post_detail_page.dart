@@ -594,58 +594,56 @@ class _CommentTile extends StatelessWidget {
         : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
 
     final Widget header = isSerialScope
-        ? InkWell(
-            onTap: onOpenProfile,
-            borderRadius: BorderRadius.circular(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!isReply) ...[
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    foregroundColor: theme.colorScheme.primary,
-                    child: Text(displayInitial),
-                  ),
-                  const Gap(12),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onOpenProfile,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        children: [
-                          if (comment.authorIsSupporter) ...[
-                            Icon(
-                              Icons.workspace_premium,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const Gap(4),
-                          ],
-                          Expanded(
-                            child: Text(
-                              displayName,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      if (!isReply) ...[
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          foregroundColor: theme.colorScheme.primary,
+                          child: Text(displayInitial),
+                        ),
+                        const Gap(12),
+                      ],
+                      if (comment.authorIsSupporter) ...[
+                        Icon(
+                          Icons.verified,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const Gap(4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          displayName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
-                      const Gap(2),
-                      Text(
-                        timestamp,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  timestamp,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           )
         : InkWell(
             onTap: onOpenProfile,
@@ -684,7 +682,7 @@ class _CommentTile extends StatelessWidget {
                       ),
                       if (comment.authorIsSupporter) ...[
                         const Gap(6),
-                        Icon(Icons.workspace_premium, size: 16, color: theme.colorScheme.primary),
+                        Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
                       ],
                     ],
                   ),
