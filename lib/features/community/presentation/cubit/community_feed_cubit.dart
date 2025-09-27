@@ -284,10 +284,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     emit(state.copyWith(posts: optimisticPosts, likedPostIds: optimisticLiked));
 
     try {
-      await _repository.togglePostLike(
-        postId: post.id,
-        uid: uid,
-      );
+      await _repository.togglePostLike(postId: post.id, uid: uid);
     } catch (_) {
       emit(
         state.copyWith(

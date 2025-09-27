@@ -25,5 +25,3 @@ Object? toFirestoreTimestamp(DateTime? value) {
   }
   return Timestamp.fromDate(value);
 }
-
-

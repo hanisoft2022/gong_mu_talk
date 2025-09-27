@@ -17,6 +17,7 @@ import '../widgets/lounge_ad_banner.dart';
 import '../widgets/comment_search_result_card.dart';
 import '../../../../di/di.dart';
 import '../../../../core/theme/theme_cubit.dart';
+import '../../../../core/utils/performance_optimizations.dart';
 import '../../../../routing/app_router.dart';
 import '../../../../common/widgets/global_app_bar_actions.dart';
 import '../../../../common/widgets/app_logo_button.dart';
@@ -71,7 +72,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
+      PerformanceProfiler.start('fetch_more_posts');
       cubit.fetchMore();
+      PerformanceProfiler.end('fetch_more_posts');
     }
 
     final bool shouldElevate =
@@ -147,9 +150,19 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   : () => context.read<CommunityFeedCubit>().refresh();
 
               final List<Widget> children = <Widget>[
-                InlinePostComposer(scope: feedState.scope),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: InlinePostComposer(scope: feedState.scope),
+                ),
                 const Gap(12),
-                _buildSearchAndSortRow(context, feedState, searchState),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildSearchAndSortRow(
+                    context,
+                    feedState,
+                    searchState,
+                  ),
+                ),
                 const Gap(16),
               ];
 
@@ -160,8 +173,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 );
                 if (suggestionsCard != null) {
                   children
-                    ..add(suggestionsCard)
-                    ..add(const Gap(16));
+                    ..add(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: suggestionsCard,
+                      ),
+                    )
+                    ..add(const Gap(12));
                 }
                 children.addAll(_buildFeedSection(context, feedState));
               } else if (showSearchResults) {
@@ -184,28 +202,31 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                       duration: const Duration(milliseconds: 300),
                       switchInCurve: Curves.easeOutQuart,
                       switchOutCurve: Curves.easeInQuart,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.0, 0.03),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutQuart,
-                            )),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: ListView(
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(0.0, 0.03),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutQuart,
+                                      ),
+                                    ),
+                                child: child,
+                              ),
+                            );
+                          },
+                      child: OptimizedListView(
                         key: ValueKey<String>(
                           'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
                         ),
-                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: children,
+                        itemCount: children.length,
+                        itemBuilder: (context, index) => children[index],
                       ),
                     ),
                   ),
@@ -226,19 +247,39 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final ThemeData theme = Theme.of(context);
     final CommunityFeedCubit feedCubit = context.read<CommunityFeedCubit>();
 
-    return Row(
-      children: [
-        if (!_isSearchExpanded)
-          _buildCollapsedSearchTrigger(theme, searchState)
-        else
-          Expanded(
-            child: _buildExpandedSearchField(context, searchState),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            switchInCurve: Curves.easeInOutCubic,
+            switchOutCurve: Curves.easeInOutCubic,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return SizeTransition(
+                sizeFactor: animation,
+                axis: Axis.horizontal,
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: !_isSearchExpanded
+                ? _buildCollapsedSearchTrigger(theme, searchState)
+                : Expanded(
+                    key: const ValueKey('expanded_search'),
+                    child: _buildExpandedSearchField(context, searchState),
+                  ),
           ),
-        if (!_isSearchExpanded) ...[
-          const Spacer(),
-          _buildSortButtons(feedState.sort, feedCubit.changeSort),
+          if (!_isSearchExpanded) ...[
+            const Spacer(),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: _isSearchExpanded ? 0.0 : 1.0,
+              child: _buildSortButtons(feedState.sort, feedCubit.changeSort),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -446,13 +487,35 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     for (final Post post in state.posts) {
       children.add(
-        PostCard(
-          post: post,
-          onToggleLike: () => cubit.toggleLike(post),
-          onToggleBookmark: () => cubit.toggleBookmark(post),
-          displayScope: state.scope,
-          showShare: false,
-          showBookmark: false,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: MemoizedWidget(
+            key: ValueKey('post_${post.id}'),
+            dependencies: [
+              post.id,
+              post.isLiked,
+              post.likeCount,
+              post.isBookmarked,
+              post.commentCount,
+              state.scope,
+            ],
+            child: PostCard(
+              post: post,
+              onToggleLike: () {
+                PerformanceProfiler.start('toggle_like_feed');
+                cubit.toggleLike(post);
+                PerformanceProfiler.end('toggle_like_feed');
+              },
+              onToggleBookmark: () {
+                PerformanceProfiler.start('toggle_bookmark_feed');
+                cubit.toggleBookmark(post);
+                PerformanceProfiler.end('toggle_bookmark_feed');
+              },
+              displayScope: state.scope,
+              showShare: false,
+              showBookmark: false,
+            ),
+          ),
         ),
       );
       renderedCount += 1;
@@ -464,7 +527,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
       if (shouldInsertAd) {
         children
-          ..add(const LoungeAdBanner())
+          ..add(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: LoungeAdBanner(),
+            ),
+          )
           ..add(const SizedBox(height: 12));
       }
     }
@@ -494,7 +562,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -514,7 +582,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 ),
               ],
             ),
-            const Gap(12),
+            const Gap(16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -538,7 +606,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     SearchState state,
   ) {
     if (state.error != null) {
-      return <Widget>[_buildSearchErrorCard(context, state.error!)];
+      return <Widget>[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildSearchErrorCard(context, state.error!),
+        ),
+      ];
     }
 
     final SearchCubit searchCubit = _searchCubit ?? context.read<SearchCubit>();
@@ -549,30 +622,68 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final bool noComments = !showComments || state.commentResults.isEmpty;
 
     final List<Widget> widgets = <Widget>[
-      _buildSearchResultsHeader(context, state),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildSearchResultsHeader(context, state),
+      ),
       const Gap(12),
     ];
 
     if (!state.isLoading && noPosts && noComments) {
-      widgets.add(_buildSearchEmptyResults(context, state));
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildSearchEmptyResults(context, state),
+        ),
+      );
       return widgets;
     }
 
     if (showPosts) {
       widgets.add(
-        _buildSearchSectionHeader(context, '글 결과', state.postResults.length),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildSearchSectionHeader(
+            context,
+            '글 결과',
+            state.postResults.length,
+          ),
+        ),
       );
       if (state.postResults.isEmpty && !state.isLoading) {
-        widgets.add(_buildNoSectionResults(context, '글'));
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildNoSectionResults(context, '글'),
+          ),
+        );
       } else {
         widgets.addAll(
           state.postResults.map(
             (Post post) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: PostCard(
-                post: post,
-                onToggleLike: () => searchCubit.toggleLike(post),
-                onToggleBookmark: () => searchCubit.toggleBookmark(post),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: MemoizedWidget(
+                key: ValueKey('search_post_${post.id}'),
+                dependencies: [
+                  post.id,
+                  post.isLiked,
+                  post.likeCount,
+                  post.isBookmarked,
+                  post.commentCount,
+                ],
+                child: PostCard(
+                  post: post,
+                  onToggleLike: () {
+                    PerformanceProfiler.start('toggle_like_search');
+                    searchCubit.toggleLike(post);
+                    PerformanceProfiler.end('toggle_like_search');
+                  },
+                  onToggleBookmark: () {
+                    PerformanceProfiler.start('toggle_bookmark_search');
+                    searchCubit.toggleBookmark(post);
+                    PerformanceProfiler.end('toggle_bookmark_search');
+                  },
+                ),
               ),
             ),
           ),
@@ -583,19 +694,27 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     if (showComments) {
       widgets.add(
-        _buildSearchSectionHeader(
-          context,
-          '댓글 결과',
-          state.commentResults.length,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildSearchSectionHeader(
+            context,
+            '댓글 결과',
+            state.commentResults.length,
+          ),
         ),
       );
       if (state.commentResults.isEmpty && !state.isLoading) {
-        widgets.add(_buildNoSectionResults(context, '댓글'));
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildNoSectionResults(context, '댓글'),
+          ),
+        );
       } else {
         widgets.addAll(
           state.commentResults.map(
             (CommentSearchResult result) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: CommentSearchResultCard(result: result),
             ),
           ),
@@ -809,7 +928,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     (_searchCubit ?? context.read<SearchCubit>()).clearSearch();
   }
 
-  Widget _buildSortButtons(LoungeSort currentSort, ValueChanged<LoungeSort> onSelect) {
+  Widget _buildSortButtons(
+    LoungeSort currentSort,
+    ValueChanged<LoungeSort> onSelect,
+  ) {
     final ThemeData theme = Theme.of(context);
 
     return Row(
@@ -817,21 +939,33 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         _SortButton(
           sortType: LoungeSort.latest,
           isSelected: currentSort == LoungeSort.latest,
-          onPressed: () => onSelect(LoungeSort.latest),
+          onPressed: () {
+            PerformanceProfiler.start('change_sort');
+            onSelect(LoungeSort.latest);
+            PerformanceProfiler.end('change_sort');
+          },
           theme: theme,
         ),
         const Gap(8),
         _SortButton(
           sortType: LoungeSort.popular,
           isSelected: currentSort == LoungeSort.popular,
-          onPressed: () => onSelect(LoungeSort.popular),
+          onPressed: () {
+            PerformanceProfiler.start('change_sort');
+            onSelect(LoungeSort.popular);
+            PerformanceProfiler.end('change_sort');
+          },
           theme: theme,
         ),
         const Gap(8),
         _SortButton(
           sortType: LoungeSort.likes,
           isSelected: currentSort == LoungeSort.likes,
-          onPressed: () => onSelect(LoungeSort.likes),
+          onPressed: () {
+            PerformanceProfiler.start('change_sort');
+            onSelect(LoungeSort.likes);
+            PerformanceProfiler.end('change_sort');
+          },
           theme: theme,
         ),
       ],
@@ -858,10 +992,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     if (trimmed.isEmpty) {
       return;
     }
+    PerformanceProfiler.start('search_execution');
     (_searchCubit ?? context.read<SearchCubit>()).search(trimmed);
+    PerformanceProfiler.end('search_execution');
   }
 
-  void _showSearchOptionsBottomSheet(BuildContext context, SearchState searchState) {
+  void _showSearchOptionsBottomSheet(
+    BuildContext context,
+    SearchState searchState,
+  ) {
     setState(() {
       _isModalOpen = true;
     });
@@ -877,9 +1016,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   '검색 옵션',
-                  style: Theme.of(bottomSheetContext).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(bottomSheetContext).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const Divider(height: 1),
@@ -887,13 +1025,20 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 final bool isSelected = scope == searchState.scope;
                 return ListTile(
                   leading: isSelected
-                    ? Icon(Icons.check, color: Theme.of(bottomSheetContext).colorScheme.primary)
-                    : const SizedBox(width: 24),
+                      ? Icon(
+                          Icons.check,
+                          color: Theme.of(
+                            bottomSheetContext,
+                          ).colorScheme.primary,
+                        )
+                      : const SizedBox(width: 24),
                   title: Text(scope.label),
                   onTap: () {
                     Navigator.of(bottomSheetContext).pop();
                     // Use the original context that has access to SearchCubit
-                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(scope);
+                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(
+                      scope,
+                    );
                   },
                 );
               }),
@@ -1044,7 +1189,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       onSelectionChanged: (selection) {
         final LoungeScope nextScope = selection.first;
         if (nextScope != state.scope) {
+          PerformanceProfiler.start('change_scope');
           context.read<CommunityFeedCubit>().changeScope(nextScope);
+          PerformanceProfiler.end('change_scope');
         }
       },
     );
@@ -1167,11 +1314,7 @@ class _SortButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: iconColor,
-              ),
+              Icon(icon, size: 18, color: iconColor),
               const Gap(6),
               Text(
                 label,
@@ -1195,11 +1338,7 @@ class _SortButton extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onPressed,
-            child: Icon(
-              icon,
-              size: 18,
-              color: iconColor,
-            ),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
         ),
       );

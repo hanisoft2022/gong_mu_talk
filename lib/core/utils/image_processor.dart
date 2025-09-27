@@ -130,6 +130,8 @@ class ImageProcessResult {
     return originalSize == 0 ? 1.0 : processedSize / originalSize;
   }
 
-  Size get originalSize => Size(originalWidth.toDouble(), originalHeight.toDouble());
-  Size get processedSize => Size(processedWidth.toDouble(), processedHeight.toDouble());
+  Size get originalSize =>
+      Size(originalWidth.toDouble(), originalHeight.toDouble());
+  Size get processedSize =>
+      Size(processedWidth.toDouble(), processedHeight.toDouble());
 }

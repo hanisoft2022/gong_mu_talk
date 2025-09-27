@@ -44,15 +44,24 @@ class _BoardListPageState extends State<BoardListPage> {
                   itemBuilder: (context, index) {
                     final Board board = state.boards[index];
                     return ListTile(
-                      title: Text(board.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: board.description != null ? Text(board.description!) : null,
+                      title: Text(
+                        board.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: board.description != null
+                          ? Text(board.description!)
+                          : null,
                       trailing: board.requireRealname
                           ? const Chip(label: Text('실명 필수'))
                           : const SizedBox.shrink(),
-                      onTap: () => context.push('/community/boards/${board.id}', extra: board),
+                      onTap: () => context.push(
+                        '/community/boards/${board.id}',
+                        extra: board,
+                      ),
                     );
                   },
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
                   itemCount: state.boards.length,
                 );
             }

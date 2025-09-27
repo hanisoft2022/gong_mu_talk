@@ -8,13 +8,12 @@ class SearchSuggestion extends Equatable {
   final int count;
 
   Map<String, Object?> toMap() {
-    return <String, Object?>{
-      'count': count,
-      'updatedAt': Timestamp.now(),
-    };
+    return <String, Object?>{'count': count, 'updatedAt': Timestamp.now()};
   }
 
-  static SearchSuggestion fromSnapshot(DocumentSnapshot<Map<String, Object?>> snapshot) {
+  static SearchSuggestion fromSnapshot(
+    DocumentSnapshot<Map<String, Object?>> snapshot,
+  ) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
       throw StateError('Search suggestion ${snapshot.id} has no data');

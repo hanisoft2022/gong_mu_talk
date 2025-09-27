@@ -41,12 +41,17 @@ class GlobalAppBarActions extends StatelessWidget {
                 duration: const Duration(milliseconds: 220),
                 transitionBuilder: (Widget child, Animation<double> animation) {
                   return RotationTransition(
-                    turns: Tween<double>(begin: 0.85, end: 1).animate(animation),
+                    turns: Tween<double>(
+                      begin: 0.85,
+                      end: 1,
+                    ).animate(animation),
                     child: FadeTransition(opacity: animation, child: child),
                   );
                 },
                 child: Icon(
-                  isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                  isDarkMode
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
                   key: ValueKey<bool>(isDarkMode),
                   size: buttonIconSize,
                 ),
@@ -57,7 +62,10 @@ class GlobalAppBarActions extends StatelessWidget {
               tooltip: '마이페이지',
               onPressed: onProfileTap,
               splashRadius: compact ? 20 : 22,
-              icon: Icon(Icons.person_outline, size: buttonIconSize + (compact ? 2 : 4)),
+              icon: Icon(
+                Icons.person_outline,
+                size: buttonIconSize + (compact ? 2 : 4),
+              ),
             ),
           ],
         ),

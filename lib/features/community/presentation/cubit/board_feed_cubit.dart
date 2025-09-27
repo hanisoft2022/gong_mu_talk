@@ -45,12 +45,22 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
         ),
       );
       if (found.id.isEmpty) {
-        emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판을 찾을 수 없습니다.'));
+        emit(
+          state.copyWith(
+            status: BoardFeedStatus.error,
+            errorMessage: '게시판을 찾을 수 없습니다.',
+          ),
+        );
       } else {
         await loadBoard(found);
       }
     } catch (_) {
-      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판 정보를 불러오는 데 실패했습니다.'));
+      emit(
+        state.copyWith(
+          status: BoardFeedStatus.error,
+          errorMessage: '게시판 정보를 불러오는 데 실패했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -61,14 +71,21 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
       return;
     }
     _isFetching = true;
-    emit(state.copyWith(status: BoardFeedStatus.loading, board: board, errorMessage: null));
+    emit(
+      state.copyWith(
+        status: BoardFeedStatus.loading,
+        board: board,
+        errorMessage: null,
+      ),
+    );
     _cursor = null;
     try {
-      final PaginatedQueryResult<Post> result = await _repository.fetchBoardPosts(
-        boardId: board.id,
-        limit: _pageSize,
-        currentUid: _authCubit.state.userId,
-      );
+      final PaginatedQueryResult<Post> result = await _repository
+          .fetchBoardPosts(
+            boardId: board.id,
+            limit: _pageSize,
+            currentUid: _authCubit.state.userId,
+          );
       emit(
         state.copyWith(
           status: BoardFeedStatus.loaded,
@@ -86,7 +103,12 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
       );
       _cursor = result.lastDocument;
     } catch (_) {
-      emit(state.copyWith(status: BoardFeedStatus.error, errorMessage: '게시판 글을 불러오지 못했습니다.'));
+      emit(
+        state.copyWith(
+          status: BoardFeedStatus.error,
+          errorMessage: '게시판 글을 불러오지 못했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -107,17 +129,27 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
     _isFetching = true;
     emit(state.copyWith(isLoadingMore: true));
     try {
-      final PaginatedQueryResult<Post> result = await _repository.fetchBoardPosts(
-        boardId: state.board!.id,
-        limit: _pageSize,
-        startAfter: _cursor,
-        currentUid: _authCubit.state.userId,
-      );
-      final List<Post> combined = List<Post>.from(state.posts)..addAll(result.items);
+      final PaginatedQueryResult<Post> result = await _repository
+          .fetchBoardPosts(
+            boardId: state.board!.id,
+            limit: _pageSize,
+            startAfter: _cursor,
+            currentUid: _authCubit.state.userId,
+          );
+      final List<Post> combined = List<Post>.from(state.posts)
+        ..addAll(result.items);
       final Set<String> liked = Set<String>.from(state.likedPostIds)
-        ..addAll(result.items.where((Post post) => post.isLiked).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isLiked)
+              .map((Post post) => post.id),
+        );
       final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds)
-        ..addAll(result.items.where((Post post) => post.isBookmarked).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isBookmarked)
+              .map((Post post) => post.id),
+        );
       emit(
         state.copyWith(
           posts: combined,
@@ -129,7 +161,9 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
       );
       _cursor = result.lastDocument ?? _cursor;
     } catch (_) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오지 못했습니다.'));
+      emit(
+        state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오지 못했습니다.'),
+      );
     } finally {
       _isFetching = false;
     }
@@ -142,15 +176,21 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
     }
 
     try {
-      final bool nowLiked = await _repository.togglePostLike(postId: post.id, uid: uid);
-      final List<Post> updated = state.posts.map((Post existing) {
-        if (existing.id != post.id) {
-          return existing;
-        }
-        final int nextCount =
-            (existing.likeCount + (nowLiked ? 1 : -1)).clamp(0, 1 << 31).toInt();
-        return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
-      }).toList(growable: false);
+      final bool nowLiked = await _repository.togglePostLike(
+        postId: post.id,
+        uid: uid,
+      );
+      final List<Post> updated = state.posts
+          .map((Post existing) {
+            if (existing.id != post.id) {
+              return existing;
+            }
+            final int nextCount = (existing.likeCount + (nowLiked ? 1 : -1))
+                .clamp(0, 1 << 31)
+                .toInt();
+            return existing.copyWith(likeCount: nextCount, isLiked: nowLiked);
+          })
+          .toList(growable: false);
       final Set<String> liked = Set<String>.from(state.likedPostIds);
       if (nowLiked) {
         liked.add(post.id);
@@ -172,12 +212,14 @@ class BoardFeedCubit extends Cubit<BoardFeedState> {
     try {
       await _repository.toggleBookmark(uid: uid, postId: post.id);
       final bool nowBookmarked = !state.bookmarkedPostIds.contains(post.id);
-      final List<Post> updated = state.posts.map((Post existing) {
-        if (existing.id != post.id) {
-          return existing;
-        }
-        return existing.copyWith(isBookmarked: nowBookmarked);
-      }).toList(growable: false);
+      final List<Post> updated = state.posts
+          .map((Post existing) {
+            if (existing.id != post.id) {
+              return existing;
+            }
+            return existing.copyWith(isBookmarked: nowBookmarked);
+          })
+          .toList(growable: false);
       final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds);
       if (nowBookmarked) {
         bookmarked.add(post.id);

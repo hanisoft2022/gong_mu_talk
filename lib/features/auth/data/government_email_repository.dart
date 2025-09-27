@@ -38,8 +38,9 @@ class GovernmentEmailRepository {
   static const String _aliasCollection = 'government_email_aliases';
 
   Future<GovernmentEmailClaim?> fetchClaim(String email) async {
-    final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await _claimRef(email).get();
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await _claimRef(
+      email,
+    ).get();
     if (!snapshot.exists) {
       return null;
     }
@@ -47,9 +48,10 @@ class GovernmentEmailRepository {
     final Map<String, dynamic> data = snapshot.data()!;
     final String userId = (data['userId'] as String?) ?? '';
     final String statusValue = (data['status'] as String?) ?? 'pending';
-    final List<String> providerIds = ((data['originalProviderIds'] as List<dynamic>?) ?? const <dynamic>[])
-        .map((dynamic value) => value.toString())
-        .toList(growable: false);
+    final List<String> providerIds =
+        ((data['originalProviderIds'] as List<dynamic>?) ?? const <dynamic>[])
+            .map((dynamic value) => value.toString())
+            .toList(growable: false);
 
     final GovernmentEmailClaimStatus status = switch (statusValue) {
       'verified' => GovernmentEmailClaimStatus.verified,
@@ -72,7 +74,9 @@ class GovernmentEmailRepository {
     String? displayName,
     String? photoUrl,
   }) async {
-    final DocumentReference<Map<String, dynamic>> ref = _claimRef(governmentEmail);
+    final DocumentReference<Map<String, dynamic>> ref = _claimRef(
+      governmentEmail,
+    );
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get();
 
     final Map<String, dynamic> payload = <String, dynamic>{
@@ -102,7 +106,9 @@ class GovernmentEmailRepository {
     String? photoUrl,
     String? verifiedEmail,
   }) async {
-    final DocumentReference<Map<String, dynamic>> ref = _claimRef(governmentEmail);
+    final DocumentReference<Map<String, dynamic>> ref = _claimRef(
+      governmentEmail,
+    );
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get();
     final Map<String, dynamic> payload = <String, dynamic>{
       'email': _normalize(governmentEmail),
@@ -155,9 +161,12 @@ class GovernmentEmailRepository {
     await ref.set(payload, SetOptions(merge: true));
   }
 
-  Future<GovernmentEmailAlias?> findAliasForLegacyEmail(String legacyEmail) async {
-    final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await _aliasRef(legacyEmail).get();
+  Future<GovernmentEmailAlias?> findAliasForLegacyEmail(
+    String legacyEmail,
+  ) async {
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await _aliasRef(
+      legacyEmail,
+    ).get();
     if (!snapshot.exists) {
       return null;
     }
@@ -165,7 +174,10 @@ class GovernmentEmailRepository {
     final Map<String, dynamic> data = snapshot.data()!;
     final String? governmentEmail = data['governmentEmail'] as String?;
     final String? userId = data['userId'] as String?;
-    if (governmentEmail == null || governmentEmail.isEmpty || userId == null || userId.isEmpty) {
+    if (governmentEmail == null ||
+        governmentEmail.isEmpty ||
+        userId == null ||
+        userId.isEmpty) {
       return null;
     }
 
@@ -183,15 +195,19 @@ class GovernmentEmailRepository {
     String? verifiedEmail,
     List<String> providerIds = const <String>[],
   }) async {
-    final GovernmentEmailClaim? existingClaim = await fetchClaim(governmentEmail);
+    final GovernmentEmailClaim? existingClaim = await fetchClaim(
+      governmentEmail,
+    );
     if (existingClaim != null && existingClaim.userId != userId) {
       return;
     }
 
-    final List<String> resolvedProviderIds =
-        providerIds.isNotEmpty ? providerIds : (existingClaim?.originalProviderIds ?? const <String>[]);
+    final List<String> resolvedProviderIds = providerIds.isNotEmpty
+        ? providerIds
+        : (existingClaim?.originalProviderIds ?? const <String>[]);
 
-    if (existingClaim == null || existingClaim.status != GovernmentEmailClaimStatus.verified) {
+    if (existingClaim == null ||
+        existingClaim.status != GovernmentEmailClaimStatus.verified) {
       await markVerified(
         userId: userId,
         governmentEmail: governmentEmail,
@@ -204,7 +220,10 @@ class GovernmentEmailRepository {
       return;
     }
 
-    if (displayName != null || photoUrl != null || verifiedEmail != null || providerIds.isNotEmpty) {
+    if (displayName != null ||
+        photoUrl != null ||
+        verifiedEmail != null ||
+        providerIds.isNotEmpty) {
       await markVerified(
         userId: userId,
         governmentEmail: governmentEmail,
@@ -250,5 +269,6 @@ class GovernmentEmailRepository {
 
   String _normalize(String email) => email.trim().toLowerCase();
 
-  String _encodeEmail(String email) => base64Url.encode(utf8.encode(_normalize(email)));
+  String _encodeEmail(String email) =>
+      base64Url.encode(utf8.encode(_normalize(email)));
 }

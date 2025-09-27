@@ -4,8 +4,9 @@ import '../../domain/repositories/salary_reference_repository.dart';
 import '../datasources/salary_reference_local_data_source.dart';
 
 class SalaryReferenceRepositoryImpl implements SalaryReferenceRepository {
-  SalaryReferenceRepositoryImpl({required SalaryReferenceLocalDataSource dataSource})
-      : _dataSource = dataSource;
+  SalaryReferenceRepositoryImpl({
+    required SalaryReferenceLocalDataSource dataSource,
+  }) : _dataSource = dataSource;
 
   final SalaryReferenceLocalDataSource _dataSource;
 

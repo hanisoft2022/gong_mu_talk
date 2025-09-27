@@ -1,6 +1,9 @@
 import 'package:intl/intl.dart';
 
-final NumberFormat _wonFormatter = NumberFormat.currency(locale: 'ko_KR', symbol: '₩');
+final NumberFormat _wonFormatter = NumberFormat.currency(
+  locale: 'ko_KR',
+  symbol: '₩',
+);
 
 String formatCurrency(num value) {
   return _wonFormatter.format(value);

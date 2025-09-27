@@ -7,7 +7,8 @@ class AppConfig {
 
   static AppConfig? _instance;
 
-  static AppConfig get instance => _instance ?? const AppConfig._internalDefault();
+  static AppConfig get instance =>
+      _instance ?? const AppConfig._internalDefault();
 
   static void initialize({AppEnvironment environment = AppEnvironment.dev}) {
     _instance = AppConfig._(environment);

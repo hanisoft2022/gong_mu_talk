@@ -52,6 +52,8 @@ dependencies:
   image: ^4.2.0
   fl_chart: ^0.66.0
   sentry_flutter: ^8.14.0
+  dartz: ^0.10.1  # Functional programming (Either, Option)
+  tuple: ^2.0.2  # Tuple types for cleaner data structures
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +70,7 @@ dev_dependencies:
   flutter_native_splash: ^2.4.1
   flutter_launcher_icons: ^0.14.1
   test: ^1.25.4
+  very_good_analysis: ^6.0.0  # Enhanced linting rules
 
 flutter:
   uses-material-design: true

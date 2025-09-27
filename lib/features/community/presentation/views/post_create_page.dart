@@ -134,8 +134,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
                       },
                     ),
                   const Gap(16),
-                  if (_postType == PostType.chirp) _ChirpOptions(state: state, cubit: cubit),
-                  if (_postType == PostType.board) _BoardSelector(state: state, cubit: cubit),
+                  if (_postType == PostType.chirp)
+                    _ChirpOptions(state: state, cubit: cubit),
+                  if (_postType == PostType.board)
+                    _BoardSelector(state: state, cubit: cubit),
                   const Gap(16),
                   TextField(
                     controller: _textController,
@@ -188,9 +190,17 @@ class _PostCreatePageState extends State<PostCreatePage> {
                                 ),
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minHeight: 28, minWidth: 28),
-                                  icon: const Icon(Icons.close, size: 18, color: Colors.white),
-                                  onPressed: () => cubit.removeAttachment(draft),
+                                  constraints: const BoxConstraints(
+                                    minHeight: 28,
+                                    minWidth: 28,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () =>
+                                      cubit.removeAttachment(draft),
                                 ),
                               ),
                             ),
@@ -209,13 +219,17 @@ class _PostCreatePageState extends State<PostCreatePage> {
                             color: theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary),
+                          child: Icon(
+                            Icons.add_a_photo_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const Gap(24),
-                  if (state.isSubmitting) const LinearProgressIndicator(minHeight: 3),
+                  if (state.isSubmitting)
+                    const LinearProgressIndicator(minHeight: 3),
                 ],
               ),
             ),
@@ -225,7 +239,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
     );
   }
 
-  Future<void> _showAttachmentPicker(BuildContext context, PostComposerCubit cubit) async {
+  Future<void> _showAttachmentPicker(
+    BuildContext context,
+    PostComposerCubit cubit,
+  ) async {
     final ThemeData theme = Theme.of(context);
     await showModalBottomSheet<void>(
       context: context,
@@ -244,7 +261,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
 
             ListTile(
               leading: Icon(Icons.close, color: theme.colorScheme.error),
-              title: Text('취소', style: TextStyle(color: theme.colorScheme.error)),
+              title: Text(
+                '취소',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
               onTap: () => Navigator.of(context).pop(),
             ),
           ],
@@ -282,7 +302,8 @@ class _ChirpOptions extends StatelessWidget {
             ),
           ],
           selected: <PostAudience>{audience},
-          onSelectionChanged: (selection) => cubit.selectAudience(selection.first),
+          onSelectionChanged: (selection) =>
+              cubit.selectAudience(selection.first),
         ),
       ],
     );
@@ -326,7 +347,10 @@ class _BoardSelector extends StatelessWidget {
                       if (board.requireRealname)
                         const Padding(
                           padding: EdgeInsets.only(left: 8),
-                          child: Chip(label: Text('실명'), visualDensity: VisualDensity.compact),
+                          child: Chip(
+                            label: Text('실명'),
+                            visualDensity: VisualDensity.compact,
+                          ),
                         ),
                     ],
                   ),
@@ -336,7 +360,9 @@ class _BoardSelector extends StatelessWidget {
           onChanged: (value) {
             cubit.selectBoard(value);
             if (value != null) {
-              final Board selected = state.boards.firstWhere((Board board) => board.id == value);
+              final Board selected = state.boards.firstWhere(
+                (Board board) => board.id == value,
+              );
               cubit.toggleAnonymous(!selected.requireRealname);
             }
           },
@@ -350,7 +376,10 @@ class _BoardSelector extends StatelessWidget {
               onChanged: (value) => cubit.toggleAnonymous(value),
             ),
             const Gap(6),
-            Text(state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시', style: theme.textTheme.bodyMedium),
+            Text(
+              state.isAnonymous ? '닉네임으로 게시' : '실명으로 게시',
+              style: theme.textTheme.bodyMedium,
+            ),
           ],
         ),
       ],

@@ -5,7 +5,11 @@ import '../../../../common/utils/currency_formatter.dart';
 import '../../domain/entities/salary_breakdown.dart';
 
 class SalaryResultCard extends StatelessWidget {
-  const SalaryResultCard({super.key, required this.breakdown, this.isEmpty = false});
+  const SalaryResultCard({
+    super.key,
+    required this.breakdown,
+    this.isEmpty = false,
+  });
 
   final SalaryBreakdown breakdown;
   final bool isEmpty;
@@ -24,7 +28,12 @@ class SalaryResultCard extends StatelessWidget {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('나의 월급 리포트', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    '나의 월급 리포트',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const Gap(12),
                   Text(
                     '기본 월급과 수당을 입력하면 실수령 월급과 연간 소득이 여기에 표시됩니다.',
@@ -41,16 +50,44 @@ class SalaryResultCard extends StatelessWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('나의 월급 리포트', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    '나의 월급 리포트',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const Gap(16),
-                  _ResultRow(label: '월 총 수령액', value: formatCurrency(breakdown.monthlyTotal)),
-                  _ResultRow(label: '일 환산 금액', value: formatCurrency(breakdown.dailyRate)),
-                  _ResultRow(label: '연간 총액', value: formatCurrency(breakdown.yearlyTotal)),
-                  _ResultRow(label: '수당 합계', value: formatCurrency(breakdown.allowancesTotal)),
-                  _ResultRow(label: '연금 기여금(월)', value: formatCurrency(breakdown.pensionContribution)),
-                  _ResultRow(label: '최저임금 대비(일)', value: formatCurrency(breakdown.minimumWageGap)),
+                  _ResultRow(
+                    label: '월 총 수령액',
+                    value: formatCurrency(breakdown.monthlyTotal),
+                  ),
+                  _ResultRow(
+                    label: '일 환산 금액',
+                    value: formatCurrency(breakdown.dailyRate),
+                  ),
+                  _ResultRow(
+                    label: '연간 총액',
+                    value: formatCurrency(breakdown.yearlyTotal),
+                  ),
+                  _ResultRow(
+                    label: '수당 합계',
+                    value: formatCurrency(breakdown.allowancesTotal),
+                  ),
+                  _ResultRow(
+                    label: '연금 기여금(월)',
+                    value: formatCurrency(breakdown.pensionContribution),
+                  ),
+                  _ResultRow(
+                    label: '최저임금 대비(일)',
+                    value: formatCurrency(breakdown.minimumWageGap),
+                  ),
                   const Divider(height: 32),
-                  Text('참고 메모', style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    '참고 메모',
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const Gap(8),
                   if (breakdown.notes.isEmpty)
                     Text('입력값을 바탕으로 안내 메모가 제공됩니다.', style: textTheme.bodySmall)
@@ -83,7 +120,10 @@ class _ResultRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label, style: textTheme.bodyMedium)),
-          Text(value, style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            value,
+            style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

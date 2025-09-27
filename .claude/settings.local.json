@@ -18,7 +18,19 @@
       "Bash(find:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(while read dir)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(ls:*)",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(while read feature)",
+      "Bash(do echo \"=== $feature ===\")",
+      "Bash(for feature in auth calculator community life matching monetization notifications payments pension profile salary_insights transfer_posting year_end_tax)",
+      "Bash([ -d \"lib/features/$feature/data\" ])",
+      "Bash([ -d \"lib/features/$feature/domain\" ])",
+      "Bash([ -d \"lib/features/$feature/presentation\" ])"
     ],
     "deny": [],
     "ask": []

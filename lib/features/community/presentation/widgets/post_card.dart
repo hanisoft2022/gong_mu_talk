@@ -19,6 +19,9 @@ import '../../domain/models/post.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../../routing/app_router.dart';
+import '../../../../core/utils/ui_helpers.dart';
+import '../../../../core/utils/date_time_helpers.dart';
+import '../../../../core/utils/string_extensions.dart';
 import 'comment_utils.dart';
 
 enum _AuthorMenuAction { viewProfile, toggleFollow }
@@ -119,7 +122,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final Post post = widget.post;
-    final ThemeData theme = Theme.of(context);
+    final ThemeData theme = UiHelpers.getTheme(context);
     final String timestamp = _formatTimestamp(post.createdAt);
     final bool showMoreButton = !_isExpanded && _shouldShowMore(post.text, context);
     final Widget? trailingActions = _buildTrailingActions(theme, post);
@@ -127,109 +130,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: UiHelpers.standardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  fit: FlexFit.loose,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: _buildAuthorMenu(
-                      post: post,
-                      timestamp: timestamp,
-                      scope: widget.displayScope,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildPostHeader(post, timestamp),
             const Gap(14),
-            if (_isExpanded)
-              Text(post.text, style: theme.textTheme.bodyLarge)
-            else if (showMoreButton)
-              _buildTextWithInlineMore(
-                post.text,
-                theme.textTheme.bodyLarge!,
-                theme.colorScheme.primary,
-              )
-            else
-              Text(
-                post.text,
-                style: theme.textTheme.bodyLarge,
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
-            if (post.tags.isNotEmpty) ...[
-              const Gap(10),
-              Wrap(
-                spacing: 6,
-                runSpacing: -8,
-                children: post.tags
-                    .map(
-                      (String tag) =>
-                          Chip(label: Text('#$tag'), visualDensity: VisualDensity.compact),
-                    )
-                    .toList(growable: false),
-              ),
-            ],
-            if (post.media.isNotEmpty) ...[const Gap(12), _PostMediaPreview(mediaList: post.media)],
+            _buildPostContent(theme, post, showMoreButton),
             const Gap(16),
-            Row(
-              children: [
-                _PostActionButton(
-                  icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  label: '${post.likeCount}',
-                  isHighlighted: post.isLiked,
-                  onPressed: _handleLikeTap,
-                ),
-                const Gap(16),
-                IconButton(
-                  icon: const Icon(Icons.mode_comment_outlined, size: 16),
-                  onPressed: _handleCommentButton,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
-                  iconSize: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const Gap(16),
-                _PostActionButton(
-                  icon: Icons.visibility_outlined,
-                  label: '${post.viewCount}',
-                  onPressed: null,
-                ),
-                const Spacer(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                        size: 16,
-                      ),
-                      onPressed: _handleBookmarkTap,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
-                      iconSize: 16,
-                      color: post.isBookmarked
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 16),
-                      onPressed: () => _handleShare(post),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
-                      iconSize: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    if (trailingActions != null) trailingActions,
-                  ],
-                ),
-              ],
-            ),
+            _buildActionButtons(theme, post, trailingActions),
             // Comment writing UI positioned directly below action buttons
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 260),
@@ -360,6 +269,117 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildPostHeader(Post post, String timestamp) {
+    return Row(
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _buildAuthorMenu(
+              post: post,
+              timestamp: timestamp,
+              scope: widget.displayScope,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostContent(ThemeData theme, Post post, bool showMoreButton) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_isExpanded)
+          Text(post.text, style: theme.textTheme.bodyLarge)
+        else if (showMoreButton)
+          _buildTextWithInlineMore(
+            post.text,
+            theme.textTheme.bodyLarge!,
+            theme.colorScheme.primary,
+          )
+        else
+          Text(
+            post.text,
+            style: theme.textTheme.bodyLarge,
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+          ),
+        if (post.tags.isNotEmpty) ...[
+          const Gap(10),
+          Wrap(
+            spacing: 6,
+            runSpacing: -8,
+            children: post.tags
+                .map(
+                  (String tag) =>
+                      Chip(label: Text('#$tag'), visualDensity: VisualDensity.compact),
+                )
+                .toList(growable: false),
+          ),
+        ],
+        if (post.media.isNotEmpty) ...[const Gap(12), _PostMediaPreview(mediaList: post.media)],
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ThemeData theme, Post post, Widget? trailingActions) {
+    return Row(
+      children: [
+        _PostActionButton(
+          icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
+          label: '${post.likeCount}',
+          isHighlighted: post.isLiked,
+          onPressed: _handleLikeTap,
+        ),
+        const Gap(16),
+        IconButton(
+          icon: const Icon(Icons.mode_comment_outlined, size: 16),
+          onPressed: _handleCommentButton,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+          iconSize: 16,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const Gap(16),
+        _PostActionButton(
+          icon: Icons.visibility_outlined,
+          label: '${post.viewCount}',
+          onPressed: null,
+        ),
+        const Spacer(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                size: 16,
+              ),
+              onPressed: _handleBookmarkTap,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+              iconSize: 16,
+              color: post.isBookmarked
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+            ),
+            IconButton(
+              icon: const Icon(Icons.share_outlined, size: 16),
+              onPressed: () => _handleShare(post),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+              iconSize: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            if (trailingActions != null) trailingActions,
+          ],
+        ),
+      ],
+    );
+  }
+
   bool _shouldShowMore(String text, BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyLarge!;
     final textSpan = TextSpan(text: text, style: textStyle);
@@ -424,15 +444,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       _handleCommentInputChanged(); // 제출 버튼 상태 업데이트
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('이미지를 선택하는 중 오류가 발생했습니다'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        UiHelpers.showSnackBar(context, '이미지를 선택하는 중 오류가 발생했습니다');
       }
     }
   }
@@ -471,15 +483,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return imageUrls;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('이미지 업로드 중 오류가 발생했습니다'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        UiHelpers.showSnackBar(context, '이미지 업로드 중 오류가 발생했습니다');
       }
       return [];
     } finally {
@@ -729,7 +733,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           .map((Comment comment) {
             if (featuredIds.contains(comment.id)) {
               return featured.firstWhere(
-                (Comment element) => element.id == comment.id,
+                (Comment featuredComment) => featuredComment.id == comment.id,
                 orElse: () => comment,
               );
             }
@@ -862,7 +866,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Future<void> _submitComment() async {
     final String text = _commentController.text.trim();
-    if ((text.isEmpty && _selectedImages.isEmpty) || _isSubmittingComment) {
+    if (!_hasCommentContent(text) || _isSubmittingComment) {
       return;
     }
 
@@ -957,14 +961,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     void updateLists(bool liked, int likeCount) {
       _timelineComments = _timelineComments
           .map(
-            (Comment c) =>
-                c.id == comment.id ? c.copyWith(isLiked: liked, likeCount: likeCount) : c,
+            (Comment timelineComment) =>
+                timelineComment.id == comment.id ? timelineComment.copyWith(isLiked: liked, likeCount: likeCount) : timelineComment,
           )
           .toList(growable: false);
       _featuredComments = _featuredComments
           .map(
-            (Comment c) =>
-                c.id == comment.id ? c.copyWith(isLiked: liked, likeCount: likeCount) : c,
+            (Comment featuredComment) =>
+                featuredComment.id == comment.id ? featuredComment.copyWith(isLiked: liked, likeCount: likeCount) : featuredComment,
           )
           .toList(growable: false);
     }
@@ -1006,13 +1010,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == post.authorUid;
-    final bool canFollow =
-        authState.isLoggedIn &&
-        currentUid != null &&
-        currentUid.isNotEmpty &&
-        !isSelf &&
-        post.authorUid.isNotEmpty &&
-        post.authorUid != 'preview';
+    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, post.authorUid);
     final bool isFollowing = canFollow && socialGraph.isFollowing(post.authorUid);
 
     final ThemeData theme = Theme.of(context);
@@ -1130,8 +1128,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == uid;
-    final bool canFollow =
-        authState.isLoggedIn && currentUid != null && currentUid.isNotEmpty && !isSelf;
+    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, uid);
 
     if (!mounted) {
       return;
@@ -1259,18 +1256,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   String _formatTimestamp(DateTime createdAt) {
-    final DateTime now = DateTime.now();
-    final Duration difference = now.difference(createdAt);
-    if (difference.inMinutes < 1) {
-      return '방금 전';
-    }
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}분 전';
-    }
-    if (difference.inHours < 24) {
-      return '${difference.inHours}시간 전';
-    }
-    return '${createdAt.month}월 ${createdAt.day}일';
+    return createdAt.relativeTime;
+  }
+
+  bool _canFollowUser(AuthState authState, String? currentUid, bool isSelf, String targetUid) {
+    return authState.isLoggedIn &&
+        currentUid != null &&
+        currentUid.isNotEmpty &&
+        !isSelf &&
+        targetUid.isNotEmpty &&
+        targetUid != 'preview';
+  }
+
+  bool _hasCommentContent(String text) {
+    return text.isNotEmpty || _selectedImages.isNotEmpty;
   }
 }
 
@@ -1294,7 +1293,7 @@ Widget _buildCommentIdentityRow({
             radius: 16,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
             foregroundColor: theme.colorScheme.primary,
-            child: Text(maskNickname(comment.authorNickname).substring(0, 1)),
+            child: Text(comment.authorNickname.masked.substring(0, 1)),
           ),
           const Gap(12),
         ],
@@ -1343,9 +1342,7 @@ Widget _buildCommentIdentityRow({
   final Widget? supporterIcon = comment.authorIsSupporter
       ? Icon(Icons.verified, size: 16, color: theme.colorScheme.primary)
       : null;
-  final String maskedName = maskNickname(
-    comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
-  );
+  final String maskedName = (comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid).masked;
 
   return Row(
     children: [
@@ -1520,7 +1517,7 @@ class _AuthorInfoHeader extends StatelessWidget {
 
   String _maskedUid() {
     final String fallback = post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid;
-    return maskNickname(fallback);
+    return fallback.masked;
   }
 
   String _avatarInitial() {
@@ -1750,7 +1747,7 @@ class _InlineReplySheetState extends State<_InlineReplySheet> {
     final String nicknameSource = target.authorNickname.isNotEmpty
         ? target.authorNickname
         : target.authorUid;
-    final String displayName = isSerialScope ? target.authorNickname : maskNickname(nicknameSource);
+    final String displayName = isSerialScope ? target.authorNickname : nicknameSource.masked;
     final String preview = target.text.trim();
 
     return Padding(

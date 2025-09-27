@@ -1,5 +1,8 @@
 class PrefixTokenizer {
-  const PrefixTokenizer({this.maxTokenLength = 20, this.maxTokensPerField = 50});
+  const PrefixTokenizer({
+    this.maxTokenLength = 20,
+    this.maxTokensPerField = 50,
+  });
 
   final int maxTokenLength;
   final int maxTokensPerField;

@@ -47,7 +47,9 @@ class ContentReport extends Equatable {
     };
   }
 
-  static ContentReport fromSnapshot(DocumentSnapshot<Map<String, Object?>> snapshot) {
+  static ContentReport fromSnapshot(
+    DocumentSnapshot<Map<String, Object?>> snapshot,
+  ) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
       throw StateError('Report document ${snapshot.id} has no data');
@@ -106,7 +108,9 @@ class ContentReport extends Equatable {
 
   static Map<String, Object?> _parseMetadata(Object? raw) {
     if (raw is Map) {
-      return raw.map<String, Object?>((key, value) => MapEntry(key.toString(), value));
+      return raw.map<String, Object?>(
+        (key, value) => MapEntry(key.toString(), value),
+      );
     }
     return const <String, Object?>{};
   }

@@ -30,8 +30,9 @@ class Board extends Equatable {
   final DateTime? updatedAt;
   final String? category;
 
-  BoardAccessType get accessType =>
-      requireRealname ? BoardAccessType.realnameRequired : BoardAccessType.anonymousOptional;
+  BoardAccessType get accessType => requireRealname
+      ? BoardAccessType.realnameRequired
+      : BoardAccessType.anonymousOptional;
 
   bool get isVisible => visibility == BoardVisibility.public;
 

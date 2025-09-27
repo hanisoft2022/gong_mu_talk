@@ -13,15 +13,16 @@ import '../../domain/usecases/get_salary_grades.dart';
 part 'salary_calculator_event.dart';
 part 'salary_calculator_state.dart';
 
-class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorState> {
+class SalaryCalculatorBloc
+    extends Bloc<SalaryCalculatorEvent, SalaryCalculatorState> {
   SalaryCalculatorBloc({
     required CalculateSalaryUseCase calculateSalary,
     required GetSalaryGradesUseCase getSalaryGrades,
     required GetBaseSalaryFromReferenceUseCase getBaseSalaryFromReference,
-  })  : _calculateSalary = calculateSalary,
-        _getSalaryGrades = getSalaryGrades,
-        _getBaseSalaryFromReference = getBaseSalaryFromReference,
-        super(SalaryCalculatorState.initial()) {
+  }) : _calculateSalary = calculateSalary,
+       _getSalaryGrades = getSalaryGrades,
+       _getBaseSalaryFromReference = getBaseSalaryFromReference,
+       super(SalaryCalculatorState.initial()) {
     on<SalaryCalculatorReferenceInitialized>(_onReferenceInitialized);
     on<SalaryCalculatorTrackChanged>(_onTrackChanged);
     on<SalaryCalculatorGradeChanged>(_onGradeChanged);
@@ -65,30 +66,21 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
     SalaryCalculatorGradeChanged event,
     Emitter<SalaryCalculatorState> emit,
   ) async {
-    await _loadReferenceData(
-      emit,
-      gradeId: event.gradeId,
-    );
+    await _loadReferenceData(emit, gradeId: event.gradeId);
   }
 
   Future<void> _onStepChanged(
     SalaryCalculatorStepChanged event,
     Emitter<SalaryCalculatorState> emit,
   ) async {
-    await _loadReferenceData(
-      emit,
-      step: event.step,
-    );
+    await _loadReferenceData(emit, step: event.step);
   }
 
   Future<void> _onAppointmentYearChanged(
     SalaryCalculatorAppointmentYearChanged event,
     Emitter<SalaryCalculatorState> emit,
   ) async {
-    await _loadReferenceData(
-      emit,
-      year: event.year,
-    );
+    await _loadReferenceData(emit, year: event.year);
   }
 
   void _onBaseSalaryChanged(
@@ -98,8 +90,10 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
     emit(
       state.copyWith(
         status: SalaryCalculatorStatus.editing,
-        input: state.input
-            .copyWith(baseMonthlySalary: event.baseSalary, isAutoCalculated: false),
+        input: state.input.copyWith(
+          baseMonthlySalary: event.baseSalary,
+          isAutoCalculated: false,
+        ),
         clearError: true,
       ),
     );
@@ -109,8 +103,9 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
     SalaryCalculatorAllowanceChanged event,
     Emitter<SalaryCalculatorState> emit,
   ) {
-    final updatedAllowances = Map<SalaryAllowanceType, double>.from(state.input.allowances)
-      ..[event.type] = event.amount;
+    final updatedAllowances = Map<SalaryAllowanceType, double>.from(
+      state.input.allowances,
+    )..[event.type] = event.amount;
 
     emit(
       state.copyWith(
@@ -179,10 +174,7 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
     }
 
     emit(
-      state.copyWith(
-        status: SalaryCalculatorStatus.loading,
-        clearError: true,
-      ),
+      state.copyWith(status: SalaryCalculatorStatus.loading, clearError: true),
     );
 
     try {
@@ -258,7 +250,10 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
       }
       gradeOption ??= grades.isNotEmpty ? grades.first : null;
       if (gradeOption != null) {
-        resolvedStep = resolvedStep.clamp(gradeOption.minStep, gradeOption.maxStep);
+        resolvedStep = resolvedStep.clamp(
+          gradeOption.minStep,
+          gradeOption.maxStep,
+        );
       }
 
       double? baseSalary;
@@ -274,8 +269,11 @@ class SalaryCalculatorBloc extends Bloc<SalaryCalculatorEvent, SalaryCalculatorS
       final bool userHasManualBase = state.input.isAutoCalculated == false;
       final double resolvedBaseSalary = userHasManualBase
           ? state.input.baseMonthlySalary
-          : (baseSalary ?? (preserveBaseOnMissing ? state.input.baseMonthlySalary : 0));
-      final bool resolvedIsAuto = userHasManualBase ? false : (baseSalary != null);
+          : (baseSalary ??
+                (preserveBaseOnMissing ? state.input.baseMonthlySalary : 0));
+      final bool resolvedIsAuto = userHasManualBase
+          ? false
+          : (baseSalary != null);
 
       emit(
         state.copyWith(

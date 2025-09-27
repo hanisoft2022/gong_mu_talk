@@ -376,5 +376,4 @@ class PostDetailCubit extends Cubit<PostDetailState> {
 
     return const <Comment>[];
   }
-
 }

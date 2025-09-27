@@ -4,7 +4,7 @@ import '../repositories/calculator_repository.dart';
 
 class CalculateSalaryUseCase {
   CalculateSalaryUseCase({required SalaryCalculatorRepository repository})
-      : _repository = repository;
+    : _repository = repository;
 
   final SalaryCalculatorRepository _repository;
 

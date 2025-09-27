@@ -31,13 +31,13 @@ class PricingPlan extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        id,
-        name,
-        price,
-        currency,
-        billingPeriod,
-        benefits,
-      ];
+    id,
+    name,
+    price,
+    currency,
+    billingPeriod,
+    benefits,
+  ];
 }
 
 class ReferralRewardPolicy {

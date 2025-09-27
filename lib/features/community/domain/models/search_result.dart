@@ -21,10 +21,7 @@ extension SearchScopeLabel on SearchScope {
 }
 
 class CommentSearchResult extends Equatable {
-  const CommentSearchResult({
-    required this.comment,
-    this.post,
-  });
+  const CommentSearchResult({required this.comment, this.post});
 
   final Comment comment;
   final Post? post;

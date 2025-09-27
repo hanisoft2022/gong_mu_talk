@@ -1,8 +1,4 @@
-enum SalaryAllowanceType {
-  replacement,
-  nightDuty,
-  hazard,
-}
+enum SalaryAllowanceType { replacement, nightDuty, hazard }
 
 extension SalaryAllowanceTypeX on SalaryAllowanceType {
   String get label {

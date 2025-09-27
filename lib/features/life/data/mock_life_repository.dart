@@ -7,7 +7,9 @@ import '../domain/life_meeting.dart';
 class MockLifeRepository {
   MockLifeRepository({MockSocialGraph? socialGraph})
     : _socialGraph = socialGraph ?? MockSocialGraph() {
-    _controller = StreamController<List<LifeMeeting>>.broadcast(onListen: _emit);
+    _controller = StreamController<List<LifeMeeting>>.broadcast(
+      onListen: _emit,
+    );
     _meetings = <LifeMeeting>[
       LifeMeeting(
         id: 'meet_${Random().nextInt(999999)}',
@@ -32,7 +34,9 @@ class MockLifeRepository {
         description: '테라포밍마스, 위너스 서클 등 전략 게임 함께 즐길 분 구해요.',
         host: const MeetingMember(uid: 'park.haneul', nickname: '박하늘'),
         capacity: 6,
-        members: const <MeetingMember>[MeetingMember(uid: 'park.haneul', nickname: '박하늘')],
+        members: const <MeetingMember>[
+          MeetingMember(uid: 'park.haneul', nickname: '박하늘'),
+        ],
         createdAt: DateTime.now().subtract(const Duration(hours: 12)),
         schedule: DateTime.now().add(const Duration(days: 5, hours: 19)),
         location: '은평구 불광역 보드게임카페',
@@ -45,7 +49,9 @@ class MockLifeRepository {
         description: '토지이용계획 함께 분석하고 신축 단지 살펴봐요. 교통편 공유 예정.',
         host: const MeetingMember(uid: 'choi.minsu', nickname: '최민수'),
         capacity: 10,
-        members: const <MeetingMember>[MeetingMember(uid: 'choi.minsu', nickname: '최민수')],
+        members: const <MeetingMember>[
+          MeetingMember(uid: 'choi.minsu', nickname: '최민수'),
+        ],
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         schedule: DateTime.now().add(const Duration(days: 10, hours: 10)),
         location: '갈매역 2번 출구 집결',
@@ -95,12 +101,16 @@ class MockLifeRepository {
     required MeetingMember member,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    final int index = _meetings.indexWhere((LifeMeeting meeting) => meeting.id == meetingId);
+    final int index = _meetings.indexWhere(
+      (LifeMeeting meeting) => meeting.id == meetingId,
+    );
     if (index == -1) {
       throw StateError('모임을 찾을 수 없습니다.');
     }
     final LifeMeeting current = _meetings[index];
-    if (current.members.any((MeetingMember element) => element.uid == member.uid)) {
+    if (current.members.any(
+      (MeetingMember element) => element.uid == member.uid,
+    )) {
       return current;
     }
     if (current.members.length >= current.capacity) {

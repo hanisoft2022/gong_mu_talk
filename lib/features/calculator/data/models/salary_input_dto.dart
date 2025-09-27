@@ -67,21 +67,22 @@ class SalaryInputDto extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'baseMonthlySalary': baseMonthlySalary,
-        'workingDaysPerMonth': workingDaysPerMonth,
-        'allowances': allowances,
-        'annualBonus': annualBonus,
-        'pensionContributionRate': pensionContributionRate,
-        'appointmentYear': appointmentYear,
-        'track': track,
-        'gradeId': gradeId,
-        'step': step,
-        'isAutoCalculated': isAutoCalculated,
-      };
+    'baseMonthlySalary': baseMonthlySalary,
+    'workingDaysPerMonth': workingDaysPerMonth,
+    'allowances': allowances,
+    'annualBonus': annualBonus,
+    'pensionContributionRate': pensionContributionRate,
+    'appointmentYear': appointmentYear,
+    'track': track,
+    'gradeId': gradeId,
+    'step': step,
+    'isAutoCalculated': isAutoCalculated,
+  };
 
   factory SalaryInputDto.fromJson(Map<String, dynamic> json) {
-    final Map<String, dynamic> allowanceJson =
-        Map<String, dynamic>.from(json['allowances'] as Map);
+    final Map<String, dynamic> allowanceJson = Map<String, dynamic>.from(
+      json['allowances'] as Map,
+    );
 
     return SalaryInputDto(
       baseMonthlySalary: (json['baseMonthlySalary'] as num).toDouble(),
@@ -90,8 +91,8 @@ class SalaryInputDto extends Equatable {
         (key, value) => MapEntry(key, (value as num).toDouble()),
       ),
       annualBonus: (json['annualBonus'] as num).toDouble(),
-      pensionContributionRate:
-          (json['pensionContributionRate'] as num).toDouble(),
+      pensionContributionRate: (json['pensionContributionRate'] as num)
+          .toDouble(),
       appointmentYear: json['appointmentYear'] as int? ?? DateTime.now().year,
       track: json['track'] as String? ?? SalaryTrack.general.id,
       gradeId: json['gradeId'] as String? ?? '9',
@@ -109,17 +110,15 @@ class SalaryInputDto extends Equatable {
 
   @override
   List<Object?> get props => [
-        baseMonthlySalary,
-        workingDaysPerMonth,
-        allowances.entries
-            .map((entry) => '${entry.key}:${entry.value}')
-            .join('|'),
-        annualBonus,
-        pensionContributionRate,
-        appointmentYear,
-        track,
-        gradeId,
-        step,
-        isAutoCalculated,
-      ];
+    baseMonthlySalary,
+    workingDaysPerMonth,
+    allowances.entries.map((entry) => '${entry.key}:${entry.value}').join('|'),
+    annualBonus,
+    pensionContributionRate,
+    appointmentYear,
+    track,
+    gradeId,
+    step,
+    isAutoCalculated,
+  ];
 }

@@ -5,8 +5,9 @@ import '../datasources/calculator_local_data_source.dart';
 import '../models/salary_input_dto.dart';
 
 class SalaryCalculatorRepositoryImpl implements SalaryCalculatorRepository {
-  SalaryCalculatorRepositoryImpl({required SalaryCalculatorLocalDataSource dataSource})
-      : _dataSource = dataSource;
+  SalaryCalculatorRepositoryImpl({
+    required SalaryCalculatorLocalDataSource dataSource,
+  }) : _dataSource = dataSource;
 
   final SalaryCalculatorLocalDataSource _dataSource;
 

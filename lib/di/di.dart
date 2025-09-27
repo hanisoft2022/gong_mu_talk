@@ -23,6 +23,9 @@ import '../features/calculator/presentation/bloc/salary_calculator_bloc.dart';
 import '../features/payments/data/bootpay_payment_service.dart';
 import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
+import '../features/community/data/community_repository_impl.dart';
+import '../features/community/domain/repositories/i_community_repository.dart';
+import '../features/community/domain/usecases/search_community.dart';
 import '../features/community/data/mock_social_graph.dart';
 import '../features/life/data/mock_life_repository.dart';
 import '../features/monetization/presentation/cubit/monetization_cubit.dart';
@@ -101,6 +104,12 @@ Future<void> configureDependencies() async {
         notificationRepository: getIt(),
       ),
     )
+    ..registerLazySingleton<ICommunityRepository>(
+      () => CommunityRepositoryImpl(getIt()),
+    )
+    ..registerLazySingleton<SearchCommunity>(
+      () => SearchCommunity(getIt()),
+    )
     ..registerFactory<BoardCatalogCubit>(
       () => BoardCatalogCubit(repository: getIt()),
     )
@@ -122,7 +131,7 @@ Future<void> configureDependencies() async {
           ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
-    ..registerFactory<SearchCubit>(() => SearchCubit(getIt()))
+    ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt()))
     ..registerLazySingleton<GoRouter>(createRouter)
     ..registerLazySingleton<SalaryCalculatorLocalDataSource>(
       () => SalaryCalculatorLocalDataSource(),

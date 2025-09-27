@@ -4,7 +4,6 @@ import 'package:equatable/equatable.dart';
 import '../../../profile/domain/career_track.dart';
 
 class Comment extends Equatable {
-
   const Comment({
     required this.id,
     required this.postId,

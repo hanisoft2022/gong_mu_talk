@@ -44,7 +44,9 @@ class _ReportDialogState extends State<ReportDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final String targetName = widget.targetType == ReportTargetType.post ? '게시글' : '댓글';
+    final String targetName = widget.targetType == ReportTargetType.post
+        ? '게시글'
+        : '댓글';
 
     return AlertDialog(
       title: Text('$targetName 신고'),
@@ -70,11 +72,13 @@ class _ReportDialogState extends State<ReportDialog> {
                       ? Theme.of(context).colorScheme.primary
                       : null,
                 ),
-                onTap: _isSubmitting ? null : () {
-                  setState(() {
-                    _selectedReason = entry.key;
-                  });
-                },
+                onTap: _isSubmitting
+                    ? null
+                    : () {
+                        setState(() {
+                          _selectedReason = entry.key;
+                        });
+                      },
                 contentPadding: EdgeInsets.zero,
               ),
             ),
@@ -143,9 +147,7 @@ class _ReportDialogState extends State<ReportDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('신고 접수 중 오류가 발생했습니다. 다시 시도해주세요.'),
-          ),
+          const SnackBar(content: Text('신고 접수 중 오류가 발생했습니다. 다시 시도해주세요.')),
         );
         setState(() {
           _isSubmitting = false;

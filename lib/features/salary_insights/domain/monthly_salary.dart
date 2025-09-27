@@ -37,7 +37,8 @@ class MonthlySalary extends Equatable {
   final int unionFee;
   final int otherDeductions;
 
-  int get totalAllowances => basePay +
+  int get totalAllowances =>
+      basePay +
       longevityAllowance +
       mealAllowance +
       teacherAllowance +
@@ -47,7 +48,8 @@ class MonthlySalary extends Equatable {
       researchAllowance +
       otherAllowances;
 
-  int get totalDeductions => incomeTax +
+  int get totalDeductions =>
+      incomeTax +
       localIncomeTax +
       pensionContribution +
       healthInsurance +
@@ -57,9 +59,8 @@ class MonthlySalary extends Equatable {
 
   int get netPay => totalAllowances - totalDeductions;
 
-  double get deductionRatio => totalAllowances == 0
-      ? 0
-      : totalDeductions / totalAllowances;
+  double get deductionRatio =>
+      totalAllowances == 0 ? 0 : totalDeductions / totalAllowances;
 
   MonthlySalary copyWith({
     int? basePay,
@@ -102,21 +103,21 @@ class MonthlySalary extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        basePay,
-        longevityAllowance,
-        mealAllowance,
-        teacherAllowance,
-        teacherExtraAllowance,
-        familyAllowance,
-        overtimeAllowance,
-        researchAllowance,
-        otherAllowances,
-        incomeTax,
-        localIncomeTax,
-        pensionContribution,
-        healthInsurance,
-        longTermCare,
-        unionFee,
-        otherDeductions,
-      ];
+    basePay,
+    longevityAllowance,
+    mealAllowance,
+    teacherAllowance,
+    teacherExtraAllowance,
+    familyAllowance,
+    overtimeAllowance,
+    researchAllowance,
+    otherAllowances,
+    incomeTax,
+    localIncomeTax,
+    pensionContribution,
+    healthInsurance,
+    longTermCare,
+    unionFee,
+    otherDeductions,
+  ];
 }

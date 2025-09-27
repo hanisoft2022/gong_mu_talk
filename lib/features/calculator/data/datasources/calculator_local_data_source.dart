@@ -9,13 +9,17 @@ class SalaryCalculatorLocalDataSource {
   Future<SalaryBreakdown> calculate(SalaryInputDto dto) async {
     await Future<void>.delayed(const Duration(milliseconds: 180));
 
-    final double allowancesTotal = dto.allowances.values.fold(0, (sum, value) => sum + value);
+    final double allowancesTotal = dto.allowances.values.fold(
+      0,
+      (sum, value) => sum + value,
+    );
     final double monthlyTotal = dto.baseMonthlySalary + allowancesTotal;
     final double dailyRate = dto.workingDaysPerMonth == 0
         ? 0
         : monthlyTotal / dto.workingDaysPerMonth;
     final double yearlyTotal = monthlyTotal * 12 + dto.annualBonus;
-    final double pensionContribution = monthlyTotal * dto.pensionContributionRate;
+    final double pensionContribution =
+        monthlyTotal * dto.pensionContributionRate;
 
     final int currentYear = DateTime.now().year;
     final double minimumHourlyWage =
@@ -24,7 +28,10 @@ class SalaryCalculatorLocalDataSource {
     final double minimumDailyWage = minimumHourlyWage * 8;
     final double wageGap = dailyRate - minimumDailyWage;
 
-    final NumberFormat formatter = NumberFormat.currency(locale: 'ko_KR', symbol: '₩');
+    final NumberFormat formatter = NumberFormat.currency(
+      locale: 'ko_KR',
+      symbol: '₩',
+    );
     final NumberFormat numberFormatter = NumberFormat.decimalPattern('ko_KR');
 
     return SalaryBreakdown(

@@ -19,7 +19,8 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
-      listenWhen: (previous, current) => previous.lastMessage != current.lastMessage,
+      listenWhen: (previous, current) =>
+          previous.lastMessage != current.lastMessage,
       listener: (context, state) {
         final String? message = state.lastMessage;
         if (message == null) {
@@ -43,7 +44,8 @@ class AppShell extends StatelessWidget {
           final ColorScheme colorScheme = Theme.of(context).colorScheme;
           final bool hideAppBar = isCommunityTab || isLifeTab;
           final bool removeLogoInTitle =
-              navigationShell.currentIndex == 1 || navigationShell.currentIndex == 2;
+              navigationShell.currentIndex == 1 ||
+              navigationShell.currentIndex == 2;
           final Widget titleWidget = removeLogoInTitle
               ? Text(
                   _titleForIndex(navigationShell.currentIndex),
@@ -68,13 +70,17 @@ class AppShell extends StatelessWidget {
             appBar: hideAppBar
                 ? null
                 : AppBar(
-                    centerTitle: navigationShell.currentIndex == 2 ? false : null,
+                    centerTitle: navigationShell.currentIndex == 2
+                        ? false
+                        : null,
                     title: titleWidget,
                     actions: [
                       GlobalAppBarActions(
                         isDarkMode: isDark,
-                        onToggleTheme: () => context.read<ThemeCubit>().toggle(),
-                        onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+                        onToggleTheme: () =>
+                            context.read<ThemeCubit>().toggle(),
+                        onProfileTap: () =>
+                            GoRouter.of(context).push(ProfileRoute.path),
                       ),
                     ],
                   ),

@@ -35,19 +35,32 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
   late final TextEditingController _annualBonusController;
   late final TextEditingController _pensionRateController;
   late final TextEditingController _workingDaysController;
-  late final Map<SalaryAllowanceType, TextEditingController> _allowanceControllers;
+  late final Map<SalaryAllowanceType, TextEditingController>
+  _allowanceControllers;
 
   @override
   void initState() {
     super.initState();
-    final SalaryCalculatorState state = context.read<SalaryCalculatorBloc>().state;
-    _baseSalaryController = TextEditingController(text: _formatInitialValue(state.input.baseMonthlySalary));
-    _annualBonusController = TextEditingController(text: _formatInitialValue(state.input.annualBonus));
-    _pensionRateController = TextEditingController(text: (state.input.pensionContributionRate * 100).toStringAsFixed(1));
-    _workingDaysController = TextEditingController(text: state.input.workingDaysPerMonth.toString());
+    final SalaryCalculatorState state = context
+        .read<SalaryCalculatorBloc>()
+        .state;
+    _baseSalaryController = TextEditingController(
+      text: _formatInitialValue(state.input.baseMonthlySalary),
+    );
+    _annualBonusController = TextEditingController(
+      text: _formatInitialValue(state.input.annualBonus),
+    );
+    _pensionRateController = TextEditingController(
+      text: (state.input.pensionContributionRate * 100).toStringAsFixed(1),
+    );
+    _workingDaysController = TextEditingController(
+      text: state.input.workingDaysPerMonth.toString(),
+    );
     _allowanceControllers = {
       for (final SalaryAllowanceType type in SalaryAllowanceType.values)
-        type: TextEditingController(text: _formatInitialValue(state.input.allowances[type] ?? 0)),
+        type: TextEditingController(
+          text: _formatInitialValue(state.input.allowances[type] ?? 0),
+        ),
     };
   }
 
@@ -73,7 +86,8 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
           previous.status != current.status ||
           previous.input.baseMonthlySalary != current.input.baseMonthlySalary,
       listener: (context, state) {
-        if (state.status == SalaryCalculatorStatus.failure && state.errorMessage != null) {
+        if (state.status == SalaryCalculatorStatus.failure &&
+            state.errorMessage != null) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
@@ -82,7 +96,9 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
         if (state.status == SalaryCalculatorStatus.initial) {
           _resetControllers(state);
         } else if (state.input.isAutoCalculated) {
-          _baseSalaryController.text = _formatNumber(state.input.baseMonthlySalary);
+          _baseSalaryController.text = _formatNumber(
+            state.input.baseMonthlySalary,
+          );
         }
       },
       child: BlocBuilder<SalaryCalculatorBloc, SalaryCalculatorState>(
@@ -92,7 +108,10 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
               final bool isWide = constraints.maxWidth > 720;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -106,13 +125,20 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                     const Gap(28),
                     _buildReferenceSection(state, bloc, theme, isWide),
                     const Gap(28),
-                    Text('월급 입력', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      '월급 입력',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const Gap(12),
                     isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(child: _buildBaseSalaryField(bloc, state)),
+                              Expanded(
+                                child: _buildBaseSalaryField(bloc, state),
+                              ),
                               const Gap(20),
                               Expanded(child: _buildBonusField(bloc)),
                             ],
@@ -125,7 +151,12 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                             ],
                           ),
                     const Gap(28),
-                    Text('수당 입력', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      '수당 입력',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const Gap(12),
                     Wrap(
                       spacing: 16,
@@ -133,14 +164,21 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                       children: SalaryAllowanceType.values
                           .map(
                             (type) => SizedBox(
-                              width: isWide ? (constraints.maxWidth - 72) / 2 : double.infinity,
+                              width: isWide
+                                  ? (constraints.maxWidth - 72) / 2
+                                  : double.infinity,
                               child: _buildAllowanceField(type, bloc),
                             ),
                           )
                           .toList(),
                     ),
                     const Gap(28),
-                    Text('근무 조건', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      '근무 조건',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const Gap(12),
                     isWide
                         ? Row(
@@ -163,13 +201,15 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => bloc.add(const SalaryCalculatorSubmitted()),
+                            onPressed: () =>
+                                bloc.add(const SalaryCalculatorSubmitted()),
                             child: const Text('월급 계산하기'),
                           ),
                         ),
                         const Gap(12),
                         OutlinedButton(
-                          onPressed: () => bloc.add(const SalaryCalculatorReset()),
+                          onPressed: () =>
+                              bloc.add(const SalaryCalculatorReset()),
                           child: const Text('입력 초기화'),
                         ),
                       ],
@@ -190,13 +230,20 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
     ThemeData theme,
     bool isWide,
   ) {
-    final List<int> yearOptions = _generateYearOptions(state.input.appointmentYear);
+    final List<int> yearOptions = _generateYearOptions(
+      state.input.appointmentYear,
+    );
     final List<SalaryGradeOption> gradeOptions = state.gradeOptions;
 
     final Widget selectors = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('발령 연도 & 호봉 기반 자동 계산', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          '발령 연도 & 호봉 기반 자동 계산',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const Gap(12),
         Wrap(
           spacing: 16,
@@ -234,10 +281,12 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                   prefixIcon: Icon(Icons.calendar_month_outlined),
                 ),
                 items: yearOptions
-                    .map((year) => DropdownMenuItem<int>(
-                          value: year,
-                          child: Text('$year년'),
-                        ))
+                    .map(
+                      (year) => DropdownMenuItem<int>(
+                        value: year,
+                        child: Text('$year년'),
+                      ),
+                    )
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -249,7 +298,10 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
             SizedBox(
               width: isWide ? 200 : double.infinity,
               child: DropdownButtonFormField<String>(
-                initialValue: gradeOptions.any((option) => option.id == state.input.gradeId)
+                initialValue:
+                    gradeOptions.any(
+                      (option) => option.id == state.input.gradeId,
+                    )
                     ? state.input.gradeId
                     : (gradeOptions.isNotEmpty ? gradeOptions.first.id : null),
                 decoration: const InputDecoration(
@@ -298,7 +350,11 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
             padding: const EdgeInsets.only(top: 8),
             child: Row(
               children: [
-                Icon(Icons.auto_graph_outlined, size: 18, color: theme.colorScheme.secondary),
+                Icon(
+                  Icons.auto_graph_outlined,
+                  size: 18,
+                  color: theme.colorScheme.secondary,
+                ),
                 const Gap(8),
                 Text(
                   '기준표를 기반으로 기본 월급이 자동 입력되었습니다.',
@@ -332,14 +388,14 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
 
     return [
       for (int step = minStep; step <= cappedMax; step++)
-        DropdownMenuItem<int>(
-          value: step,
-          child: Text('$step호봉'),
-        )
+        DropdownMenuItem<int>(value: step, child: Text('$step호봉')),
     ];
   }
 
-  Widget _buildBaseSalaryField(SalaryCalculatorBloc bloc, SalaryCalculatorState state) {
+  Widget _buildBaseSalaryField(
+    SalaryCalculatorBloc bloc,
+    SalaryCalculatorState state,
+  ) {
     return TextField(
       controller: _baseSalaryController,
       keyboardType: TextInputType.number,
@@ -355,9 +411,8 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
               )
             : null,
       ),
-      onChanged: (value) => bloc.add(
-        SalaryCalculatorBaseSalaryChanged(_parseDouble(value)),
-      ),
+      onChanged: (value) =>
+          bloc.add(SalaryCalculatorBaseSalaryChanged(_parseDouble(value))),
     );
   }
 
@@ -371,13 +426,15 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
         hintText: '예: 2,000,000',
         prefixIcon: Icon(Icons.card_giftcard_outlined),
       ),
-      onChanged: (value) => bloc.add(
-        SalaryCalculatorAnnualBonusChanged(_parseDouble(value)),
-      ),
+      onChanged: (value) =>
+          bloc.add(SalaryCalculatorAnnualBonusChanged(_parseDouble(value))),
     );
   }
 
-  Widget _buildAllowanceField(SalaryAllowanceType type, SalaryCalculatorBloc bloc) {
+  Widget _buildAllowanceField(
+    SalaryAllowanceType type,
+    SalaryCalculatorBloc bloc,
+  ) {
     return TextField(
       controller: _allowanceControllers[type],
       keyboardType: TextInputType.number,
@@ -406,9 +463,8 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
         hintText: '21',
         prefixIcon: Icon(Icons.calendar_month_outlined),
       ),
-      onChanged: (value) => bloc.add(
-        SalaryCalculatorWorkingDaysChanged(_parseInt(value)),
-      ),
+      onChanged: (value) =>
+          bloc.add(SalaryCalculatorWorkingDaysChanged(_parseInt(value))),
     );
   }
 
@@ -422,19 +478,23 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
         hintText: '9.8',
         prefixIcon: Icon(Icons.percent_outlined),
       ),
-      onChanged: (value) => bloc.add(
-        SalaryCalculatorPensionRateChanged(_parsePercent(value)),
-      ),
+      onChanged: (value) =>
+          bloc.add(SalaryCalculatorPensionRateChanged(_parsePercent(value))),
     );
   }
 
   void _resetControllers(SalaryCalculatorState state) {
-    _baseSalaryController.text = _formatInitialValue(state.input.baseMonthlySalary);
+    _baseSalaryController.text = _formatInitialValue(
+      state.input.baseMonthlySalary,
+    );
     _annualBonusController.text = _formatInitialValue(state.input.annualBonus);
-    _pensionRateController.text = (state.input.pensionContributionRate * 100).toStringAsFixed(1);
+    _pensionRateController.text = (state.input.pensionContributionRate * 100)
+        .toStringAsFixed(1);
     _workingDaysController.text = state.input.workingDaysPerMonth.toString();
     for (final entry in _allowanceControllers.entries) {
-      entry.value.text = _formatInitialValue(state.input.allowances[entry.key] ?? 0);
+      entry.value.text = _formatInitialValue(
+        state.input.allowances[entry.key] ?? 0,
+      );
     }
   }
 

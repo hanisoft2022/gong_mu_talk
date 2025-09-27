@@ -29,21 +29,21 @@ class SalaryInput extends Equatable {
   final bool isAutoCalculated;
 
   factory SalaryInput.initial() => SalaryInput(
-        baseMonthlySalary: 0,
-        workingDaysPerMonth: 21,
-        allowances: const {
-          SalaryAllowanceType.replacement: 0,
-          SalaryAllowanceType.nightDuty: 0,
-          SalaryAllowanceType.hazard: 0,
-        },
-        annualBonus: 0,
-        pensionContributionRate: 0.098, // 공무원 연금 기본율 참고값
-        appointmentYear: DateTime.now().year,
-        track: SalaryTrack.general,
-        gradeId: '9',
-        step: 1,
-        isAutoCalculated: false,
-      );
+    baseMonthlySalary: 0,
+    workingDaysPerMonth: 21,
+    allowances: const {
+      SalaryAllowanceType.replacement: 0,
+      SalaryAllowanceType.nightDuty: 0,
+      SalaryAllowanceType.hazard: 0,
+    },
+    annualBonus: 0,
+    pensionContributionRate: 0.098, // 공무원 연금 기본율 참고값
+    appointmentYear: DateTime.now().year,
+    track: SalaryTrack.general,
+    gradeId: '9',
+    step: 1,
+    isAutoCalculated: false,
+  );
 
   SalaryInput copyWith({
     double? baseMonthlySalary,
@@ -74,17 +74,17 @@ class SalaryInput extends Equatable {
 
   @override
   List<Object?> get props => [
-        baseMonthlySalary,
-        workingDaysPerMonth,
-        annualBonus,
-        pensionContributionRate,
-        appointmentYear,
-        track,
-        gradeId,
-        step,
-        isAutoCalculated,
-        allowances.entries
-            .map((entry) => '${entry.key.name}:${entry.value}')
-            .join('|'),
-      ];
+    baseMonthlySalary,
+    workingDaysPerMonth,
+    annualBonus,
+    pensionContributionRate,
+    appointmentYear,
+    track,
+    gradeId,
+    step,
+    isAutoCalculated,
+    allowances.entries
+        .map((entry) => '${entry.key.name}:${entry.value}')
+        .join('|'),
+  ];
 }

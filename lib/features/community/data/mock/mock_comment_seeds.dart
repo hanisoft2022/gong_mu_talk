@@ -20,10 +20,7 @@ class DummyCommentSeed {
 }
 
 class CachedComment {
-  const CachedComment({
-    required this.comment,
-    required this.likeCount,
-  });
+  const CachedComment({required this.comment, required this.likeCount});
 
   final Comment comment;
   final int likeCount;

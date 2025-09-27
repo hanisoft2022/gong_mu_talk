@@ -1,7 +1,4 @@
-enum SalaryTrack {
-  general,
-  teacher,
-}
+enum SalaryTrack { general, teacher }
 
 extension SalaryTrackX on SalaryTrack {
   String get id {

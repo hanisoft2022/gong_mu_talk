@@ -28,7 +28,9 @@ class CommentSearchResultCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
+                  ),
                   foregroundColor: theme.colorScheme.primary,
                   child: Text(comment.authorNickname.substring(0, 1)),
                 ),
@@ -39,7 +41,9 @@ class CommentSearchResultCard extends StatelessWidget {
                     children: [
                       Text(
                         comment.authorNickname,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const Gap(4),
                       Text(
@@ -62,7 +66,10 @@ class CommentSearchResultCard extends StatelessWidget {
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                     const Gap(4),
-                    Text('${comment.likeCount}', style: theme.textTheme.labelSmall),
+                    Text(
+                      '${comment.likeCount}',
+                      style: theme.textTheme.labelSmall,
+                    ),
                   ],
                 ),
               ],
@@ -75,7 +82,9 @@ class CommentSearchResultCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(

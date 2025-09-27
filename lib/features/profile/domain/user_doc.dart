@@ -70,7 +70,14 @@ class UserDoc extends Equatable {
   }
 
   @override
-  List<Object?> get props => <Object?>[uid, nickname, serial, department, region, role, createdAt, blocked];
+  List<Object?> get props => <Object?>[
+    uid,
+    nickname,
+    serial,
+    department,
+    region,
+    role,
+    createdAt,
+    blocked,
+  ];
 }
-
-

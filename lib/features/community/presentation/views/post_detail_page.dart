@@ -13,7 +13,12 @@ import '../widgets/comment_utils.dart';
 import '../../../profile/domain/career_track.dart';
 
 class PostDetailPage extends StatefulWidget {
-  const PostDetailPage({super.key, required this.postId, this.initialPost, this.replyCommentId});
+  const PostDetailPage({
+    super.key,
+    required this.postId,
+    this.initialPost,
+    this.replyCommentId,
+  });
 
   final String postId;
   final Post? initialPost;
@@ -52,7 +57,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('게시글')),
       body: BlocListener<PostDetailCubit, PostDetailState>(
-        listenWhen: (previous, current) => previous.replyingTo != current.replyingTo,
+        listenWhen: (previous, current) =>
+            previous.replyingTo != current.replyingTo,
         listener: (context, state) {
           final Comment? target = state.replyingTo;
           if (target != null) {
@@ -68,7 +74,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
             if (state.status == PostDetailStatus.error) {
               return _ErrorView(
                 message: state.errorMessage ?? '게시글을 불러올 수 없습니다.',
-                onRetry: () => context.read<PostDetailCubit>().loadPost(widget.postId),
+                onRetry: () =>
+                    context.read<PostDetailCubit>().loadPost(widget.postId),
               );
             }
 
@@ -76,7 +83,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
               return const Center(child: Text('게시글을 찾을 수 없습니다.'));
             }
 
-            final LoungeScope scope = state.post!.audience == PostAudience.serial
+            final LoungeScope scope =
+                state.post!.audience == PostAudience.serial
                 ? LoungeScope.serial
                 : LoungeScope.all;
 
@@ -91,15 +99,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       children: [
                         PostCard(
                           post: state.post!,
-                          onToggleLike: () => context.read<PostDetailCubit>().toggleLike(),
-                          onToggleBookmark: () => context.read<PostDetailCubit>().toggleBookmark(),
+                          onToggleLike: () =>
+                              context.read<PostDetailCubit>().toggleLike(),
+                          onToggleBookmark: () =>
+                              context.read<PostDetailCubit>().toggleBookmark(),
                           showShare: false,
                           showBookmark: false,
                           trailing: PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),
                             itemBuilder: (context) => [
                               if (state.post!.authorUid ==
-                                  context.read<PostDetailCubit>().currentUserId) ...[
+                                  context
+                                      .read<PostDetailCubit>()
+                                      .currentUserId) ...[
                                 const PopupMenuItem(
                                   value: 'edit',
                                   child: ListTile(
@@ -144,8 +156,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           timelineComments: state.comments,
                           isLoading: state.isLoadingComments,
                           scope: scope,
-                          onToggleLike: (commentId) =>
-                              context.read<PostDetailCubit>().toggleCommentLike(commentId),
+                          onToggleLike: (commentId) => context
+                              .read<PostDetailCubit>()
+                              .toggleCommentLike(commentId),
                           onReply: _handleReply,
                         ),
                       ],
@@ -204,14 +217,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
         title: const Text('게시글 삭제'),
         content: const Text('이 게시글을 삭제하시겠습니까?\n삭제된 게시글은 복구할 수 없습니다.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
           FilledButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
               if (mounted) navigator.pop();
-              final success = await context.read<PostDetailCubit>().deletePost();
+              final success = await context
+                  .read<PostDetailCubit>()
+                  .deletePost();
               if (success && mounted) {
-                navigator.pop(true); // Return to previous page with success flag
+                navigator.pop(
+                  true,
+                ); // Return to previous page with success flag
               }
             },
             child: const Text('삭제'),
@@ -228,7 +248,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
         title: const Text('신고하기'),
         content: const Text('이 게시글이 커뮤니티 가이드라인을 위반했다고 신고하시겠습니까?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
           FilledButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
@@ -236,7 +259,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
               if (mounted) navigator.pop();
               await context.read<PostDetailCubit>().reportPost();
               if (mounted) {
-                messenger.showSnackBar(const SnackBar(content: Text('신고가 접수되었습니다. 검토 후 조치하겠습니다.')));
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('신고가 접수되었습니다. 검토 후 조치하겠습니다.')),
+                );
               }
             },
             child: const Text('신고'),
@@ -251,9 +276,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('사용자 차단'),
-        content: const Text('이 사용자를 차단하시겠습니까?\n차단하면 해당 사용자의 게시글과 댓글을 볼 수 없습니다.'),
+        content: const Text(
+          '이 사용자를 차단하시겠습니까?\n차단하면 해당 사용자의 게시글과 댓글을 볼 수 없습니다.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
           FilledButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
@@ -261,7 +291,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
               if (mounted) navigator.pop();
               await context.read<PostDetailCubit>().blockUser();
               if (mounted) {
-                messenger.showSnackBar(const SnackBar(content: Text('사용자를 차단했습니다.')));
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('사용자를 차단했습니다.')),
+                );
                 navigator.pop();
               }
             },
@@ -295,7 +327,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final String mention = '@${replyingTo.authorNickname.trim()} ';
     final String current = _commentController.text;
     if (current.endsWith(mention)) {
-      final String updated = current.substring(0, current.length - mention.length).trimRight();
+      final String updated = current
+          .substring(0, current.length - mention.length)
+          .trimRight();
       _commentController
         ..text = updated
         ..selection = TextSelection.collapsed(offset: updated.length);
@@ -309,9 +343,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
 
     final TextEditingValue value = _commentController.value;
-    final int start = value.selection.isValid ? value.selection.start : value.text.length;
-    final int end = value.selection.isValid ? value.selection.end : value.text.length;
-    final bool needsLeadingSpace = start > 0 && !value.text.substring(0, start).endsWith(' ');
+    final int start = value.selection.isValid
+        ? value.selection.start
+        : value.text.length;
+    final int end = value.selection.isValid
+        ? value.selection.end
+        : value.text.length;
+    final bool needsLeadingSpace =
+        start > 0 && !value.text.substring(0, start).endsWith(' ');
     final String mention = '${needsLeadingSpace ? ' ' : ''}@$trimmed ';
     final String newText = value.text.replaceRange(start, end, mention);
     _commentController.value = TextEditingValue(
@@ -332,7 +371,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
       _insertMention(nickname);
     } else {
       _commentFocusNode.requestFocus();
-      _commentController.selection = TextSelection.collapsed(offset: value.text.length);
+      _commentController.selection = TextSelection.collapsed(
+        offset: value.text.length,
+      );
     }
   }
 }
@@ -357,7 +398,9 @@ class _CommentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Set<String> featuredIds = featuredComments.map((Comment c) => c.id).toSet();
+    final Set<String> featuredIds = featuredComments
+        .map((Comment c) => c.id)
+        .toSet();
 
     final Map<String, List<Comment>> replies = <String, List<Comment>>{};
     final List<Comment> roots = <Comment>[];
@@ -396,11 +439,17 @@ class _CommentsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.mode_comment_outlined, size: 20, color: theme.colorScheme.primary),
+            Icon(
+              Icons.mode_comment_outlined,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
             const Gap(8),
             Text(
               '댓글 ${timelineComments.length}',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -482,7 +531,8 @@ class _CommentThread extends StatelessWidget {
                       highlight: featuredIds.contains(reply.id),
                       onToggleLike: () => onToggleLike(reply.id),
                       onReply: onReply,
-                      onOpenProfile: () => _openMemberProfile(context, reply.authorUid),
+                      onOpenProfile: () =>
+                          _openMemberProfile(context, reply.authorUid),
                     ),
                   )
                   .toList(growable: false),
@@ -544,7 +594,8 @@ class _FeaturedCommentsSection extends StatelessWidget {
                     highlight: true,
                     onToggleLike: () => onToggleLike(comment.id),
                     onReply: onReply,
-                    onOpenProfile: () => _openMemberProfile(context, comment.authorUid),
+                    onOpenProfile: () =>
+                        _openMemberProfile(context, comment.authorUid),
                   ),
                 ),
               ),
@@ -577,7 +628,8 @@ class _CommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool isSerialScope = scope == LoungeScope.serial;
-    final bool hasTrack = comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
+    final bool hasTrack =
+        comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
     final String trackLabel = serialLabel(
       comment.authorTrack,
       comment.authorSerialVisible,
@@ -588,7 +640,9 @@ class _CommentTile extends StatelessWidget {
         ? comment.authorNickname
         : comment.authorUid;
     final String maskedNickname = maskNickname(nicknameSource);
-    final String displayName = isSerialScope ? comment.authorNickname : maskedNickname;
+    final String displayName = isSerialScope
+        ? comment.authorNickname
+        : maskedNickname;
     final String displayInitial = displayName.trim().isEmpty
         ? '공'
         : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
@@ -607,7 +661,9 @@ class _CommentTile extends StatelessWidget {
                       if (!isReply) ...[
                         CircleAvatar(
                           radius: 16,
-                          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          backgroundColor: theme.colorScheme.primary.withValues(
+                            alpha: 0.12,
+                          ),
                           foregroundColor: theme.colorScheme.primary,
                           child: Text(displayInitial),
                         ),
@@ -652,7 +708,10 @@ class _CommentTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: hasTrack
                         ? theme.colorScheme.primary.withValues(alpha: 0.12)
@@ -676,13 +735,19 @@ class _CommentTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           displayName,
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (comment.authorIsSupporter) ...[
                         const Gap(6),
-                        Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.verified,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
                       ],
                     ],
                   ),
@@ -730,10 +795,16 @@ class _CommentTile extends StatelessWidget {
                         ? theme.colorScheme.primary
                         : theme.colorScheme.onSurfaceVariant,
                   ),
-                  label: Text('${comment.likeCount}', style: theme.textTheme.labelSmall),
+                  label: Text(
+                    '${comment.likeCount}',
+                    style: theme.textTheme.labelSmall,
+                  ),
                   style: TextButton.styleFrom(
                     minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
@@ -744,7 +815,10 @@ class _CommentTile extends StatelessWidget {
                   label: const Text('답글'),
                   style: TextButton.styleFrom(
                     minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
@@ -852,7 +926,9 @@ class _CommentComposerState extends State<_CommentComposer> {
                   children: [
                     Text(
                       '$displayName 님에게 답글 작성 중',
-                      style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     if (preview.isNotEmpty)
                       Text(
@@ -866,7 +942,10 @@ class _CommentComposerState extends State<_CommentComposer> {
                   ],
                 ),
               ),
-              TextButton(onPressed: widget.onCancelReply, child: const Text('취소')),
+              TextButton(
+                onPressed: widget.onCancelReply,
+                child: const Text('취소'),
+              ),
             ],
           ),
         ),
@@ -883,7 +962,10 @@ class _CommentComposerState extends State<_CommentComposer> {
               decoration: const InputDecoration(
                 hintText: '댓글을 입력하세요...',
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               maxLines: null,
               textInputAction: TextInputAction.newline,
@@ -891,7 +973,9 @@ class _CommentComposerState extends State<_CommentComposer> {
           ),
           const Gap(12),
           FilledButton(
-            onPressed: _canSubmit && !widget.isSubmitting ? widget.onSubmit : null,
+            onPressed: _canSubmit && !widget.isSubmitting
+                ? widget.onSubmit
+                : null,
             child: widget.isSubmitting
                 ? const SizedBox(
                     width: 16,
@@ -913,7 +997,11 @@ class _CommentComposerState extends State<_CommentComposer> {
       ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(top: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2))),
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -928,7 +1016,10 @@ void _openMemberProfile(BuildContext context, String uid) {
   if (uid.isEmpty || uid == 'dummy_user') {
     return;
   }
-  context.pushNamed(MemberProfileRoute.name, pathParameters: <String, String>{'uid': uid});
+  context.pushNamed(
+    MemberProfileRoute.name,
+    pathParameters: <String, String>{'uid': uid},
+  );
 }
 
 class _ErrorView extends StatelessWidget {

@@ -13,7 +13,8 @@ class AppLogoButton extends StatefulWidget {
   State<AppLogoButton> createState() => _AppLogoButtonState();
 }
 
-class _AppLogoButtonState extends State<AppLogoButton> with TickerProviderStateMixin {
+class _AppLogoButtonState extends State<AppLogoButton>
+    with TickerProviderStateMixin {
   bool _isPressed = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -68,7 +69,9 @@ class _AppLogoButtonState extends State<AppLogoButton> with TickerProviderStateM
   Widget build(BuildContext context) {
     final double diameter = widget.compact ? 44 : 52;
     final double cornerRadius = widget.compact ? 14 : 18;
-    final EdgeInsets padding = widget.compact ? const EdgeInsets.all(4) : const EdgeInsets.all(6);
+    final EdgeInsets padding = widget.compact
+        ? const EdgeInsets.all(4)
+        : const EdgeInsets.all(6);
     final double containerSize = diameter + padding.horizontal;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 

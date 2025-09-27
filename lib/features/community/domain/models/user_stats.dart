@@ -34,7 +34,8 @@ class UserStats extends Equatable {
   double get progressToNextLevel {
     final currentLevelPoints = (level - 1) * 100;
     final nextLevelPoints = level * 100;
-    final progress = (points - currentLevelPoints) / (nextLevelPoints - currentLevelPoints);
+    final progress =
+        (points - currentLevelPoints) / (nextLevelPoints - currentLevelPoints);
     return progress.clamp(0.0, 1.0);
   }
 
@@ -81,7 +82,9 @@ class UserStats extends Equatable {
       'likesGiven': likesGiven,
       'badges': badges,
       'joinedAt': joinedAt != null ? Timestamp.fromDate(joinedAt!) : null,
-      'lastActiveAt': lastActiveAt != null ? Timestamp.fromDate(lastActiveAt!) : null,
+      'lastActiveAt': lastActiveAt != null
+          ? Timestamp.fromDate(lastActiveAt!)
+          : null,
     };
   }
 
@@ -112,17 +115,17 @@ class UserStats extends Equatable {
 
   @override
   List<Object?> get props => [
-        uid,
-        points,
-        level,
-        postsCount,
-        commentsCount,
-        likesReceived,
-        likesGiven,
-        badges,
-        joinedAt,
-        lastActiveAt,
-      ];
+    uid,
+    points,
+    level,
+    postsCount,
+    commentsCount,
+    likesReceived,
+    likesGiven,
+    badges,
+    joinedAt,
+    lastActiveAt,
+  ];
 }
 
 enum BadgeType {
@@ -144,8 +147,6 @@ enum BadgeType {
   final String emoji;
 
   static BadgeType? fromString(String value) {
-    return BadgeType.values
-        .where((badge) => badge.name == value)
-        .firstOrNull;
+    return BadgeType.values.where((badge) => badge.name == value).firstOrNull;
   }
 }

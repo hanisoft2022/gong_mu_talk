@@ -132,3 +132,23 @@ Run: `flutter pub run build_runner build --delete-conflicting-outputs`
 - Use dependency injection via GetIt
 - Prefer const constructors for performance
 - Handle errors gracefully with proper user feedback
+
+## Git 커밋 규칙
+- feat: 새로운 기능 추가
+- fix: 버그 수정
+- docs: 문서 수정
+- style: 코드 포매팅 (기능 변경 없음)
+- refactor: 코드 리팩토링 (기능 변경 없음)
+- test: 테스트 추가 또는 수정
+- chore: 빌드 프로세스 또는 보조 도구 변경
+
+## 커밋 메시지 형식
+```
+<type>(<scope>): <subject>
+```
+
+### 예시
+```
+feat(auth): 소셜 로그인 기능 추가
+fix(api): 사용자 조회 시 null 참조 오류 수정
+```

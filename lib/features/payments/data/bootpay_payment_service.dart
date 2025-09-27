@@ -11,8 +11,8 @@ import '../../../core/config/payment_config.dart';
 
 class PaymentResult {
   const PaymentResult.success()
-      : isSuccess = true,
-        message = '결제가 성공적으로 완료되었습니다.';
+    : isSuccess = true,
+      message = '결제가 성공적으로 완료되었습니다.';
 
   const PaymentResult.failure(this.message) : isSuccess = false;
 
@@ -52,10 +52,7 @@ class BootpayPaymentService {
           price: price.toDouble(),
         ),
       ],
-      extra: Extra(
-        displayCashReceipt: true,
-        cardQuota: '0,2,3,4,5,6,9,12',
-      ),
+      extra: Extra(displayCashReceipt: true, cardQuota: '0,2,3,4,5,6,9,12'),
       user: User()
         ..username = '공무원'
         ..phone = '',
@@ -76,7 +73,9 @@ class BootpayPaymentService {
       },
       onClose: () {
         if (!completer.isCompleted) {
-          completer.complete(const PaymentResult.failure('결제가 완료되지 않았습니다. 창이 닫혔어요.'));
+          completer.complete(
+            const PaymentResult.failure('결제가 완료되지 않았습니다. 창이 닫혔어요.'),
+          );
         }
       },
       onIssued: (data) {},

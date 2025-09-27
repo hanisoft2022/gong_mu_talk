@@ -4,7 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../data/community_repository.dart';
+import '../../domain/usecases/search_community.dart';
+import '../../domain/repositories/i_community_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_suggestion.dart';
 import '../../domain/models/search_result.dart';
@@ -13,10 +14,13 @@ part 'search_state.dart';
 
 @injectable
 class SearchCubit extends Cubit<SearchState> {
-  SearchCubit(this._repository) : super(const SearchState()) {
-  }
+  SearchCubit(
+    this._repository,
+    this._searchCommunity,
+  ) : super(const SearchState());
 
-  final CommunityRepository _repository;
+  final ICommunityRepository _repository;
+  final SearchCommunity _searchCommunity;
   Timer? _autocompleteDebounce;
 
   void onQueryChanged(String value) {
@@ -35,28 +39,32 @@ class SearchCubit extends Cubit<SearchState> {
     }
 
     _autocompleteDebounce = Timer(const Duration(milliseconds: 250), () async {
-      try {
-        final List<String> tokens = await _repository.autocompleteSearchTokens(
-          prefix: trimmed,
-          limit: 6,
-        );
+      final result = await _repository.autocompleteSearchTokens(
+        prefix: trimmed,
+        limit: 6,
+      );
 
-        if (state.draftQuery.trim() == trimmed) {
-          emit(state.copyWith(autocomplete: tokens));
-        }
-      } catch (_) {
-        // Ignore autocomplete errors to keep typing smooth
-      }
+      result.fold(
+        (error) {
+          // Ignore autocomplete errors to keep typing smooth
+        },
+        (tokens) {
+          if (state.draftQuery.trim() == trimmed) {
+            emit(state.copyWith(autocomplete: tokens));
+          }
+        },
+      );
     });
   }
 
   Future<void> loadSuggestions() async {
-    try {
-      final suggestions = await _repository.topSearchSuggestions(limit: 10);
-      emit(state.copyWith(suggestions: suggestions));
-    } catch (e) {
-      // Silently handle error - suggestions are optional
-    }
+    final result = await _repository.topSearchSuggestions(limit: 10);
+    result.fold(
+      (error) {
+        // Silently handle error - suggestions are optional
+      },
+      (suggestions) => emit(state.copyWith(suggestions: suggestions)),
+    );
   }
 
   Future<void> search(String query) async {
@@ -65,7 +73,6 @@ class SearchCubit extends Cubit<SearchState> {
     _autocompleteDebounce?.cancel();
 
     final String trimmedQuery = query.trim();
-    final String normalizedQuery = trimmedQuery.toLowerCase();
     emit(
       state.copyWith(
         isLoading: true,
@@ -79,18 +86,21 @@ class SearchCubit extends Cubit<SearchState> {
       ),
     );
 
-    try {
-      final CommunitySearchResults results = await _repository.searchCommunity(
-        query: normalizedQuery,
-        scope: state.scope,
-        postLimit: state.scope == SearchScope.comments ? 0 : 20,
-        commentLimit: state.scope == SearchScope.posts || state.scope == SearchScope.author
-            ? 0
-            : 20,
-        currentUid: _repository.currentUserId,
-      );
+    final result = await _searchCommunity(
+      query: trimmedQuery,
+      scope: state.scope,
+      postLimit: state.scope == SearchScope.comments ? 0 : 20,
+      commentLimit:
+          state.scope == SearchScope.posts ||
+              state.scope == SearchScope.author
+          ? 0
+          : 20,
+      currentUid: _repository.currentUserId,
+    );
 
-      emit(
+    result.fold(
+      (error) => emit(state.copyWith(isLoading: false, error: error.message)),
+      (results) => emit(
         state.copyWith(
           isLoading: false,
           postResults: results.posts,
@@ -98,10 +108,8 @@ class SearchCubit extends Cubit<SearchState> {
           hasMore: false,
           error: null,
         ),
-      );
-    } catch (e) {
-      emit(state.copyWith(isLoading: false, error: '검색 중 오류가 발생했습니다.'));
-    }
+      ),
+    );
   }
 
   Future<void> loadMore() async {
@@ -112,7 +120,9 @@ class SearchCubit extends Cubit<SearchState> {
     try {
       emit(state.copyWith(isLoading: false, hasMore: false));
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: '추가 검색 결과를 불러오는 중 오류가 발생했습니다.'));
+      emit(
+        state.copyWith(isLoading: false, error: '추가 검색 결과를 불러오는 중 오류가 발생했습니다.'),
+      );
     }
   }
 

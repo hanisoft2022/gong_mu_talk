@@ -20,16 +20,16 @@ class SalaryCalculatorState extends Equatable {
   final bool isReferenceLoading;
 
   factory SalaryCalculatorState.initial() => SalaryCalculatorState(
-        input: SalaryInput.initial(),
-        result: SalaryBreakdown.empty(),
-        status: SalaryCalculatorStatus.initial,
-        errorMessage: null,
-        gradeOptions: const <SalaryGradeOption>[
-          SalaryGradeOption(id: '9', name: '9급', minStep: 1, maxStep: 33),
-          SalaryGradeOption(id: '8', name: '8급', minStep: 1, maxStep: 33),
-        ],
-        isReferenceLoading: false,
-      );
+    input: SalaryInput.initial(),
+    result: SalaryBreakdown.empty(),
+    status: SalaryCalculatorStatus.initial,
+    errorMessage: null,
+    gradeOptions: const <SalaryGradeOption>[
+      SalaryGradeOption(id: '9', name: '9급', minStep: 1, maxStep: 33),
+      SalaryGradeOption(id: '8', name: '8급', minStep: 1, maxStep: 33),
+    ],
+    isReferenceLoading: false,
+  );
 
   SalaryCalculatorState copyWith({
     SalaryInput? input,
@@ -56,11 +56,11 @@ class SalaryCalculatorState extends Equatable {
 
   @override
   List<Object?> get props => [
-        input,
-        result,
-        status,
-        errorMessage,
-        gradeOptions,
-        isReferenceLoading,
-      ];
+    input,
+    result,
+    status,
+    errorMessage,
+    gradeOptions,
+    isReferenceLoading,
+  ];
 }

@@ -19,7 +19,6 @@ class InlinePostComposer extends StatefulWidget {
   State<InlinePostComposer> createState() => _InlinePostComposerState();
 }
 
-
 class _InlinePostComposerState extends State<InlinePostComposer> {
   late final TextEditingController _controller;
   late LoungeScope _lastScope;

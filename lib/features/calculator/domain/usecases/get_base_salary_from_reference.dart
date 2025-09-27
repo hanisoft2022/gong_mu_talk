@@ -2,8 +2,9 @@ import '../entities/salary_track.dart';
 import '../repositories/salary_reference_repository.dart';
 
 class GetBaseSalaryFromReferenceUseCase {
-  const GetBaseSalaryFromReferenceUseCase({required SalaryReferenceRepository repository})
-      : _repository = repository;
+  const GetBaseSalaryFromReferenceUseCase({
+    required SalaryReferenceRepository repository,
+  }) : _repository = repository;
 
   final SalaryReferenceRepository _repository;
 

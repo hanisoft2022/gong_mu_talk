@@ -25,7 +25,9 @@ class HotScoreCalculator {
     final double hours = age.inMinutes / 60.0;
     final double timeDecay = pow(2, hours / decayLambda).toDouble();
     final double base =
-        likeCount * likeWeight + commentCount * commentWeight + viewCount * viewWeight;
+        likeCount * likeWeight +
+        commentCount * commentWeight +
+        viewCount * viewWeight;
     if (timeDecay <= 0) {
       return base;
     }

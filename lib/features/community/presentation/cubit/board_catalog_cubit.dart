@@ -47,13 +47,26 @@ class BoardCatalogCubit extends Cubit<BoardCatalogState> {
     if (_activeRequest != null && !_activeRequest!.isCompleted) {
       return;
     }
-    emit(state.copyWith(status: BoardCatalogStatus.loading, errorMessage: null));
+    emit(
+      state.copyWith(status: BoardCatalogStatus.loading, errorMessage: null),
+    );
     _activeRequest = Completer<void>();
     try {
       final List<Board> boards = await _repository.fetchBoards();
-      emit(state.copyWith(status: BoardCatalogStatus.loaded, boards: boards, errorMessage: null));
+      emit(
+        state.copyWith(
+          status: BoardCatalogStatus.loaded,
+          boards: boards,
+          errorMessage: null,
+        ),
+      );
     } catch (_) {
-      emit(state.copyWith(status: BoardCatalogStatus.error, errorMessage: '게시판 목록을 불러오지 못했습니다.'));
+      emit(
+        state.copyWith(
+          status: BoardCatalogStatus.error,
+          errorMessage: '게시판 목록을 불러오지 못했습니다.',
+        ),
+      );
     } finally {
       _activeRequest?.complete();
     }
