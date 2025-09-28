@@ -1189,11 +1189,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final Offset buttonPosition = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
     final Size buttonSize = renderBox.size;
 
-    // 메뉴가 사용자 정보 중앙 아래에 나타나도록 위치 조정
-    const double menuWidth = 140; // 메뉴의 예상 폭
-    final double centeredLeft = buttonPosition.dx + (buttonSize.width / 2) - (menuWidth / 2);
+    // 사용자 정보 텍스트의 시각적 중앙 아래에 메뉴가 나타나도록 조정
+    // 버튼 시작점에서 사용자 정보 컨텐츠의 대략적인 중앙까지의 오프셋
+    const double contentCenterOffset = 60; // 교육행정직 + 닉네임 영역의 대략적인 중앙
+    final double menuLeft = buttonPosition.dx + contentCenterOffset - 70; // 메뉴 폭의 절반만큼 왼쪽으로
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double adjustedLeft = centeredLeft.clamp(16.0, screenWidth - menuWidth - 16.0); // 화면 경계 고려
+    final double adjustedLeft = menuLeft.clamp(16.0, screenWidth - 140 - 16.0); // 화면 경계 고려
 
     final RelativeRect position = RelativeRect.fromLTRB(
       adjustedLeft,                             // left: 사용자 정보 중앙 아래로 조정
