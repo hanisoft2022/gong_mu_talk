@@ -1207,63 +1207,70 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final double menuTop = buttonPosition.dy + buttonSize.height + 4;
 
     _menuOverlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 외부 클릭 감지를 위한 투명한 전체 화면 커버
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _closeAuthorMenu,
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-          // 실제 메뉴
-          Positioned(
-            left: menuLeft,
-            top: menuTop,
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(12),
-              shadowColor: Colors.black26,
-              child: Container(
-                width: 140,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildMenuOption(
-                      icon: Icons.person_outline,
-                      text: '프로필 보기',
-                      onTap: () => _handleMenuAction(
-                        _AuthorMenuAction.viewProfile,
-                        post: post,
-                        socialGraph: socialGraph,
-                      ),
-                    ),
-                    if (canFollow)
-                      _buildMenuOption(
-                        icon: isFollowing
-                            ? Icons.person_remove_alt_1_outlined
-                            : Icons.person_add_alt_1_outlined,
-                        text: isFollowing ? '팔로우 취소하기' : '팔로우하기',
-                        onTap: () => _handleMenuAction(
-                          _AuthorMenuAction.toggleFollow,
-                          post: post,
-                          socialGraph: socialGraph,
-                          isFollowing: isFollowing,
-                        ),
-                      ),
-                  ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setMenuState) {
+          // StatefulBuilder 내에서 매번 최신 팔로우 상태 체크
+          final bool currentIsFollowing = canFollow && socialGraph.isFollowing(post.authorUid);
+
+          return Stack(
+            children: [
+              // 외부 클릭 감지를 위한 투명한 전체 화면 커버
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _closeAuthorMenu,
+                  child: Container(color: Colors.transparent),
                 ),
               ),
-            ),
-          ),
-        ],
+              // 실제 메뉴
+              Positioned(
+                left: menuLeft,
+                top: menuTop,
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(12),
+                  shadowColor: Colors.black26,
+                  child: Container(
+                    width: 140,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMenuOption(
+                          icon: Icons.person_outline,
+                          text: '프로필 보기',
+                          onTap: () => _handleMenuAction(
+                            _AuthorMenuAction.viewProfile,
+                            post: post,
+                            socialGraph: socialGraph,
+                          ),
+                        ),
+                        if (canFollow)
+                          _buildMenuOption(
+                            icon: currentIsFollowing
+                                ? Icons.person_remove_alt_1_outlined
+                                : Icons.person_add_alt_1_outlined,
+                            text: currentIsFollowing ? '팔로우 취소하기' : '팔로우하기',
+                            onTap: () => _handleMenuAction(
+                              _AuthorMenuAction.toggleFollow,
+                              post: post,
+                              socialGraph: socialGraph,
+                              isFollowing: currentIsFollowing,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -1284,7 +1291,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           children: [
             Icon(icon, size: 18),
             const Gap(8),
-            Text(text, style: Theme.of(context).textTheme.bodyMedium),
+            Expanded(
+              child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+            ),
           ],
         ),
       ),
@@ -1330,6 +1339,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
+
   void _showCommentAuthorMenu({
     required Comment comment,
     required GlobalKey authorKey,
@@ -1338,7 +1348,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == comment.authorUid;
-    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, comment.authorUid);
+    // Allow follow for preview users in comment menu (same as post author behavior)
+    final bool canFollow = authState.isLoggedIn &&
+        currentUid != null &&
+        currentUid.isNotEmpty &&
+        !isSelf &&
+        comment.authorUid.isNotEmpty;
     final bool isFollowing = canFollow && socialGraph.isFollowing(comment.authorUid);
 
     // 이미 메뉴가 열려있다면 닫기
@@ -1358,63 +1373,72 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final double menuTop = buttonPosition.dy + buttonSize.height + 4;
 
     _menuOverlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 외부 클릭 감지를 위한 투명한 전체 화면 커버
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _closeAuthorMenu,
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-          // 실제 메뉴
-          Positioned(
-            left: menuLeft,
-            top: menuTop,
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(12),
-              shadowColor: Colors.black26,
-              child: Container(
-                width: 140,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildMenuOption(
-                      icon: Icons.person_outline,
-                      text: '프로필 보기',
-                      onTap: () => _handleCommentAuthorAction(
-                        _AuthorMenuAction.viewProfile,
-                        comment: comment,
-                        socialGraph: socialGraph,
-                      ),
-                    ),
-                    if (canFollow)
-                      _buildMenuOption(
-                        icon: isFollowing
-                            ? Icons.person_remove_alt_1_outlined
-                            : Icons.person_add_alt_1_outlined,
-                        text: isFollowing ? '팔로우 취소하기' : '팔로우하기',
-                        onTap: () => _handleCommentAuthorAction(
-                          _AuthorMenuAction.toggleFollow,
-                          comment: comment,
-                          socialGraph: socialGraph,
-                          isFollowing: isFollowing,
-                        ),
-                      ),
-                  ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setMenuState) {
+          // StatefulBuilder 내에서 매번 최신 팔로우 상태 체크
+          final bool currentIsFollowing = canFollow && socialGraph.isFollowing(comment.authorUid);
+
+          return Stack(
+            children: [
+              // 외부 클릭 감지를 위한 투명한 전체 화면 커버
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _closeAuthorMenu,
+                  child: Container(color: Colors.transparent),
                 ),
               ),
-            ),
-          ),
-        ],
+              // 실제 메뉴
+              Positioned(
+                left: menuLeft,
+                top: menuTop,
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(12),
+                  shadowColor: Colors.black26,
+                  child: Container(
+                    width: 140,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMenuOption(
+                          icon: Icons.person_outline,
+                          text: '프로필 보기',
+                          onTap: () => _handleCommentAuthorAction(
+                            _AuthorMenuAction.viewProfile,
+                            comment: comment,
+                            socialGraph: socialGraph,
+                            authorKey: authorKey,
+                          ),
+                        ),
+                        if (canFollow)
+                          _buildMenuOption(
+                            icon: currentIsFollowing
+                                ? Icons.person_remove_alt_1_outlined
+                                : Icons.person_add_alt_1_outlined,
+                            text: currentIsFollowing ? '팔로우 취소하기' : '팔로우하기',
+                            onTap: () => _handleCommentAuthorAction(
+                              _AuthorMenuAction.toggleFollow,
+                              comment: comment,
+                              socialGraph: socialGraph,
+                              authorKey: authorKey,
+                              isFollowing: currentIsFollowing,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -1425,6 +1449,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _AuthorMenuAction action, {
     required Comment comment,
     required MockSocialGraph socialGraph,
+    required GlobalKey authorKey,
     bool isFollowing = false,
   }) async {
     _closeAuthorMenu();
@@ -1433,6 +1458,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     switch (action) {
       case _AuthorMenuAction.viewProfile:
+        if (comment.authorUid.isEmpty || comment.authorUid == 'preview') {
+          _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+          return;
+        }
         _openMockProfile(
           context,
           uid: comment.authorUid,
@@ -1450,6 +1479,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         break;
     }
   }
+
 
   Future<void> _sharePost(Post post) async {
     final String source = post.text.trim();
@@ -1567,6 +1597,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (!mounted) {
         return;
       }
+      // setState를 호출하여 UI 업데이트
+      setState(() {});
       _showSnack(context, nowFollowing ? '$nickname 님을 팔로우했어요.' : '$nickname 님을 팔로우 취소했어요.');
     } catch (_) {
       if (!mounted) {
