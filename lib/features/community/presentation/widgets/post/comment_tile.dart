@@ -87,28 +87,45 @@ class CommentTile extends StatelessWidget {
                   : Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        IntrinsicWidth(
-                          child: Material(
-                            color: Colors.transparent,
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: onOpenProfile,
                             borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              onTap: onOpenProfile,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
-                                ),
-                                child: _buildCommentIdentityRow(
-                                  theme: theme,
-                                  comment: comment,
-                                  timestamp: timestamp,
-                                  scope: scope,
-                                  includeAvatar:
-                                      scope == LoungeScope.serial && !isReply,
-                                  showTimestamp: false, // 타임스탬프는 InkWell 밖에서 표시
-                                  isReply: isReply,
-                                ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _buildCommentTrackTag(theme, comment),
+                                  const Gap(8),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (comment.authorIsSupporter) ...[
+                                        Icon(
+                                          Icons.verified,
+                                          size: 16,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                        const Gap(6),
+                                      ],
+                                      Text(
+                                        maskNickname(comment.authorNickname.isNotEmpty
+                                            ? comment.authorNickname
+                                            : comment.authorUid),
+                                        style: theme.textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -343,5 +360,35 @@ Widget _buildCommentIdentityRow({
         ),
       ],
     ],
+  );
+}
+
+Widget _buildCommentTrackTag(ThemeData theme, Comment comment) {
+  final bool hasTrack = comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
+  final Color background = hasTrack
+      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+      : theme.colorScheme.surfaceContainerHighest;
+  final Color foreground = hasTrack
+      ? theme.colorScheme.primary
+      : theme.colorScheme.onSurfaceVariant;
+  final String trackLabel = serialLabel(
+    comment.authorTrack,
+    comment.authorSerialVisible,
+    includeEmoji: hasTrack,
+  );
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      trackLabel,
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
   );
 }
