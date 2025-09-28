@@ -84,59 +84,63 @@ class CommentTile extends StatelessWidget {
                         ),
                       ],
                     )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                  : Stack(
                       children: [
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          child: InkWell(
-                            onTap: onOpenProfile,
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _buildCommentTrackTag(theme, comment),
-                                  const Gap(8),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (comment.authorIsSupporter) ...[
-                                        Icon(
-                                          Icons.verified,
-                                          size: 16,
-                                          color: theme.colorScheme.primary,
+                            child: InkWell(
+                              onTap: onOpenProfile,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildCommentTrackTag(theme, comment),
+                                    const Gap(8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (comment.authorIsSupporter) ...[
+                                          Icon(
+                                            Icons.verified,
+                                            size: 16,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                          const Gap(6),
+                                        ],
+                                        Text(
+                                          maskNickname(comment.authorNickname.isNotEmpty
+                                              ? comment.authorNickname
+                                              : comment.authorUid),
+                                          style: theme.textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const Gap(6),
                                       ],
-                                      Text(
-                                        maskNickname(comment.authorNickname.isNotEmpty
-                                            ? comment.authorNickname
-                                            : comment.authorUid),
-                                        style: theme.textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Text(
-                            timestamp,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Text(
+                              timestamp,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ),
