@@ -181,22 +181,24 @@ class _PostCreatePageState extends State<PostCreatePage> {
                               ),
                             ),
                             Positioned(
-                              right: 4,
-                              top: 4,
+                              right: 2,
+                              top: 2,
                               child: Container(
+                                width: 18,
+                                height: 18,
                                 decoration: BoxDecoration(
-                                  color: Colors.black45,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  shape: BoxShape.circle,
                                 ),
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
-                                    minHeight: 28,
-                                    minWidth: 28,
+                                    minHeight: 18,
+                                    minWidth: 18,
                                   ),
                                   icon: const Icon(
                                     Icons.close,
-                                    size: 18,
+                                    size: 12,
                                     color: Colors.white,
                                   ),
                                   onPressed: () =>

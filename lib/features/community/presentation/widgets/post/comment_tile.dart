@@ -34,7 +34,7 @@ class CommentTile extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
-        widthFactor: isReply ? 0.92 : 0.98,
+        widthFactor: 1.0,
         child: Container(
           margin: EdgeInsets.zero,
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 2),

@@ -302,17 +302,19 @@ class _AttachmentPreview extends StatelessWidget {
           ),
         ),
         Positioned(
-          right: 4,
-          top: 4,
-          child: DecoratedBox(
+          right: 2,
+          top: 2,
+          child: Container(
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.black.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
             ),
             child: IconButton(
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
-              icon: const Icon(Icons.close, size: 16, color: Colors.white),
+              constraints: const BoxConstraints(minHeight: 18, minWidth: 18),
+              icon: const Icon(Icons.close, size: 12, color: Colors.white),
               onPressed: onRemove,
             ),
           ),

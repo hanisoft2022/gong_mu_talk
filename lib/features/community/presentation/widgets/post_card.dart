@@ -11,6 +11,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/utils/image_compression_util.dart';
+
 import '../../data/community_repository.dart';
 import '../../data/mock_social_graph.dart';
 import '../../domain/models/comment.dart';
@@ -65,6 +67,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   bool _isSubmittingComment = false;
   List<XFile> _selectedImages = [];
   bool _isUploadingImages = false;
+  double _uploadProgress = 0.0;
   final ImagePicker _imagePicker = ImagePicker();
 
   late final CommunityRepository _repository;
@@ -129,142 +132,155 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: UiHelpers.standardPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPostHeader(post, timestamp),
-            const Gap(14),
-            _buildPostContent(theme, post, showMoreButton),
-            const Gap(16),
-            _buildActionButtons(theme, post, trailingActions),
-            // Comment writing UI positioned directly below action buttons
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: !_showComments
-                  ? const SizedBox.shrink()
-                  : Builder(
-                      builder: (BuildContext context) {
-                        final Widget? composer = _buildCommentComposer(context);
-                        if (composer != null) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: composer,
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: UiHelpers.standardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPostHeader(post, timestamp),
+                const Gap(14),
+                _buildPostContent(theme, post, showMoreButton),
+                const Gap(16),
+                _buildActionButtons(theme, post, trailingActions),
+              ],
             ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: !_showComments
-                  ? const SizedBox.shrink()
-                  : AnimatedSize(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment.topCenter,
-                      child: Builder(
-                        builder: (BuildContext context) {
-                          final ThemeData theme = Theme.of(context);
-                          final List<Widget> sectionChildren = <Widget>[const Gap(12)];
+          ),
+          // Comment writing UI positioned directly below action buttons
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: !_showComments
+                ? const SizedBox.shrink()
+                : Builder(
+                    builder: (BuildContext context) {
+                      final Widget? composer = _buildCommentComposer(context);
+                      if (composer != null) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              composer,
+                              const Gap(16),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: !_showComments
+                ? const SizedBox.shrink()
+                : AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: Builder(
+                      builder: (BuildContext context) {
+                        final ThemeData theme = Theme.of(context);
+                        final List<Widget> sectionChildren = <Widget>[const Gap(12)];
 
-                          if (_isLoadingComments) {
-                            sectionChildren.add(const Center(child: CircularProgressIndicator()));
-                          } else if (_timelineComments.isEmpty) {
-                            sectionChildren.add(
-                              Text('아직 댓글이 없습니다. 첫 댓글을 남겨보세요!', style: theme.textTheme.bodyMedium),
-                            );
-                          } else {
-                            final Map<String, List<Comment>> replies = <String, List<Comment>>{};
-                            final List<Comment> roots = <Comment>[];
-                            final List<Comment> orphans = <Comment>[];
+                        if (_isLoadingComments) {
+                          sectionChildren.add(const Center(child: CircularProgressIndicator()));
+                        } else if (_timelineComments.isEmpty) {
+                          sectionChildren.add(
+                            Text('아직 댓글이 없습니다. 첫 댓글을 남겨보세요!', style: theme.textTheme.bodyMedium),
+                          );
+                        } else {
+                          final Map<String, List<Comment>> replies = <String, List<Comment>>{};
+                          final List<Comment> roots = <Comment>[];
+                          final List<Comment> orphans = <Comment>[];
 
-                            for (final Comment comment in _timelineComments) {
-                              final String? parentId = comment.parentCommentId;
-                              if (comment.isReply && parentId != null && parentId.isNotEmpty) {
-                                replies.putIfAbsent(parentId, () => <Comment>[]).add(comment);
-                              } else if (!comment.isReply) {
-                                roots.add(comment);
-                              } else {
-                                orphans.add(comment);
-                              }
+                          for (final Comment comment in _timelineComments) {
+                            final String? parentId = comment.parentCommentId;
+                            if (comment.isReply && parentId != null && parentId.isNotEmpty) {
+                              replies.putIfAbsent(parentId, () => <Comment>[]).add(comment);
+                            } else if (!comment.isReply) {
+                              roots.add(comment);
+                            } else {
+                              orphans.add(comment);
                             }
-
-                            if (orphans.isNotEmpty) {
-                              roots.addAll(orphans);
-                            }
-
-                            final List<Widget> threadedComments = roots
-                                .map((Comment comment) {
-                                  final List<Comment> children =
-                                      replies[comment.id] ?? const <Comment>[];
-                                  return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _CommentTile(
-                                        comment: comment,
-                                        highlight: _isFeatured(comment),
-                                        scope: widget.displayScope,
-                                        onToggleLike: _handleCommentLike,
-                                        onReply: _handleReplyTap,
-                                        onOpenProfile: () => _handleMemberTap(
-                                          uid: comment.authorUid,
-                                          nickname: comment.authorNickname,
-                                        ),
-                                      ),
-                                      if (children.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 24),
-                                          child: Column(
-                                            children: children
-                                                .map(
-                                                  (Comment reply) => _CommentTile(
-                                                    comment: reply,
-                                                    highlight: _isFeatured(reply),
-                                                    scope: widget.displayScope,
-                                                    isReply: true,
-                                                    onToggleLike: _handleCommentLike,
-                                                    onReply: _handleReplyTap,
-                                                    onOpenProfile: () => _handleMemberTap(
-                                                      uid: reply.authorUid,
-                                                      nickname: reply.authorNickname,
-                                                    ),
-                                                  ),
-                                                )
-                                                .toList(growable: false),
-                                          ),
-                                        ),
-                                    ],
-                                  );
-                                })
-                                .toList(growable: false);
-
-                            sectionChildren.add(
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: threadedComments,
-                              ),
-                            );
                           }
 
+                          if (orphans.isNotEmpty) {
+                            roots.addAll(orphans);
+                          }
 
-                          return Column(
+                          final List<Widget> threadedComments = roots
+                              .map((Comment comment) {
+                                final List<Comment> children =
+                                    replies[comment.id] ?? const <Comment>[];
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _CommentTile(
+                                      comment: comment,
+                                      highlight: _isFeatured(comment),
+                                      scope: widget.displayScope,
+                                      onToggleLike: _handleCommentLike,
+                                      onReply: _handleReplyTap,
+                                      onOpenProfile: () => _handleMemberTap(
+                                        uid: comment.authorUid,
+                                        nickname: comment.authorNickname,
+                                      ),
+                                    ),
+                                    if (children.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 24),
+                                        child: Column(
+                                          children: children
+                                              .map(
+                                                (Comment reply) => _CommentTile(
+                                                  comment: reply,
+                                                  highlight: _isFeatured(reply),
+                                                  scope: widget.displayScope,
+                                                  isReply: true,
+                                                  onToggleLike: _handleCommentLike,
+                                                  onReply: _handleReplyTap,
+                                                  onOpenProfile: () => _handleMemberTap(
+                                                    uid: reply.authorUid,
+                                                    nickname: reply.authorNickname,
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(growable: false),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              })
+                              .toList(growable: false);
+
+                          sectionChildren.add(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: threadedComments,
+                            ),
+                          );
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
                             key: const ValueKey<String>('comment-section'),
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: sectionChildren,
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
-            ),
-          ],
-        ),
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -428,20 +444,95 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Future<void> _pickImages() async {
     try {
-      final List<XFile> images = await _imagePicker.pickMultiImage(
+      // 댓글에는 단일 이미지만 허용
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 85,
       );
 
-      // 최대 4개 이미지까지만 허용
-      final List<XFile> limitedImages = images.take(4).toList();
+      if (image == null) return;
 
+      // 기존 이미지가 있다면 알림 표시
+      if (_selectedImages.isNotEmpty) {
+        if (mounted) {
+          final bool? replace = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('이미지 교체'),
+              content: const Text('댓글에는 이미지를 1장만 첨부할 수 있습니다. 기존 이미지를 교체하시겠습니까?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('취소'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('교체'),
+                ),
+              ],
+            ),
+          );
+
+          if (replace != true) return;
+        }
+      }
+
+      // 이미지 압축 처리
       setState(() {
-        _selectedImages = limitedImages;
+        _isUploadingImages = true;
       });
 
-      _handleCommentInputChanged(); // 제출 버튼 상태 업데이트
+      try {
+        final XFile? compressedImage = await ImageCompressionUtil.compressImage(
+          image,
+          ImageCompressionType.comment,
+        );
+
+        if (compressedImage != null) {
+          setState(() {
+            _selectedImages = [compressedImage];
+            _isUploadingImages = false;
+          });
+
+          _handleCommentInputChanged(); // 제출 버튼 상태 업데이트
+        } else {
+          throw const ImageCompressionException('이미지 압축에 실패했습니다.');
+        }
+      } on ImageCompressionException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(e.message),
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+        }
+        setState(() {
+          _isUploadingImages = false;
+          _uploadProgress = 0.0;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('이미지 처리 중 오류가 발생했습니다.'),
+                duration: Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+        }
+        setState(() {
+          _isUploadingImages = false;
+          _uploadProgress = 0.0;
+        });
+      }
     } catch (e) {
       if (mounted) {
         UiHelpers.showSnackBar(context, '이미지를 선택하는 중 오류가 발생했습니다');
@@ -461,6 +552,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     setState(() {
       _isUploadingImages = true;
+      _uploadProgress = 0.0;
     });
 
     try {
@@ -470,10 +562,23 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
       for (int i = 0; i < _selectedImages.length; i++) {
         final XFile image = _selectedImages[i];
-        final String fileName = 'comments/$postId/${userId}_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        final DateTime now = DateTime.now();
+        final String year = now.year.toString();
+        final String month = now.month.toString().padLeft(2, '0');
+        final String fileName = 'comments/$year/$month/$postId/${userId}_${now.millisecondsSinceEpoch}.jpg';
 
         final Reference ref = FirebaseStorage.instance.ref().child(fileName);
         final UploadTask uploadTask = ref.putFile(File(image.path));
+
+        // 업로드 진행률 리스너 추가
+        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          final double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          final double totalProgress = (i + progress) / _selectedImages.length;
+          setState(() {
+            _uploadProgress = totalProgress;
+          });
+        });
+
         final TaskSnapshot snapshot = await uploadTask;
         final String downloadUrl = await snapshot.ref.getDownloadURL();
 
@@ -489,14 +594,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     } finally {
       setState(() {
         _isUploadingImages = false;
+        _uploadProgress = 0.0;
       });
     }
   }
 
   Widget? _buildCommentComposer(BuildContext context) {
-    if (_isSynthetic(widget.post)) {
-      return null;
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -512,51 +615,47 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.image_outlined),
-              onPressed: _pickImages,
-              tooltip: '이미지 첨부',
-            ),
           ),
         ),
         if (_selectedImages.isNotEmpty) ...[
           const Gap(8),
           SizedBox(
-            height: 80,
+            height: 72,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _selectedImages.length,
               itemBuilder: (context, index) {
                 return Container(
                   margin: EdgeInsets.only(right: index < _selectedImages.length - 1 ? 8 : 0),
-                  width: 80,
-                  height: 80,
+                  width: 72,
+                  height: 72,
                   child: Stack(
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.file(
                           File(_selectedImages[index].path),
-                          width: 80,
-                          height: 80,
+                          width: 72,
+                          height: 72,
                           fit: BoxFit.cover,
                         ),
                       ),
                       Positioned(
-                        top: 4,
-                        right: 4,
+                        top: 2,
+                        right: 2,
                         child: GestureDetector(
                           onTap: () => _removeImage(index),
                           child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.close,
                               color: Colors.white,
-                              size: 16,
+                              size: 12,
                             ),
                           ),
                         ),
@@ -572,20 +671,51 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            if (_isUploadingImages)
-              const Row(
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.image_outlined),
+                  onPressed: _pickImages,
+                  tooltip: '이미지 첨부',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
+                  iconSize: 20,
+                ),
+                if (_isUploadingImages) ...[
+                  const Gap(8),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              value: _uploadProgress,
+                            ),
+                          ),
+                          const Gap(8),
+                          Text('업로드 중... ${(_uploadProgress * 100).toInt()}%'),
+                        ],
+                      ),
+                      const Gap(4),
+                      SizedBox(
+                        width: 120, // 고정 너비 설정
+                        child: LinearProgressIndicator(
+                          value: _uploadProgress,
+                          minHeight: 2,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Gap(8),
-                  Text('이미지 업로드 중...'),
                 ],
-              )
-            else
-              const SizedBox.shrink(),
+              ],
+            ),
             FilledButton(
               onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
               child: _isSubmittingComment
@@ -867,6 +997,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Future<void> _submitComment() async {
     final String text = _commentController.text.trim();
     if (!_hasCommentContent(text) || _isSubmittingComment) {
+      return;
+    }
+
+    // 더미 포스트에서 댓글 제출 시 안내 메시지 표시
+    if (_isSynthetic(widget.post)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('프리뷰 게시물에는 댓글을 작성할 수 없습니다.'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
       return;
     }
 

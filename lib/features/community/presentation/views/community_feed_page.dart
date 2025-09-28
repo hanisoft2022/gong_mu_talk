@@ -988,6 +988,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       _isModalOpen = true;
     });
 
+    final CommunityFeedState feedState = context.read<CommunityFeedCubit>().state;
+
     showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext bottomSheetContext) {
@@ -1004,7 +1006,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 ),
               ),
               const Divider(height: 1),
-              ...SearchScope.values.map((SearchScope scope) {
+              ...SearchScope.values
+                  .where((SearchScope scope) {
+                    // 전체 탭에서는 글 작성자 검색 옵션 제외
+                    if (feedState.scope == LoungeScope.all && scope == SearchScope.author) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((SearchScope scope) {
                 final bool isSelected = scope == searchState.scope;
                 return ListTile(
                   leading: isSelected

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../core/utils/image_compression_util.dart';
 // Removed unused import
 import '../../data/community_repository.dart';
 import '../../domain/models/board.dart';
@@ -160,6 +161,14 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   }
 
   Future<void> addAttachmentFromGallery() async {
+    // 최대 5개 이미지 제한
+    if (state.attachments.length >= 5) {
+      emit(state.copyWith(
+        errorMessage: '최대 5개의 이미지만 첨부할 수 있습니다.',
+      ));
+      return;
+    }
+
     final XFile? file = await _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 2048,
@@ -275,34 +284,64 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   }
 
   Future<void> _addAttachment(XFile file) async {
-    final Uint8List bytes = await file.readAsBytes();
-    int? width;
-    int? height;
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+
     try {
-      final Completer<ui.Image> completer = Completer<ui.Image>();
-      ui.decodeImageFromList(bytes, (ui.Image img) => completer.complete(img));
-      final ui.Image decoded = await completer.future;
-      width = decoded.width;
-      height = decoded.height;
-    } catch (_) {
-      width = null;
-      height = null;
+      // 이미지 압축 처리
+      final XFile? compressedFile = await ImageCompressionUtil.compressImage(
+        file,
+        ImageCompressionType.post,
+      );
+
+      if (compressedFile == null) {
+        throw const ImageCompressionException('이미지 압축에 실패했습니다.');
+      }
+
+      final Uint8List bytes = await compressedFile.readAsBytes();
+      int? width;
+      int? height;
+
+      try {
+        final Completer<ui.Image> completer = Completer<ui.Image>();
+        ui.decodeImageFromList(bytes, (ui.Image img) => completer.complete(img));
+        final ui.Image decoded = await completer.future;
+        width = decoded.width;
+        height = decoded.height;
+      } catch (_) {
+        width = null;
+        height = null;
+      }
+
+      final String contentType =
+          compressedFile.mimeType ?? _contentTypeFromExtension(compressedFile.name);
+      final PostMediaDraft draft = PostMediaDraft(
+        file: compressedFile,
+        bytes: bytes,
+        contentType: contentType,
+        width: width,
+        height: height,
+      );
+
+      final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
+        state.attachments,
+      )..add(draft);
+
+      emit(state.copyWith(
+        attachments: updated,
+        submissionSuccess: false,
+        isLoading: false,
+      ));
+    } on ImageCompressionException catch (e) {
+      emit(state.copyWith(
+        errorMessage: e.message,
+        isLoading: false,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        errorMessage: '이미지 처리 중 오류가 발생했습니다.',
+        isLoading: false,
+      ));
     }
-
-    final String contentType =
-        file.mimeType ?? _contentTypeFromExtension(file.name);
-    final PostMediaDraft draft = PostMediaDraft(
-      file: file,
-      bytes: bytes,
-      contentType: contentType,
-      width: width,
-      height: height,
-    );
-
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
-      state.attachments,
-    )..add(draft);
-    emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
   Future<void> _loadBoards() async {
