@@ -532,7 +532,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) {
-        UiHelpers.showSnackBar(context, '이미지를 선택하는 중 오류가 발생했습니다');
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('이미지를 선택하는 중 오류가 발생했습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       }
     }
   }
@@ -585,7 +592,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return imageUrls;
     } catch (e) {
       if (mounted) {
-        UiHelpers.showSnackBar(context, '이미지 업로드 중 오류가 발생했습니다');
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('이미지 업로드 중 오류가 발생했습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       }
       return [];
     } finally {
@@ -1222,8 +1236,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        IntrinsicWidth(child: identityButton),
-        const Spacer(),
+        Expanded(child: identityButton),
         timestampLabel,
       ],
     );

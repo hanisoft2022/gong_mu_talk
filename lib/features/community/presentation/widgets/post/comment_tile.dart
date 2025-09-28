@@ -106,6 +106,7 @@ class CommentTile extends StatelessWidget {
                                   scope: scope,
                                   includeAvatar:
                                       scope == LoungeScope.serial && !isReply,
+                                  showTimestamp: false, // 타임스탬프는 InkWell 밖에서 표시
                                   isReply: isReply,
                                 ),
                               ),
@@ -113,6 +114,15 @@ class CommentTile extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            timestamp,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
               const Gap(6),
