@@ -1177,7 +1177,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         tooltip: '작성자 옵션',
         position: PopupMenuPosition.under,
         padding: EdgeInsets.zero,
-        splashRadius: 24,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         itemBuilder: (BuildContext context) {
           return <PopupMenuEntry<_AuthorMenuAction>>[
@@ -1236,7 +1235,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: identityButton),
+        IntrinsicWidth(child: identityButton),
+        const Spacer(),
         timestampLabel,
       ],
     );
@@ -1551,7 +1551,7 @@ class _AuthorInfoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(right: 4, top: 4, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: _isSerialScope ? _buildSerialHeader(theme) : _buildPublicHeader(theme),
     );
   }
