@@ -41,6 +41,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
 
+  // 중복 좋아요 요청 방지를 위한 Set
+  final Set<String> _pendingLikeRequests = <String>{};
+
   static const int _pageSize = 20;
 
   String _cursorKey(LoungeScope scope, LoungeSort sort) =>
@@ -259,6 +262,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
+    // 이미 처리 중인 좋아요 요청인지 확인
+    if (_pendingLikeRequests.contains(post.id)) {
+      return;
+    }
+
+    // 요청 시작 표시
+    _pendingLikeRequests.add(post.id);
+
     final List<Post> previousPosts = List<Post>.from(state.posts);
     final Set<String> previousLiked = Set<String>.from(state.likedPostIds);
     final bool willLike = !previousLiked.contains(post.id);
@@ -285,14 +296,18 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     try {
       await _repository.togglePostLike(postId: post.id, uid: uid);
-    } catch (_) {
+    } catch (e) {
+      // 실패 시 이전 상태로 복원하고 사용자에게 알림
       emit(
         state.copyWith(
           posts: previousPosts,
           likedPostIds: previousLiked,
-          errorMessage: '좋아요 처리 중 오류가 발생했습니다.',
+          errorMessage: '좋아요 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.',
         ),
       );
+    } finally {
+      // 요청 완료 후 제거
+      _pendingLikeRequests.remove(post.id);
     }
   }
 

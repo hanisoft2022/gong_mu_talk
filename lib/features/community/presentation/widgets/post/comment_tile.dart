@@ -46,23 +46,29 @@ class CommentTile extends StatelessWidget {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        InkWell(
-                          onTap: onOpenProfile,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 0,
-                              vertical: 2,
-                            ),
-                            child: _buildCommentIdentityRow(
-                              theme: theme,
-                              comment: comment,
-                              timestamp: timestamp,
-                              scope: scope,
-                              includeAvatar:
-                                  scope == LoungeScope.serial && !isReply,
-                              showTimestamp: false,
-                              isReply: isReply,
+                        IntrinsicWidth(
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: onOpenProfile,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                child: _buildCommentIdentityRow(
+                                  theme: theme,
+                                  comment: comment,
+                                  timestamp: timestamp,
+                                  scope: scope,
+                                  includeAvatar:
+                                      scope == LoungeScope.serial && !isReply,
+                                  showTimestamp: false,
+                                  isReply: isReply,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -78,24 +84,36 @@ class CommentTile extends StatelessWidget {
                         ),
                       ],
                     )
-                  : InkWell(
-                      onTap: onOpenProfile,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 0,
-                          vertical: 4,
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        IntrinsicWidth(
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: onOpenProfile,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 4,
+                                ),
+                                child: _buildCommentIdentityRow(
+                                  theme: theme,
+                                  comment: comment,
+                                  timestamp: timestamp,
+                                  scope: scope,
+                                  includeAvatar:
+                                      scope == LoungeScope.serial && !isReply,
+                                  isReply: isReply,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: _buildCommentIdentityRow(
-                          theme: theme,
-                          comment: comment,
-                          timestamp: timestamp,
-                          scope: scope,
-                          includeAvatar:
-                              scope == LoungeScope.serial && !isReply,
-                          isReply: isReply,
-                        ),
-                      ),
+                        const Spacer(),
+                      ],
                     ),
               const Gap(6),
               Align(

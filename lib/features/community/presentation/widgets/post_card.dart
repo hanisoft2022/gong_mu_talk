@@ -350,13 +350,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           onPressed: _handleLikeTap,
         ),
         const Gap(16),
-        IconButton(
-          icon: const Icon(Icons.mode_comment_outlined, size: 16),
+        _PostActionButton(
+          icon: Icons.mode_comment_outlined,
+          label: '${post.commentCount}',
           onPressed: _handleCommentButton,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
-          iconSize: 16,
-          color: theme.colorScheme.onSurfaceVariant,
         ),
         const Gap(16),
         _PostActionButton(
@@ -614,7 +611,34 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             hintText: '댓글을 입력하세요...',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.fromLTRB(12, 10, 60, 10), // 우측 여백 확보
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.image_outlined, size: 20),
+                  onPressed: _pickImages,
+                  tooltip: '이미지 첨부',
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  icon: _isSubmittingComment
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send, size: 20),
+                  onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
+                  tooltip: '댓글 등록',
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
           ),
         ),
         if (_selectedImages.isNotEmpty) ...[
@@ -667,67 +691,34 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             ),
           ),
         ],
-        const Gap(8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.image_outlined),
-                  onPressed: _pickImages,
-                  tooltip: '이미지 첨부',
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
-                  iconSize: 20,
+        if (_isUploadingImages) ...[
+          const Gap(8),
+          Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: _uploadProgress,
                 ),
-                if (_isUploadingImages) ...[
-                  const Gap(8),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              value: _uploadProgress,
-                            ),
-                          ),
-                          const Gap(8),
-                          Text('업로드 중... ${(_uploadProgress * 100).toInt()}%'),
-                        ],
-                      ),
-                      const Gap(4),
-                      SizedBox(
-                        width: 120, // 고정 너비 설정
-                        child: LinearProgressIndicator(
-                          value: _uploadProgress,
-                          minHeight: 2,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
+              ),
+              const Gap(8),
+              Text('업로드 중... ${(_uploadProgress * 100).toInt()}%'),
+              const Gap(12),
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: _uploadProgress,
+                  minHeight: 2,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
                   ),
-                ],
-              ],
-            ),
-            FilledButton(
-              onPressed: _canSubmitComment && !_isSubmittingComment ? _submitComment : null,
-              child: _isSubmittingComment
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('등록'),
-            ),
-          ],
-        ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -1165,61 +1156,67 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11);
 
     final Widget timestampLabel = Text(timestamp, style: timestampStyle);
-    final Widget identityButton = PopupMenuButton<_AuthorMenuAction>(
-      tooltip: '작성자 옵션',
-      position: PopupMenuPosition.under,
-      padding: EdgeInsets.zero,
-      itemBuilder: (BuildContext context) {
-        return <PopupMenuEntry<_AuthorMenuAction>>[
-          const PopupMenuItem<_AuthorMenuAction>(
-            value: _AuthorMenuAction.viewProfile,
-            child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
-          ),
-          if (canFollow)
-            PopupMenuItem<_AuthorMenuAction>(
-              value: _AuthorMenuAction.toggleFollow,
-              child: Row(
-                children: [
-                  Icon(
-                    isFollowing
-                        ? Icons.person_remove_alt_1_outlined
-                        : Icons.person_add_alt_1_outlined,
-                    size: 18,
-                  ),
-                  const Gap(8),
-                  Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
-                ],
-              ),
+    final Widget identityButton = Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: PopupMenuButton<_AuthorMenuAction>(
+        tooltip: '작성자 옵션',
+        position: PopupMenuPosition.under,
+        padding: EdgeInsets.zero,
+        splashRadius: 24,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        itemBuilder: (BuildContext context) {
+          return <PopupMenuEntry<_AuthorMenuAction>>[
+            const PopupMenuItem<_AuthorMenuAction>(
+              value: _AuthorMenuAction.viewProfile,
+              child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
             ),
-        ];
-      },
-      onSelected: (action) async {
-        switch (action) {
-          case _AuthorMenuAction.viewProfile:
-            if (post.authorUid.isEmpty || post.authorUid == 'preview') {
-              if (mounted) {
-                _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+            if (canFollow)
+              PopupMenuItem<_AuthorMenuAction>(
+                value: _AuthorMenuAction.toggleFollow,
+                child: Row(
+                  children: [
+                    Icon(
+                      isFollowing
+                          ? Icons.person_remove_alt_1_outlined
+                          : Icons.person_add_alt_1_outlined,
+                      size: 18,
+                    ),
+                    const Gap(8),
+                    Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
+                  ],
+                ),
+              ),
+          ];
+        },
+        onSelected: (action) async {
+          switch (action) {
+            case _AuthorMenuAction.viewProfile:
+              if (post.authorUid.isEmpty || post.authorUid == 'preview') {
+                if (mounted) {
+                  _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+                }
+                return;
               }
-              return;
-            }
-            _openMockProfile(
-              context,
-              uid: post.authorUid,
-              nickname: post.authorNickname,
-              socialGraph: socialGraph,
-            );
-            break;
-          case _AuthorMenuAction.toggleFollow:
-            await _toggleFollow(
-              socialGraph: socialGraph,
-              targetUid: post.authorUid,
-              nickname: post.authorNickname,
-              isFollowing: isFollowing,
-            );
-            break;
-        }
-      },
-      child: _AuthorInfoHeader(post: post, scope: scope),
+              _openMockProfile(
+                context,
+                uid: post.authorUid,
+                nickname: post.authorNickname,
+                socialGraph: socialGraph,
+              );
+              break;
+            case _AuthorMenuAction.toggleFollow:
+              await _toggleFollow(
+                socialGraph: socialGraph,
+                targetUid: post.authorUid,
+                nickname: post.authorNickname,
+                isFollowing: isFollowing,
+              );
+              break;
+          }
+        },
+        child: _AuthorInfoHeader(post: post, scope: scope),
+      ),
     );
 
     return Row(
@@ -1541,7 +1538,7 @@ class _AuthorInfoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+      padding: const EdgeInsets.only(right: 4, top: 4, bottom: 4),
       child: _isSerialScope ? _buildSerialHeader(theme) : _buildPublicHeader(theme),
     );
   }
