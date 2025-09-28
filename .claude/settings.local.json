@@ -30,7 +30,8 @@
       "Bash(for feature in auth calculator community life matching monetization notifications payments pension profile salary_insights transfer_posting year_end_tax)",
       "Bash([ -d \"lib/features/$feature/data\" ])",
       "Bash([ -d \"lib/features/$feature/domain\" ])",
-      "Bash([ -d \"lib/features/$feature/presentation\" ])"
+      "Bash([ -d \"lib/features/$feature/presentation\" ])",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

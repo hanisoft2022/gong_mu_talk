@@ -1378,13 +1378,6 @@ class _EmptyStateView extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
-              const Gap(16),
-              FilledButton.icon(
-                onPressed: () =>
-                    context.read<CommunityFeedCubit>().seedDummyChirps(),
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('더미 데이터 채우기'),
-              ),
             ],
           ),
         ],

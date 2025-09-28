@@ -8,8 +8,6 @@ import '../core/theme/theme_cubit.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/community/data/community_repository.dart';
-import '../features/community/data/mock_social_graph.dart';
-import '../features/life/data/mock_life_repository.dart';
 import '../features/monetization/presentation/cubit/monetization_cubit.dart';
 
 class GongMuTalkApp extends StatelessWidget {
@@ -23,12 +21,6 @@ class GongMuTalkApp extends StatelessWidget {
       providers: [
         RepositoryProvider<CommunityRepository>.value(
           value: getIt<CommunityRepository>(),
-        ),
-        RepositoryProvider<MockSocialGraph>.value(
-          value: getIt<MockSocialGraph>(),
-        ),
-        RepositoryProvider<MockLifeRepository>.value(
-          value: getIt<MockLifeRepository>(),
         ),
       ],
       child: MultiBlocProvider(

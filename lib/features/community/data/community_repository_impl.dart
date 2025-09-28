@@ -316,12 +316,10 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required String prefix,
     int limit = 10,
   }) async {
-    return AppResultHelpers.tryCallAsync(() async {
-      return _repository.autocompleteSearchTokens(
-        prefix: prefix,
-        limit: limit,
-      );
-    });
+    return _repository.autocompleteSearchTokens(
+      prefix: prefix,
+      limit: limit,
+    );
   }
 
   @override

@@ -241,24 +241,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                         padding: const EdgeInsets.only(left: 24),
                                         child: Column(
                                           children: children
-                                              .map(
-                                                (Comment reply) {
-                                                  final GlobalKey replyAuthorKey = GlobalKey();
-                                                  return CommentTile(
+                                              .map((Comment reply) {
+                                                final GlobalKey replyAuthorKey = GlobalKey();
+                                                return CommentTile(
+                                                  comment: reply,
+                                                  highlight: _isFeatured(reply),
+                                                  scope: widget.displayScope,
+                                                  isReply: true,
+                                                  onToggleLike: _handleCommentLike,
+                                                  onReply: _handleReplyTap,
+                                                  authorKey: replyAuthorKey,
+                                                  onOpenProfile: () => _showCommentAuthorMenu(
                                                     comment: reply,
-                                                    highlight: _isFeatured(reply),
-                                                    scope: widget.displayScope,
-                                                    isReply: true,
-                                                    onToggleLike: _handleCommentLike,
-                                                    onReply: _handleReplyTap,
                                                     authorKey: replyAuthorKey,
-                                                    onOpenProfile: () => _showCommentAuthorMenu(
-                                                      comment: reply,
-                                                      authorKey: replyAuthorKey,
-                                                    ),
-                                                  );
-                                                },
-                                              )
+                                                  ),
+                                                );
+                                              })
                                               .toList(growable: false),
                                         ),
                                       ),
@@ -1122,20 +1120,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleMemberTap({required String uid, required String nickname}) async {
-    if (uid.isEmpty) {
-      return;
-    }
-
-    if (uid == 'preview') {
-      if (mounted) {
-        _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
-      }
-      return;
-    }
-
-    await _showMemberActions(uid: uid, nickname: nickname);
-  }
 
   Widget _buildAuthorMenu({
     required Post post,
@@ -1291,9 +1275,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           children: [
             Icon(icon, size: 18),
             const Gap(8),
-            Expanded(
-              child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
-            ),
+            Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
           ],
         ),
       ),
@@ -1339,22 +1321,18 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-
-  void _showCommentAuthorMenu({
-    required Comment comment,
-    required GlobalKey authorKey,
-  }) {
+  void _showCommentAuthorMenu({required Comment comment, required GlobalKey authorKey}) {
     final MockSocialGraph socialGraph = _socialGraph;
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == comment.authorUid;
     // Allow follow for preview users in comment menu (same as post author behavior)
-    final bool canFollow = authState.isLoggedIn &&
+    final bool canFollow =
+        authState.isLoggedIn &&
         currentUid != null &&
         currentUid.isNotEmpty &&
         !isSelf &&
         comment.authorUid.isNotEmpty;
-    final bool isFollowing = canFollow && socialGraph.isFollowing(comment.authorUid);
 
     // 이미 메뉴가 열려있다면 닫기
     if (_menuOverlayEntry != null) {
@@ -1480,7 +1458,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-
   Future<void> _sharePost(Post post) async {
     final String source = post.text.trim();
     final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
@@ -1510,67 +1487,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _showMemberActions({required String uid, required String nickname}) async {
-    if (!mounted) {
-      return;
-    }
-
-    final BuildContext hostContext = context;
-    final MockSocialGraph socialGraph = _socialGraph;
-    final AuthState authState = _authCubit.state;
-    final String? currentUid = authState.userId;
-    final bool isSelf = currentUid != null && currentUid == uid;
-    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, uid);
-
-    if (!mounted) {
-      return;
-    }
-
-    return showModalBottomSheet<void>(
-      context: hostContext,
-      useRootNavigator: true,
-      builder: (BuildContext sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: const Text('프로필 보기'),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _openMockProfile(
-                    hostContext,
-                    uid: uid,
-                    nickname: nickname,
-                    socialGraph: socialGraph,
-                  );
-                },
-              ),
-              if (canFollow)
-                ListTile(
-                  leading: Icon(
-                    socialGraph.isFollowing(uid)
-                        ? Icons.person_remove_alt_1_outlined
-                        : Icons.person_add_alt_1_outlined,
-                  ),
-                  title: Text(socialGraph.isFollowing(uid) ? '팔로우 취소하기' : '팔로우하기'),
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _toggleFollow(
-                      socialGraph: socialGraph,
-                      targetUid: uid,
-                      nickname: nickname,
-                      isFollowing: socialGraph.isFollowing(uid),
-                    );
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Future<void> _toggleFollow({
     required MockSocialGraph socialGraph,
@@ -1666,7 +1582,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return text.isNotEmpty || _selectedImages.isNotEmpty;
   }
 }
-
 
 class _AuthorInfoHeader extends StatelessWidget {
   const _AuthorInfoHeader({required this.post, required this.scope});

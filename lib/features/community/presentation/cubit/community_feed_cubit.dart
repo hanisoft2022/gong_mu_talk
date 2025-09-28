@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -40,9 +41,6 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   final Map<String, QueryDocumentSnapshotJson?> _cursors =
       <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
-
-  // 중복 좋아요 요청 방지를 위한 Set
-  final Set<String> _pendingLikeRequests = <String>{};
 
   static const int _pageSize = 20;
 
@@ -263,12 +261,10 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
 
     // 이미 처리 중인 좋아요 요청인지 확인
-    if (_pendingLikeRequests.contains(post.id)) {
+    if (state.pendingLikePostIds.contains(post.id)) {
+      debugPrint('⚠️  이미 처리 중인 좋아요 요청 - PostId: ${post.id}');
       return;
     }
-
-    // 요청 시작 표시
-    _pendingLikeRequests.add(post.id);
 
     final List<Post> previousPosts = List<Post>.from(state.posts);
     final Set<String> previousLiked = Set<String>.from(state.likedPostIds);
@@ -292,23 +288,71 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       optimisticLiked.remove(post.id);
     }
 
-    emit(state.copyWith(posts: optimisticPosts, likedPostIds: optimisticLiked));
+    // 좋아요 처리 시작을 UI에 알림
+    final Set<String> pendingLikes = Set<String>.from(state.pendingLikePostIds)..add(post.id);
+    emit(state.copyWith(
+      posts: optimisticPosts,
+      likedPostIds: optimisticLiked,
+      pendingLikePostIds: pendingLikes,
+    ));
 
-    try {
-      await _repository.togglePostLike(postId: post.id, uid: uid);
-    } catch (e) {
+    bool success = false;
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    // 재시도 로직 (최대 3회)
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await _repository.togglePostLike(postId: post.id, uid: uid);
+        success = true;
+        break; // 성공 시 루프 종료
+      } catch (e, stackTrace) {
+        lastError = e;
+        lastStackTrace = stackTrace;
+
+        final String errorType = _classifyError(e);
+
+        // 재시도 가능한 에러인지 확인
+        final bool shouldRetry = _shouldRetryError(errorType) && attempt < 3;
+
+        debugPrint('❌ 좋아요 처리 실패 (시도 $attempt/3) - PostId: ${post.id}, UserId: $uid');
+        debugPrint('   에러 타입: $errorType');
+        debugPrint('   에러 내용: $e');
+
+        if (shouldRetry) {
+          debugPrint('   🔄 ${_getRetryDelay(attempt)}ms 후 재시도...');
+          await Future.delayed(Duration(milliseconds: _getRetryDelay(attempt)));
+        } else {
+          debugPrint('   ❌ 재시도 불가능한 에러이거나 최대 시도 횟수 도달');
+          break;
+        }
+      }
+    }
+
+    // pending 상태에서 제거
+    final Set<String> finalPendingLikes = Set<String>.from(state.pendingLikePostIds)..remove(post.id);
+
+    if (!success && lastError != null) {
+      // 모든 재시도가 실패한 경우
+      final String userMessage = _getUserFriendlyErrorMessage(lastError);
+
+      debugPrint('   스택 트레이스: $lastStackTrace');
+
       // 실패 시 이전 상태로 복원하고 사용자에게 알림
       emit(
         state.copyWith(
           posts: previousPosts,
           likedPostIds: previousLiked,
-          errorMessage: '좋아요 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.',
+          pendingLikePostIds: finalPendingLikes,
+          errorMessage: userMessage,
         ),
       );
-    } finally {
-      // 요청 완료 후 제거
-      _pendingLikeRequests.remove(post.id);
+    } else if (success) {
+      debugPrint('✅ 좋아요 처리 성공 - PostId: ${post.id}, UserId: $uid');
+      // 성공 시 pending 상태만 업데이트 (이미 optimistic update 완료)
+      emit(state.copyWith(pendingLikePostIds: finalPendingLikes));
     }
+
   }
 
   Future<void> toggleBookmark(Post post) async {
@@ -346,25 +390,6 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     unawaited(_repository.incrementViewCount(postId));
   }
 
-  Future<void> seedDummyChirps() async {
-    final AuthState auth = _authCubit.state;
-    final String? uid = auth.userId;
-    if (uid == null) {
-      return;
-    }
-    try {
-      await _repository.seedSamplePosts(
-        uid: uid,
-        nickname: auth.nickname,
-        track: auth.careerTrack,
-        serial: auth.serial,
-        count: 16,
-      );
-      await refresh();
-    } catch (_) {
-      emit(state.copyWith(errorMessage: '더미 데이터를 추가하지 못했습니다.'));
-    }
-  }
 
   @override
   Future<void> close() async {
@@ -420,5 +445,75 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       serial: scope == LoungeScope.serial ? serial : null,
       currentUid: uid,
     );
+  }
+
+  /// 에러 타입을 분류하여 문자열로 반환
+  String _classifyError(Object error) {
+    final String errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('connection') ||
+        errorString.contains('timeout')) {
+      return 'NETWORK_ERROR';
+    }
+
+    if (errorString.contains('permission') ||
+        errorString.contains('unauthorized') ||
+        errorString.contains('auth') ||
+        errorString.contains('forbidden')) {
+      return 'PERMISSION_ERROR';
+    }
+
+    if (errorString.contains('not found') ||
+        errorString.contains('게시글을 찾을 수 없습니다')) {
+      return 'POST_NOT_FOUND';
+    }
+
+    if (errorString.contains('firestore') ||
+        errorString.contains('database') ||
+        errorString.contains('transaction')) {
+      return 'DATABASE_ERROR';
+    }
+
+    return 'UNKNOWN_ERROR';
+  }
+
+  /// 사용자에게 친화적인 에러 메시지 생성
+  String _getUserFriendlyErrorMessage(Object error) {
+    final String errorType = _classifyError(error);
+
+    switch (errorType) {
+      case 'NETWORK_ERROR':
+        return '네트워크 연결을 확인한 후 다시 시도해주세요.';
+      case 'PERMISSION_ERROR':
+        return '권한이 없습니다. 로그인 상태를 확인해주세요.';
+      case 'POST_NOT_FOUND':
+        return '게시글을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.';
+      case 'DATABASE_ERROR':
+        return '서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.';
+      default:
+        return '좋아요 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
+    }
+  }
+
+  /// 에러 타입에 따라 재시도 가능 여부 판단
+  bool _shouldRetryError(String errorType) {
+    switch (errorType) {
+      case 'NETWORK_ERROR':
+      case 'DATABASE_ERROR':
+        return true; // 네트워크나 데이터베이스 오류는 재시도 가능
+      case 'PERMISSION_ERROR':
+      case 'POST_NOT_FOUND':
+        return false; // 권한이나 데이터 누락 오류는 재시도 불가
+      default:
+        return false; // 알 수 없는 에러는 재시도하지 않음
+    }
+  }
+
+  /// 재시도 딜레이 계산 (Exponential backoff)
+  int _getRetryDelay(int attempt) {
+    // 1초, 2초, 4초 순으로 증가
+    return (1000 * (1 << (attempt - 1))).clamp(1000, 4000);
   }
 }

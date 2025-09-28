@@ -19,8 +19,7 @@ class _AuthContentState extends State<AuthContent> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _passwordConfirmController =
-      TextEditingController();
+  final TextEditingController _passwordConfirmController = TextEditingController();
 
   bool _isSignUpMode = false;
   bool _passwordVisible = false;
@@ -39,8 +38,7 @@ class _AuthContentState extends State<AuthContent> {
     final ThemeData theme = Theme.of(context);
 
     return BlocConsumer<AuthCubit, AuthState>(
-      listenWhen: (previous, current) =>
-          previous.isLoggedIn != current.isLoggedIn,
+      listenWhen: (previous, current) => previous.isLoggedIn != current.isLoggedIn,
       listener: (context, state) {
         if (state.isLoggedIn) {
           widget.onAuthenticated?.call(context, state);
@@ -51,12 +49,9 @@ class _AuthContentState extends State<AuthContent> {
         final bool isSignUp = _isSignUpMode;
         final bool isGoogleFlow = isSignUp && _signUpFlow == _SignUpFlow.google;
         final bool showEmailFields = !isGoogleFlow;
-        final bool showPasswordConfirmation =
-            isSignUp && _signUpFlow == _SignUpFlow.email;
+        final bool showPasswordConfirmation = isSignUp && _signUpFlow == _SignUpFlow.email;
         final String actionLabel = isSignUp ? '회원가입' : '로그인';
-        final String toggleLabel = isSignUp
-            ? '이미 계정이 있으신가요? 로그인'
-            : '처음이신가요? 회원가입';
+        final String toggleLabel = isSignUp ? '이미 계정이 있으신가요? 로그인' : '처음이신가요? 회원가입';
 
         return Form(
           key: _formKey,
@@ -66,20 +61,10 @@ class _AuthContentState extends State<AuthContent> {
             children: [
               Text(
                 actionLabel,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Gap(8),
-              Text(
-                '공직자 메일 또는 자주 사용하는 이메일로 '
-                '${_isSignUpMode ? '새 계정을 만들어보세요.' : '로그인하세요.'}',
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Gap(16),
               if (isSignUp) ...[
-                Text('가입 방법 선택', style: theme.textTheme.titleMedium),
-                const Gap(8),
                 SegmentedButton<_SignUpFlow>(
                   segments: const [
                     ButtonSegment<_SignUpFlow>(
@@ -103,8 +88,7 @@ class _AuthContentState extends State<AuthContent> {
                     });
                   },
                 ),
-                const Gap(12),
-                _SignUpGuidance(theme: theme),
+
                 const Gap(12),
               ],
               if (showEmailFields) ...[
@@ -113,10 +97,7 @@ class _AuthContentState extends State<AuthContent> {
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: '이메일',
-                    hintText: 'example@korea.kr',
-                  ),
+                  decoration: const InputDecoration(labelText: '이메일', hintText: 'example@korea.kr'),
                   validator: _validateEmail,
                 ),
                 const Gap(16),
@@ -127,9 +108,7 @@ class _AuthContentState extends State<AuthContent> {
                   obscureText: !_passwordVisible,
                   decoration: InputDecoration(
                     labelText: '비밀번호',
-                    helperText: isSignUp
-                        ? '8자 이상, 대·소문자·숫자·특수문자를 포함해주세요.'
-                        : null,
+                    helperText: isSignUp ? '8자 이상, 대·소문자·숫자·특수문자를 포함해주세요.' : null,
                     suffixIcon: IconButton(
                       tooltip: _passwordVisible ? '비밀번호 숨기기' : '비밀번호 보기',
                       onPressed: () => setState(() {
@@ -174,9 +153,7 @@ class _AuthContentState extends State<AuthContent> {
               if (state.authError != null)
                 Text(
                   state.authError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                 ),
               const Gap(20),
               if (showEmailFields) ...[
@@ -328,61 +305,5 @@ class _AuthContentState extends State<AuthContent> {
 
     FocusScope.of(context).unfocus();
     authCubit.signInWithGoogle();
-  }
-}
-
-class _SignUpGuidance extends StatelessWidget {
-  const _SignUpGuidance({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _GuidelineRow(
-              icon: Icons.verified_user_outlined,
-              message:
-                  '공직자 메일(@korea.kr 등)로 가입하면 추후 추가 인증 없이 바로 서비스를 이용할 수 있습니다.',
-            ),
-            SizedBox(height: 12),
-            _GuidelineRow(
-              icon: Icons.badge_outlined,
-              message:
-                  '개인 이메일 또는 Google 계정으로 가입할 경우 커뮤니티·매칭 등 확장 기능 사용 전 공직자 메일 인증이 필요합니다.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuidelineRow extends StatelessWidget {
-  const _GuidelineRow({required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(message, style: Theme.of(context).textTheme.bodySmall),
-        ),
-      ],
-    );
   }
 }
