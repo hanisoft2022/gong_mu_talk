@@ -1181,10 +1181,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }) async {
     final RenderBox button = context.findRenderObject()! as RenderBox;
     final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final Offset buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size buttonSize = button.size;
+
     final RelativeRect position = RelativeRect.fromRect(
       Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+        buttonPosition + Offset(0, buttonSize.height + 4), // 버튼 아래쪽에 4px 간격으로 위치
+        buttonPosition + Offset(buttonSize.width, buttonSize.height + 4),
       ),
       Offset.zero & overlay.size,
     );
