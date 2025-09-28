@@ -220,6 +220,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                               .map((Comment comment) {
                                 final List<Comment> children =
                                     replies[comment.id] ?? const <Comment>[];
+                                final GlobalKey commentAuthorKey = GlobalKey();
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -229,9 +230,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                       scope: widget.displayScope,
                                       onToggleLike: _handleCommentLike,
                                       onReply: _handleReplyTap,
-                                      onOpenProfile: () => _handleMemberTap(
-                                        uid: comment.authorUid,
-                                        nickname: comment.authorNickname,
+                                      authorKey: commentAuthorKey,
+                                      onOpenProfile: () => _showCommentAuthorMenu(
+                                        comment: comment,
+                                        authorKey: commentAuthorKey,
                                       ),
                                     ),
                                     if (children.isNotEmpty)
@@ -240,18 +242,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                         child: Column(
                                           children: children
                                               .map(
-                                                (Comment reply) => CommentTile(
-                                                  comment: reply,
-                                                  highlight: _isFeatured(reply),
-                                                  scope: widget.displayScope,
-                                                  isReply: true,
-                                                  onToggleLike: _handleCommentLike,
-                                                  onReply: _handleReplyTap,
-                                                  onOpenProfile: () => _handleMemberTap(
-                                                    uid: reply.authorUid,
-                                                    nickname: reply.authorNickname,
-                                                  ),
-                                                ),
+                                                (Comment reply) {
+                                                  final GlobalKey replyAuthorKey = GlobalKey();
+                                                  return CommentTile(
+                                                    comment: reply,
+                                                    highlight: _isFeatured(reply),
+                                                    scope: widget.displayScope,
+                                                    isReply: true,
+                                                    onToggleLike: _handleCommentLike,
+                                                    onReply: _handleReplyTap,
+                                                    authorKey: replyAuthorKey,
+                                                    onOpenProfile: () => _showCommentAuthorMenu(
+                                                      comment: reply,
+                                                      authorKey: replyAuthorKey,
+                                                    ),
+                                                  );
+                                                },
                                               )
                                               .toList(growable: false),
                                         ),
@@ -1324,6 +1330,126 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
+  void _showCommentAuthorMenu({
+    required Comment comment,
+    required GlobalKey authorKey,
+  }) {
+    final MockSocialGraph socialGraph = _socialGraph;
+    final AuthState authState = _authCubit.state;
+    final String? currentUid = authState.userId;
+    final bool isSelf = currentUid != null && currentUid == comment.authorUid;
+    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, comment.authorUid);
+    final bool isFollowing = canFollow && socialGraph.isFollowing(comment.authorUid);
+
+    // 이미 메뉴가 열려있다면 닫기
+    if (_menuOverlayEntry != null) {
+      _closeAuthorMenu();
+      return;
+    }
+
+    final RenderBox? renderBox = authorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final Offset buttonPosition = renderBox.localToGlobal(Offset.zero);
+    final Size buttonSize = renderBox.size;
+
+    // 정확한 위치 계산: 버튼 바로 아래
+    final double menuLeft = buttonPosition.dx;
+    final double menuTop = buttonPosition.dy + buttonSize.height + 4;
+
+    _menuOverlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // 외부 클릭 감지를 위한 투명한 전체 화면 커버
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeAuthorMenu,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          // 실제 메뉴
+          Positioned(
+            left: menuLeft,
+            top: menuTop,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              shadowColor: Colors.black26,
+              child: Container(
+                width: 140,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildMenuOption(
+                      icon: Icons.person_outline,
+                      text: '프로필 보기',
+                      onTap: () => _handleCommentAuthorAction(
+                        _AuthorMenuAction.viewProfile,
+                        comment: comment,
+                        socialGraph: socialGraph,
+                      ),
+                    ),
+                    if (canFollow)
+                      _buildMenuOption(
+                        icon: isFollowing
+                            ? Icons.person_remove_alt_1_outlined
+                            : Icons.person_add_alt_1_outlined,
+                        text: isFollowing ? '팔로우 취소하기' : '팔로우하기',
+                        onTap: () => _handleCommentAuthorAction(
+                          _AuthorMenuAction.toggleFollow,
+                          comment: comment,
+                          socialGraph: socialGraph,
+                          isFollowing: isFollowing,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Overlay.of(context).insert(_menuOverlayEntry!);
+  }
+
+  Future<void> _handleCommentAuthorAction(
+    _AuthorMenuAction action, {
+    required Comment comment,
+    required MockSocialGraph socialGraph,
+    bool isFollowing = false,
+  }) async {
+    _closeAuthorMenu();
+
+    if (!mounted) return;
+
+    switch (action) {
+      case _AuthorMenuAction.viewProfile:
+        _openMockProfile(
+          context,
+          uid: comment.authorUid,
+          nickname: comment.authorNickname,
+          socialGraph: socialGraph,
+        );
+        break;
+      case _AuthorMenuAction.toggleFollow:
+        await _toggleFollow(
+          socialGraph: socialGraph,
+          targetUid: comment.authorUid,
+          nickname: comment.authorNickname,
+          isFollowing: isFollowing,
+        );
+        break;
+    }
+  }
 
   Future<void> _sharePost(Post post) async {
     final String source = post.text.trim();

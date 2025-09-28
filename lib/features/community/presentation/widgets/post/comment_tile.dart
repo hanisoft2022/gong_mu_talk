@@ -16,6 +16,7 @@ class CommentTile extends StatelessWidget {
     this.onReply,
     this.isReply = false,
     required this.onOpenProfile,
+    this.authorKey,
   });
 
   final Comment comment;
@@ -25,6 +26,7 @@ class CommentTile extends StatelessWidget {
   final ValueChanged<Comment>? onReply;
   final bool isReply;
   final VoidCallback onOpenProfile;
+  final GlobalKey? authorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +53,7 @@ class CommentTile extends StatelessWidget {
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             child: InkWell(
+                              key: authorKey,
                               onTap: onOpenProfile,
                               borderRadius: BorderRadius.circular(8),
                               child: Padding(
@@ -92,6 +95,7 @@ class CommentTile extends StatelessWidget {
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             child: InkWell(
+                              key: authorKey,
                               onTap: onOpenProfile,
                               borderRadius: BorderRadius.circular(8),
                               child: Padding(
