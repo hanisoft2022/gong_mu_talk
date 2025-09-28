@@ -38,7 +38,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   SearchCubit? _searchCubit;
   bool _isAppBarElevated = false;
   bool _isModalOpen = false;
-  static SearchScope _persistentSearchScope = SearchScope.all;
+  static final SearchScope _persistentSearchScope = SearchScope.all;
 
   @override
   void initState() {
@@ -247,36 +247,19 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final ThemeData theme = Theme.of(context);
     final CommunityFeedCubit feedCubit = context.read<CommunityFeedCubit>();
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOutCubic,
+    return SizedBox(
+      height: 44,
       child: Row(
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            switchInCurve: Curves.easeInOutCubic,
-            switchOutCurve: Curves.easeInOutCubic,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return SizeTransition(
-                sizeFactor: animation,
-                axis: Axis.horizontal,
-                child: FadeTransition(opacity: animation, child: child),
-              );
-            },
-            child: !_isSearchExpanded
-                ? _buildCollapsedSearchTrigger(theme, searchState)
-                : Expanded(
-                    key: const ValueKey('expanded_search'),
-                    child: _buildExpandedSearchField(context, searchState),
-                  ),
-          ),
+          if (!_isSearchExpanded)
+            _buildCollapsedSearchTrigger(theme, searchState),
+          if (_isSearchExpanded)
+            Expanded(
+              child: _buildExpandedSearchField(context, searchState),
+            ),
           if (!_isSearchExpanded) ...[
             const Spacer(),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 300),
-              opacity: _isSearchExpanded ? 0.0 : 1.0,
-              child: _buildSortButtons(feedState.sort, feedCubit.changeSort),
-            ),
+            _buildSortButtons(feedState.sort, feedCubit.changeSort),
           ],
         ],
       ),

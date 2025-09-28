@@ -1,6 +1,5 @@
 import '../../../../core/utils/result.dart';
 import '../models/search_result.dart';
-import '../models/feed_filters.dart';
 import '../repositories/i_community_repository.dart';
 
 class SearchCommunity {

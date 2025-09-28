@@ -68,12 +68,10 @@ class _AppLogoButtonState extends State<AppLogoButton>
   @override
   Widget build(BuildContext context) {
     final double diameter = widget.compact ? 44 : 52;
-    final double cornerRadius = widget.compact ? 14 : 18;
     final EdgeInsets padding = widget.compact
         ? const EdgeInsets.all(4)
         : const EdgeInsets.all(6);
     final double containerSize = diameter + padding.horizontal;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -90,12 +88,8 @@ class _AppLogoButtonState extends State<AppLogoButton>
               onTapDown: _handleTapDown,
               onTapCancel: _handleTapCancel,
               child: Container(
-                width: containerSize,
-                height: containerSize,
-                child: Container(
-                  padding: padding,
-                  child: Center(child: AppLogo(size: diameter * 0.9)),
-                ),
+                padding: padding,
+                child: Center(child: AppLogo(size: diameter * 0.9)),
               ),
             ),
           ),
