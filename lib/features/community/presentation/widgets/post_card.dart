@@ -1149,61 +1149,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final Widget identityButton = Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(12),
-      child: PopupMenuButton<_AuthorMenuAction>(
-        tooltip: '작성자 옵션',
-        position: PopupMenuPosition.under,
-        padding: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        itemBuilder: (BuildContext context) {
-          return <PopupMenuEntry<_AuthorMenuAction>>[
-            const PopupMenuItem<_AuthorMenuAction>(
-              value: _AuthorMenuAction.viewProfile,
-              child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
-            ),
-            if (canFollow)
-              PopupMenuItem<_AuthorMenuAction>(
-                value: _AuthorMenuAction.toggleFollow,
-                child: Row(
-                  children: [
-                    Icon(
-                      isFollowing
-                          ? Icons.person_remove_alt_1_outlined
-                          : Icons.person_add_alt_1_outlined,
-                      size: 18,
-                    ),
-                    const Gap(8),
-                    Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
-                  ],
-                ),
-              ),
-          ];
-        },
-        onSelected: (action) async {
-          switch (action) {
-            case _AuthorMenuAction.viewProfile:
-              if (post.authorUid.isEmpty || post.authorUid == 'preview') {
-                if (mounted) {
-                  _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
-                }
-                return;
-              }
-              _openMockProfile(
-                context,
-                uid: post.authorUid,
-                nickname: post.authorNickname,
-                socialGraph: socialGraph,
-              );
-              break;
-            case _AuthorMenuAction.toggleFollow:
-              await _toggleFollow(
-                socialGraph: socialGraph,
-                targetUid: post.authorUid,
-                nickname: post.authorNickname,
-                isFollowing: isFollowing,
-              );
-              break;
-          }
-        },
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showAuthorMenu(
+          context,
+          post: post,
+          canFollow: canFollow,
+          isFollowing: isFollowing,
+          socialGraph: socialGraph,
+        ),
         child: _AuthorInfoHeader(post: post, scope: scope),
       ),
     );
@@ -1216,6 +1170,83 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         timestampLabel,
       ],
     );
+  }
+
+  Future<void> _showAuthorMenu(
+    BuildContext context, {
+    required Post post,
+    required bool canFollow,
+    required bool isFollowing,
+    required MockSocialGraph socialGraph,
+  }) async {
+    final RenderBox button = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final _AuthorMenuAction? action = await showMenu<_AuthorMenuAction>(
+      context: context,
+      position: position,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: <PopupMenuEntry<_AuthorMenuAction>>[
+        const PopupMenuItem<_AuthorMenuAction>(
+          value: _AuthorMenuAction.viewProfile,
+          child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
+        ),
+        if (canFollow)
+          PopupMenuItem<_AuthorMenuAction>(
+            value: _AuthorMenuAction.toggleFollow,
+            child: Row(
+              children: [
+                Icon(
+                  isFollowing
+                      ? Icons.person_remove_alt_1_outlined
+                      : Icons.person_add_alt_1_outlined,
+                  size: 18,
+                ),
+                const Gap(8),
+                Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
+              ],
+            ),
+          ),
+      ],
+    );
+
+    if (action != null) {
+      if (!mounted) return;
+
+      switch (action) {
+        case _AuthorMenuAction.viewProfile:
+          if (post.authorUid.isEmpty || post.authorUid == 'preview') {
+            if (mounted) {
+              _showSnack(this.context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+            }
+            return;
+          }
+          if (mounted) {
+            _openMockProfile(
+              this.context,
+              uid: post.authorUid,
+              nickname: post.authorNickname,
+              socialGraph: socialGraph,
+            );
+          }
+          break;
+        case _AuthorMenuAction.toggleFollow:
+          await _toggleFollow(
+            socialGraph: socialGraph,
+            targetUid: post.authorUid,
+            nickname: post.authorNickname,
+            isFollowing: isFollowing,
+          );
+          break;
+      }
+    }
   }
 
   Future<void> _sharePost(Post post) async {
