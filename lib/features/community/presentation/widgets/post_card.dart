@@ -55,6 +55,7 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   final GlobalKey _authorButtonKey = GlobalKey();
+  OverlayEntry? _menuOverlayEntry;
   bool _isExpanded = false;
   bool _showComments = false;
   bool _isLoadingComments = false;
@@ -89,6 +90,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _closeAuthorMenu(); // overlay가 열려있다면 정리
     _commentController
       ..removeListener(_handleCommentInputChanged)
       ..dispose();
@@ -1176,90 +1178,152 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _showAuthorMenuAtPosition({
+  void _showAuthorMenuAtPosition({
     required Post post,
     required bool canFollow,
     required bool isFollowing,
     required MockSocialGraph socialGraph,
-  }) async {
+  }) {
+    // 이미 메뉴가 열려있다면 닫기
+    if (_menuOverlayEntry != null) {
+      _closeAuthorMenu();
+      return;
+    }
+
     final RenderBox? renderBox = _authorButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
-    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
-    final Offset buttonPosition = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+    final Offset buttonPosition = renderBox.localToGlobal(Offset.zero);
     final Size buttonSize = renderBox.size;
 
-    // 사용자 정보 텍스트의 시각적 중앙 아래에 메뉴가 나타나도록 조정
-    // 버튼 시작점에서 사용자 정보 컨텐츠의 대략적인 중앙까지의 오프셋
-    const double contentCenterOffset = 60; // 교육행정직 + 닉네임 영역의 대략적인 중앙
-    final double menuLeft = buttonPosition.dx + contentCenterOffset - 70; // 메뉴 폭의 절반만큼 왼쪽으로
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double adjustedLeft = menuLeft.clamp(16.0, screenWidth - 140 - 16.0); // 화면 경계 고려
+    // 정확한 위치 계산: 버튼 바로 아래
+    final double menuLeft = buttonPosition.dx;
+    final double menuTop = buttonPosition.dy + buttonSize.height + 4;
 
-    final RelativeRect position = RelativeRect.fromLTRB(
-      adjustedLeft,                             // left: 사용자 정보 중앙 아래로 조정
-      buttonPosition.dy + buttonSize.height + 4, // top: 버튼 아래쪽에 4px 간격
-      0,                                        // right: 0으로 설정하여 메뉴가 자동으로 배치되도록
-      0,                                        // bottom: 0으로 설정하여 메뉴가 자동으로 배치되도록
-    );
-
-    final _AuthorMenuAction? action = await showMenu<_AuthorMenuAction>(
-      context: context,
-      position: position,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: <PopupMenuEntry<_AuthorMenuAction>>[
-        const PopupMenuItem<_AuthorMenuAction>(
-          value: _AuthorMenuAction.viewProfile,
-          child: Row(children: [Icon(Icons.person_outline, size: 18), Gap(8), Text('프로필 보기')]),
-        ),
-        if (canFollow)
-          PopupMenuItem<_AuthorMenuAction>(
-            value: _AuthorMenuAction.toggleFollow,
-            child: Row(
-              children: [
-                Icon(
-                  isFollowing
-                      ? Icons.person_remove_alt_1_outlined
-                      : Icons.person_add_alt_1_outlined,
-                  size: 18,
-                ),
-                const Gap(8),
-                Text(isFollowing ? '팔로우 취소하기' : '팔로우하기'),
-              ],
+    _menuOverlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // 외부 클릭 감지를 위한 투명한 전체 화면 커버
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeAuthorMenu,
+              child: Container(color: Colors.transparent),
             ),
           ),
-      ],
+          // 실제 메뉴
+          Positioned(
+            left: menuLeft,
+            top: menuTop,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              shadowColor: Colors.black26,
+              child: Container(
+                width: 140,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildMenuOption(
+                      icon: Icons.person_outline,
+                      text: '프로필 보기',
+                      onTap: () => _handleMenuAction(
+                        _AuthorMenuAction.viewProfile,
+                        post: post,
+                        socialGraph: socialGraph,
+                      ),
+                    ),
+                    if (canFollow)
+                      _buildMenuOption(
+                        icon: isFollowing
+                            ? Icons.person_remove_alt_1_outlined
+                            : Icons.person_add_alt_1_outlined,
+                        text: isFollowing ? '팔로우 취소하기' : '팔로우하기',
+                        onTap: () => _handleMenuAction(
+                          _AuthorMenuAction.toggleFollow,
+                          post: post,
+                          socialGraph: socialGraph,
+                          isFollowing: isFollowing,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
-    if (action != null && mounted) {
-      switch (action) {
-        case _AuthorMenuAction.viewProfile:
-          if (post.authorUid.isEmpty || post.authorUid == 'preview') {
-            if (mounted) {
-              _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
-            }
-            return;
-          }
-          if (mounted) {
-            _openMockProfile(
-              context,
-              uid: post.authorUid,
-              nickname: post.authorNickname,
-              socialGraph: socialGraph,
-            );
-          }
-          break;
-        case _AuthorMenuAction.toggleFollow:
-          await _toggleFollow(
-            socialGraph: socialGraph,
-            targetUid: post.authorUid,
-            nickname: post.authorNickname,
-            isFollowing: isFollowing,
-          );
-          break;
-      }
+    Overlay.of(context).insert(_menuOverlayEntry!);
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18),
+            const Gap(8),
+            Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _closeAuthorMenu() {
+    _menuOverlayEntry?.remove();
+    _menuOverlayEntry = null;
+  }
+
+  Future<void> _handleMenuAction(
+    _AuthorMenuAction action, {
+    required Post post,
+    required MockSocialGraph socialGraph,
+    bool isFollowing = false,
+  }) async {
+    _closeAuthorMenu();
+
+    if (!mounted) return;
+
+    switch (action) {
+      case _AuthorMenuAction.viewProfile:
+        if (post.authorUid.isEmpty || post.authorUid == 'preview') {
+          _showSnack(context, '프리뷰 데이터라 프로필을 열 수 없어요.');
+          return;
+        }
+        _openMockProfile(
+          context,
+          uid: post.authorUid,
+          nickname: post.authorNickname,
+          socialGraph: socialGraph,
+        );
+        break;
+      case _AuthorMenuAction.toggleFollow:
+        await _toggleFollow(
+          socialGraph: socialGraph,
+          targetUid: post.authorUid,
+          nickname: post.authorNickname,
+          isFollowing: isFollowing,
+        );
+        break;
     }
   }
+
 
   Future<void> _sharePost(Post post) async {
     final String source = post.text.trim();
