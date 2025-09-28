@@ -299,6 +299,7 @@ Widget _buildCommentIdentityRow({
   );
 
   return Row(
+    mainAxisSize: MainAxisSize.min,
     children: [
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -315,11 +316,12 @@ Widget _buildCommentIdentityRow({
         ),
       ),
       const Gap(8),
-      Expanded(
+      IntrinsicWidth(
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (supporterIcon != null) ...[supporterIcon, const Gap(6)],
-            Expanded(
+            Flexible(
               child: Text(
                 maskedName,
                 style: theme.textTheme.titleSmall?.copyWith(
