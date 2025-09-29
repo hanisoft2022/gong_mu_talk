@@ -226,7 +226,14 @@ class FirebaseAuthRepository {
       return token;
     } on FirebaseException catch (error, stackTrace) {
       debugPrint('Failed to create verification token for $normalizedEmail: $error\n$stackTrace');
-      throw const AuthException('공직자 메일 인증 정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      // Firebase 권한 관련 에러인 경우 더 구체적인 메시지 제공
+      if (error.code == 'permission-denied') {
+        throw const AuthException('Firebase 권한 설정에 문제가 있습니다. 개발자에게 문의해주세요.');
+      } else if (error.code == 'unavailable') {
+        throw const AuthException('Firebase 서비스에 일시적으로 접근할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        throw AuthException('공직자 메일 인증 정보를 저장하지 못했습니다. 오류: ${error.code}');
+      }
     } on Exception catch (error) {
       if (error.toString().contains('이미 다른 사용자가 인증한')) {
         throw const AuthException('이미 등록된 공직자 메일입니다. 다른 공직자 메일로 인증해주세요.');
