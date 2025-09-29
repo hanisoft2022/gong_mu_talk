@@ -205,7 +205,7 @@ class FirebaseAuthRepository {
 
     final String normalizedEmail = email.trim().toLowerCase();
     if (!_isGovernmentEmail(normalizedEmail)) {
-      throw const AuthException('공직자 메일(@korea.kr, .go.kr) 주소만 인증할 수 있습니다.');
+      throw const AuthException('공직자 메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증할 수 있습니다.');
     }
 
     try {
@@ -444,7 +444,8 @@ class FirebaseAuthRepository {
 
   bool _isGovernmentEmail(String email) {
     final String normalized = email.toLowerCase();
-    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
+    // 임시로 @naver.com 도메인도 허용
+    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr') || normalized.endsWith('@naver.com');
   }
 
   Future<void> reloadCurrentUser() async {

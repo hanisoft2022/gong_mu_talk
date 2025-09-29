@@ -120,149 +120,153 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                         headerSliverBuilder: (context, _) => <Widget>[
                           _buildLoungeSliverAppBar(context, feedState),
                         ],
-                        body: const AuthRequiredView(
-                          message: '라운지 기능을 이용하려면 공직자 메일 인증을 완료해주세요.',
-                        ),
+                        body: const AuthRequiredView(message: '라운지 기능을 이용하려면\n공직자 메일 인증을 완료해주세요.'),
                       ),
                     );
                   }
 
                   _searchCubit ??= context.read<SearchCubit>();
-              if (_lastScope != feedState.scope) {
-                _lastScope = feedState.scope;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) {
-                    return;
+                  if (_lastScope != feedState.scope) {
+                    _lastScope = feedState.scope;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) {
+                        return;
+                      }
+                      if (_scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
                   }
-                  if (_scrollController.hasClients) {
-                    _scrollController.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
+
+                  final bool showSearchResults =
+                      _isSearchExpanded && (searchState.query.isNotEmpty || searchState.isLoading);
+
+                  if (!showSearchResults &&
+                      (feedState.status == CommunityFeedStatus.initial ||
+                          feedState.status == CommunityFeedStatus.loading) &&
+                      feedState.posts.isEmpty) {
+                    return Scaffold(
+                      body: NestedScrollView(
+                        controller: _scrollController,
+                        headerSliverBuilder: (context, _) => <Widget>[
+                          _buildLoungeSliverAppBar(context, feedState),
+                        ],
+                        body: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const Gap(16),
+                              Text(
+                                '라운지 게시물을 불러오고 있습니다...',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   }
-                });
-              }
 
-              final bool showSearchResults =
-                  _isSearchExpanded && (searchState.query.isNotEmpty || searchState.isLoading);
+                  if (!showSearchResults &&
+                      feedState.status == CommunityFeedStatus.error &&
+                      feedState.posts.isEmpty) {
+                    return Scaffold(
+                      body: CommunityErrorView(
+                        message: feedState.errorMessage,
+                        onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
+                      ),
+                    );
+                  }
 
-              if (!showSearchResults &&
-                  (feedState.status == CommunityFeedStatus.initial ||
-                      feedState.status == CommunityFeedStatus.loading) &&
-                  feedState.posts.isEmpty) {
-                return Scaffold(
-                  body: NestedScrollView(
-                    controller: _scrollController,
-                    headerSliverBuilder: (context, _) => <Widget>[
-                      _buildLoungeSliverAppBar(context, feedState),
-                    ],
-                    body: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.primary,
+                  final Future<void> Function() onRefresh = showSearchResults
+                      ? () => (_searchCubit ?? context.read<SearchCubit>()).refresh()
+                      : () => context.read<CommunityFeedCubit>().refresh();
+
+                  final List<Widget> children = <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: InlinePostComposer(scope: feedState.scope),
+                    ),
+                    const Gap(12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildSearchAndSortRow(context, feedState, searchState),
+                    ),
+                    const Gap(16),
+                  ];
+
+                  if (_isSearchExpanded && !showSearchResults) {
+                    final Widget? suggestionsCard = _buildSearchSuggestionsCard(
+                      context,
+                      searchState,
+                    );
+                    if (suggestionsCard != null) {
+                      children
+                        ..add(
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: suggestionsCard,
                           ),
-                          const Gap(16),
-                          Text(
-                            '라운지 게시물을 불러오고 있습니다...',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                        )
+                        ..add(const Gap(12));
+                    }
+                    children.addAll(_buildFeedSection(context, feedState, authState));
+                  } else if (showSearchResults) {
+                    children.addAll(_buildSearchResultsSection(context, searchState));
+                  } else {
+                    children.addAll(_buildFeedSection(context, feedState, authState));
+                  }
+
+                  return Scaffold(
+                    body: NestedScrollView(
+                      controller: _scrollController,
+                      headerSliverBuilder: (context, _) => <Widget>[
+                        _buildLoungeSliverAppBar(context, feedState),
+                      ],
+                      body: RefreshIndicator(
+                        onRefresh: onRefresh,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          switchInCurve: Curves.easeOutQuart,
+                          switchOutCurve: Curves.easeInQuart,
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(0.0, 0.03),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutQuart,
+                                      ),
+                                    ),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: OptimizedListView(
+                            key: ValueKey<String>(
+                              'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
                             ),
+                            itemCount: children.length,
+                            itemBuilder: (context, index) => children[index],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              if (!showSearchResults &&
-                  feedState.status == CommunityFeedStatus.error &&
-                  feedState.posts.isEmpty) {
-                return Scaffold(
-                  body: CommunityErrorView(
-                    message: feedState.errorMessage,
-                    onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
-                  ),
-                );
-              }
-
-              final Future<void> Function() onRefresh = showSearchResults
-                  ? () => (_searchCubit ?? context.read<SearchCubit>()).refresh()
-                  : () => context.read<CommunityFeedCubit>().refresh();
-
-              final List<Widget> children = <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: InlinePostComposer(scope: feedState.scope),
-                ),
-                const Gap(12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSearchAndSortRow(context, feedState, searchState),
-                ),
-                const Gap(16),
-              ];
-
-              if (_isSearchExpanded && !showSearchResults) {
-                final Widget? suggestionsCard = _buildSearchSuggestionsCard(context, searchState);
-                if (suggestionsCard != null) {
-                  children
-                    ..add(
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: suggestionsCard,
-                      ),
-                    )
-                    ..add(const Gap(12));
-                }
-                children.addAll(_buildFeedSection(context, feedState, authState));
-              } else if (showSearchResults) {
-                children.addAll(_buildSearchResultsSection(context, searchState));
-              } else {
-                children.addAll(_buildFeedSection(context, feedState, authState));
-              }
-
-              return Scaffold(
-                body: NestedScrollView(
-                  controller: _scrollController,
-                  headerSliverBuilder: (context, _) => <Widget>[
-                    _buildLoungeSliverAppBar(context, feedState),
-                  ],
-                  body: RefreshIndicator(
-                    onRefresh: onRefresh,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOutQuart,
-                      switchOutCurve: Curves.easeInQuart,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position:
-                                Tween<Offset>(
-                                  begin: const Offset(0.0, 0.03),
-                                  end: Offset.zero,
-                                ).animate(
-                                  CurvedAnimation(parent: animation, curve: Curves.easeOutQuart),
-                                ),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: OptimizedListView(
-                        key: ValueKey<String>(
-                          'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
                         ),
-                        itemCount: children.length,
-                        itemBuilder: (context, index) => children[index],
                       ),
                     ),
-                  ),
-                ),
                   );
                 },
               );
@@ -444,7 +448,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  List<Widget> _buildFeedSection(BuildContext context, CommunityFeedState state, AuthState authState) {
+  List<Widget> _buildFeedSection(
+    BuildContext context,
+    CommunityFeedState state,
+    AuthState authState,
+  ) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
     final bool showSerialGuide = state.scope == LoungeScope.serial && !authState.hasSerialTabAccess;
     final bool showEmptyPosts = state.posts.isEmpty && !showSerialGuide;
@@ -516,9 +524,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
       if (shouldInsertAd) {
         children
-          ..add(
-            const SizedBox.shrink(),
-          )
+          ..add(const SizedBox.shrink())
           ..add(const SizedBox(height: 12));
       }
     }
@@ -554,11 +560,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             if (recentSearches.isNotEmpty) ...[
               Row(
                 children: [
-                  Icon(
-                    Icons.history,
-                    size: 18,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  Icon(Icons.history, size: 18, color: theme.colorScheme.onSurfaceVariant),
                   const Gap(8),
                   Text(
                     '최근 검색어',

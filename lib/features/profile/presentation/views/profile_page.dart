@@ -2166,7 +2166,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                     ),
                     const Gap(12),
                     Text(
-                      '공직자 계정(@korea.kr, .go.kr)으로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. 입력하신 주소로 인증 메일을 보내드려요.',
+                      '공직자 계정(@korea.kr, .go.kr) 또는 @naver.com(임시)으로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. 입력하신 주소로 인증 메일을 보내드려요.',
                       style: theme.textTheme.bodyMedium,
                     ),
                     const Gap(12),
@@ -2231,8 +2231,9 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
     }
 
     final String email = value.trim().toLowerCase();
-    if (!email.endsWith('@korea.kr') && !email.endsWith('.go.kr')) {
-      return '공직자 메일(@korea.kr 또는 .go.kr) 주소만 인증할 수 있습니다.';
+    // 임시로 @naver.com 도메인도 허용
+    if (!email.endsWith('@korea.kr') && !email.endsWith('.go.kr') && !email.endsWith('@naver.com')) {
+      return '공직자 메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증할 수 있습니다.';
     }
 
     return null;

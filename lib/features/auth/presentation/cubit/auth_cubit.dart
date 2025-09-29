@@ -628,7 +628,8 @@ class AuthCubit extends Cubit<AuthState> {
 
   bool _isGovernmentEmail(String email) {
     final String normalized = email.trim().toLowerCase();
-    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
+    // 임시로 @naver.com 도메인도 허용
+    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr') || normalized.endsWith('@naver.com');
   }
 
   Future<void> _refreshPrimaryEmail(

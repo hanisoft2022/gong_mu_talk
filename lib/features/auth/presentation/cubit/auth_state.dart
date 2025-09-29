@@ -212,7 +212,8 @@ class AuthState extends Equatable {
       return false;
     }
     final String normalized = currentEmail.trim().toLowerCase();
-    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
+    // 임시로 @naver.com 도메인도 허용
+    return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr') || normalized.endsWith('@naver.com');
   }
 
   bool get isGovernmentEmailVerified => userProfile?.isGovernmentEmailVerified ?? false;
