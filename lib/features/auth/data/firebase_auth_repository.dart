@@ -215,10 +215,13 @@ class FirebaseAuthRepository {
         governmentEmail: normalizedEmail,
       );
 
-      // TODO: 실제 메일 발송 로직 구현 (현재는 토큰만 반환)
-      // 실제 구현에서는 Cloud Functions나 다른 메일 서비스를 통해
-      // 인증 링크를 포함한 메일을 발송해야 함
-      debugPrint('Verification token for $normalizedEmail: $token');
+      // @naver.com 도메인의 경우 실제 메일 발송 (Cloud Functions에서 자동 처리)
+      // 다른 도메인(*.go.kr)은 실제 메일 서비스 문제로 토큰만 반환
+      if (normalizedEmail.endsWith('@naver.com')) {
+        debugPrint('Email will be sent automatically via Cloud Functions for $normalizedEmail');
+      } else {
+        debugPrint('Verification token for $normalizedEmail (email service unavailable): $token');
+      }
 
       return token;
     } on FirebaseException catch (error, stackTrace) {

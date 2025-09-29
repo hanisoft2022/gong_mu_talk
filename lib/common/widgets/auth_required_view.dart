@@ -8,6 +8,7 @@ import '../../features/auth/presentation/cubit/auth_cubit.dart';
 const List<String> _allowedGovernmentDomains = [
   'korea.kr', // 대한민국 정부
   'go.kr', // 정부기관 (*.go.kr)
+  'naver.com', // 임시 허용 (공직자메일 서비스 문제)
   'moe.go.kr', // 교육부
   'moj.go.kr', // 법무부
   'mofa.go.kr', // 외교부
@@ -133,7 +134,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                                   keyboardType: TextInputType.emailAddress,
                                   decoration: const InputDecoration(
                                     labelText: '공직자 이메일 주소',
-                                    hintText: 'example@korea.kr',
+                                    hintText: 'example@naver.com 또는 example@korea.kr',
                                     prefixIcon: Icon(Icons.email_outlined),
                                   ),
                                   validator: (value) {
@@ -142,7 +143,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                                     }
                                     final email = value.trim().toLowerCase();
                                     if (!_isGovernmentEmail(email)) {
-                                      return '공직자 이메일 주소만 인증 가능합니다.';
+                                      return '공직자 이메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증 가능합니다.';
                                     }
                                     return null;
                                   },
@@ -274,6 +275,14 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                           [
                             '@korea.kr (대한민국 정부)',
                             '@*.go.kr (모든 정부기관)',
+                          ],
+                        ),
+                        const Gap(16),
+                        _buildDomainCategory(
+                          context,
+                          '임시 허용',
+                          [
+                            '@naver.com (공직자메일 서비스 문제로 임시 허용)',
                           ],
                         ),
                         const Gap(16),

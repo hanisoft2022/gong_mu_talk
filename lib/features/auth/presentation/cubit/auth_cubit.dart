@@ -92,10 +92,16 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       final String token = await _authRepository.requestGovernmentEmailVerification(trimmedEmail);
+
+      // @naver.com 도메인은 실제 메일 발송, 다른 도메인은 토큰만 표시
+      final String message = trimmedEmail.endsWith('@naver.com')
+          ? '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.'
+          : '$trimmedEmail 인증 요청이 완료되었습니다.\n\n개발/테스트 모드 토큰: $token\n\n실제 메일 발송은 현재 공직자메일 서비스 문제로 지원되지 않습니다.';
+
       emit(
         state.copyWith(
           isGovernmentEmailVerificationInProgress: false,
-          lastMessage: '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.\n\n개발 모드: 토큰 $token',
+          lastMessage: message,
         ),
       );
     } on AuthException catch (error) {
