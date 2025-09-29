@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/lounge_info.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_result.dart';
@@ -1148,74 +1149,158 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   Widget _buildScopeSelector(BuildContext context, CommunityFeedState state) {
     final ThemeData theme = Theme.of(context);
-    final bool hasSerialAccess = state.careerTrack != CareerTrack.none && state.serial != 'unknown';
-    final String serialLabel = hasSerialAccess ? state.careerTrack.displayName : '내 직렬';
 
-    final TextStyle labelStyle =
-        theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600) ??
-        const TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
-
-    final ButtonStyle style = ButtonStyle(
-      visualDensity: VisualDensity.compact,
-      padding: WidgetStateProperty.resolveWith(
-        (states) => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      textStyle: WidgetStatePropertyAll<TextStyle>(labelStyle),
-      shape: WidgetStateProperty.resolveWith(
-        (states) =>
-            const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-      ),
-      backgroundColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return theme.colorScheme.primary.withAlpha(40);
-        }
-        return theme.colorScheme.surfaceContainerHighest;
-      }),
-      foregroundColor: WidgetStateProperty.resolveWith(
-        (states) => states.contains(WidgetState.selected)
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurfaceVariant,
-      ),
-      side: WidgetStateProperty.resolveWith(
-        (states) => BorderSide(
-          color: states.contains(WidgetState.selected)
-              ? theme.colorScheme.primary.withAlpha(153)
-              : theme.dividerColor,
+    // 접근 가능한 라운지가 없으면 기본 상태 표시
+    if (state.accessibleLounges.isEmpty || state.selectedLoungeInfo == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.dividerColor),
         ),
-      ),
-    );
-
-    return SegmentedButton<LoungeScope>(
-      style: style,
-      segments: [
-        const ButtonSegment<LoungeScope>(
-          value: LoungeScope.all,
-          label: Text('전체'),
-          icon: Icon(Icons.public_outlined),
-        ),
-        ButtonSegment<LoungeScope>(
-          value: LoungeScope.serial,
-          label: Text(
-            serialLabel,
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: _calculateFontSize(serialLabel),
-              fontWeight: FontWeight.w600,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.public_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          ),
-          icon: const Icon(Icons.group_outlined),
-          enabled: hasSerialAccess,
+            const Gap(8),
+            Text(
+              '전체',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
-      ],
-      selected: <LoungeScope>{state.scope},
-      onSelectionChanged: (selection) {
-        final LoungeScope nextScope = selection.first;
-        if (nextScope != state.scope) {
-          PerformanceProfiler.start('change_scope');
-          context.read<CommunityFeedCubit>().changeScope(nextScope);
-          PerformanceProfiler.end('change_scope');
+      );
+    }
+
+    // 접근 가능한 라운지가 1개면 드롭다운 없이 단순 표시
+    if (state.accessibleLounges.length == 1) {
+      final LoungeInfo lounge = state.accessibleLounges.first;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withAlpha(40),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withAlpha(153)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              lounge.emoji,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const Gap(8),
+            Text(
+              lounge.shortName,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 여러 라운지가 있는 경우 드롭다운 버튼
+    return PopupMenuButton<LoungeInfo>(
+      initialValue: state.selectedLoungeInfo,
+      onSelected: (LoungeInfo loungeInfo) {
+        if (loungeInfo != state.selectedLoungeInfo) {
+          PerformanceProfiler.start('change_lounge');
+          context.read<CommunityFeedCubit>().changeLounge(loungeInfo);
+          PerformanceProfiler.end('change_lounge');
         }
       },
+      itemBuilder: (BuildContext context) {
+        return state.accessibleLounges.map<PopupMenuEntry<LoungeInfo>>(
+          (LoungeInfo lounge) {
+            final bool isSelected = lounge.id == state.selectedLoungeInfo?.id;
+            return PopupMenuItem<LoungeInfo>(
+              value: lounge,
+              child: Row(
+                children: [
+                  Text(
+                    lounge.emoji,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lounge.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected ? theme.colorScheme.primary : null,
+                          ),
+                        ),
+                        if (lounge.memberCount > 0) ...[
+                          const Gap(2),
+                          Text(
+                            '${lounge.memberCount}명',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (isSelected) ...[
+                    const Gap(8),
+                    Icon(
+                      Icons.check,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        ).toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withAlpha(40),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withAlpha(153)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              state.selectedLoungeInfo!.emoji,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const Gap(8),
+            Text(
+              state.selectedLoungeInfo!.shortName,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const Gap(4),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

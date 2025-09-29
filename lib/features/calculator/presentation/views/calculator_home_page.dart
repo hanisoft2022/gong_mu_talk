@@ -100,8 +100,7 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
     return Scaffold(
       body: NestedScrollView(
         controller: _scrollController,
-        headerSliverBuilder: (context, _) =>
-            <Widget>[_buildCalculatorSliverAppBar(context)],
+        headerSliverBuilder: (context, _) => <Widget>[_buildCalculatorSliverAppBar(context)],
         body: SafeArea(
           top: false,
           child: Padding(
@@ -109,14 +108,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Gap(6),
-                Text(
-                  '나의 급여와 혜택을 간편하게 계산해보세요',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: colorScheme.onSurfaceVariant, height: 1.4),
-                ),
                 const Gap(32),
                 Expanded(
                   child: GridView.count(

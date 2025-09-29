@@ -53,7 +53,12 @@
       "Bash(npm run build:*)",
       "WebFetch(domain:www.mpm.go.kr)",
       "Bash(curl:*)",
-      "Bash(firebase functions:delete:*)"
+      "Bash(firebase functions:delete:*)",
+      "Bash(firebase functions:list:*)",
+      "Bash(firebase functions:config:get:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(npm run lint:*)",
+      "Bash(firebase functions:config:set:*)"
     ],
     "deny": [],
     "ask": []

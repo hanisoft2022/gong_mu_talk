@@ -205,7 +205,7 @@ class FirebaseAuthRepository {
 
     final String normalizedEmail = email.trim().toLowerCase();
     if (!_isGovernmentEmail(normalizedEmail)) {
-      throw const AuthException('공직자 메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증할 수 있습니다.');
+      throw const AuthException('공직자 메일(@korea.kr, .go.kr) 또는 공직자메일 서비스(@naver.com) 주소만 인증할 수 있습니다.');
     }
 
     try {

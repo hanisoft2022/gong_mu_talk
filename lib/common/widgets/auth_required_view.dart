@@ -4,11 +4,13 @@ import 'package:gap/gap.dart';
 
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 
-// 허용되는 공직자 메일 도메인 목록
+// 허용되는 공무원 메일 도메인 목록
 const List<String> _allowedGovernmentDomains = [
-  'korea.kr', // 대한민국 정부
+  // 중앙정부
+  'korea.kr', // 공직자통합메일
   'go.kr', // 정부기관 (*.go.kr)
-  'naver.com', // 임시 허용 (공직자메일 서비스 문제)
+
+  // 주요 부처
   'moe.go.kr', // 교육부
   'moj.go.kr', // 법무부
   'mofa.go.kr', // 외교부
@@ -17,22 +19,41 @@ const List<String> _allowedGovernmentDomains = [
   'mois.go.kr', // 행정안전부
   'motie.go.kr', // 산업통상자원부
   'mohw.go.kr', // 보건복지부
-  'moe.go.kr', // 교육부
-  'korea.kr', // 청와대/대통령실
+
+  // 헌법기관
   'assembly.go.kr', // 국회
   'scourt.go.kr', // 대법원
   'ccourt.go.kr', // 헌법재판소
   'nec.go.kr', // 중앙선거관리위원회
-  'komsco.com', // 한국조폐공사
-  'kepco.co.kr', // 한국전력공사
-  'korail.com', // 한국철도공사
+
+  // 지방자치단체
+  'seoul.kr', // 서울특별시
+  'busan.kr', // 부산광역시
+  'daegu.kr', // 대구광역시
+  'incheon.kr', // 인천광역시
+  'gwangju.kr', // 광주광역시
+  'daejeon.kr', // 대전광역시
+  'ulsan.kr', // 울산광역시
+  'sejong.kr', // 세종특별자치시
+  'gyeonggi.kr', // 경기도
+  'gangwon.kr', // 강원도
+  'chungbuk.kr', // 충청북도
+  'chungnam.kr', // 충청남도
+  'jeonbuk.kr', // 전라북도
+  'jeonnam.kr', // 전라남도
+  'gyeongbuk.kr', // 경상북도
+  'gyeongnam.kr', // 경상남도
+  'jeju.kr', // 제주특별자치도
+
+  // 테스트용
+  'naver.com', // 공무원 테스트용
 ];
 
 class AuthRequiredView extends StatefulWidget {
   const AuthRequiredView({
     super.key,
-    this.title = '공직자 메일 인증이 필요합니다',
-    this.message = '공직자 메일 인증을 완료해주세요.',
+    this.title = '공무원 메일 인증이 필요합니다',
+    this.message = '공무원 메일 인증을 완료해주세요.',
     this.icon = Icons.verified_user_outlined,
     this.onRefresh,
   });
@@ -80,17 +101,13 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                widget.icon,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(widget.icon, size: 64, color: Theme.of(context).colorScheme.primary),
               const Gap(24),
               Text(
                 widget.title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const Gap(12),
@@ -108,7 +125,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                     });
                   },
                   icon: const Icon(Icons.email_outlined),
-                  label: const Text('공직자 메일 인증하기'),
+                  label: const Text('공무원 메일 인증하기'),
                 ),
               ] else ...[
                 Card(
@@ -120,10 +137,10 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '공직자 메일 인증',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            '공무원 메일 인증',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const Gap(12),
                           Row(
@@ -133,8 +150,8 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                                   controller: _emailController,
                                   keyboardType: TextInputType.emailAddress,
                                   decoration: const InputDecoration(
-                                    labelText: '공직자 이메일 주소',
-                                    hintText: 'example@naver.com 또는 example@korea.kr',
+                                    labelText: '공무원 이메일 주소',
+                                    hintText: 'example@korea.kr',
                                     prefixIcon: Icon(Icons.email_outlined),
                                   ),
                                   validator: (value) {
@@ -143,7 +160,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                                     }
                                     final email = value.trim().toLowerCase();
                                     if (!_isGovernmentEmail(email)) {
-                                      return '공직자 이메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증 가능합니다.';
+                                      return '공무원 이메일(@korea.kr, .go.kr) 주소만 인증 가능합니다.';
                                     }
                                     return null;
                                   },
@@ -171,21 +188,21 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                                           ? const SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
+                                              child: CircularProgressIndicator(strokeWidth: 2),
                                             )
                                           : const Text('인증 메일 발송'),
                                     ),
                                   ),
                                   const Gap(12),
                                   OutlinedButton(
-                                    onPressed: isLoading ? null : () {
-                                      setState(() {
-                                        _isExpanded = false;
-                                        _emailController.clear();
-                                      });
-                                    },
+                                    onPressed: isLoading
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _isExpanded = false;
+                                              _emailController.clear();
+                                            });
+                                          },
                                     child: const Text('취소'),
                                   ),
                                 ],
@@ -247,11 +264,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Row(
-            children: [
-              Icon(Icons.verified_user),
-              SizedBox(width: 8),
-              Text('허용되는 공직자 이메일'),
-            ],
+            children: [Icon(Icons.verified_user), SizedBox(width: 8), Text('허용되는 공무원 이메일')],
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -259,68 +272,59 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '다음 도메인의 이메일 주소로 인증할 수 있습니다:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text('다음 도메인의 이메일 주소로 인증할 수 있습니다:', style: Theme.of(context).textTheme.bodyMedium),
                 const Gap(16),
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildDomainCategory(
-                          context,
-                          '정부기관',
-                          [
-                            '@korea.kr (대한민국 정부)',
-                            '@*.go.kr (모든 정부기관)',
-                          ],
-                        ),
+                        _buildDomainCategory(context, '중앙정부', [
+                          '@korea.kr (공직자통합메일)',
+                          '@*.go.kr (모든 정부기관)',
+                          '@naver.com (공무원 테스트용)',
+                        ]),
                         const Gap(16),
-                        _buildDomainCategory(
-                          context,
-                          '임시 허용',
-                          [
-                            '@naver.com (공직자메일 서비스 문제로 임시 허용)',
-                          ],
-                        ),
+                        _buildDomainCategory(context, '정부부처', [
+                          '@moe.go.kr (교육부)',
+                          '@moj.go.kr (법무부)',
+                          '@mofa.go.kr (외교부)',
+                          '@unification.go.kr (통일부)',
+                          '@mosf.go.kr (기획재정부)',
+                          '@mois.go.kr (행정안전부)',
+                          '@motie.go.kr (산업통상자원부)',
+                          '@mohw.go.kr (보건복지부)',
+                        ]),
                         const Gap(16),
-                        _buildDomainCategory(
-                          context,
-                          '주요 부처',
-                          [
-                            '@moe.go.kr (교육부)',
-                            '@moj.go.kr (법무부)',
-                            '@mofa.go.kr (외교부)',
-                            '@unification.go.kr (통일부)',
-                            '@mosf.go.kr (기획재정부)',
-                            '@mois.go.kr (행정안전부)',
-                            '@motie.go.kr (산업통상자원부)',
-                            '@mohw.go.kr (보건복지부)',
-                          ],
-                        ),
+                        _buildDomainCategory(context, '헌법기관', [
+                          '@assembly.go.kr (국회)',
+                          '@scourt.go.kr (대법원)',
+                          '@ccourt.go.kr (헌법재판소)',
+                          '@nec.go.kr (중앙선거관리위원회)',
+                        ]),
                         const Gap(16),
-                        _buildDomainCategory(
-                          context,
-                          '헌법기관',
-                          [
-                            '@assembly.go.kr (국회)',
-                            '@scourt.go.kr (대법원)',
-                            '@ccourt.go.kr (헌법재판소)',
-                            '@nec.go.kr (중앙선거관리위원회)',
-                          ],
-                        ),
+                        _buildDomainCategory(context, '지방자치단체', [
+                          '@seoul.kr (서울특별시)',
+                          '@busan.kr (부산광역시)',
+                          '@daegu.kr (대구광역시)',
+                          '@incheon.kr (인천광역시)',
+                          '@gwangju.kr (광주광역시)',
+                          '@daejeon.kr (대전광역시)',
+                          '@ulsan.kr (울산광역시)',
+                          '@sejong.kr (세종특별자치시)',
+                        ]),
                         const Gap(16),
-                        _buildDomainCategory(
-                          context,
-                          '공공기관',
-                          [
-                            '@komsco.com (한국조폐공사)',
-                            '@kepco.co.kr (한국전력공사)',
-                            '@korail.com (한국철도공사)',
-                          ],
-                        ),
+                        _buildDomainCategory(context, '도 단위 자치단체', [
+                          '@gyeonggi.kr (경기도)',
+                          '@gangwon.kr (강원도)',
+                          '@chungbuk.kr (충청북도)',
+                          '@chungnam.kr (충청남도)',
+                          '@jeonbuk.kr (전라북도)',
+                          '@jeonnam.kr (전라남도)',
+                          '@gyeongbuk.kr (경상북도)',
+                          '@gyeongnam.kr (경상남도)',
+                          '@jeju.kr (제주특별자치도)',
+                        ]),
                       ],
                     ),
                   ),
@@ -329,22 +333,14 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('확인'),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('확인')),
           ],
         );
       },
     );
   }
 
-
-  Widget _buildDomainCategory(
-    BuildContext context,
-    String title,
-    List<String> domains,
-  ) {
+  Widget _buildDomainCategory(BuildContext context, String title, List<String> domains) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -361,18 +357,9 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
             padding: const EdgeInsets.only(left: 12, bottom: 4),
             child: Row(
               children: [
-                Icon(
-                  Icons.circle,
-                  size: 6,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                Icon(Icons.circle, size: 6, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const Gap(8),
-                Expanded(
-                  child: Text(
-                    domain,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
+                Expanded(child: Text(domain, style: Theme.of(context).textTheme.bodySmall)),
               ],
             ),
           ),

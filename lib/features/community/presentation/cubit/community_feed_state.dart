@@ -17,6 +17,8 @@ class CommunityFeedState extends Equatable {
     this.bookmarkedPostIds = const <String>{},
     this.pendingLikePostIds = const <String>{},
     this.showAds = true,
+    this.accessibleLounges = const <LoungeInfo>[],
+    this.selectedLoungeInfo,
   });
 
   final CommunityFeedStatus status;
@@ -32,6 +34,8 @@ class CommunityFeedState extends Equatable {
   final Set<String> bookmarkedPostIds;
   final Set<String> pendingLikePostIds;
   final bool showAds;
+  final List<LoungeInfo> accessibleLounges;
+  final LoungeInfo? selectedLoungeInfo;
 
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
@@ -47,6 +51,8 @@ class CommunityFeedState extends Equatable {
     Set<String>? bookmarkedPostIds,
     Set<String>? pendingLikePostIds,
     bool? showAds,
+    List<LoungeInfo>? accessibleLounges,
+    LoungeInfo? selectedLoungeInfo,
   }) {
     return CommunityFeedState(
       status: status ?? this.status,
@@ -62,6 +68,8 @@ class CommunityFeedState extends Equatable {
       bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
       pendingLikePostIds: pendingLikePostIds ?? this.pendingLikePostIds,
       showAds: showAds ?? this.showAds,
+      accessibleLounges: accessibleLounges ?? this.accessibleLounges,
+      selectedLoungeInfo: selectedLoungeInfo ?? this.selectedLoungeInfo,
     );
   }
 
@@ -80,5 +88,7 @@ class CommunityFeedState extends Equatable {
     bookmarkedPostIds,
     pendingLikePostIds,
     showAds,
+    accessibleLounges,
+    selectedLoungeInfo,
   ];
 }

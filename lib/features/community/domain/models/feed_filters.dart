@@ -1,6 +1,30 @@
 import 'package:flutter/material.dart';
 
-enum LoungeScope { all, serial }
+/// 라운지 스코프 - 이제 동적 라운지 ID를 지원
+class LoungeScope {
+  const LoungeScope(this.loungeId);
+
+  final String loungeId;
+
+  // 기본 스코프들 (하위 호환성)
+  static const LoungeScope all = LoungeScope('all');
+  static const LoungeScope serial = LoungeScope('serial'); // 더 이상 사용되지 않지만 호환성 유지
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LoungeScope &&
+      runtimeType == other.runtimeType &&
+      loungeId == other.loungeId;
+
+  @override
+  int get hashCode => loungeId.hashCode;
+
+  @override
+  String toString() => 'LoungeScope($loungeId)';
+
+  String get name => loungeId;
+}
 
 enum LoungeSort { latest, popular, likes }
 

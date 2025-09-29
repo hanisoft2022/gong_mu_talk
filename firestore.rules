@@ -66,6 +66,12 @@ service cloud.firestore {
       return value is timestamp || value == request.time;
     }
 
+    function canAccessLounge(loungeId) {
+      return loungeId == 'all' ||
+        (isSignedIn() &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accessibleLoungeIds.hasAny([loungeId]));
+    }
+
     function isValidPaystubClientWrite(data, userId) {
       return hasOnlyKeys(data, [
           'status',
@@ -227,6 +233,29 @@ service cloud.firestore {
       allow read: if false;
       allow create: if isSignedIn();
       allow update, delete: if false;
+    }
+
+    match /lounges/{loungeId} {
+      allow read: if isSignedIn();
+      allow write: if false; // 라운지 정보는 관리자만 수정 가능
+    }
+
+    match /lounge_posts/{postId} {
+      allow read: if isSignedIn() && canAccessLounge(resource.data.loungeId);
+      allow create: if isSignedIn() && canAccessLounge(request.resource.data.loungeId) &&
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && canAccessLounge(resource.data.loungeId) &&
+        resource.data.authorId == request.auth.uid;
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId);
+        allow create: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId) &&
+          request.resource.data.authorId == request.auth.uid;
+        allow update: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId) &&
+          resource.data.authorId == request.auth.uid;
+        allow delete: if false;
+      }
     }
   }
 }

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/firebase_auth_repository.dart';
 import '../../data/login_session_store.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../../notifications/data/notification_repository.dart';
@@ -96,7 +97,7 @@ class AuthCubit extends Cubit<AuthState> {
       // @naver.com 도메인은 실제 메일 발송, 다른 도메인은 토큰만 표시
       final String message = trimmedEmail.endsWith('@naver.com')
           ? '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.'
-          : '$trimmedEmail 인증 요청이 완료되었습니다.\n\n개발/테스트 모드 토큰: $token\n\n실제 메일 발송은 현재 공직자메일 서비스 문제로 지원되지 않습니다.';
+          : '$trimmedEmail 인증 요청이 완료되었습니다.\n\n개발/테스트 모드 토큰: $token\n\n실제 메일 발송은 현재 해당 도메인에서 지원되지 않습니다.';
 
       emit(
         state.copyWith(
@@ -115,7 +116,7 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         state.copyWith(
           isGovernmentEmailVerificationInProgress: false,
-          lastMessage: '공직자 메일 인증 요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
+          lastMessage: '공무원 메일 인증 요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
         ),
       );
     }
@@ -246,7 +247,6 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> updateNotificationsEnabled(bool enabled) async {
     final String? uid = state.userId;
     if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 알림 설정을 변경할 수 있습니다.'));
       return;
     }
 
@@ -255,19 +255,9 @@ class AuthCubit extends Cubit<AuthState> {
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, notificationsEnabled: enabled);
       _applyProfile(profile);
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: enabled ? '알림을 켰습니다.' : '알림을 껐습니다.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '알림 설정을 변경하지 못했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false));
     }
   }
 
@@ -275,7 +265,6 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> updateSerialVisibility(bool visible) async {
     final String? uid = state.userId;
     if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 직렬 공개 여부를 설정할 수 있습니다.'));
       return;
     }
 
@@ -284,19 +273,9 @@ class AuthCubit extends Cubit<AuthState> {
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, serialVisible: visible);
       _applyProfile(profile);
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: visible ? '직렬을 다시 공개합니다.' : '직렬을 비공개로 설정했습니다.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '직렬 공개 설정 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false));
     }
   }
 
@@ -736,6 +715,7 @@ class AuthCubit extends Cubit<AuthState> {
         excludedSerials: profile.excludedSerials,
         excludedDepartments: profile.excludedDepartments,
         excludedRegions: profile.excludedRegions,
+        careerHierarchy: profile.careerHierarchy,
       ),
     );
 

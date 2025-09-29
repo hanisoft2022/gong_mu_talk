@@ -13,7 +13,6 @@ class PensionCalculatorGatePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-
         return _PensionLockedView(state: state);
       },
     );
@@ -61,9 +60,7 @@ class _PensionLockedView extends StatelessWidget {
                 const Gap(12),
                 Text(
                   '공무원 연금 예상액, 생애소득 시뮬레이션, 휴직·전보 시나리오 등 맞춤 리포트를 확인하려면 인증과 이용권이 필요합니다.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 ),
               ],
             ),
@@ -74,9 +71,7 @@ class _PensionLockedView extends StatelessWidget {
             title: '간편 로그인',
             description: loginDescription,
             trailing: OutlinedButton(
-              onPressed: state.isLoggedIn
-                  ? null
-                  : () => _showAuthDialog(context),
+              onPressed: state.isLoggedIn ? null : () => _showAuthDialog(context),
               child: Text(state.isLoggedIn ? '로그인됨' : '로그인'),
             ),
           ),
@@ -86,9 +81,7 @@ class _PensionLockedView extends StatelessWidget {
             title: '연금 리포트 이용권 구매',
             description: '월 4,990원으로 연금 계산, 시뮬레이션, PDF 리포트를 제공합니다.',
             trailing: ElevatedButton.icon(
-              onPressed: state.isProcessing
-                  ? null
-                  : () {},
+              onPressed: state.isProcessing ? null : () {},
               icon: state.isProcessing
                   ? const SizedBox(
                       width: 16,
@@ -116,10 +109,7 @@ class _PensionLockedView extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.notifications_active_outlined,
-                    color: theme.colorScheme.secondary,
-                  ),
+                  Icon(Icons.notifications_active_outlined, color: theme.colorScheme.secondary),
                   const Gap(12),
                   Expanded(
                     child: Text(
@@ -143,93 +133,9 @@ void _showAuthDialog(BuildContext context) {
   showDialog<void>(
     context: context,
     builder: (dialogContext) {
-      return BlocProvider<AuthCubit>.value(
-        value: authCubit,
-        child: const AuthDialog(),
-      );
+      return BlocProvider<AuthCubit>.value(value: authCubit, child: const AuthDialog());
     },
   );
-}
-
-class _PensionComingSoon extends StatelessWidget {
-  const _PensionComingSoon();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '연금 계산 리포트가 곧 도착합니다!',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const Gap(16),
-          Text(
-            '현재 엑셀 시뮬레이터 로직을 앱에 이식하고 있습니다. 곧 월별 납입액, 퇴직금, 연금 개시 연령별 수령액을 확인할 수 있어요.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const Gap(24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '다음 업데이트 미리보기',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Gap(12),
-                  const _PreviewBullet(text: '엑셀 로직 기반 연금 예상액 자동 계산'),
-                  const _PreviewBullet(text: '휴직·복직·전보 시나리오 비교 리포트'),
-                  const _PreviewBullet(text: 'PDF 요약 리포트 및 연말정산 연계'),
-                  const Gap(20),
-                  OutlinedButton.icon(
-                    onPressed: () => context.read<AuthCubit>().logOut(),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('다른 계정으로 이용하기'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PreviewBullet extends StatelessWidget {
-  const _PreviewBullet({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
-          const Gap(8),
-          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
-        ],
-      ),
-    );
-  }
 }
 
 class _StepTile extends StatelessWidget {
@@ -256,9 +162,7 @@ class _StepTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: theme.colorScheme.primary.withValues(
-                alpha: 0.15,
-              ),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
               foregroundColor: theme.colorScheme.primary,
               child: Text('$index'),
             ),
@@ -269,9 +173,7 @@ class _StepTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const Gap(8),
                   Text(description, style: theme.textTheme.bodyMedium),

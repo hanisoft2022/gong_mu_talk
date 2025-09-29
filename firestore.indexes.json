@@ -7,6 +7,31 @@
         {"fieldPath": "delivered", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "ASCENDING"}
       ]
+    },
+    {
+      "collectionGroup": "lounge_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "loungeId", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "lounge_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "loungeId", "order": "ASCENDING"},
+        {"fieldPath": "isPopular", "order": "DESCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "accessibleLoungeIds", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "careerTrackVerifiedAt", "order": "DESCENDING"}
+      ]
     }
   ],
   "fieldOverrides": []

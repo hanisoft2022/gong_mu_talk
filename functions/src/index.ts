@@ -11,11 +11,14 @@ import {
   getFirestore,
 } from "firebase-admin/firestore";
 
-export {handlePaystubUpload} from "./paystubVerification";
-export {sendGovernmentEmailVerification} from "./emailVerification";
-
 initializeApp();
 setGlobalOptions({region: "us-central1"});
+
+export {handlePaystubUpload} from "./paystubVerification";
+export {
+  sendGovernmentEmailVerification,
+  verifyEmailToken,
+} from "./emailVerification";
 
 const db = getFirestore();
 const COUNTER_SHARD_COUNT = 20;

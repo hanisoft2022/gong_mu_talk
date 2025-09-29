@@ -51,7 +51,7 @@ class _MatchingPageState extends State<MatchingPage> {
 
           if (!authState.isGovernmentEmailVerified) {
             return const _MatchingLockedView(
-              reason: '공직자 메일 인증이 완료된 사용자만 이용할 수 있어요.',
+              reason: '공무원 메일 인증이 완료된 사용자만 이용할 수 있어요.',
               showVerifyShortcut: true,
             );
           }
@@ -72,7 +72,7 @@ class _MatchingPageState extends State<MatchingPage> {
                   break;
                 case MatchingStatus.locked:
                   body = const _MatchingLockedView(
-                    reason: '공직자 메일 인증 완료 후 이용 가능합니다.',
+                    reason: '공무원 메일 인증 완료 후 이용 가능합니다.',
                     showVerifyShortcut: true,
                   );
                   break;

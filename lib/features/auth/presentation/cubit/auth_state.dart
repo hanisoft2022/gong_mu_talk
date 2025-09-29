@@ -38,6 +38,7 @@ class AuthState extends Equatable {
     this.primaryEmail,
     this.authError,
     this.lastMessage,
+    this.careerHierarchy,
   });
 
   final bool isLoggedIn;
@@ -76,6 +77,7 @@ class AuthState extends Equatable {
   final String? primaryEmail;
   final String? authError;
   final String? lastMessage;
+  final CareerHierarchy? careerHierarchy;
 
   static const Object _unset = Object();
 
@@ -116,6 +118,7 @@ class AuthState extends Equatable {
     Object? primaryEmail = _unset,
     Object? authError = _unset,
     Object? lastMessage = _unset,
+    Object? careerHierarchy = _unset,
   }) {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
@@ -161,6 +164,9 @@ class AuthState extends Equatable {
       lastMessage: lastMessage == _unset
           ? this.lastMessage
           : lastMessage as String?,
+      careerHierarchy: careerHierarchy == _unset
+          ? this.careerHierarchy
+          : careerHierarchy as CareerHierarchy?,
     );
   }
 
@@ -202,6 +208,7 @@ class AuthState extends Equatable {
     primaryEmail,
     authError,
     lastMessage,
+    careerHierarchy,
   ];
 
   String? get preferredEmail => primaryEmail ?? email;

@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/lounge_info.dart';
+import '../../domain/services/lounge_access_service.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/feed_filters.dart';
@@ -242,6 +244,17 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     await loadInitial(scope: scope);
   }
 
+  /// 라운지 선택 변경
+  Future<void> changeLounge(LoungeInfo loungeInfo) async {
+    final LoungeScope newScope = LoungeScope(loungeInfo.id);
+    if (state.scope == newScope && state.status == CommunityFeedStatus.loaded) {
+      return;
+    }
+
+    emit(state.copyWith(selectedLoungeInfo: loungeInfo));
+    await loadInitial(scope: newScope);
+  }
+
   Future<void> changeSort(LoungeSort sort) async {
     if (state.sort == sort && state.status == CommunityFeedStatus.loaded) {
       return;
@@ -395,19 +408,55 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   void _handleAuthChanged(AuthState authState) {
     final bool serialChanged = authState.serial != state.serial;
     final bool trackChanged = authState.careerTrack != state.careerTrack;
-
     final bool supporterChanged = state.showAds != _shouldShowAds;
 
-    if (serialChanged || trackChanged || supporterChanged) {
+    // 접근 가능한 라운지 업데이트
+    List<LoungeInfo> accessibleLounges = [];
+    LoungeInfo? selectedLoungeInfo;
+
+    if (authState.careerHierarchy != null) {
+      accessibleLounges = LoungeAccessService.convertToLoungeInfos(authState.careerHierarchy!);
+
+      // 현재 선택된 라운지 정보 찾기
+      if (accessibleLounges.isNotEmpty) {
+        // 기존 선택된 라운지가 여전히 접근 가능한지 확인
+        selectedLoungeInfo = accessibleLounges.firstWhere(
+          (lounge) => lounge.id == state.scope.loungeId,
+          orElse: () => accessibleLounges.first, // 접근 불가능하면 첫 번째 라운지로
+        );
+      }
+    } else {
+      // 계층 정보가 없으면 전체 라운지만 접근 가능
+      accessibleLounges = [
+        const LoungeInfo(
+          id: 'all',
+          name: '전체 공무원',
+          emoji: '🏛️',
+          shortName: '전체',
+          memberCount: 1000000,
+          description: '모든 공무원이 참여하는 라운지',
+        ),
+      ];
+      selectedLoungeInfo = accessibleLounges.first;
+    }
+
+    final bool loungeAccessChanged = accessibleLounges != state.accessibleLounges;
+
+    if (serialChanged || trackChanged || supporterChanged || loungeAccessChanged) {
       emit(
         state.copyWith(
           careerTrack: authState.careerTrack,
           serial: authState.serial,
           showAds: _shouldShowAds,
+          accessibleLounges: accessibleLounges,
+          selectedLoungeInfo: selectedLoungeInfo,
+          scope: selectedLoungeInfo != null ? LoungeScope(selectedLoungeInfo.id) : state.scope,
         ),
       );
-      if (state.scope == LoungeScope.serial && serialChanged) {
-        unawaited(loadInitial(scope: LoungeScope.serial));
+
+      // 라운지 접근 권한이 변경되었거나 시리얼 탭이 더 이상 사용 불가능한 경우 새로고침
+      if (loungeAccessChanged || (state.scope == LoungeScope.serial && serialChanged)) {
+        unawaited(loadInitial());
       }
     }
   }
@@ -421,15 +470,16 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     final String key = _cursorKey(scope, sort);
     final QueryDocumentSnapshotJson? startAfter = reset ? null : _cursors[key];
 
-    final String serial = _authCubit.state.serial;
-
-    if (scope == LoungeScope.serial &&
-        (serial == 'unknown' || serial.isEmpty)) {
-      return const PaginatedQueryResult<Post>(
-        items: <Post>[],
-        lastDocument: null,
-        hasMore: false,
-      );
+    // 전체 라운지가 아닌 경우, 접근 권한 확인
+    if (scope.loungeId != 'all') {
+      final bool hasAccess = state.accessibleLounges.any((lounge) => lounge.id == scope.loungeId);
+      if (!hasAccess) {
+        return const PaginatedQueryResult<Post>(
+          items: <Post>[],
+          lastDocument: null,
+          hasMore: false,
+        );
+      }
     }
 
     return _repository.fetchLoungeFeed(
@@ -437,7 +487,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       sort: sort,
       limit: _pageSize,
       startAfter: startAfter,
-      serial: scope == LoungeScope.serial ? serial : null,
+      serial: scope.loungeId != 'all' ? scope.loungeId : null,
       currentUid: uid,
     );
   }

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../matching/domain/entities/match_preferences.dart';
 import 'career_track.dart';
+import 'career_hierarchy.dart';
 
 enum UserRole { member, moderator, admin }
 
@@ -51,6 +52,9 @@ class UserProfile extends Equatable {
     this.serialVisible = true,
     this.governmentEmail,
     this.governmentEmailVerifiedAt,
+    this.careerHierarchy,
+    this.accessibleLoungeIds = const <String>[],
+    this.defaultLoungeId,
   });
 
   final String uid;
@@ -94,6 +98,9 @@ class UserProfile extends Equatable {
   final bool serialVisible;
   final String? governmentEmail;
   final DateTime? governmentEmailVerifiedAt;
+  final CareerHierarchy? careerHierarchy;
+  final List<String> accessibleLoungeIds;
+  final String? defaultLoungeId;
 
   bool get isBlocked =>
       blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
@@ -156,6 +163,9 @@ class UserProfile extends Equatable {
     bool? serialVisible,
     String? governmentEmail,
     DateTime? governmentEmailVerifiedAt,
+    CareerHierarchy? careerHierarchy,
+    List<String>? accessibleLoungeIds,
+    String? defaultLoungeId,
   }) {
     return UserProfile(
       uid: uid,
@@ -202,6 +212,9 @@ class UserProfile extends Equatable {
       serialVisible: serialVisible ?? this.serialVisible,
       governmentEmail: governmentEmail ?? this.governmentEmail,
       governmentEmailVerifiedAt: governmentEmailVerifiedAt ?? this.governmentEmailVerifiedAt,
+      careerHierarchy: careerHierarchy ?? this.careerHierarchy,
+      accessibleLoungeIds: accessibleLoungeIds ?? this.accessibleLoungeIds,
+      defaultLoungeId: defaultLoungeId ?? this.defaultLoungeId,
     );
   }
 
@@ -319,6 +332,9 @@ class UserProfile extends Equatable {
       serialVisible: data['serialVisible'] as bool? ?? true,
       governmentEmail: data['governmentEmail'] as String?,
       governmentEmailVerifiedAt: _parseTimestamp(data['governmentEmailVerifiedAt']),
+      careerHierarchy: _parseCareerHierarchy(data['careerHierarchy']),
+      accessibleLoungeIds: _parseStringList(data['accessibleLoungeIds']),
+      defaultLoungeId: data['defaultLoungeId'] as String?,
     );
   }
 
@@ -379,6 +395,18 @@ class UserProfile extends Equatable {
     return null;
   }
 
+  static CareerHierarchy? _parseCareerHierarchy(Object? raw) {
+    if (raw is Map<String, Object?>) {
+      try {
+        return CareerHierarchy.fromMap(raw);
+      } catch (e) {
+        // 파싱 실패 시 null 반환
+        return null;
+      }
+    }
+    return null;
+  }
+
   @override
   List<Object?> get props => <Object?>[
     uid,
@@ -422,5 +450,8 @@ class UserProfile extends Equatable {
     serialVisible,
     governmentEmail,
     governmentEmailVerifiedAt,
+    careerHierarchy,
+    accessibleLoungeIds,
+    defaultLoungeId,
   ];
 }

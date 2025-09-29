@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../di/di.dart';
@@ -13,6 +19,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/widgets/auth_dialog.dart';
 import '../../data/paystub_verification_repository.dart';
 import '../../domain/career_track.dart';
+import '../../domain/career_hierarchy.dart';
 import '../../domain/paystub_verification.dart';
 import '../../domain/user_profile.dart';
 import '../../../community/domain/models/post.dart';
@@ -93,8 +100,42 @@ class _ProfileLoggedOut extends StatelessWidget {
   }
 }
 
-class _ProfileLoggedInScaffold extends StatelessWidget {
+class _ProfileLoggedInScaffold extends StatefulWidget {
   const _ProfileLoggedInScaffold();
+
+  @override
+  State<_ProfileLoggedInScaffold> createState() => _ProfileLoggedInScaffoldState();
+}
+
+class _ProfileLoggedInScaffoldState extends State<_ProfileLoggedInScaffold> {
+  String? _lastShownMessage;
+  DateTime? _lastMessageTime;
+
+  void _showMessageIfDifferent(BuildContext context, String message) {
+    final now = DateTime.now();
+
+    // 같은 메시지를 1초 이내에 연속으로 표시하지 않음
+    if (_lastShownMessage == message &&
+        _lastMessageTime != null &&
+        now.difference(_lastMessageTime!).inMilliseconds < 1000) {
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.clearSnackBars(); // 큐의 모든 스낵바 제거
+    scaffoldMessenger.removeCurrentSnackBar(); // 현재 스낵바도 제거
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    _lastShownMessage = message;
+    _lastMessageTime = now;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,9 +147,7 @@ class _ProfileLoggedInScaffold extends StatelessWidget {
         if (message == null) {
           return;
         }
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(message)));
+        _showMessageIfDifferent(context, message);
         context.read<AuthCubit>().clearLastMessage();
       },
       child: DefaultTabController(
@@ -144,35 +183,34 @@ class _ProfileOverviewTab extends StatelessWidget {
         builder: (BuildContext context, AuthState state) {
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.all(16),
             children: [
               _ProfileHeader(state: state, isOwnProfile: true), // 임시로 항상 자신의 프로필로 설정
-              const Gap(12),
-              _SponsorshipBanner(state: state),
               const Gap(16),
+              _SponsorshipBanner(state: state),
+              const Gap(20),
               Text(
                 '라운지 타임라인',
                 style: Theme.of(
                   context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const Gap(12),
               const _TimelineSection(),
-              const Gap(16),
+              const Gap(24),
               Center(
                 child: Column(
                   children: [
                     Image.asset(
                       'assets/images/hanisoft_logo.png',
-                      height: 40,
+                      height: 32,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
-                    const Gap(8),
+                    const Gap(4),
                     Text(
                       'Powered by HANISOFT',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -241,7 +279,16 @@ class _TimelineSection extends StatelessWidget {
             }
             return Column(
               children: [
-                ...state.posts.map((Post post) => _TimelinePostTile(post: post)),
+                ...state.posts.map(
+                  (Post post) => Column(
+                    children: [
+                      _TimelinePostTile(post: post),
+                      Divider(
+                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                      ),
+                    ],
+                  ),
+                ),
                 if (state.hasMore) ...[
                   const Gap(8),
                   OutlinedButton(
@@ -271,50 +318,53 @@ class _TimelinePostTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.pushNamed(
-          CommunityPostDetailRoute.name,
-          pathParameters: {'postId': post.id},
-          extra: post,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Chip(
-                    label: Text(
-                      post.audience == PostAudience.serial ? post.serial.toUpperCase() : '전체 공개',
-                    ),
+    return InkWell(
+      onTap: () => context.pushNamed(
+        CommunityPostDetailRoute.name,
+        pathParameters: {'postId': post.id},
+        extra: post,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  post.audience == PostAudience.serial ? post.serial.toUpperCase() : '전체 공개',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const Spacer(),
-                  Text(_formatDate(post.createdAt), style: theme.textTheme.bodySmall),
-                ],
-              ),
-              const Gap(8),
-              Text(
-                post.text,
-                style: theme.textTheme.bodyLarge,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const Gap(12),
-              Row(
-                children: [
-                  _TimelineStat(icon: Icons.favorite_border, value: post.likeCount),
-                  const Gap(12),
-                  _TimelineStat(icon: Icons.mode_comment_outlined, value: post.commentCount),
-                  const Gap(12),
-                  _TimelineStat(icon: Icons.visibility_outlined, value: post.viewCount),
-                ],
-              ),
-            ],
-          ),
+                ),
+                const Spacer(),
+                Text(
+                  _formatDate(post.createdAt),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(8),
+            Text(
+              post.text,
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Gap(8),
+            Row(
+              children: [
+                _TimelineStat(icon: Icons.favorite_border, value: post.likeCount),
+                const Gap(12),
+                _TimelineStat(icon: Icons.mode_comment_outlined, value: post.commentCount),
+                const Gap(12),
+                _TimelineStat(icon: Icons.visibility_outlined, value: post.viewCount),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -355,8 +405,8 @@ class _ProfileHeader extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -376,13 +426,10 @@ class _ProfileHeader extends StatelessWidget {
                       // 닉네임
                       Text(
                         displayNickname,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
+                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const Gap(6),
+                      const Gap(4),
                       // 가입일 표시
                       Row(
                         children: [
@@ -391,7 +438,7 @@ class _ProfileHeader extends StatelessWidget {
                             size: 14,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const Gap(6),
+                          const Gap(4),
                           Text(
                             '2024년 9월에 가입',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -405,52 +452,25 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 // 우측 액션 버튼
                 if (isOwnProfile)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (BuildContext context) => const ProfileEditPage(),
-                          ),
-                        );
-                      },
-                      icon: Icon(Icons.edit_outlined, color: theme.colorScheme.onSurfaceVariant),
-                      tooltip: '프로필 수정',
-                    ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) => const ProfileEditPage(),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.edit_outlined, color: theme.colorScheme.onSurface),
+                    tooltip: '프로필 수정',
                   )
                 else
                   _FollowButton(targetUserId: state.userId ?? ''),
               ],
             ),
-            const Gap(16),
+            const Gap(12),
             // 자기소개
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.5),
-              ),
-              child: Text(
-                (state.bio != null && state.bio!.trim().isNotEmpty)
-                    ? state.bio!.trim()
-                    : '작성된 자기소개가 없습니다.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: (state.bio != null && state.bio!.trim().isNotEmpty)
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontStyle: (state.bio != null && state.bio!.trim().isNotEmpty)
-                      ? FontStyle.normal
-                      : FontStyle.italic,
-                  height: 1.4,
-                ),
-              ),
-            ),
+            if (state.bio != null && state.bio!.trim().isNotEmpty)
+              Text(state.bio!.trim(), style: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
             const Gap(16),
             // 팔로워/팔로잉 통계
             Row(
@@ -472,92 +492,214 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ],
             ),
-            const Gap(12),
-            // 기본 정보 (개선된 레이아웃)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '기본 정보',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+            const Gap(16),
+            // 인증 상태
+            Column(
+              children: [
+                _VerificationStatusRow(
+                  icon: state.isGovernmentEmailVerified ? Icons.verified : Icons.email_outlined,
+                  label: '공무원 메일 인증',
+                  isVerified: state.isGovernmentEmailVerified,
+                ),
+                if (state.userId != null) ...[const Gap(8), _PaystubStatusRow(uid: state.userId!)],
+                const Gap(8),
+                // 직렬 설정 상태
+                Row(
+                  children: [
+                    Icon(
+                      Icons.badge_outlined,
+                      size: 16,
+                      color: state.serial == 'unknown'
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurface,
                     ),
-                  ),
-                  const Gap(8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InfoChip(
-                          icon: Icons.badge_outlined,
-                          label: state.serial == 'unknown'
-                              ? '직렬 미설정'
-                              : state.careerTrack.displayName,
-                          color: state.serial == 'unknown'
-                              ? theme.colorScheme.error
-                              : theme.colorScheme.primary,
-                        ),
-                      ),
-                      const Gap(8),
-                      Expanded(
-                        child: _InfoChip(
-                          icon: Icons.stars_outlined,
-                          label: '포인트 ${state.points}',
-                          color: theme.colorScheme.tertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Gap(12),
-            // 인증 상태 (개선된 레이아웃)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '인증 상태',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const Gap(8),
+                    const Expanded(
+                      child: Text('직렬', style: TextStyle(color: Colors.black)),
                     ),
-                  ),
-                  const Gap(8),
-                  Column(
-                    children: [
-                      _VerificationStatusRow(
-                        icon: state.isGovernmentEmailVerified ? Icons.verified : Icons.close,
-                        label: '공직자 메일 인증',
-                        isVerified: state.isGovernmentEmailVerified,
+                    Text(
+                      state.serial == 'unknown' ? '미설정' : state.careerTrack.displayName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: state.serial == 'unknown'
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      if (state.userId != null) ...[
+                    ),
+                  ],
+                ),
+
+                // 임시 직렬 선택 버튼 (테스트용)
+                if (kDebugMode) ...[
+                  const Gap(12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.bug_report,
+                              size: 16,
+                              color: theme.colorScheme.error,
+                            ),
+                            const Gap(8),
+                            Text(
+                              '테스트 모드',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                         const Gap(8),
-                        _PaystubStatusRow(uid: state.userId!),
+                        Text(
+                          '라운지 시스템 테스트를 위한 임시 직렬 선택',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                        const Gap(8),
+                        ElevatedButton(
+                          onPressed: () => _showTestCareerSelector(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.error,
+                            foregroundColor: theme.colorScheme.onError,
+                          ),
+                          child: const Text('임시 직렬 선택'),
+                        ),
                       ],
-                    ],
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  static const List<Map<String, String>> testCareers = [
+    {'id': 'elementary_teacher', 'name': '초등교사'},
+    {'id': 'secondary_math_teacher', 'name': '중등수학교사'},
+    {'id': 'secondary_korean_teacher', 'name': '중등국어교사'},
+    {'id': 'secondary_english_teacher', 'name': '중등영어교사'},
+    {'id': 'admin_9th_national', 'name': '국가직 9급'},
+    {'id': 'admin_7th_national', 'name': '국가직 7급'},
+    {'id': 'police', 'name': '경찰관'},
+    {'id': 'firefighter', 'name': '소방관'},
+    {'id': 'army', 'name': '육군'},
+    {'id': 'none', 'name': '직렬 없음 (기본)'},
+  ];
+
+  void _showTestCareerSelector(BuildContext context) {
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  '테스트용 직렬 선택',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ...testCareers.map((career) {
+                return ListTile(
+                  title: Text(career['name']!),
+                  subtitle: Text('ID: ${career['id']}'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _updateTestCareer(context, career['id']!);
+                  },
+                );
+              }),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _updateTestCareer(BuildContext context, String careerId) async {
+    try {
+      final AuthCubit authCubit = context.read<AuthCubit>();
+      final String? userId = authCubit.state.userId;
+
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다')),
+        );
+        return;
+      }
+
+      // CareerHierarchy 생성
+      CareerHierarchy? careerHierarchy;
+      List<String> accessibleLoungeIds = ['all']; // 기본값
+      String defaultLoungeId = 'all';
+
+      if (careerId != 'none') {
+        careerHierarchy = CareerHierarchy.fromSpecificCareer(careerId);
+
+        // 접근 가능한 라운지 ID 생성
+        accessibleLoungeIds = [];
+        if (careerHierarchy.level1 != null) accessibleLoungeIds.add(careerHierarchy.level1!);
+        if (careerHierarchy.level2 != null) accessibleLoungeIds.add(careerHierarchy.level2!);
+        if (careerHierarchy.level3 != null) accessibleLoungeIds.add(careerHierarchy.level3!);
+        if (careerHierarchy.level4 != null) accessibleLoungeIds.add(careerHierarchy.level4!);
+
+        // 기본 라운지는 가장 구체적인 레벨
+        defaultLoungeId = careerHierarchy.level4 ??
+                         careerHierarchy.level3 ??
+                         careerHierarchy.level2 ??
+                         careerHierarchy.level1 ??
+                         'all';
+      }
+
+      // Firestore 직접 업데이트
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'careerHierarchy': careerHierarchy?.toMap(),
+        'accessibleLoungeIds': accessibleLoungeIds,
+        'defaultLoungeId': defaultLoungeId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // AuthCubit 새로고침
+      await authCubit.refreshAuthStatus();
+
+      if (context.mounted) {
+        final careerName = testCareers.firstWhere((c) => c['id'] == careerId, orElse: () => {'name': careerId})['name'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('테스트 직렬이 "$careerName"(으)로 설정되었습니다'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류가 발생했습니다: $e')),
+        );
+      }
+    }
   }
 }
 
@@ -574,68 +716,24 @@ class _StatCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.5),
-        ),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Column(
           children: [
             Text(
               '$count',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
-            const Gap(2),
             Text(
               title,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label, required this.color});
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const Gap(6),
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -651,46 +749,28 @@ class _VerificationStatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isVerified
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isVerified
-              ? theme.colorScheme.primary.withValues(alpha: 0.3)
-              : theme.colorScheme.error.withValues(alpha: 0.3),
-          width: 0.5,
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 16,
+        const Gap(8),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+          ),
+        ),
+        Text(
+          isVerified ? '인증됨' : '미인증',
+          style: theme.textTheme.bodySmall?.copyWith(
             color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
+            fontWeight: FontWeight.w600,
           ),
-          const Gap(8),
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Text(
-            isVerified ? '인증됨' : '미인증',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -710,70 +790,44 @@ class _PaystubStatusRow extends StatelessWidget {
       builder: (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
         final PaystubVerification verification = snapshot.data ?? PaystubVerification.none;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: verification.status == PaystubVerificationStatus.verified
-                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                : verification.status == PaystubVerificationStatus.processing
-                ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3)
-                : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: verification.status == PaystubVerificationStatus.verified
-                  ? theme.colorScheme.primary.withValues(alpha: 0.3)
+        return Row(
+          children: [
+            Icon(
+              verification.status == PaystubVerificationStatus.verified
+                  ? Icons.verified
                   : verification.status == PaystubVerificationStatus.processing
-                  ? theme.colorScheme.tertiary.withValues(alpha: 0.3)
-                  : theme.colorScheme.error.withValues(alpha: 0.3),
-              width: 0.5,
+                  ? Icons.hourglass_empty
+                  : Icons.description_outlined,
+              size: 16,
+              color: verification.status == PaystubVerificationStatus.verified
+                  ? theme.colorScheme.primary
+                  : verification.status == PaystubVerificationStatus.processing
+                  ? theme.colorScheme.tertiary
+                  : theme.colorScheme.error,
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                verification.status == PaystubVerificationStatus.verified
-                    ? Icons.verified
-                    : verification.status == PaystubVerificationStatus.processing
-                    ? Icons.hourglass_empty
-                    : Icons.close,
-                size: 16,
+            const Gap(8),
+            Expanded(
+              child: Text(
+                '급여명세서 인증',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+              ),
+            ),
+            Text(
+              verification.status == PaystubVerificationStatus.verified
+                  ? '인증됨'
+                  : verification.status == PaystubVerificationStatus.processing
+                  ? '검토중'
+                  : '미인증',
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: verification.status == PaystubVerificationStatus.verified
                     ? theme.colorScheme.primary
                     : verification.status == PaystubVerificationStatus.processing
                     ? theme.colorScheme.tertiary
                     : theme.colorScheme.error,
+                fontWeight: FontWeight.w600,
               ),
-              const Gap(8),
-              Expanded(
-                child: Text(
-                  '급여명세서 인증',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: verification.status == PaystubVerificationStatus.verified
-                        ? theme.colorScheme.primary
-                        : verification.status == PaystubVerificationStatus.processing
-                        ? theme.colorScheme.tertiary
-                        : theme.colorScheme.error,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Text(
-                verification.status == PaystubVerificationStatus.verified
-                    ? '인증됨'
-                    : verification.status == PaystubVerificationStatus.processing
-                    ? '검토중'
-                    : '미인증',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: verification.status == PaystubVerificationStatus.verified
-                      ? theme.colorScheme.primary
-                      : verification.status == PaystubVerificationStatus.processing
-                      ? theme.colorScheme.tertiary
-                      : theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -790,29 +844,23 @@ class _ProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2), width: 2),
-      ),
-      child: CircleAvatar(
-        radius: 32,
-        backgroundColor: photoUrl != null && photoUrl!.isNotEmpty
-            ? Colors.transparent
-            : theme.colorScheme.primaryContainer,
-        backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
-            ? CachedNetworkImageProvider(photoUrl!)
-            : null,
-        child: photoUrl == null || photoUrl!.isEmpty
-            ? Text(
-                nickname.isEmpty ? '?' : nickname.characters.first,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              )
-            : null,
-      ),
+    return CircleAvatar(
+      radius: 30,
+      backgroundColor: photoUrl != null && photoUrl!.isNotEmpty
+          ? Colors.transparent
+          : theme.colorScheme.primaryContainer,
+      backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
+          ? CachedNetworkImageProvider(photoUrl!)
+          : null,
+      child: photoUrl == null || photoUrl!.isEmpty
+          ? Text(
+              nickname.isEmpty ? '?' : nickname.characters.first,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            )
+          : null,
     );
   }
 }
@@ -830,6 +878,11 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
   late final TextEditingController _confirmPasswordController;
   late final TextEditingController _deletePasswordController;
 
+  // 알림 설정 상태
+  bool _likeNotifications = true;
+  bool _commentNotifications = true;
+  bool _followNotifications = true;
+
   @override
   void initState() {
     super.initState();
@@ -841,6 +894,7 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
 
   @override
   void dispose() {
+    _snackBarTimer?.cancel();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -859,59 +913,131 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
             _SettingsSection(
               title: '알림 설정',
               children: [
-                SwitchListTile.adaptive(
-                  value: state.notificationsEnabled,
-                  onChanged: isProcessing
-                      ? null
-                      : (bool value) => context.read<AuthCubit>().updateNotificationsEnabled(value),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 16),
+                  leading: const Icon(Icons.notifications_outlined, size: 20),
                   title: const Text('전체 알림'),
                   subtitle: const Text('모든 알림을 받을지 설정합니다.'),
+                  trailing: Switch.adaptive(
+                    value: state.notificationsEnabled,
+                    onChanged: isProcessing
+                        ? null
+                        : (bool value) =>
+                              context.read<AuthCubit>().updateNotificationsEnabled(value),
+                  ),
                 ),
-                if (state.notificationsEnabled) ...[
-                  const Divider(),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16),
-                    leading: const Icon(Icons.favorite_outline, size: 20),
-                    title: const Text('좋아요 알림'),
-                    subtitle: const Text('내 게시물에 좋아요가 달렸을 때'),
-                    trailing: Switch.adaptive(
-                      value: true, // TODO: 실제 설정 값으로 연결
-                      onChanged: isProcessing
+                const Divider(),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 16),
+                  leading: Icon(
+                    Icons.favorite_outline,
+                    size: 20,
+                    color: state.notificationsEnabled
+                        ? null
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  title: Text(
+                    '좋아요 알림',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
                           ? null
-                          : (value) {
-                              // TODO: 개별 알림 설정 구현
-                            },
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                   ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16),
-                    leading: const Icon(Icons.comment_outlined, size: 20),
-                    title: const Text('댓글 알림'),
-                    subtitle: const Text('내 게시물에 댓글이 달렸을 때'),
-                    trailing: Switch.adaptive(
-                      value: true, // TODO: 실제 설정 값으로 연결
-                      onChanged: isProcessing
+                  subtitle: Text(
+                    '내 게시물에 좋아요가 달렸을 때',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
                           ? null
-                          : (value) {
-                              // TODO: 개별 알림 설정 구현
-                            },
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                   ),
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16),
-                    leading: const Icon(Icons.person_add_outlined, size: 20),
-                    title: const Text('팔로우 알림'),
-                    subtitle: const Text('새로운 팔로워가 생겼을 때'),
-                    trailing: Switch.adaptive(
-                      value: true, // TODO: 실제 설정 값으로 연결
-                      onChanged: isProcessing
+                  trailing: Switch.adaptive(
+                    value: state.notificationsEnabled ? _likeNotifications : false,
+                    onChanged: (isProcessing || !state.notificationsEnabled)
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _likeNotifications = value;
+                            });
+                            // SharedPreferences 저장 로직은 향후 구현 예정
+                          },
+                  ),
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 16),
+                  leading: Icon(
+                    Icons.comment_outlined,
+                    size: 20,
+                    color: state.notificationsEnabled
+                        ? null
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  title: Text(
+                    '댓글 알림',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
                           ? null
-                          : (value) {
-                              // TODO: 개별 알림 설정 구현
-                            },
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                   ),
-                ],
+                  subtitle: Text(
+                    '내 게시물에 댓글이 달렸을 때',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
+                          ? null
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  trailing: Switch.adaptive(
+                    value: state.notificationsEnabled ? _commentNotifications : false,
+                    onChanged: (isProcessing || !state.notificationsEnabled)
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _commentNotifications = value;
+                            });
+                            // SharedPreferences 저장 로직은 향후 구현 예정
+                          },
+                  ),
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 16),
+                  leading: Icon(
+                    Icons.person_add_outlined,
+                    size: 20,
+                    color: state.notificationsEnabled
+                        ? null
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  title: Text(
+                    '팔로우 알림',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
+                          ? null
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  subtitle: Text(
+                    '새로운 팔로워가 생겼을 때',
+                    style: TextStyle(
+                      color: state.notificationsEnabled
+                          ? null
+                          : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  trailing: Switch.adaptive(
+                    value: state.notificationsEnabled ? _followNotifications : false,
+                    onChanged: (isProcessing || !state.notificationsEnabled)
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _followNotifications = value;
+                            });
+                            // SharedPreferences 저장 로직은 향후 구현 예정
+                          },
+                  ),
+                ),
               ],
             ),
             const Gap(16),
@@ -972,44 +1098,8 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
             ),
             const Gap(16),
             _SettingsSection(
-              title: '계정 관리',
-              children: [
-                FilledButton.tonal(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                  ),
-                  onPressed: isProcessing ? null : () => _confirmDeleteAccount(context),
-                  child: const Text('회원 탈퇴'),
-                ),
-              ],
-            ),
-            const Gap(16),
-            _SettingsSection(
-              title: '저장소 관리',
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.cleaning_services_outlined),
-                  title: const Text('캐시 삭제'),
-                  subtitle: const Text('임시 파일과 캐시를 삭제하여 저장 공간을 확보합니다.'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showCacheClearDialog(context),
-                ),
-              ],
-            ),
-            const Gap(16),
-            _SettingsSection(
               title: '고객 지원',
               children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.help_outline),
-                  title: const Text('자주 묻는 질문'),
-                  subtitle: const Text('공통적인 질문과 답변을 확인하세요.'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showFAQDialog(context),
-                ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.feedback_outlined),
@@ -1029,14 +1119,14 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text('개인정보 처리방침'),
                   trailing: const Icon(Icons.open_in_new),
-                  onTap: () => _launchUrl('https://privacy.policy.url'),
+                  onTap: () => _launchUrl('https://www.hanisoft.kr/privacy'),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.description_outlined),
                   title: const Text('서비스 이용약관'),
                   trailing: const Icon(Icons.open_in_new),
-                  onTap: () => _launchUrl('https://terms.of.service.url'),
+                  onTap: () => _launchUrl('https://www.hanisoft.kr/terms'),
                 ),
               ],
             ),
@@ -1044,12 +1134,20 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
             _SettingsSection(
               title: '앱 정보',
               children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('버전 정보'),
-                  subtitle: const Text('1.0.0 (빌드 1)'), // TODO: 실제 버전 정보로 대체
-                  onTap: () => _showVersionInfo(context),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final String versionText = snapshot.hasData
+                        ? '${snapshot.data!.version} (빌드 ${snapshot.data!.buildNumber})'
+                        : '1.0.0 (빌드 1)';
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text('버전 정보'),
+                      subtitle: Text(versionText),
+                      onTap: () => _showVersionInfo(context),
+                    );
+                  },
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -1065,6 +1163,20 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
                   title: const Text('오픈소스 라이선스'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showLicenses(context),
+                ),
+              ],
+            ),
+            const Gap(16),
+            _SettingsSection(
+              title: '계정 관리',
+              children: [
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  onPressed: isProcessing ? null : () => _confirmDeleteAccount(context),
+                  child: const Text('회원 탈퇴'),
                 ),
               ],
             ),
@@ -1120,131 +1232,192 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
     );
   }
 
+  Timer? _snackBarTimer;
+
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+    // 이전 타이머 취소
+    _snackBarTimer?.cancel();
 
-  void _showCacheClearDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('캐시 삭제'),
-          content: const Text('앱의 임시 파일과 캐시를 모두 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('취소')),
-            FilledButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                // TODO: 실제 캐시 삭제 로직 구현
-                _showMessage(context, '캐시가 삭제되었습니다.');
-              },
-              child: const Text('삭제'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-  void _showFAQDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('자주 묻는 질문'),
-          content: const SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Q: 회원가입은 어떻게 하나요?', style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(height: 4),
-                Text('A: Google 또는 Kakao 계정으로 간편하게 가입할 수 있습니다.'),
-                SizedBox(height: 16),
-                Text('Q: 직렬 인증은 필수인가요?', style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(height: 4),
-                Text('A: 기본 기능은 인증 없이도 사용 가능하지만, 커뮤니티 등 확장 기능을 위해서는 인증이 필요합니다.'),
-                SizedBox(height: 16),
-              ],
-            ),
+    // 즉시 이전 스낵바 제거
+    scaffoldMessenger.removeCurrentSnackBar();
+
+    // 짧은 지연 후 새 스낵바 표시 (연속 호출 방지)
+    _snackBarTimer = Timer(const Duration(milliseconds: 100), () {
+      if (context.mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('확인')),
-          ],
         );
-      },
-    );
+      }
+    });
   }
 
   void _showFeedbackDialog(BuildContext context) {
     final TextEditingController feedbackController = TextEditingController();
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    bool isLoading = false;
 
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('피드백 보내기'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('개선 사항이나 문제점을 알려주세요.'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: feedbackController,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  hintText: '의견을 자유롭게 작성해주세요...',
-                  border: OutlineInputBorder(),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('피드백 보내기'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('개선 사항이나 문제점을 알려주세요.'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: feedbackController,
+                      maxLines: 5,
+                      enabled: !isLoading,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return '피드백 내용을 입력해주세요.';
+                        }
+                        if (value.trim().length < 10) {
+                          return '10글자 이상 입력해주세요.';
+                        }
+                        return null;
+                      },
+                      decoration: const InputDecoration(
+                        hintText: '의견을 자유롭게 작성해주세요...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('취소')),
-            FilledButton(
-              onPressed: () {
-                if (feedbackController.text.trim().isNotEmpty) {
-                  Navigator.of(context).pop();
-                  // TODO: 실제 피드백 전송 로직 구현
-                  _showMessage(context, '피드백이 전송되었습니다. 감사합니다!');
-                }
-              },
-              child: const Text('전송'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
+                ),
+                FilledButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState?.validate() ?? false) {
+                            setState(() => isLoading = true);
+                            try {
+                              await _sendFeedbackEmail(feedbackController.text.trim());
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                _showMessage(context, '피드백이 전송되었습니다. 감사합니다!');
+                              }
+                            } catch (error) {
+                              if (context.mounted) {
+                                setState(() => isLoading = false);
+                                _showMessage(context, '피드백 전송 중 오류가 발생했습니다: $error');
+                              }
+                            }
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('전송'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  void _launchUrl(String url) {
-    // TODO: url_launcher 패키지 사용하여 URL 열기
-    // launchUrl(Uri.parse(url));
+  Future<void> _sendFeedbackEmail(String feedback) async {
+    final AuthState authState = context.read<AuthCubit>().state;
+    final String userEmail = authState.email ?? 'anonymous@example.com';
+    final String userName = authState.nickname.isNotEmpty ? authState.nickname : '익명 사용자';
+
+    // 이메일 제목과 본문 구성
+    final String subject = Uri.encodeComponent('[공무톡] 사용자 피드백');
+    final String body = Uri.encodeComponent('''
+안녕하세요, 공무톡 개발팀입니다.
+
+사용자로부터 다음과 같은 피드백을 받았습니다.
+
+--- 사용자 정보 ---
+이름: $userName
+이메일: $userEmail
+작성 시간: ${DateTime.now().toString()}
+
+--- 피드백 내용 ---
+$feedback
+
+---
+이 메시지는 공무톡 앱에서 자동으로 생성되었습니다.
+    ''');
+
+    // mailto URL 구성
+    final String mailtoUrl = 'mailto:hanisoft2022@gmail.com?subject=$subject&body=$body';
+    final Uri uri = Uri.parse(mailtoUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw Exception('이메일 앱을 열 수 없습니다. 기기에 이메일 앱이 설치되어 있는지 확인해주세요.');
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          _showMessage(context, 'URL을 열 수 없습니다: $url');
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        _showMessage(context, 'URL을 여는 중 오류가 발생했습니다: $error');
+      }
+    }
   }
 
   void _showVersionInfo(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('버전 정보'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('앱 버전: 1.0.0'),
-              Text('빌드 번호: 1'),
-              Text('출시일: 2024.09'),
-              SizedBox(height: 16),
-              Text('최신 버전을 사용 중입니다.'),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('확인')),
-          ],
+        return FutureBuilder<PackageInfo>(
+          future: PackageInfo.fromPlatform(),
+          builder: (context, snapshot) {
+            final PackageInfo? packageInfo = snapshot.data;
+
+            return AlertDialog(
+              title: const Text('버전 정보'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('앱 이름: ${packageInfo?.appName ?? '공무톡'}'),
+                  Text('앱 버전: ${packageInfo?.version ?? '1.0.0'}'),
+                  Text('빌드 번호: ${packageInfo?.buildNumber ?? '1'}'),
+                  Text('패키지명: ${packageInfo?.packageName ?? 'kr.hanisoft.gong_mu_talk'}'),
+                  const SizedBox(height: 16),
+                  const Text('최신 버전을 사용 중입니다.'),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('확인')),
+              ],
+            );
+          },
         );
       },
     );
@@ -1275,12 +1448,9 @@ class _ProfileSettingsTabState extends State<_ProfileSettingsTab> {
   }
 
   void _showLicenses(BuildContext context) {
-    showLicensePage(
-      context: context,
-      applicationName: '공무톡',
-      applicationVersion: '1.0.0',
-      applicationLegalese: '© 2024 HANISOFT. All rights reserved.',
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (BuildContext context) => const _CustomLicensePage()));
   }
 }
 
@@ -1469,11 +1639,46 @@ class _FollowButtonState extends State<_FollowButton> {
   }
 
   Future<void> _checkFollowStatus() async {
-    // TODO: 실제 팔로우 상태 확인 로직 구현
-    // 현재는 임시로 false로 설정
-    setState(() {
-      _isFollowing = false;
-    });
+    try {
+      final authState = context.read<AuthCubit>().state;
+      final currentUserId = authState.userId;
+
+      if (currentUserId == null || currentUserId == widget.targetUserId) {
+        setState(() {
+          _isFollowing = false;
+        });
+        return;
+      }
+
+      // Firestore에서 팔로우 관계 확인
+      final followDoc = await FirebaseFirestore.instance
+          .collection('follows')
+          .doc('${currentUserId}_${widget.targetUserId}')
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _isFollowing = followDoc.exists;
+        });
+      }
+    } catch (error) {
+      // 에러 발생 시 기본값으로 설정
+      if (mounted) {
+        setState(() {
+          _isFollowing = false;
+        });
+      }
+    }
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _toggleFollow() async {
@@ -1484,30 +1689,60 @@ class _FollowButtonState extends State<_FollowButton> {
     });
 
     try {
-      // TODO: 실제 팔로우/언팔로우 API 호출
-      await Future.delayed(const Duration(milliseconds: 500)); // 임시 딜레이
+      final authState = context.read<AuthCubit>().state;
+      final currentUserId = authState.userId;
+
+      if (currentUserId == null || currentUserId == widget.targetUserId) {
+        throw Exception('잘못된 요청입니다.');
+      }
+
+      final db = FirebaseFirestore.instance;
+      final followDocId = '${currentUserId}_${widget.targetUserId}';
+
+      if (_isFollowing) {
+        // 언팔로우: Firestore에서 팔로우 관계 삭제
+        await db.runTransaction((transaction) async {
+          // follows 컬렉션에서 삭제
+          transaction.delete(db.collection('follows').doc(followDocId));
+
+          // 팔로워 카운트 감소
+          final targetUserRef = db.collection('users').doc(widget.targetUserId);
+          transaction.update(targetUserRef, {'followerCount': FieldValue.increment(-1)});
+
+          // 팔로잉 카운트 감소
+          final currentUserRef = db.collection('users').doc(currentUserId);
+          transaction.update(currentUserRef, {'followingCount': FieldValue.increment(-1)});
+        });
+      } else {
+        // 팔로우: Firestore에 팔로우 관계 추가
+        await db.runTransaction((transaction) async {
+          // follows 컬렉션에 추가
+          transaction.set(db.collection('follows').doc(followDocId), {
+            'followerId': currentUserId,
+            'followingId': widget.targetUserId,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+          // 팔로워 카운트 증가
+          final targetUserRef = db.collection('users').doc(widget.targetUserId);
+          transaction.update(targetUserRef, {'followerCount': FieldValue.increment(1)});
+
+          // 팔로잉 카운트 증가
+          final currentUserRef = db.collection('users').doc(currentUserId);
+          transaction.update(currentUserRef, {'followingCount': FieldValue.increment(1)});
+        });
+      }
 
       setState(() {
         _isFollowing = !_isFollowing;
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(_isFollowing ? '팔로우했습니다' : '팔로우를 취소했습니다'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+        _showMessage(context, _isFollowing ? '팔로우했습니다' : '팔로우를 취소했습니다');
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text('오류가 발생했습니다: $error'), duration: const Duration(seconds: 2)),
-          );
+        _showMessage(context, '오류가 발생했습니다: $error');
       }
     } finally {
       if (mounted) {
@@ -1593,12 +1828,25 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   late final TextEditingController _nicknameController;
   late final TextEditingController _bioController;
 
+  // 토글 처리 중 상태
+  bool _isUpdatingSerialVisibility = false;
+
   @override
   void initState() {
     super.initState();
     final AuthState state = context.read<AuthCubit>().state;
     _nicknameController = TextEditingController(text: state.nickname);
     _bioController = TextEditingController(text: state.bio ?? '');
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -1642,74 +1890,82 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             ),
             body: SafeArea(
               child: ListView(
-                padding: const EdgeInsets.all(12),
-              children: [
-                // 프로필 이미지 섹션
-                _ProfileImageSection(
-                  photoUrl: state.photoUrl,
-                  nickname: state.nickname,
-                  isProcessing: isProcessing,
-                ),
-                const Gap(24),
-
-                // 닉네임 섹션
-                _ProfileEditSection(
-                  title: '닉네임',
-                  child: TextField(
-                    controller: _nicknameController,
-                    enabled: !isProcessing,
-                    maxLength: 20,
-                    decoration: const InputDecoration(
-                      hintText: '닉네임을 입력하세요',
-                      counterText: '',
-                      border: OutlineInputBorder(),
-                    ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                children: [
+                  // 프로필 이미지 섹션
+                  _ProfileImageSection(
+                    photoUrl: state.photoUrl,
+                    nickname: state.nickname,
+                    isProcessing: isProcessing,
                   ),
-                ),
-                const Gap(24),
+                  const Gap(24),
 
-                // 자기소개 섹션
-                _ProfileEditSection(
-                  title: '자기소개',
-                  child: TextField(
-                    controller: _bioController,
-                    enabled: !isProcessing,
-                    maxLines: 5,
-                    maxLength: 300,
-                    decoration: const InputDecoration(
-                      hintText: '자신을 소개해보세요',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const Gap(24),
-
-                // 테마 설정 섹션
-                _ProfileEditSection(
-                  title: '화면 및 테마',
-                  child: _ThemeSettingsSection(isProcessing: isProcessing),
-                ),
-                const Gap(24),
-
-                // 공개 설정 섹션
-                _ProfileEditSection(
-                  title: '공개 설정',
-                  child: Column(
-                    children: [
-                      SwitchListTile.adaptive(
-                        value: state.serialVisible,
-                        onChanged: isProcessing
-                            ? null
-                            : (bool value) =>
-                                  context.read<AuthCubit>().updateSerialVisibility(value),
-                        title: const Text('직렬 공개'),
-                        subtitle: const Text('라운지와 댓글에 내 직렬을 표시할지 선택할 수 있습니다.'),
-                        contentPadding: EdgeInsets.zero,
+                  // 닉네임 섹션
+                  _ProfileEditSection(
+                    title: '닉네임',
+                    child: TextField(
+                      controller: _nicknameController,
+                      enabled: !isProcessing,
+                      maxLength: 20,
+                      decoration: const InputDecoration(
+                        hintText: '닉네임을 입력하세요',
+                        counterText: '',
+                        border: OutlineInputBorder(),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  const Gap(24),
+
+                  // 자기소개 섹션
+                  _ProfileEditSection(
+                    title: '자기소개',
+                    child: TextField(
+                      controller: _bioController,
+                      enabled: !isProcessing,
+                      maxLines: 5,
+                      maxLength: 300,
+                      decoration: const InputDecoration(
+                        hintText: '자신을 소개해보세요',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const Gap(24),
+
+                  // 테마 설정 섹션
+                  _ProfileEditSection(
+                    title: '화면 및 테마',
+                    child: _ThemeSettingsSection(isProcessing: isProcessing),
+                  ),
+                  const Gap(24),
+
+                  // 공개 설정 섹션
+                  _ProfileEditSection(
+                    title: '공개 설정',
+                    child: Column(
+                      children: [
+                        SwitchListTile.adaptive(
+                          value: state.serialVisible,
+                          onChanged: (isProcessing || _isUpdatingSerialVisibility)
+                              ? null
+                              : (bool value) async {
+                                  setState(() => _isUpdatingSerialVisibility = true);
+                                  try {
+                                    await context.read<AuthCubit>().updateSerialVisibility(value);
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isUpdatingSerialVisibility = false);
+                                    }
+                                  }
+                                },
+                          title: const Text('직렬 공개'),
+                          subtitle: const Text('라운지와 댓글에 내 직렬을 표시할지 선택할 수 있습니다.'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1723,9 +1979,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final String bio = _bioController.text.trim();
 
     if (nickname.isEmpty) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('닉네임을 입력해주세요.')));
+      _showMessage(context, '닉네임을 입력해주세요.');
       return;
     }
 
@@ -1744,16 +1998,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('프로필이 저장되었습니다.')));
+        _showMessage(context, '프로필이 저장되었습니다.');
         context.pop();
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('저장 중 오류가 발생했습니다: $error')));
+        _showMessage(context, '저장 중 오류가 발생했습니다: $error');
       }
     }
   }
@@ -1798,40 +2048,15 @@ class _ProfileImageSection extends StatelessWidget {
 
     return Column(
       children: [
-        Stack(
-          children: [
-            _ProfileAvatar(photoUrl: photoUrl, nickname: nickname),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.colorScheme.outline, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: isProcessing ? null : () => _showImagePicker(context),
-                  icon: Icon(Icons.edit, color: theme.colorScheme.onSurface, size: 16),
-                  iconSize: 16,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                ),
-              ),
-            ),
-          ],
-        ),
+        _ProfileAvatar(photoUrl: photoUrl, nickname: nickname),
         const Gap(12),
-        Text(
-          '프로필 사진 변경',
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        TextButton.icon(
+          onPressed: isProcessing ? null : () => _showImagePicker(context),
+          icon: Icon(Icons.camera_alt_outlined, size: 18, color: theme.colorScheme.primary),
+          label: Text(
+            '프로필 사진 변경',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary),
+          ),
         ),
       ],
     );
@@ -1897,9 +2122,13 @@ class _ProfileImageSection extends StatelessWidget {
       );
     } on PlatformException catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('이미지를 불러오지 못했습니다: ${error.message}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('이미지를 불러오지 못했습니다: ${error.message}'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }
@@ -1919,6 +2148,16 @@ class _PaystubVerificationCardState extends State<_PaystubVerificationCard> {
   bool _isUploading = false;
 
   PaystubVerificationRepository get _repository => getIt<PaystubVerificationRepository>();
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2065,23 +2304,13 @@ class _PaystubVerificationCardState extends State<_PaystubVerificationCard> {
       await _repository.uploadPaystub(bytes: bytes, fileName: file.name, contentType: contentType);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('급여 명세서를 업로드했습니다. 검증 결과를 기다려주세요.')));
+      _showMessage(context, '급여 명세서를 업로드했습니다. 검증 결과를 기다려주세요.');
     } on MissingPluginException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('이 플랫폼에서는 파일 선택 기능이 지원되지 않습니다. 앱을 완전 종료 후 다시 실행하거나 지원되는 기기에서 시도해주세요.'),
-          ),
-        );
+      _showMessage(context, '이 플랫폼에서는 파일 선택 기능이 지원되지 않습니다. 앱을 완전 종료 후 다시 실행하거나 지원되는 기기에서 시도해주세요.');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('업로드 중 문제가 발생했습니다: $error')));
+      _showMessage(context, '업로드 중 문제가 발생했습니다: $error');
     } finally {
       if (mounted) {
         setState(() => _isUploading = false);
@@ -2100,6 +2329,16 @@ class _GovernmentEmailVerificationCard extends StatefulWidget {
 class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerificationCard> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -2121,7 +2360,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
             color: theme.colorScheme.primaryContainer,
             child: ListTile(
               leading: Icon(Icons.verified_outlined, color: theme.colorScheme.onPrimaryContainer),
-              title: const Text('공직자 메일 인증 완료'),
+              title: const Text('공무원 메일 인증 완료'),
               subtitle: const Text('확장 기능을 모두 이용할 수 있습니다.'),
               trailing: TextButton(
                 onPressed: () =>
@@ -2140,10 +2379,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
             if (message == null || message.isEmpty) {
               return;
             }
-            final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-            messenger
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(message)));
+            _showMessage(context, message);
             context.read<AuthCubit>().clearLastMessage();
           },
           child: Card(
@@ -2159,14 +2395,14 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                         Icon(Icons.mark_email_unread_outlined, color: theme.colorScheme.primary),
                         const Gap(8),
                         Text(
-                          '공직자 메일 인증',
+                          '공무원 메일 인증',
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                     const Gap(12),
                     Text(
-                      '공직자 계정(@korea.kr, .go.kr) 또는 @naver.com(임시)으로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. 입력하신 주소로 인증 메일을 보내드려요.',
+                      '공무원 계정(@korea.kr, .go.kr) 또는 공직자메일 서비스(@naver.com)로 인증하면 커뮤니티, 매칭 등 확장 기능을 이용할 수 있습니다. 입력하신 주소로 인증 메일을 보내드려요.',
                       style: theme.textTheme.bodyMedium,
                     ),
                     const Gap(12),
@@ -2174,7 +2410,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                        labelText: '공직자 메일 주소',
+                        labelText: '공무원 메일 주소',
                         hintText: 'example@korea.kr',
                       ),
                       validator: _validateGovernmentEmail,
@@ -2200,7 +2436,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                     ),
                     const Gap(12),
                     Text(
-                      '인증 메일에 포함된 링크를 24시간 이내에 열어야 합니다. 링크를 열면 계정 이메일이 공직자 메일로 변경되지만, 기존에 사용하던 로그인 방식(이메일 또는 소셜 계정)은 계속 사용할 수 있습니다.',
+                      '인증 메일에 포함된 링크를 24시간 이내에 열어야 합니다. 링크를 열면 계정 이메일이 공무원 메일로 변경되지만, 기존에 사용하던 로그인 방식(이메일 또는 소셜 계정)은 계속 사용할 수 있습니다.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -2227,13 +2463,15 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
 
   String? _validateGovernmentEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '공직자 메일 주소를 입력해주세요.';
+      return '공무원 메일 주소를 입력해주세요.';
     }
 
     final String email = value.trim().toLowerCase();
     // 임시로 @naver.com 도메인도 허용
-    if (!email.endsWith('@korea.kr') && !email.endsWith('.go.kr') && !email.endsWith('@naver.com')) {
-      return '공직자 메일(@korea.kr, .go.kr) 또는 @naver.com(임시) 주소만 인증할 수 있습니다.';
+    if (!email.endsWith('@korea.kr') &&
+        !email.endsWith('.go.kr') &&
+        !email.endsWith('@naver.com')) {
+      return '공무원 메일(@korea.kr, .go.kr) 또는 공직자메일 서비스(@naver.com) 주소만 인증할 수 있습니다.';
     }
 
     return null;
@@ -2381,6 +2619,235 @@ class _ThemeOptionTile extends StatelessWidget {
       subtitle: Text(subtitle),
       trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
       onTap: onTap,
+    );
+  }
+}
+
+class _CustomLicensePage extends StatefulWidget {
+  const _CustomLicensePage();
+
+  @override
+  State<_CustomLicensePage> createState() => _CustomLicensePageState();
+}
+
+class _CustomLicensePageState extends State<_CustomLicensePage> {
+  late Future<List<LicenseEntry>> _licensesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _licensesFuture = _loadLicenses();
+  }
+
+  Future<List<LicenseEntry>> _loadLicenses() async {
+    final List<LicenseEntry> licenses = <LicenseEntry>[];
+    await for (final LicenseEntry license in LicenseRegistry.licenses) {
+      licenses.add(license);
+    }
+    return licenses;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('오픈소스 라이선스'),
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: FutureBuilder<List<LicenseEntry>>(
+        future: _licensesFuture,
+        builder: (BuildContext context, AsyncSnapshot<List<LicenseEntry>> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                  const Gap(16),
+                  Text('라이선스 정보를 불러올 수 없습니다.', style: theme.textTheme.titleMedium),
+                  const Gap(8),
+                  Text(
+                    '${snapshot.error}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final List<LicenseEntry> licenses = snapshot.data ?? [];
+
+          return CustomScrollView(
+            slivers: [
+              // 앱 정보 헤더
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '공무톡',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        '버전 1.0.0',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const Gap(16),
+                      Text(
+                        '© 2025 HANISOFT. All rights reserved.\n\n'
+                        '공무톡은 대한민국 공무원을 위한 종합 플랫폼입니다. '
+                        '오픈소스 라이브러리의 기여에 감사드립니다.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 라이선스 개수 정보
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '오픈소스 라이브러리 정보',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const Gap(8),
+                      Text('직접 사용: 약 50개의 주요 라이브러리', style: theme.textTheme.bodyMedium),
+                      Text(
+                        '전체 포함: ${licenses.length}개 (의존성 포함)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        '※ 각 라이브러리의 하위 의존성까지 모두 포함된 수치입니다.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 라이선스 목록
+              SliverList(
+                delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
+                  final LicenseEntry license = licenses[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        license.packages.join(', '),
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: license.paragraphs.isNotEmpty
+                          ? Text(
+                              license.paragraphs.first.text,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall,
+                            )
+                          : null,
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onTap: () => _showLicenseDetail(context, license),
+                    ),
+                  );
+                }, childCount: licenses.length),
+              ),
+
+              // 하단 여백
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showLicenseDetail(BuildContext context, LicenseEntry license) {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        final ThemeData theme = Theme.of(context);
+        return AlertDialog(
+          title: Text(
+            license.packages.join(', '),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: license.paragraphs.map((LicenseParagraph paragraph) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      paragraph.text,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        height: 1.4,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('닫기')),
+          ],
+        );
+      },
     );
   }
 }
