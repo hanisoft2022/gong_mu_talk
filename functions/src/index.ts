@@ -12,6 +12,7 @@ import {
 } from "firebase-admin/firestore";
 
 export {handlePaystubUpload} from "./paystubVerification";
+export {sendGovernmentEmailVerification} from "./emailVerification";
 
 initializeApp();
 setGlobalOptions({region: "us-central1"});
