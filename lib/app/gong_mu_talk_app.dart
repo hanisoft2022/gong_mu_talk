@@ -8,7 +8,6 @@ import '../core/theme/theme_cubit.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/community/data/community_repository.dart';
-import '../features/monetization/presentation/cubit/monetization_cubit.dart';
 
 class GongMuTalkApp extends StatelessWidget {
   const GongMuTalkApp({super.key});
@@ -27,9 +26,6 @@ class GongMuTalkApp extends StatelessWidget {
         providers: [
           BlocProvider<ThemeCubit>.value(value: getIt<ThemeCubit>()),
           BlocProvider<AuthCubit>.value(value: getIt<AuthCubit>()),
-          BlocProvider<MonetizationCubit>.value(
-            value: getIt<MonetizationCubit>(),
-          ),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, themeMode) {

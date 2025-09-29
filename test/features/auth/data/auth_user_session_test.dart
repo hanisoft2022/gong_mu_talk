@@ -16,7 +16,6 @@ void main() {
       return AuthState(
         userId: userId,
         careerTrack: track,
-        supporterLevel: supporterLevel,
         serialVisible: serialVisible,
         isLoggedIn: userId != null,
       );

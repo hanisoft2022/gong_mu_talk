@@ -115,12 +115,43 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Skeletonizer(
-                      enabled: state.status == SalaryCalculatorStatus.loading,
-                      child: SalaryResultCard(
-                        breakdown: state.result,
-                        isEmpty: state.result.monthlyTotal <= 0,
-                      ),
+                    Stack(
+                      children: [
+                        Skeletonizer(
+                          enabled: state.status == SalaryCalculatorStatus.loading,
+                          child: SalaryResultCard(
+                            breakdown: state.result,
+                            isEmpty: state.result.monthlyTotal <= 0,
+                          ),
+                        ),
+                        if (state.status == SalaryCalculatorStatus.loading)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const Gap(12),
+                                    Text(
+                                      '급여 정보를 계산하고 있습니다...',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.onSurface,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const Gap(28),
                     _buildReferenceSection(state, bloc, theme, isWide),

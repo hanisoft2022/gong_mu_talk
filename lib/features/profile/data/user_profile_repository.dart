@@ -212,6 +212,8 @@ class UserProfileRepository {
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
     bool? serialVisible,
+    String? governmentEmail,
+    DateTime? governmentEmailVerifiedAt,
   }) async {
     final DocumentReference<JsonMap> doc = _userDoc(uid);
     final Map<String, Object?> updates = <String, Object?>{};
@@ -253,6 +255,12 @@ class UserProfileRepository {
     }
     if (serialVisible != null) {
       updates['serialVisible'] = serialVisible;
+    }
+    if (governmentEmail != null) {
+      updates['governmentEmail'] = governmentEmail;
+    }
+    if (governmentEmailVerifiedAt != null) {
+      updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(governmentEmailVerifiedAt);
     }
     updates['updatedAt'] = Timestamp.now();
 

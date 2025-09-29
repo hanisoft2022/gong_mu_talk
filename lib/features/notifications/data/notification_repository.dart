@@ -248,6 +248,42 @@ class NotificationRepository {
     }
   }
 
+  // 알림 설정 관련 메서드들
+  static const String _notificationSettingsKey = 'notification_settings';
+
+  Future<Map<String, bool>> getNotificationSettings() async {
+    final String? settingsJson = _preferences.getString(_notificationSettingsKey);
+    if (settingsJson == null) {
+      // 기본 설정 (모든 알림 켜짐)
+      return {
+        'comments': true,
+        'likes': true,
+        'new_posts': true,
+        'weekly_digest': true,
+        'system': true,
+      };
+    }
+
+    final Map<String, dynamic> decoded = jsonDecode(settingsJson);
+    return decoded.cast<String, bool>();
+  }
+
+  Future<void> updateNotificationSettings(Map<String, bool> settings) async {
+    final String encoded = jsonEncode(settings);
+    await _preferences.setString(_notificationSettingsKey, encoded);
+  }
+
+  Future<bool> isNotificationEnabled(String type) async {
+    final settings = await getNotificationSettings();
+    return settings[type] ?? true;
+  }
+
+  Future<void> setNotificationEnabled(String type, bool enabled) async {
+    final settings = await getNotificationSettings();
+    settings[type] = enabled;
+    await updateNotificationSettings(settings);
+  }
+
   void _handleStreamError(Object error, StackTrace stackTrace) {
     if (error is FirebaseException && error.code == 'permission-denied') {
       _notificationsDisabled = true;

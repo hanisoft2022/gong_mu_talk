@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
@@ -13,14 +14,18 @@ import '../cubit/community_feed_cubit.dart';
 import '../cubit/search_cubit.dart';
 import '../widgets/inline_post_composer.dart';
 import '../widgets/post_card.dart';
-import '../widgets/lounge_ad_banner.dart';
 import '../widgets/comment_search_result_card.dart';
+import '../widgets/empty_state_view.dart';
+import '../widgets/community_error_view.dart';
+import '../widgets/sort_button.dart';
+import '../widgets/search_icon_button.dart';
 import '../../../../di/di.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/utils/performance_optimizations.dart';
 import '../../../../routing/app_router.dart';
 import '../../../../common/widgets/global_app_bar_actions.dart';
 import '../../../../common/widgets/app_logo_button.dart';
+import '../../../../common/widgets/auth_required_view.dart';
 
 class CommunityFeedPage extends StatefulWidget {
   const CommunityFeedPage({super.key});
@@ -70,17 +75,20 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   void _onScroll() {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       PerformanceProfiler.start('fetch_more_posts');
       cubit.fetchMore();
       PerformanceProfiler.end('fetch_more_posts');
     }
 
-    final bool shouldElevate =
-        _scrollController.hasClients && _scrollController.offset > 4;
+    final bool shouldElevate = _scrollController.hasClients && _scrollController.offset > 4;
     if (shouldElevate != _isAppBarElevated && mounted) {
-      setState(() => _isAppBarElevated = shouldElevate);
+      // Defer setState to avoid conflicts with semantic tree updates
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && shouldElevate != _isAppBarElevated) {
+          setState(() => _isAppBarElevated = shouldElevate);
+        }
+      });
     }
   }
 
@@ -98,11 +106,28 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         });
         return cubit;
       },
-      child: BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-        builder: (context, feedState) {
-          return BlocBuilder<SearchCubit, SearchState>(
-            builder: (context, searchState) {
-              _searchCubit ??= context.read<SearchCubit>();
+      child: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, authState) {
+          return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+            builder: (context, feedState) {
+              return BlocBuilder<SearchCubit, SearchState>(
+                builder: (context, searchState) {
+                  // 라운지 접근 권한 확인 - 로그인만으로는 전체 탭도 볼 수 없음
+                  if (!authState.hasLoungeAccess) {
+                    return Scaffold(
+                      body: NestedScrollView(
+                        controller: _scrollController,
+                        headerSliverBuilder: (context, _) => <Widget>[
+                          _buildLoungeSliverAppBar(context, feedState),
+                        ],
+                        body: const AuthRequiredView(
+                          message: '라운지 기능을 이용하려면 공직자 메일 인증을 완료해주세요.',
+                        ),
+                      ),
+                    );
+                  }
+
+                  _searchCubit ??= context.read<SearchCubit>();
               if (_lastScope != feedState.scope) {
                 _lastScope = feedState.scope;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,15 +145,37 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
               }
 
               final bool showSearchResults =
-                  _isSearchExpanded &&
-                  (searchState.query.isNotEmpty || searchState.isLoading);
+                  _isSearchExpanded && (searchState.query.isNotEmpty || searchState.isLoading);
 
               if (!showSearchResults &&
                   (feedState.status == CommunityFeedStatus.initial ||
                       feedState.status == CommunityFeedStatus.loading) &&
                   feedState.posts.isEmpty) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
+                return Scaffold(
+                  body: NestedScrollView(
+                    controller: _scrollController,
+                    headerSliverBuilder: (context, _) => <Widget>[
+                      _buildLoungeSliverAppBar(context, feedState),
+                    ],
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const Gap(16),
+                          Text(
+                            '라운지 게시물을 불러오고 있습니다...',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 );
               }
 
@@ -136,17 +183,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   feedState.status == CommunityFeedStatus.error &&
                   feedState.posts.isEmpty) {
                 return Scaffold(
-                  body: _CommunityErrorView(
+                  body: CommunityErrorView(
                     message: feedState.errorMessage,
-                    onRetry: () =>
-                        context.read<CommunityFeedCubit>().loadInitial(),
+                    onRetry: () => context.read<CommunityFeedCubit>().loadInitial(),
                   ),
                 );
               }
 
               final Future<void> Function() onRefresh = showSearchResults
-                  ? () =>
-                        (_searchCubit ?? context.read<SearchCubit>()).refresh()
+                  ? () => (_searchCubit ?? context.read<SearchCubit>()).refresh()
                   : () => context.read<CommunityFeedCubit>().refresh();
 
               final List<Widget> children = <Widget>[
@@ -157,20 +202,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 const Gap(12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSearchAndSortRow(
-                    context,
-                    feedState,
-                    searchState,
-                  ),
+                  child: _buildSearchAndSortRow(context, feedState, searchState),
                 ),
                 const Gap(16),
               ];
 
               if (_isSearchExpanded && !showSearchResults) {
-                final Widget? suggestionsCard = _buildSearchSuggestionsCard(
-                  context,
-                  searchState,
-                );
+                final Widget? suggestionsCard = _buildSearchSuggestionsCard(context, searchState);
                 if (suggestionsCard != null) {
                   children
                     ..add(
@@ -181,13 +219,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                     )
                     ..add(const Gap(12));
                 }
-                children.addAll(_buildFeedSection(context, feedState));
+                children.addAll(_buildFeedSection(context, feedState, authState));
               } else if (showSearchResults) {
-                children.addAll(
-                  _buildSearchResultsSection(context, searchState),
-                );
+                children.addAll(_buildSearchResultsSection(context, searchState));
               } else {
-                children.addAll(_buildFeedSection(context, feedState));
+                children.addAll(_buildFeedSection(context, feedState, authState));
               }
 
               return Scaffold(
@@ -202,25 +238,21 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                       duration: const Duration(milliseconds: 300),
                       switchInCurve: Curves.easeOutQuart,
                       switchOutCurve: Curves.easeInQuart,
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position:
-                                    Tween<Offset>(
-                                      begin: const Offset(0.0, 0.03),
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutQuart,
-                                      ),
-                                    ),
-                                child: child,
-                              ),
-                            );
-                          },
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position:
+                                Tween<Offset>(
+                                  begin: const Offset(0.0, 0.03),
+                                  end: Offset.zero,
+                                ).animate(
+                                  CurvedAnimation(parent: animation, curve: Curves.easeOutQuart),
+                                ),
+                            child: child,
+                          ),
+                        );
+                      },
                       child: OptimizedListView(
                         key: ValueKey<String>(
                           'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
@@ -231,6 +263,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                     ),
                   ),
                 ),
+                  );
+                },
               );
             },
           );
@@ -251,12 +285,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       height: 44,
       child: Row(
         children: [
-          if (!_isSearchExpanded)
-            _buildCollapsedSearchTrigger(theme, searchState),
-          if (_isSearchExpanded)
-            Expanded(
-              child: _buildExpandedSearchField(context, searchState),
-            ),
+          if (!_isSearchExpanded) _buildCollapsedSearchTrigger(theme, searchState),
+          if (_isSearchExpanded) Expanded(child: _buildExpandedSearchField(context, searchState)),
           if (!_isSearchExpanded) ...[
             const Spacer(),
             _buildSortButtons(feedState.sort, feedCubit.changeSort),
@@ -266,10 +296,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildCollapsedSearchTrigger(
-    ThemeData theme,
-    SearchState searchState,
-  ) {
+  Widget _buildCollapsedSearchTrigger(ThemeData theme, SearchState searchState) {
     final String placeholder = _searchController.text.trim();
 
     // If there's search text, show it in a compact form
@@ -279,9 +306,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
             child: Material(
               type: MaterialType.transparency,
               child: InkWell(
@@ -291,11 +316,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.search,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      Icon(Icons.search, size: 18, color: theme.colorScheme.onSurfaceVariant),
                       const Gap(8),
                       Expanded(
                         child: Text(
@@ -318,7 +339,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     }
 
     // Otherwise, show just a search icon
-    return _SearchIconButton(
+    return SearchIconButton(
       icon: Icons.search,
       tooltip: '검색',
       onPressed: _expandSearchField,
@@ -326,10 +347,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildExpandedSearchField(
-    BuildContext context,
-    SearchState searchState,
-  ) {
+  Widget _buildExpandedSearchField(BuildContext context, SearchState searchState) {
     final ThemeData theme = Theme.of(context);
     final BorderRadius radius = BorderRadius.circular(12);
     final bool hasText = _searchController.text.trim().isNotEmpty;
@@ -357,17 +375,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     return SizedBox(
       height: 44,
       child: ClipRRect(
-        key: ValueKey<String>(
-          'expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}',
-        ),
+        key: ValueKey<String>('expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}'),
         borderRadius: radius,
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
+          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
           child: Row(
             children: [
-              _SearchIconButton(
+              SearchIconButton(
                 icon: Icons.arrow_back,
                 tooltip: '검색 닫기',
                 onPressed: _collapseSearchField,
@@ -409,13 +423,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   ),
                 ),
               if (hasText)
-                _SearchIconButton(
+                SearchIconButton(
                   icon: Icons.close,
                   tooltip: '검색어 지우기',
                   onPressed: _clearSearchQuery,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-              _SearchIconButton(
+              SearchIconButton(
                 icon: Icons.tune,
                 tooltip: '검색 옵션',
                 onPressed: () {
@@ -430,23 +444,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  List<Widget> _buildFeedSection(
-    BuildContext context,
-    CommunityFeedState state,
-  ) {
+  List<Widget> _buildFeedSection(BuildContext context, CommunityFeedState state, AuthState authState) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    final bool hasSerialAccess =
-        state.careerTrack != CareerTrack.none && state.serial != 'unknown';
-    final bool showSerialGuide =
-        state.scope == LoungeScope.serial && !hasSerialAccess;
+    final bool showSerialGuide = state.scope == LoungeScope.serial && !authState.hasSerialTabAccess;
     final bool showEmptyPosts = state.posts.isEmpty && !showSerialGuide;
 
     if (showSerialGuide) {
       return <Widget>[
-        _EmptyStateView(
-          icon: Icons.group_add_outlined,
-          title: '직렬 정보를 등록하면 전용 피드를 볼 수 있어요.',
-          message: '마이페이지에서 직렬과 소속 정보를 설정해주세요.',
+        EmptyStateView(
+          icon: Icons.description_outlined,
+          title: '급여 명세서를 통해서 본인의 직렬을 인증하세요',
+          message: '내 직렬 탭을 이용하려면 급여명세서 인증을 완료해주세요.',
           onRefresh: () => cubit.refresh(),
         ),
       ];
@@ -454,7 +462,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     if (showEmptyPosts) {
       return <Widget>[
-        _EmptyStateView(
+        EmptyStateView(
           icon: Icons.chat_bubble_outline,
           title: '아직 게시물이 없습니다.',
           message: '첫 번째 글을 올려 동료 공무원과 이야기를 시작해보세요!',
@@ -504,17 +512,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       renderedCount += 1;
 
       final bool shouldInsertAd =
-          state.showAds &&
-          renderedCount % adInterval == 0 &&
-          renderedCount < totalPosts;
+          state.showAds && renderedCount % adInterval == 0 && renderedCount < totalPosts;
 
       if (shouldInsertAd) {
         children
           ..add(
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: LoungeAdBanner(),
-            ),
+            const SizedBox.shrink(),
           )
           ..add(const SizedBox(height: 12));
       }
@@ -532,14 +535,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     return children;
   }
 
-  Widget? _buildSearchSuggestionsCard(
-    BuildContext context,
-    SearchState searchState,
-  ) {
+  Widget? _buildSearchSuggestionsCard(BuildContext context, SearchState searchState) {
     final ThemeData theme = Theme.of(context);
     final List<SearchSuggestion> suggestions = searchState.suggestions;
+    final List<String> recentSearches = searchState.recentSearches;
 
-    if (suggestions.isEmpty) {
+    if (suggestions.isEmpty && recentSearches.isEmpty) {
       return null;
     }
 
@@ -549,45 +550,95 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.local_fire_department_outlined,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const Gap(8),
-                Text(
-                  '인기 검색어',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+            // 최근 검색어 섹션
+            if (recentSearches.isNotEmpty) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ),
-              ],
-            ),
-            const Gap(16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: suggestions
-                  .map(
-                    (SearchSuggestion suggestion) => ActionChip(
-                      label: Text(suggestion.token),
-                      onPressed: () => _useSuggestion(suggestion.token),
+                  const Gap(8),
+                  Text(
+                    '최근 검색어',
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {
+                      (_searchCubit ?? context.read<SearchCubit>()).clearRecentSearches();
+                    },
+                    icon: Icon(
+                      Icons.clear_all,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  )
-                  .toList(growable: false),
-            ),
+                    tooltip: '전체 삭제',
+                  ),
+                ],
+              ),
+              const Gap(12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: recentSearches
+                    .map(
+                      (String search) => InputChip(
+                        label: Text(search),
+                        onPressed: () => _useSuggestion(search),
+                        onDeleted: () {
+                          (_searchCubit ?? context.read<SearchCubit>()).removeRecentSearch(search);
+                        },
+                        deleteIcon: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+              if (suggestions.isNotEmpty) const Gap(20),
+            ],
+            // 인기 검색어 섹션
+            if (suggestions.isNotEmpty) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const Gap(8),
+                  Text(
+                    '인기 검색어',
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const Gap(12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: suggestions
+                    .map(
+                      (SearchSuggestion suggestion) => ActionChip(
+                        label: Text(suggestion.token),
+                        onPressed: () => _useSuggestion(suggestion.token),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildSearchResultsSection(
-    BuildContext context,
-    SearchState state,
-  ) {
+  List<Widget> _buildSearchResultsSection(BuildContext context, SearchState state) {
     if (state.error != null) {
       return <Widget>[
         Padding(
@@ -599,8 +650,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     final SearchCubit searchCubit = _searchCubit ?? context.read<SearchCubit>();
     final bool showPosts = state.scope != SearchScope.comments;
-    final bool showComments =
-        state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
     final bool noPosts = !showPosts || state.postResults.isEmpty;
     final bool noComments = !showComments || state.commentResults.isEmpty;
 
@@ -626,11 +676,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildSearchSectionHeader(
-            context,
-            '글 결과',
-            state.postResults.length,
-          ),
+          child: _buildSearchSectionHeader(context, '글 결과', state.postResults.length),
         ),
       );
       if (state.postResults.isEmpty && !state.isLoading) {
@@ -679,11 +725,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildSearchSectionHeader(
-            context,
-            '댓글 결과',
-            state.commentResults.length,
-          ),
+          child: _buildSearchSectionHeader(context, '댓글 결과', state.commentResults.length),
         ),
       );
       if (state.commentResults.isEmpty && !state.isLoading) {
@@ -727,9 +769,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             Expanded(
               child: Text(
                 "'${state.query}' 검색 결과",
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             TextButton.icon(
@@ -758,28 +798,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildSearchSectionHeader(
-    BuildContext context,
-    String title,
-    int count,
-  ) {
+  Widget _buildSearchSectionHeader(BuildContext context, String title, int count) {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
           const Gap(6),
           Text(
             '$count',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -791,9 +820,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         '$target 결과가 없습니다.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -822,16 +851,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "'${state.query}'에 대한 $target 결과가 없습니다.",
-              style: theme.textTheme.titleMedium,
-            ),
+            Text("'${state.query}'에 대한 $target 결과가 없습니다.", style: theme.textTheme.titleMedium),
             const Gap(8),
             Text(
               '검색어를 바꾸거나 범위를 조정해보세요.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const Gap(12),
             TextButton.icon(
@@ -857,10 +881,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 const Icon(Icons.error_outline, color: Colors.red),
                 const Gap(8),
                 Expanded(
-                  child: Text(
-                    '검색 중 오류가 발생했습니다.',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  child: Text('검색 중 오류가 발생했습니다.', style: Theme.of(context).textTheme.titleMedium),
                 ),
               ],
             ),
@@ -868,8 +889,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             Text(message, style: Theme.of(context).textTheme.bodySmall),
             const Gap(12),
             FilledButton.icon(
-              onPressed: () =>
-                  (_searchCubit ?? context.read<SearchCubit>()).refresh(),
+              onPressed: () => (_searchCubit ?? context.read<SearchCubit>()).refresh(),
               icon: const Icon(Icons.refresh),
               label: const Text('다시 시도'),
             ),
@@ -897,6 +917,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     if (searchCubit.state.suggestions.isEmpty) {
       searchCubit.loadSuggestions();
     }
+    // 최근 검색어 로드
+    if (searchCubit.state.recentSearches.isEmpty) {
+      searchCubit.loadRecentSearches();
+    }
   }
 
   void _collapseSearchField() {
@@ -911,15 +935,12 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     (_searchCubit ?? context.read<SearchCubit>()).clearSearch();
   }
 
-  Widget _buildSortButtons(
-    LoungeSort currentSort,
-    ValueChanged<LoungeSort> onSelect,
-  ) {
+  Widget _buildSortButtons(LoungeSort currentSort, ValueChanged<LoungeSort> onSelect) {
     final ThemeData theme = Theme.of(context);
 
     return Row(
       children: [
-        _SortButton(
+        SortButton(
           sortType: LoungeSort.latest,
           isSelected: currentSort == LoungeSort.latest,
           onPressed: () {
@@ -930,7 +951,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           theme: theme,
         ),
         const Gap(8),
-        _SortButton(
+        SortButton(
           sortType: LoungeSort.popular,
           isSelected: currentSort == LoungeSort.popular,
           onPressed: () {
@@ -941,7 +962,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           theme: theme,
         ),
         const Gap(8),
-        _SortButton(
+        SortButton(
           sortType: LoungeSort.likes,
           isSelected: currentSort == LoungeSort.likes,
           onPressed: () {
@@ -980,10 +1001,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     PerformanceProfiler.end('search_execution');
   }
 
-  void _showSearchOptionsBottomSheet(
-    BuildContext context,
-    SearchState searchState,
-  ) {
+  void _showSearchOptionsBottomSheet(BuildContext context, SearchState searchState) {
     setState(() {
       _isModalOpen = true;
     });
@@ -1001,8 +1019,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   '검색 옵션',
-                  style: Theme.of(bottomSheetContext).textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(
+                    bottomSheetContext,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const Divider(height: 1),
@@ -1015,26 +1034,22 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                     return true;
                   })
                   .map((SearchScope scope) {
-                final bool isSelected = scope == searchState.scope;
-                return ListTile(
-                  leading: isSelected
-                      ? Icon(
-                          Icons.check,
-                          color: Theme.of(
-                            bottomSheetContext,
-                          ).colorScheme.primary,
-                        )
-                      : const SizedBox(width: 24),
-                  title: Text(scope.label),
-                  onTap: () {
-                    Navigator.of(bottomSheetContext).pop();
-                    // Use the original context that has access to SearchCubit
-                    (_searchCubit ?? context.read<SearchCubit>()).changeScope(
-                      scope,
+                    final bool isSelected = scope == searchState.scope;
+                    return ListTile(
+                      leading: isSelected
+                          ? Icon(
+                              Icons.check,
+                              color: Theme.of(bottomSheetContext).colorScheme.primary,
+                            )
+                          : const SizedBox(width: 24),
+                      title: Text(scope.label),
+                      onTap: () {
+                        Navigator.of(bottomSheetContext).pop();
+                        // Use the original context that has access to SearchCubit
+                        (_searchCubit ?? context.read<SearchCubit>()).changeScope(scope);
+                      },
                     );
-                  },
-                );
-              }),
+                  }),
               const SizedBox(height: 16),
             ],
           ),
@@ -1055,11 +1070,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     });
   }
 
-  SliverAppBar _buildLoungeSliverAppBar(
-    BuildContext context,
-    CommunityFeedState state,
-  ) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+  SliverAppBar _buildLoungeSliverAppBar(BuildContext context, CommunityFeedState state) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color background = Color.lerp(
       colorScheme.surface.withValues(alpha: 0.9),
@@ -1090,12 +1101,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       ),
       title: _buildScopeSelector(context, state),
       actions: [
-        GlobalAppBarActions(
-          compact: true,
-          opacity: _isAppBarElevated ? 1 : 0.92,
-          isDarkMode: isDark,
-          onToggleTheme: () => context.read<ThemeCubit>().toggle(),
-          onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+        BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (context, themeMode) {
+            return GlobalAppBarActions(
+              compact: true,
+              opacity: _isAppBarElevated ? 1 : 0.92,
+              onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+            );
+          },
         ),
       ],
     );
@@ -1120,13 +1133,21 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
+  double _calculateFontSize(String text) {
+    final int length = text.length;
+    if (length <= 4) {
+      return 13.0; // 기본 크기
+    } else if (length <= 6) {
+      return 11.0; // 약간 축소
+    } else {
+      return 9.0; // 더 축소
+    }
+  }
+
   Widget _buildScopeSelector(BuildContext context, CommunityFeedState state) {
     final ThemeData theme = Theme.of(context);
-    final bool hasSerialAccess =
-        state.careerTrack != CareerTrack.none && state.serial != 'unknown';
-    final String serialLabel = hasSerialAccess
-        ? state.careerTrack.displayName
-        : '내 직렬';
+    final bool hasSerialAccess = state.careerTrack != CareerTrack.none && state.serial != 'unknown';
+    final String serialLabel = hasSerialAccess ? state.careerTrack.displayName : '내 직렬';
 
     final TextStyle labelStyle =
         theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600) ??
@@ -1139,9 +1160,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       ),
       textStyle: WidgetStatePropertyAll<TextStyle>(labelStyle),
       shape: WidgetStateProperty.resolveWith(
-        (states) => const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
+        (states) =>
+            const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
       ),
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -1173,7 +1193,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         ),
         ButtonSegment<LoungeScope>(
           value: LoungeScope.serial,
-          label: Text(serialLabel),
+          label: Text(
+            serialLabel,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: _calculateFontSize(serialLabel),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           icon: const Icon(Icons.group_outlined),
           enabled: hasSerialAccess,
         ),
@@ -1193,195 +1220,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   void _useSuggestion(String token) {
     _searchController
       ..text = token
-      ..selection = TextSelection.fromPosition(
-        TextPosition(offset: token.length),
-      );
+      ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
     _onSearchSubmitted(token);
-  }
-}
-
-class _SearchIconButton extends StatelessWidget {
-  const _SearchIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      tooltip: tooltip,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-      splashRadius: 22,
-      style: IconButton.styleFrom(
-        splashFactory: NoSplash.splashFactory,
-        foregroundColor: color,
-      ),
-    );
-  }
-}
-
-class _CommunityErrorView extends StatelessWidget {
-  const _CommunityErrorView({required this.onRetry, this.message});
-
-  final Future<void> Function() onRetry;
-  final String? message;
-
-  @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRetry,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 12),
-                const Icon(Icons.inbox_outlined, size: 72),
-                const Gap(16),
-                Text(
-                  message ?? '피드를 불러오지 못했어요.',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const Gap(12),
-                FilledButton.icon(
-                  onPressed: () {
-                    onRetry();
-                  },
-                  icon: const Icon(Icons.refresh_outlined),
-                  label: const Text('다시 시도'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SortButton extends StatelessWidget {
-  const _SortButton({
-    required this.sortType,
-    required this.isSelected,
-    required this.onPressed,
-    required this.theme,
-  });
-
-  final LoungeSort sortType;
-  final bool isSelected;
-  final VoidCallback onPressed;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final IconData icon = sortType.icon;
-    final String label = sortType.label;
-    final Color iconColor = sortType.getColor(context);
-
-    if (isSelected) {
-      // Show icon + text for selected button
-      return Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onPressed,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: iconColor),
-              const Gap(6),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else {
-      // Show only icon for unselected button
-      return SizedBox(
-        height: 44,
-        width: 44,
-        child: Material(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onPressed,
-            child: Icon(icon, size: 18, color: iconColor),
-          ),
-        ),
-      );
-    }
-  }
-}
-
-class _EmptyStateView extends StatelessWidget {
-  const _EmptyStateView({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.onRefresh,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-  final Future<void> Function() onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(icon, size: 56, color: theme.colorScheme.primary),
-              const Gap(12),
-              Text(
-                title,
-                style: theme.textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const Gap(8),
-              Text(
-                message,
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }

@@ -14,7 +14,6 @@ import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/community/presentation/views/post_detail_page.dart';
 import '../features/life/presentation/cubit/life_section_cubit.dart';
 import '../features/life/presentation/life_home_page.dart';
-import '../features/monetization/presentation/views/monetization_page.dart';
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
@@ -22,7 +21,10 @@ import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
+import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
+import '../features/notifications/presentation/views/notification_history_page.dart';
+import '../features/notifications/presentation/views/notification_settings_page.dart';
 import 'router_refresh_stream.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -83,25 +85,9 @@ GoRouter createRouter() {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: SalaryCalculatorRoute.path,
-                name: SalaryCalculatorRoute.name,
-                builder: (context, state) => const TeacherSalaryInsightPage(),
-                routes: [
-                  GoRoute(
-                    path: SalaryDetailCalculatorRoute.path,
-                    name: SalaryDetailCalculatorRoute.name,
-                    builder: (context, state) => const SalaryCalculatorPage(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: PensionCalculatorRoute.path,
-                name: PensionCalculatorRoute.name,
-                builder: (context, state) => const PensionCalculatorGatePage(),
+                path: CalculatorRoute.path,
+                name: CalculatorRoute.name,
+                builder: (context, state) => const CalculatorHomePage(),
               ),
             ],
           ),
@@ -124,12 +110,6 @@ GoRouter createRouter() {
         path: ProfileRoute.path,
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: MonetizationRoute.path,
-        name: MonetizationRoute.name,
-        builder: (context, state) => const MonetizationPage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -196,8 +176,45 @@ GoRouter createRouter() {
           return PostCreatePage(postType: PostType.chirp, postId: postId);
         },
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: NotificationHistoryRoute.path,
+        name: NotificationHistoryRoute.name,
+        builder: (context, state) => const NotificationHistoryPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: NotificationSettingsRoute.path,
+        name: NotificationSettingsRoute.name,
+        builder: (context, state) => const NotificationSettingsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/calculator/salary',
+        name: 'calculator-salary',
+        builder: (context, state) => const TeacherSalaryInsightPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/calculator/salary/detail',
+        name: 'calculator-salary-detail',
+        builder: (context, state) => const SalaryCalculatorPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/calculator/pension',
+        name: 'calculator-pension',
+        builder: (context, state) => const PensionCalculatorGatePage(),
+      ),
     ],
   );
+}
+
+class CalculatorRoute {
+  const CalculatorRoute._();
+
+  static const String name = 'calculator';
+  static const String path = '/calculator';
 }
 
 class SalaryCalculatorRoute {
@@ -241,12 +258,6 @@ class MatchingRoute {
   static const String path = '/matching';
 }
 
-class MonetizationRoute {
-  const MonetizationRoute._();
-
-  static const String name = 'monetization';
-  static const String path = '/monetization';
-}
 
 class CommunityRoute {
   const CommunityRoute._();
@@ -288,6 +299,20 @@ class LoginRoute {
   static const String path = '/login';
 }
 
+class NotificationHistoryRoute {
+  const NotificationHistoryRoute._();
+
+  static const String name = 'notification-history';
+  static const String path = '/notifications/history';
+}
+
+class NotificationSettingsRoute {
+  const NotificationSettingsRoute._();
+
+  static const String name = 'notification-settings';
+  static const String path = '/notifications/settings';
+}
+
 String _resolveRequestedPath(GoRouterState state) {
   final Uri uri = state.uri;
   final String path = uri.path;
@@ -326,10 +351,8 @@ String _pathForBranch(String? branchParam) {
     case 0:
       return CommunityRoute.path;
     case 1:
-      return SalaryCalculatorRoute.path;
+      return CalculatorRoute.path;
     case 2:
-      return PensionCalculatorRoute.path;
-    case 3:
       return MatchingRoute.path;
     default:
       return CommunityRoute.path;

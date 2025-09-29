@@ -13,9 +13,6 @@ class PensionCalculatorGatePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        if (state.hasPensionAccess) {
-          return const _PensionComingSoon();
-        }
 
         return _PensionLockedView(state: state);
       },
@@ -31,7 +28,6 @@ class _PensionLockedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AuthCubit authCubit = context.read<AuthCubit>();
     final String? displayEmail = state.preferredEmail ?? state.email;
     final String loginDescription = state.isLoggedIn && displayEmail != null
         ? '공직자 메일 또는 본인 인증으로 로그인합니다. 현재는 데모 계정으로 체험 가능합니다.\n현재 로그인 계정: $displayEmail'
@@ -92,7 +88,7 @@ class _PensionLockedView extends StatelessWidget {
             trailing: ElevatedButton.icon(
               onPressed: state.isProcessing
                   ? null
-                  : () => authCubit.purchasePensionAccess(context),
+                  : () {},
               icon: state.isProcessing
                   ? const SizedBox(
                       width: 16,

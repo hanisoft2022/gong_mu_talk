@@ -6,7 +6,7 @@ import '../core/theme/theme_cubit.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../routing/app_router.dart';
 import '../common/widgets/global_app_bar_actions.dart';
-import '../common/widgets/app_logo.dart';
+import '../common/widgets/app_logo_button.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -14,7 +14,8 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   bool get _isCommunityTab => navigationShell.currentIndex == 0;
-  bool get _isLifeTab => navigationShell.currentIndex == 3;
+  bool get _isCalculatorTab => navigationShell.currentIndex == 1;
+  bool get _isLifeTab => navigationShell.currentIndex == 2;
 
   @override
   Widget build(BuildContext context) {
@@ -38,47 +39,37 @@ class AppShell extends StatelessWidget {
       },
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
-          final bool isDark = themeMode == ThemeMode.dark;
           final bool isCommunityTab = _isCommunityTab;
+          final bool isCalculatorTab = _isCalculatorTab;
           final bool isLifeTab = _isLifeTab;
           final ColorScheme colorScheme = Theme.of(context).colorScheme;
-          final bool hideAppBar = isCommunityTab || isLifeTab;
-          final bool removeLogoInTitle =
-              navigationShell.currentIndex == 1 ||
-              navigationShell.currentIndex == 2;
-          final Widget titleWidget = removeLogoInTitle
-              ? Text(
-                  _titleForIndex(navigationShell.currentIndex),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AppLogo(size: 28),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        _titleForIndex(navigationShell.currentIndex),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                );
+          final bool hideAppBar = isCommunityTab || isCalculatorTab || isLifeTab;
           return Scaffold(
             appBar: hideAppBar
                 ? null
                 : AppBar(
-                    centerTitle: navigationShell.currentIndex == 2
-                        ? false
-                        : null,
-                    title: titleWidget,
+                    elevation: 0,
+                    scrolledUnderElevation: 6,
+                    titleSpacing: 12,
+                    toolbarHeight: 64,
+                    leadingWidth: 64,
+                    backgroundColor: colorScheme.surface,
+                    surfaceTintColor: Colors.transparent,
+                    leading: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: AppLogoButton(
+                        compact: true,
+                        onTap: () {},
+                      ),
+                    ),
+                    title: Text(
+                      _titleForIndex(navigationShell.currentIndex),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     actions: [
                       GlobalAppBarActions(
-                        isDarkMode: isDark,
-                        onToggleTheme: () =>
-                            context.read<ThemeCubit>().toggle(),
+                        compact: true,
                         onProfileTap: () =>
                             GoRouter.of(context).push(ProfileRoute.path),
                       ),
@@ -107,12 +98,7 @@ class AppShell extends StatelessWidget {
                 NavigationDestination(
                   icon: Icon(Icons.calculate_outlined),
                   selectedIcon: Icon(Icons.calculate),
-                  label: '월급',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.savings_outlined),
-                  selectedIcon: Icon(Icons.savings),
-                  label: '연금',
+                  label: '계산기',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.groups_outlined),
@@ -132,10 +118,8 @@ class AppShell extends StatelessWidget {
       case 0:
         return '라운지';
       case 1:
-        return '월급 리포트 & 연봉 시뮬레이션';
+        return '계산기';
       case 2:
-        return '연금 계산 서비스';
-      case 3:
         return '모임/매칭';
       default:
         return '공무톡';

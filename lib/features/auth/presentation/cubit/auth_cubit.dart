@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/firebase_auth_repository.dart';
 import '../../data/login_session_store.dart';
-import '../../../payments/data/bootpay_payment_service.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
@@ -17,13 +16,11 @@ part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
-    required BootpayPaymentService paymentService,
     required FirebaseAuthRepository authRepository,
     required LoginSessionStore sessionStore,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
-  }) : _paymentService = paymentService,
-       _authRepository = authRepository,
+  }) : _authRepository = authRepository,
        _sessionStore = sessionStore,
        _userProfileRepository = userProfileRepository,
        _notificationRepository = notificationRepository,
@@ -33,7 +30,6 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  final BootpayPaymentService _paymentService;
   final FirebaseAuthRepository _authRepository;
   final LoginSessionStore _sessionStore;
   final UserProfileRepository _userProfileRepository;
@@ -70,12 +66,6 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  Future<void> signInWithKakao() async {
-    return _runAuthOperation(
-      _authRepository.signInWithKakao,
-      fallbackMessage: '카카오 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
-    );
-  }
 
   Future<void> logOut() async {
     try {
@@ -87,28 +77,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> purchasePensionAccess(BuildContext context) async {
-    if (!state.isLoggedIn) {
-      emit(state.copyWith(lastMessage: '먼저 로그인 해주세요.'));
-      return;
-    }
-
-    emit(state.copyWith(isProcessing: true, lastMessage: null));
-    final PaymentResult result = await _paymentService
-        .requestPensionSubscription(
-          context: context,
-          price: 4990,
-          orderId: 'pension-pass-${DateTime.now().millisecondsSinceEpoch}',
-        );
-
-    emit(
-      state.copyWith(
-        isProcessing: false,
-        hasPensionAccess: result.isSuccess ? true : state.hasPensionAccess,
-        lastMessage: result.message,
-      ),
-    );
-  }
 
   Future<void> requestGovernmentEmailVerification({
     required String email,
@@ -123,19 +91,17 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     try {
-      await _authRepository.requestGovernmentEmailVerification(trimmedEmail);
+      final String token = await _authRepository.requestGovernmentEmailVerification(trimmedEmail);
       emit(
         state.copyWith(
           isGovernmentEmailVerificationInProgress: false,
-          isEmailVerified: false,
-          lastMessage: '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인해주세요.',
+          lastMessage: '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.\n\n개발 모드: 토큰 $token',
         ),
       );
     } on AuthException catch (error) {
       emit(
         state.copyWith(
           isGovernmentEmailVerificationInProgress: false,
-          isEmailVerified: false,
           lastMessage: error.message,
         ),
       );
@@ -143,10 +109,25 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         state.copyWith(
           isGovernmentEmailVerificationInProgress: false,
-          isEmailVerified: false,
           lastMessage: '공직자 메일 인증 요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
         ),
       );
+    }
+  }
+
+  /// 공직자 메일 인증 토큰 검증 (개발/테스트용)
+  Future<void> verifyGovernmentEmailToken(String token) async {
+    try {
+      final bool isValid = await _authRepository.verifyGovernmentEmailToken(token);
+      if (isValid) {
+        emit(state.copyWith(lastMessage: '공직자 메일 인증이 완료되었습니다!'));
+        // 프로필 새로고침을 통해 업데이트된 governmentEmail 정보 반영
+        await refreshAuthStatus();
+      } else {
+        emit(state.copyWith(lastMessage: '유효하지 않거나 만료된 토큰입니다.'));
+      }
+    } catch (error) {
+      emit(state.copyWith(lastMessage: '토큰 검증 중 오류가 발생했습니다.'));
     }
   }
 
@@ -188,63 +169,8 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> addSupporterBadge() async {
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 후원 배지를 획득할 수 있습니다.'));
-      return;
-    }
 
-    final int nextLevel = state.supporterLevel + 1;
-    try {
-      await _userProfileRepository.assignBadge(
-        uid: uid,
-        badgeId: 'supporter_$nextLevel',
-        label: '후원자 레벨 $nextLevel',
-        description: '공무톡 후원으로 획득한 배지',
-      );
-      await _userProfileRepository.incrementPoints(
-        uid: uid,
-        delta: 50,
-        levelDelta: 1,
-      );
-      emit(
-        state.copyWith(lastMessage: '후원해주셔서 감사합니다! 레벨 $nextLevel 배지를 획득했습니다.'),
-      );
-    } catch (_) {
-      emit(state.copyWith(lastMessage: '후원 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
-    }
-  }
 
-  void enableSupporterMode() {
-    if (state.supporterLevel > 0) {
-      emit(state.copyWith(lastMessage: '이미 후원 모드가 활성화되어 있습니다.'));
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        supporterLevel: 1,
-        premiumTier: PremiumTier.supporter,
-        lastMessage: '후원 모드가 활성화되었어요! 고맙습니다.',
-      ),
-    );
-  }
-
-  void disableSupporterMode() {
-    if (state.supporterLevel == 0 && state.premiumTier == PremiumTier.none) {
-      emit(state.copyWith(lastMessage: '이미 일반 모드입니다.'));
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        supporterLevel: 0,
-        premiumTier: PremiumTier.none,
-        lastMessage: '후원을 취소했습니다. 언제든 다시 돌아오세요!',
-      ),
-    );
-  }
 
   Future<void> updateNickname(String newNickname) async {
     final String trimmed = newNickname.trim();
@@ -339,33 +265,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> updateSupporterBadgeVisibility(bool visible) async {
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 후원 배지 노출을 설정할 수 있습니다.'));
-      return;
-    }
-
-    emit(state.copyWith(isProcessing: true, lastMessage: null));
-    try {
-      final UserProfile profile = await _userProfileRepository
-          .updateProfileFields(uid: uid, supporterBadgeVisible: visible);
-      _applyProfile(profile);
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: visible ? '후원 배지를 다시 표시합니다.' : '후원 배지를 숨겼습니다.',
-        ),
-      );
-    } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '후원 배지 설정 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
-    }
-  }
 
   Future<void> updateSerialVisibility(bool visible) async {
     final String? uid = state.userId;
@@ -588,7 +487,6 @@ class AuthCubit extends Cubit<AuthState> {
           userId: null,
           email: null,
           primaryEmail: null,
-          hasPensionAccess: false,
           isAuthenticating: false,
           isGovernmentEmailVerificationInProgress: false,
           isEmailVerified: false,
@@ -601,11 +499,9 @@ class AuthCubit extends Cubit<AuthState> {
           region: 'unknown',
           jobTitle: '직무 미입력',
           yearsOfService: 0,
-          supporterLevel: 0,
           points: 0,
           level: 1,
           badges: const <String>[],
-          premiumTier: PremiumTier.none,
           photoUrl: null,
           nicknameChangeCount: 0,
           nicknameLastChangedAt: null,
@@ -654,9 +550,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     String? message = state.lastMessage;
-    if (!wasLoggedIn) {
-      message = '로그인 되었습니다.';
-    }
 
     emit(
       state.copyWith(
@@ -664,7 +557,6 @@ class AuthCubit extends Cubit<AuthState> {
         userId: user.uid,
         email: user.email,
         primaryEmail: user.email,
-        hasPensionAccess: state.hasPensionAccess,
         isAuthenticating: false,
         isGovernmentEmailVerificationInProgress: false,
         isEmailVerified: user.isEmailVerified,
@@ -705,6 +597,11 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       await operation();
+      // 로그인 액션이 성공했을 때만 메시지 설정
+      emit(state.copyWith(
+        isAuthenticating: false,
+        lastMessage: '로그인 되었습니다.',
+      ));
     } on AuthException catch (error) {
       emit(state.copyWith(isAuthenticating: false, authError: error.message));
     } catch (_) {
@@ -793,6 +690,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+
   void _applyProfile(UserProfile profile) {
     if (isClosed) {
       return;
@@ -814,11 +712,9 @@ class AuthCubit extends Cubit<AuthState> {
         jobTitle: profile.jobTitle,
         yearsOfService: profile.yearsOfService,
         bio: profile.bio,
-        supporterLevel: profile.supporterLevel,
         points: profile.points,
         level: profile.level,
         badges: profile.badges,
-        premiumTier: profile.premiumTier,
         careerTrack: profile.careerTrack,
         photoUrl: profile.photoUrl,
         nicknameChangeCount: profile.nicknameChangeCount,
@@ -828,7 +724,6 @@ class AuthCubit extends Cubit<AuthState> {
         followerCount: profile.followerCount,
         followingCount: profile.followingCount,
         notificationsEnabled: profile.notificationsEnabled,
-        supporterBadgeVisible: profile.supporterBadgeVisible,
         serialVisible: profile.serialVisible,
         excludedTracks: excludedTracks,
         excludedSerials: profile.excludedSerials,

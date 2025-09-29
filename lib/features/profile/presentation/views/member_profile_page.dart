@@ -81,10 +81,7 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 children: [
                   _MemberHeader(
                     profile: profile,
@@ -107,9 +104,9 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
                   const Gap(24),
                   Text(
                     '작성한 글',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const Gap(12),
                   const _MemberTimelineSection(),
@@ -133,16 +130,10 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
     setState(() => _isFollowActionPending = true);
     try {
       if (isFollowing) {
-        await _followRepository.unfollow(
-          followerUid: followerUid,
-          targetUid: targetUid,
-        );
+        await _followRepository.unfollow(followerUid: followerUid, targetUid: targetUid);
         _showSnackBar('팔로우를 취소했어요.');
       } else {
-        await _followRepository.follow(
-          followerUid: followerUid,
-          targetUid: targetUid,
-        );
+        await _followRepository.follow(followerUid: followerUid, targetUid: targetUid);
         _showSnackBar('새로운 동료를 팔로우했어요.');
       }
     } catch (_) {
@@ -177,10 +168,7 @@ class _ProfileNotFoundView extends StatelessWidget {
           children: [
             const Icon(Icons.person_off_outlined, size: 48),
             const Gap(12),
-            Text(
-              '해당 사용자를 찾을 수 없습니다.',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('해당 사용자를 찾을 수 없습니다.', style: Theme.of(context).textTheme.titleMedium),
           ],
         ),
       ),
@@ -214,15 +202,11 @@ class _MemberHeader extends StatelessWidget {
               radius: 36,
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
-              backgroundImage:
-                  profile.photoUrl != null && profile.photoUrl!.isNotEmpty
+              backgroundImage: profile.photoUrl != null && profile.photoUrl!.isNotEmpty
                   ? NetworkImage(profile.photoUrl!)
                   : null,
               child: profile.photoUrl == null || profile.photoUrl!.isEmpty
-                  ? Text(
-                      profile.nickname.characters.first,
-                      style: theme.textTheme.headlineSmall,
-                    )
+                  ? Text(profile.nickname.characters.first, style: theme.textTheme.headlineSmall)
                   : null,
             ),
             const Gap(16),
@@ -274,16 +258,7 @@ class _MemberHeader extends StatelessWidget {
                             ? '직렬 미설정'
                             : profile.careerTrack.displayName,
                       ),
-                      _HeaderChip(
-                        icon: Icons.location_city_outlined,
-                        label: profile.region,
-                      ),
-                      if (profile.supporterLevel > 0 &&
-                          profile.supporterBadgeVisible)
-                        _HeaderChip(
-                          icon: Icons.verified,
-                          label: '후원자 레벨 ${profile.supporterLevel}',
-                        ),
+                      _HeaderChip(icon: Icons.location_city_outlined, label: profile.region),
                     ],
                   ),
                 ],
@@ -311,17 +286,9 @@ class _MemberStats extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _StatTile(label: '팔로워', value: profile.followerCount),
-            Container(
-              width: 1,
-              height: 28,
-              color: theme.colorScheme.outlineVariant,
-            ),
+            Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant),
             _StatTile(label: '팔로잉', value: profile.followingCount),
-            Container(
-              width: 1,
-              height: 28,
-              color: theme.colorScheme.outlineVariant,
-            ),
+            Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant),
             _StatTile(label: '포인트', value: profile.points),
           ],
         ),
@@ -342,12 +309,7 @@ class _StatTile extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          '$value',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        Text('$value', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const Gap(4),
         Text(label, style: theme.textTheme.bodySmall),
       ],
@@ -370,12 +332,7 @@ class _MemberBioSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '자기소개',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text('자기소개', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
             const Gap(12),
             Text(
               bio == null || bio.isEmpty ? '아직 자기소개가 작성되지 않았습니다.' : bio,
@@ -404,8 +361,7 @@ class _MemberTimelineSection extends StatelessWidget {
           );
         }
 
-        if (state.status == ProfileTimelineStatus.error &&
-            state.posts.isEmpty) {
+        if (state.status == ProfileTimelineStatus.error && state.posts.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
@@ -424,10 +380,7 @@ class _MemberTimelineSection extends StatelessWidget {
               children: [
                 const Icon(Icons.forum_outlined, size: 40),
                 const Gap(8),
-                Text(
-                  '아직 작성한 글이 없습니다.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text('아직 작성한 글이 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           );
@@ -438,10 +391,8 @@ class _MemberTimelineSection extends StatelessWidget {
             ...state.posts.map(
               (Post post) => PostCard(
                 post: post,
-                onToggleLike: () =>
-                    context.read<ProfileTimelineCubit>().toggleLike(post),
-                onToggleBookmark: () =>
-                    context.read<ProfileTimelineCubit>().toggleBookmark(post),
+                onToggleLike: () => context.read<ProfileTimelineCubit>().toggleLike(post),
+                onToggleBookmark: () => context.read<ProfileTimelineCubit>().toggleBookmark(post),
               ),
             ),
             if (state.isLoadingMore)
@@ -451,8 +402,7 @@ class _MemberTimelineSection extends StatelessWidget {
               ),
             if (state.hasMore && !state.isLoadingMore)
               TextButton(
-                onPressed: () =>
-                    context.read<ProfileTimelineCubit>().loadMore(),
+                onPressed: () => context.read<ProfileTimelineCubit>().loadMore(),
                 child: const Text('더 보기'),
               ),
           ],
@@ -490,10 +440,7 @@ class _FollowButton extends StatelessWidget {
     }
 
     return StreamBuilder<bool>(
-      stream: followRepository.watchIsFollowing(
-        followerUid: currentUid,
-        targetUid: targetUid,
-      ),
+      stream: followRepository.watchIsFollowing(followerUid: currentUid, targetUid: targetUid),
       builder: (context, snapshot) {
         final bool isFollowing = snapshot.data ?? false;
         return FilledButton.tonal(

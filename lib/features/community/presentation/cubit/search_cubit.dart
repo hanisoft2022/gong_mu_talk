@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/usecases/search_community.dart';
 import '../../domain/repositories/i_community_repository.dart';
@@ -17,11 +18,16 @@ class SearchCubit extends Cubit<SearchState> {
   SearchCubit(
     this._repository,
     this._searchCommunity,
+    this._preferences,
   ) : super(const SearchState());
 
   final ICommunityRepository _repository;
   final SearchCommunity _searchCommunity;
+  final SharedPreferences _preferences;
   Timer? _autocompleteDebounce;
+
+  static const String _recentSearchesKey = 'recent_searches';
+  static const int _maxRecentSearches = 10;
 
   void onQueryChanged(String value) {
     emit(state.copyWith(draftQuery: value));
@@ -73,6 +79,10 @@ class SearchCubit extends Cubit<SearchState> {
     _autocompleteDebounce?.cancel();
 
     final String trimmedQuery = query.trim();
+
+    // 최근 검색어에 추가
+    await _addRecentSearch(trimmedQuery);
+
     emit(
       state.copyWith(
         isLoading: true,
@@ -83,6 +93,7 @@ class SearchCubit extends Cubit<SearchState> {
         hasMore: false,
         autocomplete: const <String>[],
         error: null,
+        recentSearches: await _getRecentSearches(),
       ),
     );
 
@@ -190,6 +201,50 @@ class SearchCubit extends Cubit<SearchState> {
       results[index] = post;
       emit(state.copyWith(postResults: results));
     }
+  }
+
+  // 최근 검색어 로드
+  Future<void> loadRecentSearches() async {
+    final recentSearches = await _getRecentSearches();
+    emit(state.copyWith(recentSearches: recentSearches));
+  }
+
+  // 최근 검색어 추가
+  Future<void> _addRecentSearch(String query) async {
+    final recentSearches = await _getRecentSearches();
+
+    // 이미 존재하는 검색어는 제거 (맨 앞으로 이동시키기 위해)
+    recentSearches.remove(query);
+
+    // 맨 앞에 추가
+    recentSearches.insert(0, query);
+
+    // 최대 개수 제한
+    if (recentSearches.length > _maxRecentSearches) {
+      recentSearches.removeRange(_maxRecentSearches, recentSearches.length);
+    }
+
+    // 저장
+    await _preferences.setStringList(_recentSearchesKey, recentSearches);
+  }
+
+  // 최근 검색어 가져오기
+  Future<List<String>> _getRecentSearches() async {
+    return _preferences.getStringList(_recentSearchesKey) ?? <String>[];
+  }
+
+  // 최근 검색어 개별 삭제
+  Future<void> removeRecentSearch(String query) async {
+    final recentSearches = await _getRecentSearches();
+    recentSearches.remove(query);
+    await _preferences.setStringList(_recentSearchesKey, recentSearches);
+    emit(state.copyWith(recentSearches: recentSearches));
+  }
+
+  // 최근 검색어 전체 삭제
+  Future<void> clearRecentSearches() async {
+    await _preferences.remove(_recentSearchesKey);
+    emit(state.copyWith(recentSearches: const <String>[]));
   }
 
   @override

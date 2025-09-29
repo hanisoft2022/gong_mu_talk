@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../di/di.dart';
 import '../../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../../community/data/mock_social_graph.dart';
 import '../../matching/presentation/views/matching_page.dart';
@@ -13,7 +14,7 @@ import 'cubit/life_section_cubit.dart';
 import 'utils/life_scroll_coordinator.dart';
 import '../../../common/widgets/app_logo_button.dart';
 import '../../../common/widgets/global_app_bar_actions.dart';
-import '../../../core/theme/theme_cubit.dart';
+import '../../../common/widgets/auth_required_view.dart';
 import '../../../routing/app_router.dart';
 
 class LifeHomePage extends StatefulWidget {
@@ -33,8 +34,8 @@ class _LifeHomePageState extends State<LifeHomePage> {
   @override
   void initState() {
     super.initState();
-    _lifeRepository = context.read<MockLifeRepository>();
-    _socialGraph = context.read<MockSocialGraph>();
+    _lifeRepository = getIt<MockLifeRepository>();
+    _socialGraph = getIt<MockSocialGraph>();
     context.read<AuthCubit>().refreshAuthStatus();
     _scrollController = ScrollController();
     _scrollController.addListener(_handleScrollOffset);
@@ -86,7 +87,6 @@ class _LifeHomePageState extends State<LifeHomePage> {
       _isAppBarElevated ? 1 : 0,
     )!;
     final double radius = _isAppBarElevated ? 12 : 18;
-    final ThemeMode mode = context.watch<ThemeCubit>().state;
     const double toolbarHeight = 64;
 
     return SliverAppBar(
@@ -117,8 +117,6 @@ class _LifeHomePageState extends State<LifeHomePage> {
         GlobalAppBarActions(
           compact: true,
           opacity: _isAppBarElevated ? 1 : 0.92,
-          isDarkMode: mode == ThemeMode.dark,
-          onToggleTheme: () => context.read<ThemeCubit>().toggle(),
           onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
         ),
       ],
@@ -127,7 +125,24 @@ class _LifeHomePageState extends State<LifeHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final LifeSection section = context.watch<LifeSectionCubit>().state;
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        // 라이프 기능 접근 권한 확인
+        if (!authState.hasLoungeAccess) {
+          return Scaffold(
+            body: NestedScrollView(
+              controller: _scrollController,
+              headerSliverBuilder: (context, _) => <Widget>[
+                _buildLifeSliverAppBar(context),
+              ],
+              body: const AuthRequiredView(
+                message: '라이프 기능을 이용하려면 공직자 메일 인증을 완료해주세요.',
+              ),
+            ),
+          );
+        }
+
+        final LifeSection section = context.watch<LifeSectionCubit>().state;
     final Widget content = AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: section == LifeSection.meetings
@@ -155,6 +170,8 @@ class _LifeHomePageState extends State<LifeHomePage> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

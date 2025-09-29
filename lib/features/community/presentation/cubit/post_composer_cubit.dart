@@ -225,7 +225,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     );
 
     try {
-      final int supporterLevel = authState.supporterLevel;
+      final int supporterLevel = 0;
       final Post post = await _repository.createPost(
         type: type,
         authorUid: uid,

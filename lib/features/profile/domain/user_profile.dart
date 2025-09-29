@@ -49,6 +49,8 @@ class UserProfile extends Equatable {
     this.notificationsEnabled = true,
     this.supporterBadgeVisible = true,
     this.serialVisible = true,
+    this.governmentEmail,
+    this.governmentEmailVerifiedAt,
   });
 
   final String uid;
@@ -90,6 +92,8 @@ class UserProfile extends Equatable {
   final bool notificationsEnabled;
   final bool supporterBadgeVisible;
   final bool serialVisible;
+  final String? governmentEmail;
+  final DateTime? governmentEmailVerifiedAt;
 
   bool get isBlocked =>
       blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
@@ -108,6 +112,8 @@ class UserProfile extends Equatable {
     }
     return nicknameChangeCount < 1;
   }
+
+  bool get isGovernmentEmailVerified => governmentEmail != null && governmentEmailVerifiedAt != null;
 
   UserProfile copyWith({
     String? nickname,
@@ -148,6 +154,8 @@ class UserProfile extends Equatable {
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
     bool? serialVisible,
+    String? governmentEmail,
+    DateTime? governmentEmailVerifiedAt,
   }) {
     return UserProfile(
       uid: uid,
@@ -192,6 +200,8 @@ class UserProfile extends Equatable {
       supporterBadgeVisible:
           supporterBadgeVisible ?? this.supporterBadgeVisible,
       serialVisible: serialVisible ?? this.serialVisible,
+      governmentEmail: governmentEmail ?? this.governmentEmail,
+      governmentEmailVerifiedAt: governmentEmailVerifiedAt ?? this.governmentEmailVerifiedAt,
     );
   }
 
@@ -243,6 +253,10 @@ class UserProfile extends Equatable {
       'notificationsEnabled': notificationsEnabled,
       'supporterBadgeVisible': supporterBadgeVisible,
       'serialVisible': serialVisible,
+      'governmentEmail': governmentEmail,
+      'governmentEmailVerifiedAt': governmentEmailVerifiedAt != null
+          ? Timestamp.fromDate(governmentEmailVerifiedAt!)
+          : null,
     };
   }
 
@@ -303,6 +317,8 @@ class UserProfile extends Equatable {
       notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
       supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
       serialVisible: data['serialVisible'] as bool? ?? true,
+      governmentEmail: data['governmentEmail'] as String?,
+      governmentEmailVerifiedAt: _parseTimestamp(data['governmentEmailVerifiedAt']),
     );
   }
 
@@ -404,5 +420,7 @@ class UserProfile extends Equatable {
     notificationsEnabled,
     supporterBadgeVisible,
     serialVisible,
+    governmentEmail,
+    governmentEmailVerifiedAt,
   ];
 }

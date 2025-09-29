@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -28,6 +29,27 @@ class GovernmentEmailAlias {
   final String userId;
 }
 
+class GovernmentEmailVerificationToken {
+  const GovernmentEmailVerificationToken({
+    required this.token,
+    required this.email,
+    required this.userId,
+    required this.expiresAt,
+    required this.createdAt,
+    this.verifiedAt,
+  });
+
+  final String token;
+  final String email;
+  final String userId;
+  final DateTime expiresAt;
+  final DateTime createdAt;
+  final DateTime? verifiedAt;
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isVerified => verifiedAt != null;
+}
+
 class GovernmentEmailRepository {
   GovernmentEmailRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -36,6 +58,7 @@ class GovernmentEmailRepository {
 
   static const String _claimCollection = 'government_email_index';
   static const String _aliasCollection = 'government_email_aliases';
+  static const String _verificationTokenCollection = 'government_email_verification_tokens';
 
   Future<GovernmentEmailClaim?> fetchClaim(String email) async {
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await _claimRef(
@@ -255,6 +278,126 @@ class GovernmentEmailRepository {
     }
 
     return originalEmail;
+  }
+
+  /// 새로운 공직자 메일 인증 토큰 생성
+  Future<String> createVerificationToken({
+    required String userId,
+    required String governmentEmail,
+  }) async {
+    // 기존에 해당 이메일로 인증된 사용자가 있는지 확인
+    final GovernmentEmailClaim? existingClaim = await fetchClaim(governmentEmail);
+    if (existingClaim != null &&
+        existingClaim.status == GovernmentEmailClaimStatus.verified &&
+        existingClaim.userId != userId) {
+      throw Exception('이미 다른 사용자가 인증한 공직자 메일입니다.');
+    }
+
+    // 랜덤 토큰 생성 (64자리 hex)
+    final Random random = Random.secure();
+    final List<int> bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    final String token = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+    final DateTime now = DateTime.now();
+    final DateTime expiresAt = now.add(const Duration(hours: 24)); // 24시간 후 만료
+
+    // 토큰 저장
+    await _firestore.collection(_verificationTokenCollection).doc(token).set({
+      'token': token,
+      'email': _normalize(governmentEmail),
+      'userId': userId,
+      'expiresAt': Timestamp.fromDate(expiresAt),
+      'createdAt': Timestamp.fromDate(now),
+      'verifiedAt': null,
+    });
+
+    // pending 상태로 claim 생성/업데이트
+    await markPending(
+      userId: userId,
+      governmentEmail: governmentEmail,
+    );
+
+    return token;
+  }
+
+  /// 인증 토큰 검증 및 처리
+  Future<bool> verifyToken(String token) async {
+    final DocumentSnapshot<Map<String, dynamic>> tokenSnapshot =
+        await _firestore.collection(_verificationTokenCollection).doc(token).get();
+
+    if (!tokenSnapshot.exists) {
+      return false;
+    }
+
+    final Map<String, dynamic> data = tokenSnapshot.data()!;
+    final GovernmentEmailVerificationToken verificationToken = _parseVerificationToken(data);
+
+    if (verificationToken.isExpired || verificationToken.isVerified) {
+      return false;
+    }
+
+    final DateTime now = DateTime.now();
+
+    // 토큰을 verified 상태로 업데이트
+    await tokenSnapshot.reference.update({
+      'verifiedAt': Timestamp.fromDate(now),
+    });
+
+    // claim을 verified 상태로 업데이트
+    await markVerified(
+      userId: verificationToken.userId,
+      governmentEmail: verificationToken.email,
+    );
+
+    // 사용자 프로필에 공직자 메일 정보 업데이트
+    await _updateUserProfileGovernmentEmail(
+      userId: verificationToken.userId,
+      governmentEmail: verificationToken.email,
+      verifiedAt: now,
+    );
+
+    return true;
+  }
+
+  /// 사용자 프로필에 공직자 메일 정보 업데이트
+  Future<void> _updateUserProfileGovernmentEmail({
+    required String userId,
+    required String governmentEmail,
+    required DateTime verifiedAt,
+  }) async {
+    await _firestore.collection('users').doc(userId).update({
+      'governmentEmail': governmentEmail,
+      'governmentEmailVerifiedAt': Timestamp.fromDate(verifiedAt),
+      'updatedAt': Timestamp.fromDate(verifiedAt),
+    });
+  }
+
+  /// 특정 사용자의 미완료 인증 토큰들 조회
+  Future<List<GovernmentEmailVerificationToken>> getPendingTokensForUser(String userId) async {
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+        .collection(_verificationTokenCollection)
+        .where('userId', isEqualTo: userId)
+        .where('verifiedAt', isNull: true)
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => _parseVerificationToken(doc.data()))
+        .where((token) => !token.isExpired)
+        .toList();
+  }
+
+  GovernmentEmailVerificationToken _parseVerificationToken(Map<String, dynamic> data) {
+    return GovernmentEmailVerificationToken(
+      token: data['token'] as String,
+      email: data['email'] as String,
+      userId: data['userId'] as String,
+      expiresAt: (data['expiresAt'] as Timestamp).toDate(),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      verifiedAt: data['verifiedAt'] != null
+          ? (data['verifiedAt'] as Timestamp).toDate()
+          : null,
+    );
   }
 
   DocumentReference<Map<String, dynamic>> _claimRef(String email) {

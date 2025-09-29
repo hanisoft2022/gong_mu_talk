@@ -3,7 +3,6 @@ part of 'auth_cubit.dart';
 class AuthState extends Equatable {
   const AuthState({
     this.isLoggedIn = false,
-    this.hasPensionAccess = false,
     this.isProcessing = false,
     this.isAuthenticating = false,
     this.isGovernmentEmailVerificationInProgress = false,
@@ -18,11 +17,9 @@ class AuthState extends Equatable {
     this.jobTitle = '직무 미입력',
     this.yearsOfService = 0,
     this.bio,
-    this.supporterLevel = 0,
     this.points = 0,
     this.level = 1,
     this.badges = const <String>[],
-    this.premiumTier = PremiumTier.none,
     this.photoUrl,
     this.nicknameChangeCount = 0,
     this.nicknameLastChangedAt,
@@ -31,7 +28,6 @@ class AuthState extends Equatable {
     this.followerCount = 0,
     this.followingCount = 0,
     this.notificationsEnabled = true,
-    this.supporterBadgeVisible = true,
     this.serialVisible = true,
     this.excludedTracks = const <CareerTrack>{},
     this.excludedSerials = const <String>{},
@@ -45,7 +41,6 @@ class AuthState extends Equatable {
   });
 
   final bool isLoggedIn;
-  final bool hasPensionAccess;
   final bool isProcessing;
   final bool isAuthenticating;
   final bool isGovernmentEmailVerificationInProgress;
@@ -60,11 +55,9 @@ class AuthState extends Equatable {
   final String jobTitle;
   final int yearsOfService;
   final String? bio;
-  final int supporterLevel;
   final int points;
   final int level;
   final List<String> badges;
-  final PremiumTier premiumTier;
   final String? photoUrl;
   final int nicknameChangeCount;
   final DateTime? nicknameLastChangedAt;
@@ -73,7 +66,6 @@ class AuthState extends Equatable {
   final int followerCount;
   final int followingCount;
   final bool notificationsEnabled;
-  final bool supporterBadgeVisible;
   final bool serialVisible;
   final Set<CareerTrack> excludedTracks;
   final Set<String> excludedSerials;
@@ -89,7 +81,6 @@ class AuthState extends Equatable {
 
   AuthState copyWith({
     bool? isLoggedIn,
-    bool? hasPensionAccess,
     bool? isProcessing,
     bool? isAuthenticating,
     bool? isGovernmentEmailVerificationInProgress,
@@ -104,11 +95,9 @@ class AuthState extends Equatable {
     String? jobTitle,
     int? yearsOfService,
     String? bio,
-    int? supporterLevel,
     int? points,
     int? level,
     List<String>? badges,
-    PremiumTier? premiumTier,
     String? photoUrl,
     int? nicknameChangeCount,
     DateTime? nicknameLastChangedAt,
@@ -117,7 +106,6 @@ class AuthState extends Equatable {
     int? followerCount,
     int? followingCount,
     bool? notificationsEnabled,
-    bool? supporterBadgeVisible,
     bool? serialVisible,
     Set<CareerTrack>? excludedTracks,
     Set<String>? excludedSerials,
@@ -131,7 +119,6 @@ class AuthState extends Equatable {
   }) {
     return AuthState(
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
-      hasPensionAccess: hasPensionAccess ?? this.hasPensionAccess,
       isProcessing: isProcessing ?? this.isProcessing,
       isAuthenticating: isAuthenticating ?? this.isAuthenticating,
       isGovernmentEmailVerificationInProgress:
@@ -148,11 +135,9 @@ class AuthState extends Equatable {
       jobTitle: jobTitle ?? this.jobTitle,
       yearsOfService: yearsOfService ?? this.yearsOfService,
       bio: bio ?? this.bio,
-      supporterLevel: supporterLevel ?? this.supporterLevel,
       points: points ?? this.points,
       level: level ?? this.level,
       badges: badges ?? this.badges,
-      premiumTier: premiumTier ?? this.premiumTier,
       photoUrl: photoUrl ?? this.photoUrl,
       nicknameChangeCount: nicknameChangeCount ?? this.nicknameChangeCount,
       nicknameLastChangedAt:
@@ -162,8 +147,6 @@ class AuthState extends Equatable {
       followerCount: followerCount ?? this.followerCount,
       followingCount: followingCount ?? this.followingCount,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      supporterBadgeVisible:
-          supporterBadgeVisible ?? this.supporterBadgeVisible,
       serialVisible: serialVisible ?? this.serialVisible,
       excludedTracks: excludedTracks ?? this.excludedTracks,
       excludedSerials: excludedSerials ?? this.excludedSerials,
@@ -184,7 +167,6 @@ class AuthState extends Equatable {
   @override
   List<Object?> get props => <Object?>[
     isLoggedIn,
-    hasPensionAccess,
     isProcessing,
     isAuthenticating,
     isGovernmentEmailVerificationInProgress,
@@ -199,11 +181,9 @@ class AuthState extends Equatable {
     jobTitle,
     yearsOfService,
     bio,
-    supporterLevel,
     points,
     level,
     badges,
-    premiumTier,
     photoUrl,
     nicknameChangeCount,
     nicknameLastChangedAt,
@@ -212,7 +192,6 @@ class AuthState extends Equatable {
     followerCount,
     followingCount,
     notificationsEnabled,
-    supporterBadgeVisible,
     serialVisible,
     excludedTracks,
     excludedSerials,
@@ -236,9 +215,8 @@ class AuthState extends Equatable {
     return normalized.endsWith('@korea.kr') || normalized.endsWith('.go.kr');
   }
 
-  bool get isGovernmentEmailVerified => isGovernmentEmail && isEmailVerified;
+  bool get isGovernmentEmailVerified => userProfile?.isGovernmentEmailVerified ?? false;
 
-  bool get isPremium => premiumTier != PremiumTier.none;
 
   bool get hasNicknameTickets => extraNicknameTickets > 0;
 
@@ -252,4 +230,10 @@ class AuthState extends Equatable {
     }
     return nicknameChangeCount < 1;
   }
+
+  String? get governmentEmail => userProfile?.governmentEmail;
+
+  bool get hasLoungeAccess => isGovernmentEmailVerified;
+
+  bool get hasSerialTabAccess => isGovernmentEmailVerified;
 }

@@ -90,7 +90,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _closeAuthorMenu(); // overlay가 열려있다면 정리
+    // Ensure overlay is properly cleaned up before disposal
+    if (_menuOverlayEntry != null) {
+      try {
+        _menuOverlayEntry!.remove();
+      } catch (e) {
+        // Silently handle any overlay removal errors during disposal
+      } finally {
+        _menuOverlayEntry = null;
+      }
+    }
     _commentController
       ..removeListener(_handleCommentInputChanged)
       ..dispose();
@@ -786,11 +795,19 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Future<void> _toggleComments() async {
     if (_showComments) {
-      setState(() => _showComments = false);
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _showComments = false);
+        });
+      }
       return;
     }
 
-    setState(() => _showComments = true);
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _showComments = true);
+      });
+    }
     await _loadComments();
   }
 
@@ -863,23 +880,33 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _featuredComments = _applyRandomLikes(featured);
-        _timelineComments = _applyRandomLikes(mergedTimeline);
-        _commentsLoaded = true;
-        _isLoadingComments = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _featuredComments = _applyRandomLikes(featured);
+            _timelineComments = _applyRandomLikes(mergedTimeline);
+            _commentsLoaded = true;
+            _isLoadingComments = false;
+          });
+        }
       });
     } catch (_) {
       if (!mounted) {
         return;
       }
-      setState(() => _isLoadingComments = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _isLoadingComments = false);
+      });
     }
   }
 
   void _handleExpand() {
     _registerInteraction();
-    setState(() => _isExpanded = true);
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _isExpanded = true);
+      });
+    }
   }
 
   void _handleLikeTap() {
@@ -1107,7 +1134,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           .toList(growable: false);
     }
 
-    setState(() => updateLists(willLike, nextCount));
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => updateLists(willLike, nextCount));
+      });
+    }
 
     if (_isSynthetic(widget.post)) {
       return;
@@ -1116,7 +1147,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     try {
       await _repository.toggleCommentLikeById(widget.post.id, comment.id);
     } catch (_) {
-      setState(() => updateLists(!willLike, comment.likeCount));
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => updateLists(!willLike, comment.likeCount));
+        });
+      }
     }
   }
 
@@ -1174,6 +1209,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     required bool isFollowing,
     required MockSocialGraph socialGraph,
   }) {
+    // Ensure widget is still mounted
+    if (!mounted) return;
+
     // 이미 메뉴가 열려있다면 닫기
     if (_menuOverlayEntry != null) {
       _closeAuthorMenu();
@@ -1258,7 +1296,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       ),
     );
 
-    Overlay.of(context).insert(_menuOverlayEntry!);
+    if (mounted && _menuOverlayEntry != null) {
+      try {
+        Overlay.of(context).insert(_menuOverlayEntry!);
+      } catch (e) {
+        // Silently handle overlay insertion errors
+        _menuOverlayEntry = null;
+      }
+    }
   }
 
   Widget _buildMenuOption({
@@ -1283,8 +1328,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _closeAuthorMenu() {
-    _menuOverlayEntry?.remove();
-    _menuOverlayEntry = null;
+    if (_menuOverlayEntry != null && mounted) {
+      try {
+        _menuOverlayEntry!.remove();
+      } catch (e) {
+        // Silently handle any overlay removal errors
+      } finally {
+        _menuOverlayEntry = null;
+      }
+    }
   }
 
   Future<void> _handleMenuAction(
@@ -1322,6 +1374,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _showCommentAuthorMenu({required Comment comment, required GlobalKey authorKey}) {
+    // Ensure widget is still mounted
+    if (!mounted) return;
+
     final MockSocialGraph socialGraph = _socialGraph;
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
@@ -1420,7 +1475,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       ),
     );
 
-    Overlay.of(context).insert(_menuOverlayEntry!);
+    if (mounted && _menuOverlayEntry != null) {
+      try {
+        Overlay.of(context).insert(_menuOverlayEntry!);
+      } catch (e) {
+        // Silently handle overlay insertion errors
+        _menuOverlayEntry = null;
+      }
+    }
   }
 
   Future<void> _handleCommentAuthorAction(
@@ -1705,14 +1767,7 @@ class _AuthorInfoHeader extends StatelessWidget {
   }
 
   Widget? _buildSupporterBadge(ThemeData theme) {
-    if (!post.authorIsSupporter) {
-      return null;
-    }
-    final int level = post.authorSupporterLevel;
-    return Tooltip(
-      message: level > 0 ? '후원자 레벨 $level' : '후원자',
-      child: Icon(Icons.verified, size: 18, color: theme.colorScheme.primary),
-    );
+    return null;
   }
 
   String _maskedUid() {

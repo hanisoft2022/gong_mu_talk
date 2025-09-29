@@ -20,7 +20,6 @@ import '../features/calculator/domain/usecases/calculate_salary.dart';
 import '../features/calculator/domain/usecases/get_base_salary_from_reference.dart';
 import '../features/calculator/domain/usecases/get_salary_grades.dart';
 import '../features/calculator/presentation/bloc/salary_calculator_bloc.dart';
-import '../features/payments/data/bootpay_payment_service.dart';
 import '../features/matching/data/matching_repository.dart';
 import '../features/community/data/community_repository.dart';
 import '../features/community/data/community_repository_impl.dart';
@@ -28,7 +27,6 @@ import '../features/community/domain/repositories/i_community_repository.dart';
 import '../features/community/domain/usecases/search_community.dart';
 import '../features/community/data/mock_social_graph.dart';
 import '../features/life/data/mock_life_repository.dart';
-import '../features/monetization/presentation/cubit/monetization_cubit.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/board_catalog_cubit.dart';
 import '../features/community/presentation/cubit/post_detail_cubit.dart';
@@ -53,8 +51,7 @@ Future<void> configureDependencies() async {
       await SharedPreferences.getInstance();
 
   getIt
-    ..registerLazySingleton<ThemeCubit>(ThemeCubit.new)
-    ..registerLazySingleton<BootpayPaymentService>(BootpayPaymentService.new)
+    ..registerLazySingleton<ThemeCubit>(() => ThemeCubit(getIt()))
     ..registerLazySingleton<GovernmentEmailRepository>(
       GovernmentEmailRepository.new,
     )
@@ -70,9 +67,6 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<FollowRepository>(
       () => FollowRepository(userProfileRepository: getIt()),
     )
-    ..registerLazySingleton<PaystubVerificationRepository>(
-      () => PaystubVerificationRepository(authCubit: getIt()),
-    )
     ..registerLazySingleton<NotificationRepository>(
       () => NotificationRepository(
         notificationService: getIt(),
@@ -81,12 +75,14 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton<AuthCubit>(
       () => AuthCubit(
-        paymentService: getIt(),
         authRepository: getIt(),
         sessionStore: getIt(),
         userProfileRepository: getIt(),
         notificationRepository: getIt(),
       ),
+    )
+    ..registerLazySingleton<PaystubVerificationRepository>(
+      () => PaystubVerificationRepository(authCubit: getIt()),
     )
     ..registerLazySingleton<UserSession>(
       () => AuthUserSession(getIt<AuthCubit>()),
@@ -95,7 +91,6 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<MockLifeRepository>(
       () => MockLifeRepository(socialGraph: getIt()),
     )
-    ..registerLazySingleton<MonetizationCubit>(MonetizationCubit.new)
     ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
     ..registerLazySingleton<CommunityRepository>(
       () => CommunityRepository(
@@ -131,7 +126,7 @@ Future<void> configureDependencies() async {
           ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
-    ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt()))
+    ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
     ..registerLazySingleton<GoRouter>(createRouter)
     ..registerLazySingleton<SalaryCalculatorLocalDataSource>(
       () => SalaryCalculatorLocalDataSource(),

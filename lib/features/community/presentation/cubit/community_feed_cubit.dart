@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
-import '../../../profile/domain/user_profile.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/feed_filters.dart';
@@ -48,11 +47,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       '${scope.name}_${sort.name}';
 
   bool get _shouldShowAds {
-    final AuthState authState = _authCubit.state;
-    final bool isSupporter =
-        authState.supporterLevel > 0 ||
-        authState.premiumTier != PremiumTier.none;
-    return !isSupporter;
+    return false;
   }
 
   Future<void> loadInitial({LoungeScope? scope, LoungeSort? sort}) async {
