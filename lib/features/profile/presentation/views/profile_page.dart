@@ -545,11 +545,7 @@ class _ProfileHeader extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.bug_report,
-                              size: 16,
-                              color: theme.colorScheme.error,
-                            ),
+                            Icon(Icons.bug_report, size: 16, color: theme.colorScheme.error),
                             const Gap(8),
                             Text(
                               '테스트 모드',
@@ -602,7 +598,6 @@ class _ProfileHeader extends StatelessWidget {
   ];
 
   void _showTestCareerSelector(BuildContext context) {
-
     showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext context) {
@@ -614,9 +609,9 @@ class _ProfileHeader extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   '테스트용 직렬 선택',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const Divider(height: 1),
@@ -644,9 +639,7 @@ class _ProfileHeader extends StatelessWidget {
       final String? userId = authCubit.state.userId;
 
       if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인이 필요합니다')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
         return;
       }
 
@@ -666,11 +659,12 @@ class _ProfileHeader extends StatelessWidget {
         if (careerHierarchy.level4 != null) accessibleLoungeIds.add(careerHierarchy.level4!);
 
         // 기본 라운지는 가장 구체적인 레벨
-        defaultLoungeId = careerHierarchy.level4 ??
-                         careerHierarchy.level3 ??
-                         careerHierarchy.level2 ??
-                         careerHierarchy.level1 ??
-                         'all';
+        defaultLoungeId =
+            careerHierarchy.level4 ??
+            careerHierarchy.level3 ??
+            careerHierarchy.level2 ??
+            careerHierarchy.level1 ??
+            'all';
       }
 
       // Firestore 직접 업데이트
@@ -685,7 +679,10 @@ class _ProfileHeader extends StatelessWidget {
       await authCubit.refreshAuthStatus();
 
       if (context.mounted) {
-        final careerName = testCareers.firstWhere((c) => c['id'] == careerId, orElse: () => {'name': careerId})['name'];
+        final careerName = testCareers.firstWhere(
+          (c) => c['id'] == careerId,
+          orElse: () => {'name': careerId},
+        )['name'];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('테스트 직렬이 "$careerName"(으)로 설정되었습니다'),
@@ -695,9 +692,7 @@ class _ProfileHeader extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
       }
     }
   }
