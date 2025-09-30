@@ -5,8 +5,6 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../profile/domain/career_track.dart';
-import '../../../profile/domain/lounge_info.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_result.dart';
@@ -20,6 +18,8 @@ import '../widgets/empty_state_view.dart';
 import '../widgets/community_error_view.dart';
 import '../widgets/sort_button.dart';
 import '../widgets/search_icon_button.dart';
+import '../widgets/lounge_floating_menu.dart';
+import '../widgets/lounge_fab.dart';
 import '../../../../di/di.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../../core/utils/performance_optimizations.dart';
@@ -229,44 +229,114 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   }
 
                   return Scaffold(
-                    body: NestedScrollView(
-                      controller: _scrollController,
-                      headerSliverBuilder: (context, _) => <Widget>[
-                        _buildLoungeSliverAppBar(context, feedState),
-                      ],
-                      body: RefreshIndicator(
-                        onRefresh: onRefresh,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          switchInCurve: Curves.easeOutQuart,
-                          switchOutCurve: Curves.easeInQuart,
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position:
-                                    Tween<Offset>(
-                                      begin: const Offset(0.0, 0.03),
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutQuart,
-                                      ),
-                                    ),
-                                child: child,
+                    body: Stack(
+                      children: [
+                        // 메인 콘텐츠
+                        NestedScrollView(
+                          controller: _scrollController,
+                          headerSliverBuilder: (context, _) => <Widget>[
+                            _buildLoungeSliverAppBar(context, feedState),
+                          ],
+                          body: RefreshIndicator(
+                            onRefresh: onRefresh,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              switchInCurve: Curves.easeOutQuart,
+                              switchOutCurve: Curves.easeOut,
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position:
+                                        Tween<Offset>(
+                                          begin: const Offset(0.0, 0.015),
+                                          end: Offset.zero,
+                                        ).animate(
+                                          CurvedAnimation(
+                                            parent: animation,
+                                            curve: Curves.easeOutQuart,
+                                          ),
+                                        ),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: OptimizedListView(
+                                key: ValueKey<String>(
+                                  'feed_${feedState.scope.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
+                                ),
+                                itemCount: children.length,
+                                itemBuilder: (context, index) => children[index],
                               ),
-                            );
-                          },
-                          child: OptimizedListView(
-                            key: ValueKey<String>(
-                              'feed_${feedState.scope.name}_${feedState.sort.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
                             ),
-                            itemCount: children.length,
-                            itemBuilder: (context, index) => children[index],
                           ),
                         ),
-                      ),
+
+                        // 정렬 중 shimmer 오버레이
+                        if (feedState.status == CommunityFeedStatus.sorting)
+                          Positioned.fill(
+                            top: kToolbarHeight + MediaQuery.of(context).padding.top,
+                            child: IgnorePointer(
+                              child: Container(
+                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // 오버레이 (메뉴가 열려있을 때만)
+                        if (feedState.isLoungeMenuOpen)
+                          Positioned.fill(
+                            child: GestureDetector(
+                              onTap: () => context.read<CommunityFeedCubit>().closeLoungeMenu(),
+                              child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                            ),
+                          ),
+
+                        // FAB + 라운지 메뉴
+                        Positioned(
+                          right: 16,
+                          bottom: 24, // 바텀 네비게이션 바로 위
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // 라운지 선택 메뉴
+                              LoungeFloatingMenu(
+                                lounges: feedState.accessibleLounges,
+                                selectedLounge: feedState.selectedLoungeInfo,
+                                onLoungeSelected: (lounge) {
+                                  context.read<CommunityFeedCubit>().changeLounge(lounge);
+                                },
+                                isVisible: feedState.isLoungeMenuOpen,
+                                hasCareerVerification: authState.careerHierarchy != null,
+                                onVerifyCareer: () {
+                                  context.read<CommunityFeedCubit>().toggleLoungeMenu();
+                                  context.push('/profile/verify-paystub');
+                                },
+                              ),
+
+                              // FAB
+                              LoungeFAB(
+                                selectedLounge: feedState.selectedLoungeInfo,
+                                onTap: () {
+                                  context.read<CommunityFeedCubit>().toggleLoungeMenu();
+                                },
+                                isMenuOpen: feedState.isLoungeMenuOpen,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -471,6 +541,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     if (showEmptyPosts) {
       return <Widget>[
+        const Gap(60),
         EmptyStateView(
           icon: Icons.chat_bubble_outline,
           title: '아직 게시물이 없습니다.',
@@ -1074,7 +1145,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   }
 
   SliverAppBar _buildLoungeSliverAppBar(BuildContext context, CommunityFeedState state) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Color background = Color.lerp(
       colorScheme.surface.withValues(alpha: 0.9),
       colorScheme.surface,
@@ -1102,7 +1174,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         padding: const EdgeInsets.only(left: 8),
         child: AppLogoButton(compact: true, onTap: _scrollToTop),
       ),
-      title: _buildScopeSelector(context, state),
+      title: Text(
+        _getAppBarTitle(state),
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
       actions: [
         BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, themeMode) {
@@ -1136,178 +1211,22 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  double _calculateFontSize(String text) {
-    final int length = text.length;
-    if (length <= 4) {
-      return 13.0; // 기본 크기
-    } else if (length <= 6) {
-      return 11.0; // 약간 축소
-    } else {
-      return 9.0; // 더 축소
-    }
-  }
-
-  Widget _buildScopeSelector(BuildContext context, CommunityFeedState state) {
-    final ThemeData theme = Theme.of(context);
-
-    // 접근 가능한 라운지가 없으면 기본 상태 표시
-    if (state.accessibleLounges.isEmpty || state.selectedLoungeInfo == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.dividerColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.public_outlined,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const Gap(8),
-            Text(
-              '전체',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 접근 가능한 라운지가 1개면 드롭다운 없이 단순 표시
-    if (state.accessibleLounges.length == 1) {
-      final LoungeInfo lounge = state.accessibleLounges.first;
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withAlpha(40),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.primary.withAlpha(153)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              lounge.emoji,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const Gap(8),
-            Text(
-              lounge.shortName,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 여러 라운지가 있는 경우 드롭다운 버튼
-    return PopupMenuButton<LoungeInfo>(
-      initialValue: state.selectedLoungeInfo,
-      onSelected: (LoungeInfo loungeInfo) {
-        if (loungeInfo != state.selectedLoungeInfo) {
-          PerformanceProfiler.start('change_lounge');
-          context.read<CommunityFeedCubit>().changeLounge(loungeInfo);
-          PerformanceProfiler.end('change_lounge');
-        }
-      },
-      itemBuilder: (BuildContext context) {
-        return state.accessibleLounges.map<PopupMenuEntry<LoungeInfo>>(
-          (LoungeInfo lounge) {
-            final bool isSelected = lounge.id == state.selectedLoungeInfo?.id;
-            return PopupMenuItem<LoungeInfo>(
-              value: lounge,
-              child: Row(
-                children: [
-                  Text(
-                    lounge.emoji,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lounge.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: isSelected ? theme.colorScheme.primary : null,
-                          ),
-                        ),
-                        if (lounge.memberCount > 0) ...[
-                          const Gap(2),
-                          Text(
-                            '${lounge.memberCount}명',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (isSelected) ...[
-                    const Gap(8),
-                    Icon(
-                      Icons.check,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        ).toList();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withAlpha(40),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.primary.withAlpha(153)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              state.selectedLoungeInfo!.emoji,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const Gap(8),
-            Text(
-              state.selectedLoungeInfo!.shortName,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const Gap(4),
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: theme.colorScheme.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _useSuggestion(String token) {
     _searchController
       ..text = token
       ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
     _onSearchSubmitted(token);
+  }
+
+  String _getAppBarTitle(CommunityFeedState feedState) {
+    if (feedState.selectedLoungeInfo != null) {
+      final lounge = feedState.selectedLoungeInfo!;
+      if (lounge.id == 'all') {
+        return '전체 라운지';
+      } else {
+        return '${lounge.name} 라운지';
+      }
+    }
+    return '공무톡';
   }
 }

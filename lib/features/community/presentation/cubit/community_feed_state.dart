@@ -1,6 +1,6 @@
 part of 'community_feed_cubit.dart';
 
-enum CommunityFeedStatus { initial, loading, loaded, refreshing, error }
+enum CommunityFeedStatus { initial, loading, loaded, refreshing, sorting, error }
 
 class CommunityFeedState extends Equatable {
   const CommunityFeedState({
@@ -19,6 +19,7 @@ class CommunityFeedState extends Equatable {
     this.showAds = true,
     this.accessibleLounges = const <LoungeInfo>[],
     this.selectedLoungeInfo,
+    this.isLoungeMenuOpen = false,
   });
 
   final CommunityFeedStatus status;
@@ -36,6 +37,7 @@ class CommunityFeedState extends Equatable {
   final bool showAds;
   final List<LoungeInfo> accessibleLounges;
   final LoungeInfo? selectedLoungeInfo;
+  final bool isLoungeMenuOpen;
 
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
@@ -53,6 +55,7 @@ class CommunityFeedState extends Equatable {
     bool? showAds,
     List<LoungeInfo>? accessibleLounges,
     LoungeInfo? selectedLoungeInfo,
+    bool? isLoungeMenuOpen,
   }) {
     return CommunityFeedState(
       status: status ?? this.status,
@@ -70,6 +73,7 @@ class CommunityFeedState extends Equatable {
       showAds: showAds ?? this.showAds,
       accessibleLounges: accessibleLounges ?? this.accessibleLounges,
       selectedLoungeInfo: selectedLoungeInfo ?? this.selectedLoungeInfo,
+      isLoungeMenuOpen: isLoungeMenuOpen ?? this.isLoungeMenuOpen,
     );
   }
 
@@ -90,5 +94,6 @@ class CommunityFeedState extends Equatable {
     showAds,
     accessibleLounges,
     selectedLoungeInfo,
+    isLoungeMenuOpen,
   ];
 }

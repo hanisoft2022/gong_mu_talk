@@ -73,45 +73,156 @@ class LoungeAccessService {
 
   /// 직렬별 라운지 맵핑 정의 - 급여명세서 키워드와 라운지 연결
   static Map<String, List<String>> get careerToLoungeMapping => {
-    // 교육 분야
+    // ================================
+    // 교육공무원 (Education Officials)
+    // ================================
+
+    // 초등교사 (Elementary Teacher)
     'elementary_teacher': ['all', 'teacher', 'elementary_teacher'],
+
+    // 중등교사 - 교과별 (Secondary Teachers by Subject)
     'secondary_math_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_math_teacher'],
     'secondary_korean_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_korean_teacher'],
     'secondary_english_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_english_teacher'],
     'secondary_science_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_science_teacher'],
     'secondary_social_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_social_teacher'],
     'secondary_arts_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_arts_teacher'],
-    'counselor_teacher': ['all', 'teacher'],
-    'health_teacher': ['all', 'teacher'],
-    'librarian_teacher': ['all', 'teacher'],
-    'nutrition_teacher': ['all', 'teacher'],
 
-    // 행정직
+    // 유치원 교사 (Kindergarten Teacher)
+    'kindergarten_teacher': ['all', 'teacher', 'kindergarten_teacher'],
+
+    // 특수교육 교사 (Special Education Teacher)
+    'special_education_teacher': ['all', 'teacher', 'special_education_teacher'],
+
+    // 비교과 교사들 (Non-Subject Teachers) - 통합 라운지
+    'counselor_teacher': ['all', 'teacher', 'non_subject_teacher'],
+    'health_teacher': ['all', 'teacher', 'non_subject_teacher'],
+    'librarian_teacher': ['all', 'teacher', 'non_subject_teacher'],
+    'nutrition_teacher': ['all', 'teacher', 'non_subject_teacher'],
+
+    // ================================
+    // 일반행정직 (General Administrative)
+    // ================================
+
+    // 국가직 (National)
     'admin_9th_national': ['all', 'admin', 'national_admin', 'admin_9th_national'],
     'admin_7th_national': ['all', 'admin', 'national_admin', 'admin_7th_national'],
     'admin_5th_national': ['all', 'admin', 'national_admin', 'admin_5th_national'],
+
+    // 지방직 (Local)
     'admin_9th_local': ['all', 'admin', 'local_admin', 'admin_9th_local'],
     'admin_7th_local': ['all', 'admin', 'local_admin', 'admin_7th_local'],
     'admin_5th_local': ['all', 'admin', 'local_admin', 'admin_5th_local'],
 
-    // 치안/안전
+    // 세무·관세직 (Tax & Customs) - 통합 라운지
+    'tax_officer': ['all', 'admin', 'tax_customs'],
+    'customs_officer': ['all', 'admin', 'tax_customs'],
+
+    // ================================
+    // 전문행정직 (Specialized Administrative)
+    // ================================
+
+    'job_counselor': ['all', 'admin', 'specialized_admin'],
+    'statistics_officer': ['all', 'admin', 'specialized_admin'],
+    'librarian': ['all', 'admin', 'specialized_admin'],
+    'auditor': ['all', 'admin', 'specialized_admin'],
+    'security_officer': ['all', 'admin', 'specialized_admin'],
+
+    // ================================
+    // 보건복지직 (Health & Welfare)
+    // ================================
+
+    'public_health_officer': ['all', 'health_welfare'],
+    'medical_technician': ['all', 'health_welfare'],
+    'nurse': ['all', 'health_welfare'],
+    'medical_officer': ['all', 'health_welfare'],
+    'pharmacist': ['all', 'health_welfare'],
+    'food_sanitation': ['all', 'health_welfare'],
+    'social_worker': ['all', 'health_welfare'],
+
+    // ================================
+    // 공안직 (Public Security)
+    // ================================
+
+    'correction_officer': ['all', 'public_security'],
+    'probation_officer': ['all', 'public_security'],
+    'prosecution_officer': ['all', 'public_security'],
+    'drug_investigation_officer': ['all', 'public_security'],
+    'immigration_officer': ['all', 'public_security'],
+    'railroad_police': ['all', 'public_security'],
+    'security_guard': ['all', 'public_security'],
+
+    // ================================
+    // 치안/안전 (Public Safety)
+    // ================================
+
     'police': ['all', 'police'],
     'firefighter': ['all', 'firefighter'],
     'coast_guard': ['all', 'coast_guard'],
 
-    // 군인
+    // ================================
+    // 군인 (Military)
+    // ================================
+
     'army': ['all', 'military', 'army'],
     'navy': ['all', 'military', 'navy'],
     'air_force': ['all', 'military', 'air_force'],
+    'military_civilian': ['all', 'military', 'military_civilian'],
 
-    // 기타
+    // ================================
+    // 기술직 (Technical Tracks)
+    // ================================
+
+    // 공업직 (Industrial/Engineering) - 통합 라운지
+    'mechanical_engineer': ['all', 'technical', 'industrial_engineer'],
+    'electrical_engineer': ['all', 'technical', 'industrial_engineer'],
+    'electronics_engineer': ['all', 'technical', 'industrial_engineer'],
+    'chemical_engineer': ['all', 'technical', 'industrial_engineer'],
+    'shipbuilding_engineer': ['all', 'technical', 'industrial_engineer'],
+    'nuclear_engineer': ['all', 'technical', 'industrial_engineer'],
+    'metal_engineer': ['all', 'technical', 'industrial_engineer'],
+    'textile_engineer': ['all', 'technical', 'industrial_engineer'],
+
+    // 시설환경직 (Facilities & Environment) - 통합 라운지
+    'civil_engineer': ['all', 'technical', 'facilities_environment'],
+    'architect': ['all', 'technical', 'facilities_environment'],
+    'landscape_architect': ['all', 'technical', 'facilities_environment'],
+    'traffic_engineer': ['all', 'technical', 'facilities_environment'],
+    'cadastral_officer': ['all', 'technical', 'facilities_environment'],
+    'designer': ['all', 'technical', 'facilities_environment'],
+    'environmental_officer': ['all', 'technical', 'facilities_environment'],
+
+    // 농림수산직 (Agriculture, Forestry, Fisheries) - 통합 라운지
+    'agriculture_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'plant_quarantine': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'livestock_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'forestry_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'marine_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'fisheries_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'ship_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'veterinarian': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'agricultural_extension': ['all', 'technical', 'agriculture_forestry_fisheries'],
+
+    // IT통신직 (IT & Communications) - 통합 라운지
+    'computer_officer': ['all', 'technical', 'it_communications'],
+    'broadcasting_communication': ['all', 'technical', 'it_communications'],
+
+    // 관리운영직 (Management & Operations) - 통합 라운지
+    'facility_management': ['all', 'technical', 'management_operations'],
+    'sanitation_worker': ['all', 'technical', 'management_operations'],
+    'cook': ['all', 'technical', 'management_operations'],
+
+    // ================================
+    // 기타 직렬 (Others)
+    // ================================
+
     'postal_service': ['all', 'postal_service'],
-    'legal_correction': ['all', 'legal_correction'],
-    'security_protection': ['all', 'security_protection'],
-    'diplomatic_international': ['all', 'diplomatic_international'],
-    'independent_agencies': ['all', 'independent_agencies'],
+    'researcher': ['all', 'researcher'],
 
-    // 일반적인 분류 (fallback)
+    // ================================
+    // Fallback - 일반 직렬
+    // ================================
+
     'teacher': ['all', 'teacher'],
     'admin': ['all', 'admin'],
   };

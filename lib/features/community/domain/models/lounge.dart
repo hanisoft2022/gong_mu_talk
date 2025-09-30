@@ -3,16 +3,16 @@ import 'package:equatable/equatable.dart';
 
 /// 라운지 타입 - 계층적 구조 표현
 enum LoungeType {
-  all,      // 전체 공무원 라운지
+  all, // 전체 라운지
   category, // 대분류 라운지 (교사, 행정직 등)
   specific, // 세부 직렬 라운지 (초등교사, 중등수학교사 등)
 }
 
 /// 라운지 접근 권한 타입
 enum LoungeAccessType {
-  public,        // 모든 공무원 접근 가능
-  careerOnly,    // 특정 직렬만 접근 가능
-  verified,      // 인증된 사용자만 접근 가능
+  public, // 모든 공무원 접근 가능
+  careerOnly, // 특정 직렬만 접근 가능
+  verified, // 인증된 사용자만 접근 가능
 }
 
 /// 라운지 모델 - 계층적 공무원 커뮤니티를 위한 모델
@@ -271,7 +271,7 @@ class LoungeDefinitions {
     // 전체 라운지
     Lounge(
       id: 'all',
-      name: '전체 공무원',
+      name: '전체',
       emoji: '🏛️',
       shortName: '전체',
       type: LoungeType.all,
