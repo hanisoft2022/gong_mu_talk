@@ -9,7 +9,6 @@ const List<String> _allowedGovernmentDomains = [
   // 중앙정부
   'korea.kr', // 공직자통합메일
   'go.kr', // 정부기관 (*.go.kr)
-
   // 주요 부처
   'moe.go.kr', // 교육부
   'moj.go.kr', // 법무부
@@ -19,13 +18,11 @@ const List<String> _allowedGovernmentDomains = [
   'mois.go.kr', // 행정안전부
   'motie.go.kr', // 산업통상자원부
   'mohw.go.kr', // 보건복지부
-
   // 헌법기관
   'assembly.go.kr', // 국회
   'scourt.go.kr', // 대법원
   'ccourt.go.kr', // 헌법재판소
   'nec.go.kr', // 중앙선거관리위원회
-
   // 지방자치단체
   'seoul.kr', // 서울특별시
   'busan.kr', // 부산광역시
@@ -44,7 +41,6 @@ const List<String> _allowedGovernmentDomains = [
   'gyeongbuk.kr', // 경상북도
   'gyeongnam.kr', // 경상남도
   'jeju.kr', // 제주특별자치도
-
   // 테스트용
   'naver.com', // 공무원 테스트용
 ];
@@ -52,8 +48,8 @@ const List<String> _allowedGovernmentDomains = [
 class AuthRequiredView extends StatefulWidget {
   const AuthRequiredView({
     super.key,
-    this.title = '공무원 메일 인증이 필요합니다',
-    this.message = '공무원 메일 인증을 완료해주세요.',
+    this.title = '공직자 통합 메일 인증이 필요합니다',
+    this.message = '공직자 통합 메일 인증을 완료해주세요.',
     this.icon = Icons.verified_user_outlined,
     this.onRefresh,
   });
@@ -125,7 +121,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                     });
                   },
                   icon: const Icon(Icons.email_outlined),
-                  label: const Text('공무원 메일 인증하기'),
+                  label: const Text('공직자 통합 메일 인증하기'),
                 ),
               ] else ...[
                 Card(
@@ -137,7 +133,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '공무원 메일 인증',
+                            '공직자 통합 메일 인증',
                             style: Theme.of(
                               context,
                             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),

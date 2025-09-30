@@ -31,8 +31,7 @@ class _MatchingPageState extends State<MatchingPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<MatchingCubit, MatchingState>(
-      listenWhen: (previous, current) =>
-          previous.lastActionMessage != current.lastActionMessage,
+      listenWhen: (previous, current) => previous.lastActionMessage != current.lastActionMessage,
       listener: (context, state) {
         final String? message = state.lastActionMessage;
         if (message == null) {
@@ -51,7 +50,7 @@ class _MatchingPageState extends State<MatchingPage> {
 
           if (!authState.isGovernmentEmailVerified) {
             return const _MatchingLockedView(
-              reason: '공무원 메일 인증이 완료된 사용자만 이용할 수 있어요.',
+              reason: '공직자 통합 메일 인증이 완료된 사용자만 이용할 수 있어요.',
               showVerifyShortcut: true,
             );
           }
@@ -66,13 +65,12 @@ class _MatchingPageState extends State<MatchingPage> {
                   break;
                 case MatchingStatus.error:
                   body = _MatchingErrorView(
-                    onRetry: () =>
-                        context.read<MatchingCubit>().loadCandidates(),
+                    onRetry: () => context.read<MatchingCubit>().loadCandidates(),
                   );
                   break;
                 case MatchingStatus.locked:
                   body = const _MatchingLockedView(
-                    reason: '공무원 메일 인증 완료 후 이용 가능합니다.',
+                    reason: '공직자 통합 메일 인증 완료 후 이용 가능합니다.',
                     showVerifyShortcut: true,
                   );
                   break;
@@ -81,11 +79,9 @@ class _MatchingPageState extends State<MatchingPage> {
                   break;
               }
 
-              if (state.status == MatchingStatus.loaded ||
-                  state.status == MatchingStatus.error) {
+              if (state.status == MatchingStatus.loaded || state.status == MatchingStatus.error) {
                 return RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<MatchingCubit>().refreshCandidates(),
+                  onRefresh: () => context.read<MatchingCubit>().refreshCandidates(),
                   child: body,
                 );
               }
@@ -124,10 +120,7 @@ class _MatchingErrorView extends StatelessWidget {
             children: [
               const Icon(Icons.error_outline, size: 56),
               const Gap(12),
-              Text(
-                '매칭 후보를 불러오지 못했어요.',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('매칭 후보를 불러오지 못했어요.', style: Theme.of(context).textTheme.titleMedium),
               const Gap(12),
               FilledButton.icon(
                 onPressed: onRetry,
@@ -143,10 +136,7 @@ class _MatchingErrorView extends StatelessWidget {
 }
 
 class _MatchingLockedView extends StatelessWidget {
-  const _MatchingLockedView({
-    required this.reason,
-    this.showVerifyShortcut = false,
-  });
+  const _MatchingLockedView({required this.reason, this.showVerifyShortcut = false});
 
   final String reason;
   final bool showVerifyShortcut;
@@ -161,24 +151,14 @@ class _MatchingLockedView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.lock_outline,
-              size: 56,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.lock_outline, size: 56, color: theme.colorScheme.primary),
             const Gap(12),
             Text(
               '매칭 서비스 잠금',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(8),
-            Text(
-              reason,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
+            Text(reason, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
             if (showVerifyShortcut) ...[
               const Gap(20),
               OutlinedButton.icon(
@@ -277,17 +257,12 @@ class _MatchingExcludedTrackCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.filter_alt_outlined,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.filter_alt_outlined, color: theme.colorScheme.primary),
                 const Gap(8),
                 Expanded(
                   child: Text(
                     '매칭 제외 직렬',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -309,8 +284,7 @@ class _MatchingExcludedTrackCard extends StatelessWidget {
                     (CareerTrack track) => FilterChip(
                       label: Text(track.displayName),
                       selected: excludedTracks.contains(track),
-                      onSelected: (_) =>
-                          context.read<AuthCubit>().toggleExcludedTrack(track),
+                      onSelected: (_) => context.read<AuthCubit>().toggleExcludedTrack(track),
                     ),
                   )
                   .toList(growable: false),
@@ -341,9 +315,7 @@ class _CuratedMatchCard extends StatelessWidget {
     final bool revealNickname =
         profile.stage == MatchProfileStage.nicknameRevealed ||
         profile.stage == MatchProfileStage.fullProfile;
-    final String displayName = revealNickname
-        ? profile.nickname
-        : profile.maskedNickname;
+    final String displayName = revealNickname ? profile.nickname : profile.maskedNickname;
     final String subtitle = '${profile.jobTitle} · ${profile.region}';
     final int compatScore = match.compatibility.totalScore.round();
 
@@ -357,9 +329,7 @@ class _CuratedMatchCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
-                  ),
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
                   foregroundColor: theme.colorScheme.primary,
                   child: Text(_initial(displayName)),
                 ),
@@ -395,10 +365,7 @@ class _CuratedMatchCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -429,18 +396,14 @@ class _CuratedMatchCard extends StatelessWidget {
             const Gap(16),
             Text(
               '핵심 일치 포인트',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(8),
             _buildHighlights(theme),
             const Gap(16),
             Text(
               '궁합 디테일',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(8),
             _buildCompatibilityChips(theme),
@@ -483,9 +446,7 @@ class _CuratedMatchCard extends StatelessWidget {
     for (final MatchFlowStage stage in MatchFlowStage.values) {
       final int stageIndex = MatchFlowStage.values.indexOf(stage);
       final bool isActive = stageIndex <= activeIndex;
-      final Color color = isActive
-          ? theme.colorScheme.primary
-          : theme.colorScheme.outline;
+      final Color color = isActive ? theme.colorScheme.primary : theme.colorScheme.outline;
       children.add(
         Expanded(
           child: Column(
@@ -522,10 +483,7 @@ class _CuratedMatchCard extends StatelessWidget {
   Widget _buildHighlights(ThemeData theme) {
     final List<String> reasons = match.compatibility.highlightReasons;
     if (reasons.isEmpty) {
-      return Text(
-        '설문을 더 채우면 맞춤 일치 포인트를 보여드려요.',
-        style: theme.textTheme.bodyMedium,
-      );
+      return Text('설문을 더 채우면 맞춤 일치 포인트를 보여드려요.', style: theme.textTheme.bodyMedium);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,15 +494,9 @@ class _CuratedMatchCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.check_circle_outline, size: 18, color: theme.colorScheme.primary),
                   const Gap(8),
-                  Expanded(
-                    child: Text(reason, style: theme.textTheme.bodyMedium),
-                  ),
+                  Expanded(child: Text(reason, style: theme.textTheme.bodyMedium)),
                 ],
               ),
             ),
@@ -560,8 +512,7 @@ class _CuratedMatchCard extends StatelessWidget {
           final int percent = (breakdown.score * 100).round();
           return Chip(
             label: Text('$label $percent%'),
-            backgroundColor: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
+            backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           );
         })
@@ -572,19 +523,13 @@ class _CuratedMatchCard extends StatelessWidget {
   Widget _buildFirstMessageCta(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Widget icon = isProcessing
-        ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
         : const Icon(Icons.favorite_border, size: 20);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FilledButton.icon(
-          onPressed: isProcessing
-              ? null
-              : () => _openFirstMessageSheet(context),
+          onPressed: isProcessing ? null : () => _openFirstMessageSheet(context),
           icon: icon,
           label: Text(isProcessing ? '보내는 중...' : '관심 보내고 첫 질문 함께 전하기'),
         ),
@@ -592,11 +537,7 @@ class _CuratedMatchCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.timer_outlined,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.timer_outlined, size: 18, color: theme.colorScheme.primary),
             const Gap(8),
             Expanded(
               child: Text(
@@ -612,11 +553,7 @@ class _CuratedMatchCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.privacy_tip_outlined,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(Icons.privacy_tip_outlined, size: 18, color: theme.colorScheme.primary),
             const Gap(8),
             Expanded(
               child: Text(
@@ -636,12 +573,11 @@ class _CuratedMatchCard extends StatelessWidget {
     final List<String> prompts = match.availablePrompts.isEmpty
         ? <String>['내가 먼저 여쭤보고 싶은 이야기를 직접 남길게요']
         : match.availablePrompts;
-    final _FirstMessageSelection? selection =
-        await showModalBottomSheet<_FirstMessageSelection>(
-          context: context,
-          isScrollControlled: true,
-          builder: (context) => _FirstMessagePromptSheet(prompts: prompts),
-        );
+    final _FirstMessageSelection? selection = await showModalBottomSheet<_FirstMessageSelection>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _FirstMessagePromptSheet(prompts: prompts),
+    );
     if (selection == null) {
       return;
     }
@@ -668,8 +604,7 @@ class _FirstMessagePromptSheet extends StatefulWidget {
   final List<String> prompts;
 
   @override
-  State<_FirstMessagePromptSheet> createState() =>
-      _FirstMessagePromptSheetState();
+  State<_FirstMessagePromptSheet> createState() => _FirstMessagePromptSheetState();
 }
 
 class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
@@ -691,19 +626,15 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
     super.dispose();
   }
 
-  bool get _canSubmit =>
-      _selectedPrompt != null && _controller.text.trim().isNotEmpty;
+  bool get _canSubmit => _selectedPrompt != null && _controller.text.trim().isNotEmpty;
 
   void _handleSubmit() {
     if (!_canSubmit) {
       return;
     }
-    Navigator.of(context).pop(
-      _FirstMessageSelection(
-        prompt: _selectedPrompt!,
-        answer: _controller.text.trim(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pop(_FirstMessageSelection(prompt: _selectedPrompt!, answer: _controller.text.trim()));
   }
 
   Widget _buildPromptOption(String prompt) {
@@ -727,9 +658,7 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
+                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
                 color: iconColor,
                 size: 20,
               ),
@@ -737,10 +666,7 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
             const SizedBox(width: 12),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor),
@@ -782,15 +708,10 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
               const Gap(16),
               Text(
                 '관심 보내기',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const Gap(8),
-              Text(
-                '서로 묻고 싶은 질문 중 하나를 골라 답변을 함께 보내주세요.',
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text('서로 묻고 싶은 질문 중 하나를 골라 답변을 함께 보내주세요.', style: theme.textTheme.bodyMedium),
               const Gap(16),
               ...widget.prompts.map(_buildPromptOption),
               const Gap(12),
@@ -810,11 +731,7 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.timer_outlined, size: 18, color: theme.colorScheme.primary),
                   const Gap(8),
                   Expanded(
                     child: Text(
@@ -830,11 +747,7 @@ class _FirstMessagePromptSheetState extends State<_FirstMessagePromptSheet> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.report_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.report_outlined, size: 18, color: theme.colorScheme.primary),
                   const Gap(8),
                   Expanded(
                     child: Text(
