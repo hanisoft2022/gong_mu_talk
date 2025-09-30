@@ -37,6 +37,7 @@ import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
 import '../features/profile/data/follow_repository.dart';
 import '../features/profile/data/paystub_verification_repository.dart';
+import '../features/profile/data/user_sensitive_info_repository.dart';
 import '../features/profile/presentation/cubit/profile_timeline_cubit.dart';
 import '../features/profile/presentation/cubit/profile_relations_cubit.dart';
 
@@ -64,6 +65,9 @@ Future<void> configureDependencies() async {
       () => LoginSessionStore(sharedPreferences),
     )
     ..registerLazySingleton<UserProfileRepository>(UserProfileRepository.new)
+    ..registerLazySingleton<UserSensitiveInfoRepository>(
+      UserSensitiveInfoRepository.new,
+    )
     ..registerLazySingleton<FollowRepository>(
       () => FollowRepository(userProfileRepository: getIt()),
     )

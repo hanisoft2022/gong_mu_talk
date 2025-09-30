@@ -187,6 +187,10 @@ class _ProfileOverviewTab extends StatelessWidget {
             children: [
               _ProfileHeader(state: state, isOwnProfile: true), // 임시로 항상 자신의 프로필로 설정
               const Gap(16),
+              if (state.userId != null) ...[
+                _PaystubVerificationCard(uid: state.userId!),
+                const Gap(16),
+              ],
               _SponsorshipBanner(state: state),
               const Gap(20),
               Text(
@@ -467,11 +471,13 @@ class _ProfileHeader extends StatelessWidget {
                   _FollowButton(targetUserId: state.userId ?? ''),
               ],
             ),
-            const Gap(12),
             // 자기소개
-            if (state.bio != null && state.bio!.trim().isNotEmpty)
-              Text(state.bio!.trim(), style: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
-            const Gap(16),
+            if (state.bio != null && state.bio!.trim().isNotEmpty) ...[
+              const Gap(16),
+              _BioCard(bio: state.bio!.trim()),
+              const Gap(16),
+            ] else
+              const Gap(12),
             // 팔로워/팔로잉 통계
             Row(
               children: [
@@ -498,36 +504,31 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 _VerificationStatusRow(
                   icon: state.isGovernmentEmailVerified ? Icons.verified : Icons.email_outlined,
-                  label: '공무원 메일 인증',
+                  label: '공직자 통합 메일 인증',
                   isVerified: state.isGovernmentEmailVerified,
                 ),
                 if (state.userId != null) ...[const Gap(8), _PaystubStatusRow(uid: state.userId!)],
-                const Gap(8),
-                // 직렬 설정 상태
-                Row(
-                  children: [
-                    Icon(
-                      Icons.badge_outlined,
-                      size: 16,
-                      color: state.serial == 'unknown'
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.onSurface,
-                    ),
-                    const Gap(8),
-                    const Expanded(
-                      child: Text('직렬', style: TextStyle(color: Colors.black)),
-                    ),
-                    Text(
-                      state.serial == 'unknown' ? '미설정' : state.careerTrack.displayName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: state.serial == 'unknown'
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
+
+                // 직렬 설정 상태 (인증 완료 시에만 표시)
+                if (state.serial != 'unknown' && state.careerHierarchy != null) ...[
+                  const Gap(8),
+                  Row(
+                    children: [
+                      Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
+                      const Gap(8),
+                      const Expanded(
+                        child: Text('직렬', style: TextStyle(color: Colors.black)),
                       ),
-                    ),
-                  ],
-                ),
+                      Text(
+                        state.careerTrack.displayName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
                 // 임시 직렬 선택 버튼 (테스트용)
                 if (kDebugMode) ...[
@@ -585,16 +586,141 @@ class _ProfileHeader extends StatelessWidget {
   }
 
   static const List<Map<String, String>> testCareers = [
-    {'id': 'elementary_teacher', 'name': '초등교사'},
-    {'id': 'secondary_math_teacher', 'name': '중등수학교사'},
-    {'id': 'secondary_korean_teacher', 'name': '중등국어교사'},
-    {'id': 'secondary_english_teacher', 'name': '중등영어교사'},
-    {'id': 'admin_9th_national', 'name': '국가직 9급'},
-    {'id': 'admin_7th_national', 'name': '국가직 7급'},
-    {'id': 'police', 'name': '경찰관'},
-    {'id': 'firefighter', 'name': '소방관'},
-    {'id': 'army', 'name': '육군'},
-    {'id': 'none', 'name': '직렬 없음 (기본)'},
+    // ================================
+    // 교육공무원 (Education Officials)
+    // ================================
+
+    // 초등교사
+    {'id': 'elementary_teacher', 'name': '🏫 초등교사'},
+
+    // 중등교사 - 교과별
+    {'id': 'secondary_math_teacher', 'name': '📐 중등수학교사'},
+    {'id': 'secondary_korean_teacher', 'name': '📖 중등국어교사'},
+    {'id': 'secondary_english_teacher', 'name': '🌍 중등영어교사'},
+    {'id': 'secondary_science_teacher', 'name': '🔬 중등과학교사'},
+    {'id': 'secondary_social_teacher', 'name': '🌏 중등사회교사'},
+    {'id': 'secondary_arts_teacher', 'name': '🎨 중등예체능교사'},
+
+    // 유치원/특수교육교사
+    {'id': 'kindergarten_teacher', 'name': '👶 유치원교사'},
+    {'id': 'special_education_teacher', 'name': '🤝 특수교육교사'},
+
+    // 비교과 교사
+    {'id': 'counselor_teacher', 'name': '💬 상담교사'},
+    {'id': 'health_teacher', 'name': '🏥 보건교사'},
+    {'id': 'librarian_teacher', 'name': '📚 사서교사'},
+    {'id': 'nutrition_teacher', 'name': '🍎 영양교사'},
+
+    // ================================
+    // 일반행정직 (General Administrative)
+    // ================================
+
+    // 국가직
+    {'id': 'admin_9th_national', 'name': '📋 9급 국가행정직'},
+    {'id': 'admin_7th_national', 'name': '📊 7급 국가행정직'},
+    {'id': 'admin_5th_national', 'name': '💼 5급 국가행정직'},
+
+    // 지방직
+    {'id': 'admin_9th_local', 'name': '📋 9급 지방행정직'},
+    {'id': 'admin_7th_local', 'name': '📊 7급 지방행정직'},
+    {'id': 'admin_5th_local', 'name': '💼 5급 지방행정직'},
+
+    // 세무·관세
+    {'id': 'tax_officer', 'name': '💰 세무직'},
+    {'id': 'customs_officer', 'name': '🛃 관세직'},
+
+    // ================================
+    // 전문행정직 (Specialized Administrative)
+    // ================================
+
+    {'id': 'job_counselor', 'name': '💼 고용노동직'},
+    {'id': 'statistics_officer', 'name': '📊 통계직'},
+    {'id': 'librarian', 'name': '📖 사서직'},
+    {'id': 'auditor', 'name': '🔍 감사직'},
+    {'id': 'security_officer', 'name': '🔐 방호직'},
+
+    // ================================
+    // 보건복지직 (Health & Welfare)
+    // ================================
+
+    {'id': 'public_health_officer', 'name': '🏥 보건직'},
+    {'id': 'medical_technician', 'name': '🔬 의료기술직'},
+    {'id': 'nurse', 'name': '💉 간호직'},
+    {'id': 'medical_officer', 'name': '⚕️ 의무직'},
+    {'id': 'pharmacist', 'name': '💊 약무직'},
+    {'id': 'food_sanitation', 'name': '🍽️ 식품위생직'},
+    {'id': 'social_worker', 'name': '🤲 사회복지직'},
+
+    // ================================
+    // 공안직 (Public Security)
+    // ================================
+
+    {'id': 'correction_officer', 'name': '⚖️ 교정직'},
+    {'id': 'probation_officer', 'name': '👁️ 보호직'},
+    {'id': 'prosecution_officer', 'name': '⚖️ 검찰직'},
+    {'id': 'drug_investigation_officer', 'name': '🔬 마약수사직'},
+    {'id': 'immigration_officer', 'name': '🛂 출입국관리직'},
+    {'id': 'railroad_police', 'name': '🚄 철도경찰직'},
+    {'id': 'security_guard', 'name': '🛡️ 경위직'},
+
+    // ================================
+    // 치안/안전 (Public Safety)
+    // ================================
+
+    {'id': 'police', 'name': '👮‍♂️ 경찰관'},
+    {'id': 'firefighter', 'name': '👨‍🚒 소방관'},
+    {'id': 'coast_guard', 'name': '🌊 해양경찰'},
+
+    // ================================
+    // 군인 (Military)
+    // ================================
+
+    {'id': 'army', 'name': '🪖 육군'},
+    {'id': 'navy', 'name': '⚓ 해군'},
+    {'id': 'air_force', 'name': '✈️ 공군'},
+    {'id': 'military_civilian', 'name': '🎖️ 군무원'},
+
+    // ================================
+    // 기술직 (Technical Tracks)
+    // ================================
+
+    // 공업직 (대표)
+    {'id': 'mechanical_engineer', 'name': '⚙️ 기계직'},
+    {'id': 'electrical_engineer', 'name': '⚡ 전기직'},
+    {'id': 'electronics_engineer', 'name': '📡 전자직'},
+    {'id': 'chemical_engineer', 'name': '🧪 화공직'},
+
+    // 시설환경직 (대표)
+    {'id': 'civil_engineer', 'name': '🏗️ 토목직'},
+    {'id': 'architect', 'name': '🏛️ 건축직'},
+    {'id': 'environmental_officer', 'name': '🌱 환경직'},
+
+    // 농림수산직 (대표)
+    {'id': 'agriculture_officer', 'name': '🌾 농업직'},
+    {'id': 'fisheries_officer', 'name': '🐟 수산직'},
+    {'id': 'veterinarian', 'name': '🐾 수의직'},
+
+    // IT통신직
+    {'id': 'computer_officer', 'name': '💻 전산직'},
+    {'id': 'broadcasting_communication', 'name': '📺 방송통신직'},
+
+    // 관리운영직
+    {'id': 'facility_management', 'name': '🏢 시설관리직'},
+    {'id': 'sanitation_worker', 'name': '🧹 위생직'},
+    {'id': 'cook', 'name': '👨‍🍳 조리직'},
+
+    // ================================
+    // 기타 직렬 (Others)
+    // ================================
+
+    {'id': 'postal_service', 'name': '📮 우정직'},
+    {'id': 'researcher', 'name': '🔬 연구직'},
+
+    // ================================
+    // Fallback / Reset
+    // ================================
+
+    {'id': 'none', 'name': '❌ 직렬 없음 (기본)'},
   ];
 
   void _showTestCareerSelector(BuildContext context) {
@@ -602,31 +728,33 @@ class _ProfileHeader extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  '테스트용 직렬 선택',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    '테스트용 직렬 선택',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              ...testCareers.map((career) {
-                return ListTile(
-                  title: Text(career['name']!),
-                  subtitle: Text('ID: ${career['id']}'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _updateTestCareer(context, career['id']!);
-                  },
-                );
-              }),
-              const SizedBox(height: 16),
-            ],
+                const Divider(height: 1),
+                ...testCareers.map((career) {
+                  return ListTile(
+                    title: Text(career['name']!),
+                    subtitle: Text('ID: ${career['id']}'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _updateTestCareer(context, career['id']!);
+                    },
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },
@@ -668,10 +796,12 @@ class _ProfileHeader extends StatelessWidget {
       }
 
       // Firestore 직접 업데이트
+      // 테스트 모드에서는 testModeCareer 필드에 직렬 정보 저장
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'careerHierarchy': careerHierarchy?.toMap(),
         'accessibleLoungeIds': accessibleLoungeIds,
         'defaultLoungeId': defaultLoungeId,
+        'testModeCareer': careerHierarchy?.toMap(), // 테스트 모드 직렬 정보
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -709,26 +839,98 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final IconData icon = title == '팔로잉' ? Icons.people_outline : Icons.favorite_border;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant,
+            width: 1,
+          ),
+        ),
         child: Column(
           children: [
+            Icon(
+              icon,
+              size: 24,
+              color: theme.colorScheme.primary,
+            ),
+            const Gap(8),
             Text(
               '$count',
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
             ),
+            const Gap(4),
             Text(
               title,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BioCard extends StatelessWidget {
+  const _BioCard({required this.bio});
+
+  final String bio;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              const Gap(8),
+              Text(
+                '자기소개',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const Gap(12),
+          Text(
+            bio,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 1.5,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -780,49 +982,87 @@ class _PaystubStatusRow extends StatelessWidget {
     final PaystubVerificationRepository repository = getIt<PaystubVerificationRepository>();
     final ThemeData theme = Theme.of(context);
 
-    return StreamBuilder<PaystubVerification>(
-      stream: repository.watchVerification(uid),
-      builder: (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
-        final PaystubVerification verification = snapshot.data ?? PaystubVerification.none;
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+        // 테스트 모드 직렬이 설정되어 있으면 인증됨으로 표시
+        bool isTestModeVerified = false;
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+          isTestModeVerified = data != null && data['testModeCareer'] != null;
+        }
 
-        return Row(
-          children: [
-            Icon(
-              verification.status == PaystubVerificationStatus.verified
-                  ? Icons.verified
-                  : verification.status == PaystubVerificationStatus.processing
-                  ? Icons.hourglass_empty
-                  : Icons.description_outlined,
-              size: 16,
-              color: verification.status == PaystubVerificationStatus.verified
-                  ? theme.colorScheme.primary
-                  : verification.status == PaystubVerificationStatus.processing
-                  ? theme.colorScheme.tertiary
-                  : theme.colorScheme.error,
-            ),
-            const Gap(8),
-            Expanded(
-              child: Text(
-                '급여명세서 인증',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+        if (isTestModeVerified) {
+          return Row(
+            children: [
+              Icon(
+                Icons.verified,
+                size: 16,
+                color: theme.colorScheme.primary,
               ),
-            ),
-            Text(
-              verification.status == PaystubVerificationStatus.verified
-                  ? '인증됨'
-                  : verification.status == PaystubVerificationStatus.processing
-                  ? '검토중'
-                  : '미인증',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: verification.status == PaystubVerificationStatus.verified
-                    ? theme.colorScheme.primary
-                    : verification.status == PaystubVerificationStatus.processing
-                    ? theme.colorScheme.tertiary
-                    : theme.colorScheme.error,
-                fontWeight: FontWeight.w600,
+              const Gap(8),
+              Expanded(
+                child: Text(
+                  '직렬 인증',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+                ),
               ),
-            ),
-          ],
+              Text(
+                '인증됨',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          );
+        }
+
+        return StreamBuilder<PaystubVerification>(
+          stream: repository.watchVerification(uid),
+          builder: (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
+            final PaystubVerification verification = snapshot.data ?? PaystubVerification.none;
+
+            return Row(
+              children: [
+                Icon(
+                  verification.status == PaystubVerificationStatus.verified
+                      ? Icons.verified
+                      : verification.status == PaystubVerificationStatus.processing
+                      ? Icons.hourglass_empty
+                      : Icons.description_outlined,
+                  size: 16,
+                  color: verification.status == PaystubVerificationStatus.verified
+                      ? theme.colorScheme.primary
+                      : verification.status == PaystubVerificationStatus.processing
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.error,
+                ),
+                const Gap(8),
+                Expanded(
+                  child: Text(
+                    '직렬 인증',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+                  ),
+                ),
+                Text(
+                  verification.status == PaystubVerificationStatus.verified
+                      ? '인증됨'
+                      : verification.status == PaystubVerificationStatus.processing
+                      ? '검토중'
+                      : '미인증',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: verification.status == PaystubVerificationStatus.verified
+                        ? theme.colorScheme.primary
+                        : verification.status == PaystubVerificationStatus.processing
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -2140,126 +2380,109 @@ class _PaystubVerificationCard extends StatefulWidget {
 }
 
 class _PaystubVerificationCardState extends State<_PaystubVerificationCard> {
-  bool _isUploading = false;
-
   PaystubVerificationRepository get _repository => getIt<PaystubVerificationRepository>();
-
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return StreamBuilder<PaystubVerification>(
-      stream: _repository.watchVerification(widget.uid),
-      builder: (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
-        final PaystubVerification verification = snapshot.data ?? PaystubVerification.none;
-        final bool isProcessingTimedOut = _isProcessingTimedOut(verification);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(widget.uid).snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+        // 테스트 모드 직렬이 설정되어 있으면 카드 숨김
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null && data['testModeCareer'] != null) {
+            return const SizedBox.shrink();
+          }
+        }
 
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.verified_user_outlined, color: theme.colorScheme.primary),
-                    const Gap(8),
-                    Text(
-                      '급여 명세서로 직렬 인증',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                    if (verification.status == PaystubVerificationStatus.processing &&
-                        !isProcessingTimedOut)
-                      const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+        return StreamBuilder<PaystubVerification>(
+          stream: _repository.watchVerification(widget.uid),
+          builder: (BuildContext context, AsyncSnapshot<PaystubVerification> snapshot) {
+            final PaystubVerification verification = snapshot.data ?? PaystubVerification.none;
+            final bool isProcessingTimedOut = _isProcessingTimedOut(verification);
+
+            // 인증 완료 시 카드 숨김
+            if (verification.status == PaystubVerificationStatus.verified) {
+              return const SizedBox.shrink();
+            }
+
+            return Card(
+              child: InkWell(
+                onTap: verification.status == PaystubVerificationStatus.none ||
+                        (verification.status == PaystubVerificationStatus.processing &&
+                            isProcessingTimedOut)
+                    ? () => context.push('/profile/verify-paystub')
+                    : null,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: verification.status == PaystubVerificationStatus.processing
+                              ? Colors.orange.withValues(alpha: 0.1)
+                              : theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          verification.status == PaystubVerificationStatus.processing
+                              ? Icons.hourglass_empty
+                              : Icons.verified_user,
+                          color: verification.status == PaystubVerificationStatus.processing
+                              ? Colors.orange.shade700
+                              : theme.colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
-                  ],
+                      const Gap(16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '직렬 인증',
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const Gap(4),
+                            Text(
+                              verification.status == PaystubVerificationStatus.processing
+                                  ? '인증 처리 중입니다 (1-2일 소요)'
+                                  : '전문 라운지를 이용하려면 직렬 인증이 필요합니다',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(8),
+                      if (verification.status == PaystubVerificationStatus.none ||
+                          (verification.status == PaystubVerificationStatus.processing &&
+                              isProcessingTimedOut))
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        )
+                      else if (verification.status == PaystubVerificationStatus.processing)
+                        const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                    ],
+                  ),
                 ),
-                const Gap(12),
-                _buildStatusSubtitle(context, verification),
-                const Gap(12),
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _isUploading
-                          ? null
-                          : () async {
-                              await _handleUpload();
-                            },
-                      icon: _isUploading
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.upload_file),
-                      label: const Text('명세서 업로드'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
-  }
-
-  Widget _buildStatusSubtitle(BuildContext context, PaystubVerification verification) {
-    final ThemeData theme = Theme.of(context);
-    switch (verification.status) {
-      case PaystubVerificationStatus.none:
-        return Text(
-          '국공립교원, 행정직 등 직렬이 포함된 급여 명세서(PDF/이미지)를 업로드하면 자동으로 인증됩니다.',
-          style: theme.textTheme.bodyMedium,
-        );
-      case PaystubVerificationStatus.processing:
-        final bool isTimedOut = _isProcessingTimedOut(verification);
-        if (isTimedOut) {
-          return Text(
-            '문서 분석이 오래 걸리는 중입니다. 다시 업로드하여 인증을 재시도해주세요.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
-          );
-        }
-        return Text('문서를 분석하여 직렬 정보를 확인하고 있습니다.', style: theme.textTheme.bodyMedium);
-      case PaystubVerificationStatus.verified:
-        final CareerTrack? track = verification.detectedTrack;
-        final String trackLabel = track == null
-            ? '알 수 없는 직렬'
-            : '${track.emoji} ${track.displayName}';
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '급여 명세서를 통해 직렬 인증이 완료되었습니다.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Gap(4),
-            Text('감지된 직렬: $trackLabel', style: theme.textTheme.bodyMedium),
-          ],
-        );
-      case PaystubVerificationStatus.failed:
-        return Text(
-          '문서에서 직렬 정보를 확인하지 못했습니다. 다른 파일로 다시 시도해주세요.',
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
-        );
-    }
   }
 
   bool _isProcessingTimedOut(PaystubVerification verification) {
@@ -2272,45 +2495,6 @@ class _PaystubVerificationCardState extends State<_PaystubVerificationCard> {
     }
     final Duration elapsed = DateTime.now().difference(updatedAt);
     return elapsed.inMinutes >= 2;
-  }
-
-  Future<void> _handleUpload() async {
-    try {
-      setState(() => _isUploading = true);
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: <String>['pdf', 'png', 'jpg', 'jpeg'],
-        withData: true,
-      );
-      if (result == null) {
-        setState(() => _isUploading = false);
-        return;
-      }
-
-      final PlatformFile file = result.files.single;
-      final Uint8List? bytes = file.bytes;
-      if (bytes == null) {
-        throw StateError('파일 데이터를 읽을 수 없습니다. 다른 파일을 선택해주세요.');
-      }
-
-      final String extension = (file.extension ?? '').toLowerCase();
-      final String contentType = extension == 'pdf' ? 'application/pdf' : 'image/$extension';
-
-      await _repository.uploadPaystub(bytes: bytes, fileName: file.name, contentType: contentType);
-
-      if (!mounted) return;
-      _showMessage(context, '급여 명세서를 업로드했습니다. 검증 결과를 기다려주세요.');
-    } on MissingPluginException {
-      if (!mounted) return;
-      _showMessage(context, '이 플랫폼에서는 파일 선택 기능이 지원되지 않습니다. 앱을 완전 종료 후 다시 실행하거나 지원되는 기기에서 시도해주세요.');
-    } catch (error) {
-      if (!mounted) return;
-      _showMessage(context, '업로드 중 문제가 발생했습니다: $error');
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
   }
 }
 
@@ -2355,7 +2539,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
             color: theme.colorScheme.primaryContainer,
             child: ListTile(
               leading: Icon(Icons.verified_outlined, color: theme.colorScheme.onPrimaryContainer),
-              title: const Text('공무원 메일 인증 완료'),
+              title: const Text('공직자 통합 메일 인증 완료'),
               subtitle: const Text('확장 기능을 모두 이용할 수 있습니다.'),
               trailing: TextButton(
                 onPressed: () =>
@@ -2390,7 +2574,7 @@ class _GovernmentEmailVerificationCardState extends State<_GovernmentEmailVerifi
                         Icon(Icons.mark_email_unread_outlined, color: theme.colorScheme.primary),
                         const Gap(8),
                         Text(
-                          '공무원 메일 인증',
+                          '공직자 통합 메일 인증',
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ],

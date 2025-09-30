@@ -32,14 +32,16 @@ class CareerHierarchy extends Equatable {
     final lounges = <LoungeInfo>[];
 
     // 1단계: 전체 (항상 포함)
-    lounges.add(const LoungeInfo(
-      id: 'all',
-      name: '전체 공무원',
-      emoji: '🏛️',
-      shortName: '전체',
-      memberCount: 1000000,
-      description: '모든 공무원이 참여하는 라운지',
-    ));
+    lounges.add(
+      const LoungeInfo(
+        id: 'all',
+        name: '전체',
+        emoji: '🏛️',
+        shortName: '전체',
+        memberCount: 1000000,
+        description: '모든 공무원이 참여하는 라운지',
+      ),
+    );
 
     // 2단계 추가
     if (level2 != null) {
@@ -295,16 +297,189 @@ class CareerHierarchy extends Equatable {
           description: '공군 전용 라운지',
         );
 
-      // 기타
+      // ================================
+      // 교육공무원 (추가 라운지)
+      // ================================
+
+      case 'kindergarten_teacher':
+        return const LoungeInfo(
+          id: 'kindergarten_teacher',
+          name: '유치원교사',
+          emoji: '👶',
+          shortName: '유치원교사',
+          memberCount: 5000,
+          description: '유치원교사 전용 라운지',
+        );
+      case 'special_education_teacher':
+        return const LoungeInfo(
+          id: 'special_education_teacher',
+          name: '특수교육교사',
+          emoji: '🤝',
+          shortName: '특수교육교사',
+          memberCount: 4000,
+          description: '특수교육교사 전용 라운지',
+        );
+      case 'non_subject_teacher':
+        return const LoungeInfo(
+          id: 'non_subject_teacher',
+          name: '비교과교사',
+          emoji: '💼',
+          shortName: '비교과교사',
+          memberCount: 15000,
+          description: '상담·보건·사서·영양 교사 라운지',
+        );
+
+      // ================================
+      // 행정직 (추가 라운지)
+      // ================================
+
+      case 'tax_customs':
+        return const LoungeInfo(
+          id: 'tax_customs',
+          name: '세무·관세직',
+          emoji: '💰',
+          shortName: '세무·관세직',
+          memberCount: 25000,
+          description: '세무직 및 관세직 공무원 라운지',
+        );
+      case 'specialized_admin':
+        return const LoungeInfo(
+          id: 'specialized_admin',
+          name: '전문행정직',
+          emoji: '📋',
+          shortName: '전문행정직',
+          memberCount: 30000,
+          description: '고용노동·통계·사서·감사·방호직 라운지',
+        );
+
+      // ================================
+      // 보건복지직 (Health & Welfare)
+      // ================================
+
+      case 'health_welfare':
+        return const LoungeInfo(
+          id: 'health_welfare',
+          name: '보건복지직',
+          emoji: '🏥',
+          shortName: '보건복지직',
+          memberCount: 80000,
+          description: '보건·의료·간호·약무·복지직 라운지',
+        );
+
+      // ================================
+      // 공안직 (Public Security)
+      // ================================
+
+      case 'public_security':
+        return const LoungeInfo(
+          id: 'public_security',
+          name: '공안직',
+          emoji: '⚖️',
+          shortName: '공안직',
+          memberCount: 50000,
+          description: '교정·검찰·마약수사·출입국관리직 라운지',
+        );
+
+      // ================================
+      // 군인 (추가)
+      // ================================
+
+      case 'military_civilian':
+        return const LoungeInfo(
+          id: 'military_civilian',
+          name: '군무원',
+          emoji: '🎖️',
+          shortName: '군무원',
+          memberCount: 30000,
+          description: '군무원 전용 라운지',
+        );
+
+      // ================================
+      // 기술직 (Technical Tracks)
+      // ================================
+
+      case 'technical':
+        return const LoungeInfo(
+          id: 'technical',
+          name: '기술직',
+          emoji: '⚙️',
+          shortName: '기술직',
+          memberCount: 300000,
+          description: '모든 기술직 공무원 라운지',
+        );
+      case 'industrial_engineer':
+        return const LoungeInfo(
+          id: 'industrial_engineer',
+          name: '공업직',
+          emoji: '⚙️',
+          shortName: '공업직',
+          memberCount: 50000,
+          description: '기계·전기·전자·화공직 등 공업 기술직',
+        );
+      case 'facilities_environment':
+        return const LoungeInfo(
+          id: 'facilities_environment',
+          name: '시설환경직',
+          emoji: '🏗️',
+          shortName: '시설환경직',
+          memberCount: 47000,
+          description: '토목·건축·환경직 등 시설환경 기술직',
+        );
+      case 'agriculture_forestry_fisheries':
+        return const LoungeInfo(
+          id: 'agriculture_forestry_fisheries',
+          name: '농림수산직',
+          emoji: '🌾',
+          shortName: '농림수산직',
+          memberCount: 70000,
+          description: '농업·수산·축산·수의직 등',
+        );
+      case 'it_communications':
+        return const LoungeInfo(
+          id: 'it_communications',
+          name: 'IT통신직',
+          emoji: '💻',
+          shortName: 'IT통신직',
+          memberCount: 20000,
+          description: '전산·방송통신직 라운지',
+        );
+      case 'management_operations':
+        return const LoungeInfo(
+          id: 'management_operations',
+          name: '관리운영직',
+          emoji: '🏢',
+          shortName: '관리운영직',
+          memberCount: 35000,
+          description: '시설관리·위생·조리직 라운지',
+        );
+
+      // ================================
+      // 기타 직렬
+      // ================================
+
       case 'postal_service':
         return const LoungeInfo(
           id: 'postal_service',
           name: '우정직',
           emoji: '📮',
           shortName: '우정직',
-          memberCount: 20000,
+          memberCount: 50000,
           description: '우정직 공무원 라운지',
         );
+      case 'researcher':
+        return const LoungeInfo(
+          id: 'researcher',
+          name: '연구직',
+          emoji: '🔬',
+          shortName: '연구직',
+          memberCount: 20000,
+          description: '연구직 공무원 라운지',
+        );
+
+      // ================================
+      // Legacy (기존 호환성)
+      // ================================
+
       case 'legal_correction':
         return const LoungeInfo(
           id: 'legal_correction',
@@ -375,6 +550,10 @@ class CareerHierarchy extends Equatable {
   /// 특정 직렬로부터 CareerHierarchy 생성
   factory CareerHierarchy.fromSpecificCareer(String specificCareer) {
     switch (specificCareer) {
+      // ================================
+      // 교육공무원 (Education Officials)
+      // ================================
+
       // 초등교사
       case 'elementary_teacher':
         return const CareerHierarchy(
@@ -384,7 +563,7 @@ class CareerHierarchy extends Equatable {
           level3: 'elementary_teacher',
         );
 
-      // 중등교사들
+      // 중등교사 - 교과별
       case 'secondary_math_teacher':
         return const CareerHierarchy(
           specificCareer: 'secondary_math_teacher',
@@ -434,7 +613,41 @@ class CareerHierarchy extends Equatable {
           level4: 'secondary_arts_teacher',
         );
 
-      // 행정직들
+      // 유치원 교사
+      case 'kindergarten_teacher':
+        return const CareerHierarchy(
+          specificCareer: 'kindergarten_teacher',
+          level1: 'all',
+          level2: 'teacher',
+          level3: 'kindergarten_teacher',
+        );
+
+      // 특수교육 교사
+      case 'special_education_teacher':
+        return const CareerHierarchy(
+          specificCareer: 'special_education_teacher',
+          level1: 'all',
+          level2: 'teacher',
+          level3: 'special_education_teacher',
+        );
+
+      // 비교과 교사들 (통합 라운지)
+      case 'counselor_teacher':
+      case 'health_teacher':
+      case 'librarian_teacher':
+      case 'nutrition_teacher':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'teacher',
+          level3: 'non_subject_teacher',
+        );
+
+      // ================================
+      // 일반행정직 (General Administrative)
+      // ================================
+
+      // 국가직
       case 'admin_9th_national':
         return const CareerHierarchy(
           specificCareer: 'admin_9th_national',
@@ -459,6 +672,8 @@ class CareerHierarchy extends Equatable {
           level3: 'national_admin',
           level4: 'admin_5th_national',
         );
+
+      // 지방직
       case 'admin_9th_local':
         return const CareerHierarchy(
           specificCareer: 'admin_9th_local',
@@ -484,7 +699,70 @@ class CareerHierarchy extends Equatable {
           level4: 'admin_5th_local',
         );
 
-      // 치안/안전 (2단계)
+      // 세무·관세직 (통합 라운지)
+      case 'tax_officer':
+      case 'customs_officer':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'admin',
+          level3: 'tax_customs',
+        );
+
+      // ================================
+      // 전문행정직 (Specialized Administrative)
+      // ================================
+
+      case 'job_counselor':
+      case 'statistics_officer':
+      case 'librarian':
+      case 'auditor':
+      case 'security_officer':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'admin',
+          level3: 'specialized_admin',
+        );
+
+      // ================================
+      // 보건복지직 (Health & Welfare)
+      // ================================
+
+      case 'public_health_officer':
+      case 'medical_technician':
+      case 'nurse':
+      case 'medical_officer':
+      case 'pharmacist':
+      case 'food_sanitation':
+      case 'social_worker':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'health_welfare',
+        );
+
+      // ================================
+      // 공안직 (Public Security)
+      // ================================
+
+      case 'correction_officer':
+      case 'probation_officer':
+      case 'prosecution_officer':
+      case 'drug_investigation_officer':
+      case 'immigration_officer':
+      case 'railroad_police':
+      case 'security_guard':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'public_security',
+        );
+
+      // ================================
+      // 치안/안전 (Public Safety)
+      // ================================
+
       case 'police':
         return const CareerHierarchy(
           specificCareer: 'police',
@@ -504,7 +782,10 @@ class CareerHierarchy extends Equatable {
           level2: 'coast_guard',
         );
 
-      // 군인 (3단계)
+      // ================================
+      // 군인 (Military)
+      // ================================
+
       case 'army':
         return const CareerHierarchy(
           specificCareer: 'army',
@@ -526,9 +807,108 @@ class CareerHierarchy extends Equatable {
           level2: 'military',
           level3: 'air_force',
         );
+      case 'military_civilian':
+        return const CareerHierarchy(
+          specificCareer: 'military_civilian',
+          level1: 'all',
+          level2: 'military',
+          level3: 'military_civilian',
+        );
 
-      // 기타 (2단계)
+      // ================================
+      // 기술직 (Technical Tracks)
+      // ================================
+
+      // 공업직 (Industrial/Engineering) - 통합 라운지
+      case 'mechanical_engineer':
+      case 'electrical_engineer':
+      case 'electronics_engineer':
+      case 'chemical_engineer':
+      case 'shipbuilding_engineer':
+      case 'nuclear_engineer':
+      case 'metal_engineer':
+      case 'textile_engineer':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'technical',
+          level3: 'industrial_engineer',
+        );
+
+      // 시설환경직 (Facilities & Environment) - 통합 라운지
+      case 'civil_engineer':
+      case 'architect':
+      case 'landscape_architect':
+      case 'traffic_engineer':
+      case 'cadastral_officer':
+      case 'designer':
+      case 'environmental_officer':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'technical',
+          level3: 'facilities_environment',
+        );
+
+      // 농림수산직 (Agriculture, Forestry, Fisheries) - 통합 라운지
+      case 'agriculture_officer':
+      case 'plant_quarantine':
+      case 'livestock_officer':
+      case 'forestry_officer':
+      case 'marine_officer':
+      case 'fisheries_officer':
+      case 'ship_officer':
+      case 'veterinarian':
+      case 'agricultural_extension':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'technical',
+          level3: 'agriculture_forestry_fisheries',
+        );
+
+      // IT통신직 (IT & Communications) - 통합 라운지
+      case 'computer_officer':
+      case 'broadcasting_communication':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'technical',
+          level3: 'it_communications',
+        );
+
+      // 관리운영직 (Management & Operations) - 통합 라운지
+      case 'facility_management':
+      case 'sanitation_worker':
+      case 'cook':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'technical',
+          level3: 'management_operations',
+        );
+
+      // ================================
+      // 기타 직렬 (Others)
+      // ================================
+
       case 'postal_service':
+        return const CareerHierarchy(
+          specificCareer: 'postal_service',
+          level1: 'all',
+          level2: 'postal_service',
+        );
+      case 'researcher':
+        return const CareerHierarchy(
+          specificCareer: 'researcher',
+          level1: 'all',
+          level2: 'researcher',
+        );
+
+      // ================================
+      // Fallback / Legacy
+      // ================================
+
       case 'legal_correction':
       case 'security_protection':
       case 'diplomatic_international':
@@ -540,10 +920,7 @@ class CareerHierarchy extends Equatable {
         );
 
       default:
-        return const CareerHierarchy(
-          specificCareer: 'none',
-          level1: 'all',
-        );
+        return const CareerHierarchy(specificCareer: 'none', level1: 'all');
     }
   }
 
@@ -570,11 +947,5 @@ class CareerHierarchy extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    specificCareer,
-    level1,
-    level2,
-    level3,
-    level4,
-  ];
+  List<Object?> get props => [specificCareer, level1, level2, level3, level4];
 }

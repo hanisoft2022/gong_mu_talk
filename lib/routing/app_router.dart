@@ -20,6 +20,7 @@ import '../features/community/presentation/views/post_create_page.dart';
 import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
+import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/matching/presentation/cubit/matching_cubit.dart';
@@ -110,6 +111,12 @@ GoRouter createRouter() {
         path: ProfileRoute.path,
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/verify-paystub',
+        name: PaystubVerificationRoute.name,
+        builder: (context, state) => const PaystubVerificationPage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -249,6 +256,13 @@ class MemberProfileRoute {
   const MemberProfileRoute._();
 
   static const String name = 'member-profile';
+}
+
+class PaystubVerificationRoute {
+  const PaystubVerificationRoute._();
+
+  static const String name = 'paystub-verification';
+  static const String path = '${ProfileRoute.path}/verify-paystub';
 }
 
 class MatchingRoute {

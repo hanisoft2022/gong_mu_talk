@@ -75,7 +75,7 @@ class PaystubVerificationRepository {
       'detectedTrack': null,
       'detectedKeywords': const <String>[],
       'errorMessage': null,
-      'storagePath': storagePath,
+      // 🔒 보안: storagePath 저장 제거 (불필요한 정보 노출 방지)
       'originalFileName': sanitizedName,
     });
 
