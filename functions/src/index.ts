@@ -19,6 +19,7 @@ export {
   sendGovernmentEmailVerification,
   verifyEmailToken,
 } from "./emailVerification";
+export {migrateMyData, migrateAllUsers} from "./migrateSensitiveInfo";
 
 const db = getFirestore();
 const COUNTER_SHARD_COUNT = 20;

@@ -80,7 +80,6 @@ service cloud.firestore {
           'detectedTrack',
           'detectedKeywords',
           'errorMessage',
-          'storagePath',
           'originalFileName'
         ]) &&
         hasAllKeys(data, [
@@ -88,12 +87,9 @@ service cloud.firestore {
           'uploadedAt',
           'updatedAt',
           'detectedKeywords',
-          'storagePath',
           'originalFileName'
         ]) &&
         data.status == 'processing' &&
-        data.storagePath is string &&
-        data.storagePath.matches('^paystub_uploads/' + userId + '/[A-Za-z0-9._-]+$') &&
         data.originalFileName is string &&
         data.originalFileName.size() > 0 &&
         (data.detectedTrack == null) &&
@@ -104,7 +100,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, list, read: if isSignedIn();
+      allow get: if isSignedIn();       // 개별 사용자 조회 허용
+      allow list: if false;             // 🔒 전체 목록 조회 차단 (대량 수집 방지)
       allow create, update: if isOwner(userId);
       allow delete: if isOwner(userId);
 
@@ -148,6 +145,11 @@ service cloud.firestore {
       match /bookmarks/{postId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if isOwner(userId);
+      }
+
+      // 🔒 민감 정보 저장용 서브컬렉션 (본인만 접근 가능)
+      match /private/{docId} {
+        allow read, write: if isOwner(userId);
       }
     }
 
