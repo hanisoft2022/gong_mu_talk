@@ -1,6 +1,7 @@
 import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/domain/lounge_info.dart';
-import '../models/lounge.dart';
+import '../models/lounge_model.dart';
+import '../models/lounge_definitions.dart';
 
 /// 라운지 접근 권한 관리 서비스
 class LoungeAccessService {

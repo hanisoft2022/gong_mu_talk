@@ -1,280 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:equatable/equatable.dart';
-
-/// 라운지 타입 - 계층적 구조 표현
-enum LoungeType {
-  all, // 전체 라운지
-  category, // 대분류 라운지 (교사, 행정직 등)
-  specific, // 세부 직렬 라운지 (초등교사, 중등수학교사 등)
-}
-
-/// 라운지 접근 권한 타입
-enum LoungeAccessType {
-  public, // 모든 공무원 접근 가능
-  careerOnly, // 특정 직렬만 접근 가능
-  verified, // 인증된 사용자만 접근 가능
-}
-
-/// 라운지 모델 - 계층적 공무원 커뮤니티를 위한 모델
-class Lounge extends Equatable {
-  const Lounge({
-    required this.id,
-    required this.name,
-    required this.emoji,
-    required this.type,
-    required this.accessType,
-    required this.requiredCareerIds,
-    this.shortName,
-    this.description,
-    this.memberCount = 0,
-    this.parentLoungeId,
-    this.childLoungeIds = const [],
-    this.order = 0,
-    this.isActive = true,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  /// 라운지 고유 ID
-  final String id;
-
-  /// 라운지 전체 이름
-  final String name;
-
-  /// 라운지 이모지
-  final String emoji;
-
-  /// 라운지 타입
-  final LoungeType type;
-
-  /// 접근 권한 타입
-  final LoungeAccessType accessType;
-
-  /// 접근 가능한 직렬 ID 목록
-  final List<String> requiredCareerIds;
-
-  /// 짧은 이름 (UI 표시용)
-  final String? shortName;
-
-  /// 라운지 설명
-  final String? description;
-
-  /// 멤버 수
-  final int memberCount;
-
-  /// 부모 라운지 ID (계층 구조)
-  final String? parentLoungeId;
-
-  /// 자식 라운지 ID 목록 (계층 구조)
-  final List<String> childLoungeIds;
-
-  /// 정렬 순서
-  final int order;
-
-  /// 활성 상태
-  final bool isActive;
-
-  /// 생성 시간
-  final DateTime? createdAt;
-
-  /// 수정 시간
-  final DateTime? updatedAt;
-
-  /// 표시용 텍스트 (드롭다운, 탭 등)
-  String get displayText {
-    final displayName = shortName ?? name;
-    final countText = memberCount > 0 ? ' ($memberCount명)' : '';
-    return '$emoji $displayName$countText';
-  }
-
-  /// 상세 표시 텍스트
-  String get fullDisplayText {
-    final countText = memberCount > 0 ? ' ($memberCount명)' : '';
-    return '$emoji $name$countText';
-  }
-
-  /// 특정 직렬이 접근 가능한지 확인
-  bool canAccess(String? careerTrackId) {
-    if (accessType == LoungeAccessType.public) {
-      return true;
-    }
-
-    if (careerTrackId == null) {
-      return false;
-    }
-
-    return requiredCareerIds.contains(careerTrackId);
-  }
-
-  /// 여러 직렬 중 하나라도 접근 가능한지 확인
-  bool canAccessWithAny(List<String> careerTrackIds) {
-    if (accessType == LoungeAccessType.public) {
-      return true;
-    }
-
-    return careerTrackIds.any((id) => requiredCareerIds.contains(id));
-  }
-
-  /// 통합 라운지 여부 (여러 직렬이 모이는 라운지)
-  bool get isUnifiedLounge => requiredCareerIds.length > 1;
-
-  /// 접근 가능한 직렬 수
-  int get accessibleCareerCount => requiredCareerIds.length;
-
-  /// Firestore 저장용 Map 변환
-  Map<String, Object?> toMap() {
-    return <String, Object?>{
-      'name': name,
-      'emoji': emoji,
-      'type': type.name,
-      'accessType': accessType.name,
-      'requiredCareerIds': requiredCareerIds,
-      'shortName': shortName,
-      'description': description,
-      'memberCount': memberCount,
-      'parentLoungeId': parentLoungeId,
-      'childLoungeIds': childLoungeIds,
-      'order': order,
-      'isActive': isActive,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
-    };
-  }
-
-  /// Firestore DocumentSnapshot에서 생성
-  static Lounge fromSnapshot(DocumentSnapshot<Map<String, Object?>> snapshot) {
-    final Map<String, Object?>? data = snapshot.data();
-    if (data == null) {
-      throw StateError('Lounge document ${snapshot.id} has no data');
-    }
-
-    return fromMap(snapshot.id, data);
-  }
-
-  /// Map에서 생성
-  static Lounge fromMap(String id, Map<String, Object?> data) {
-    return Lounge(
-      id: id,
-      name: (data['name'] as String?) ?? '이름 없음',
-      emoji: (data['emoji'] as String?) ?? '🏛️',
-      type: _parseType(data['type']),
-      accessType: _parseAccessType(data['accessType']),
-      requiredCareerIds: _parseStringList(data['requiredCareerIds']),
-      shortName: data['shortName'] as String?,
-      description: data['description'] as String?,
-      memberCount: (data['memberCount'] as num?)?.toInt() ?? 0,
-      parentLoungeId: data['parentLoungeId'] as String?,
-      childLoungeIds: _parseStringList(data['childLoungeIds']),
-      order: (data['order'] as num?)?.toInt() ?? 0,
-      isActive: data['isActive'] as bool? ?? true,
-      createdAt: _parseTimestamp(data['createdAt']),
-      updatedAt: _parseTimestamp(data['updatedAt']),
-    );
-  }
-
-  static LoungeType _parseType(Object? raw) {
-    if (raw is String) {
-      return LoungeType.values.firstWhere(
-        (LoungeType value) => value.name == raw,
-        orElse: () => LoungeType.specific,
-      );
-    }
-    return LoungeType.specific;
-  }
-
-  static LoungeAccessType _parseAccessType(Object? raw) {
-    if (raw is String) {
-      return LoungeAccessType.values.firstWhere(
-        (LoungeAccessType value) => value.name == raw,
-        orElse: () => LoungeAccessType.careerOnly,
-      );
-    }
-    return LoungeAccessType.careerOnly;
-  }
-
-  static List<String> _parseStringList(Object? value) {
-    if (value is List) {
-      return value.whereType<String>().toList();
-    }
-    return [];
-  }
-
-  static DateTime? _parseTimestamp(Object? value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is String) {
-      return DateTime.tryParse(value);
-    }
-    if (value is num) {
-      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
-    }
-    return null;
-  }
-
-  Lounge copyWith({
-    String? id,
-    String? name,
-    String? emoji,
-    LoungeType? type,
-    LoungeAccessType? accessType,
-    List<String>? requiredCareerIds,
-    String? shortName,
-    String? description,
-    int? memberCount,
-    String? parentLoungeId,
-    List<String>? childLoungeIds,
-    int? order,
-    bool? isActive,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return Lounge(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      emoji: emoji ?? this.emoji,
-      type: type ?? this.type,
-      accessType: accessType ?? this.accessType,
-      requiredCareerIds: requiredCareerIds ?? this.requiredCareerIds,
-      shortName: shortName ?? this.shortName,
-      description: description ?? this.description,
-      memberCount: memberCount ?? this.memberCount,
-      parentLoungeId: parentLoungeId ?? this.parentLoungeId,
-      childLoungeIds: childLoungeIds ?? this.childLoungeIds,
-      order: order ?? this.order,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-    id,
-    name,
-    emoji,
-    type,
-    accessType,
-    requiredCareerIds,
-    shortName,
-    description,
-    memberCount,
-    parentLoungeId,
-    childLoungeIds,
-    order,
-    isActive,
-    createdAt,
-    updatedAt,
-  ];
-}
+import 'lounge_model.dart';
 
 /// 라운지 설정 - 기본 라운지 목록 정의
+/// 
+/// 파일 분리 이유: CLAUDE.md 파일 크기 원칙 준수
+/// - 기존 lounge.dart (994줄, Red Zone) → 분리
+/// - lounge_model.dart (~300줄, Green Zone)
+/// - lounge_definitions.dart (~450줄, Green Zone)
 class LoungeDefinitions {
+  LoungeDefinitions._();
+
   static const List<Lounge> defaultLounges = [
-    // 전체 라운지
+    // ========================================
+    // 0. 전체 라운지
+    // ========================================
     Lounge(
       id: 'all',
       name: '전체',
@@ -288,7 +26,9 @@ class LoungeDefinitions {
       order: 0,
     ),
 
-    // 교육 분야
+    // ========================================
+    // 1. 교육공무원 - 교사
+    // ========================================
     Lounge(
       id: 'teacher',
       name: '교사',
@@ -298,6 +38,8 @@ class LoungeDefinitions {
       accessType: LoungeAccessType.careerOnly,
       requiredCareerIds: [
         'elementary_teacher',
+        'kindergarten_teacher',
+        'special_education_teacher',
         'secondary_math_teacher',
         'secondary_korean_teacher',
         'secondary_english_teacher',
@@ -329,6 +71,34 @@ class LoungeDefinitions {
     ),
 
     Lounge(
+      id: 'kindergarten_teacher',
+      name: '유치원교사',
+      emoji: '👶',
+      shortName: '유치원교사',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['kindergarten_teacher'],
+      parentLoungeId: 'teacher',
+      memberCount: 5000,
+      description: '유치원교사 전용 라운지',
+      order: 12,
+    ),
+
+    Lounge(
+      id: 'special_education_teacher',
+      name: '특수교육교사',
+      emoji: '🤝',
+      shortName: '특수교육교사',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['special_education_teacher'],
+      parentLoungeId: 'teacher',
+      memberCount: 4000,
+      description: '특수교육교사 전용 라운지',
+      order: 13,
+    ),
+
+    Lounge(
       id: 'secondary_teacher',
       name: '중등교사',
       emoji: '🎓',
@@ -346,10 +116,9 @@ class LoungeDefinitions {
       parentLoungeId: 'teacher',
       memberCount: 200000,
       description: '중등교사 전용 라운지',
-      order: 12,
+      order: 14,
     ),
 
-    // 중등교과별 라운지
     Lounge(
       id: 'secondary_math_teacher',
       name: '중등수학교사',
@@ -361,7 +130,7 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 30000,
       description: '중등 수학교사 전용 라운지',
-      order: 121,
+      order: 141,
     ),
 
     Lounge(
@@ -375,7 +144,7 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 30000,
       description: '중등 국어교사 전용 라운지',
-      order: 122,
+      order: 142,
     ),
 
     Lounge(
@@ -389,7 +158,7 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 25000,
       description: '중등 영어교사 전용 라운지',
-      order: 123,
+      order: 143,
     ),
 
     Lounge(
@@ -403,7 +172,7 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 30000,
       description: '중등 과학교사 전용 라운지',
-      order: 124,
+      order: 144,
     ),
 
     Lounge(
@@ -417,7 +186,7 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 25000,
       description: '중등 사회교사 전용 라운지',
-      order: 125,
+      order: 145,
     ),
 
     Lounge(
@@ -431,39 +200,9 @@ class LoungeDefinitions {
       parentLoungeId: 'secondary_teacher',
       memberCount: 60000,
       description: '중등 예체능교사 전용 라운지',
-      order: 126,
+      order: 146,
     ),
 
-    // 유치원/특수교육 교사
-    Lounge(
-      id: 'kindergarten_teacher',
-      name: '유치원교사',
-      emoji: '👶',
-      shortName: '유치원교사',
-      type: LoungeType.specific,
-      accessType: LoungeAccessType.careerOnly,
-      requiredCareerIds: ['kindergarten_teacher'],
-      parentLoungeId: 'teacher',
-      memberCount: 5000,
-      description: '유치원교사 전용 라운지',
-      order: 13,
-    ),
-
-    Lounge(
-      id: 'special_education_teacher',
-      name: '특수교육교사',
-      emoji: '🤝',
-      shortName: '특수교육교사',
-      type: LoungeType.specific,
-      accessType: LoungeAccessType.careerOnly,
-      requiredCareerIds: ['special_education_teacher'],
-      parentLoungeId: 'teacher',
-      memberCount: 4000,
-      description: '특수교육교사 전용 라운지',
-      order: 14,
-    ),
-
-    // 비교과 교사 통합 라운지
     Lounge(
       id: 'non_subject_teacher',
       name: '비교과교사',
@@ -483,7 +222,120 @@ class LoungeDefinitions {
       order: 15,
     ),
 
-    // 행정직
+    // ========================================
+    // 1-1. 교육행정직 (신규)
+    // ========================================
+    Lounge(
+      id: 'education_admin',
+      name: '교육행정직',
+      emoji: '📋',
+      shortName: '교육행정직',
+      type: LoungeType.category,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'education_admin_9th_national',
+        'education_admin_7th_national',
+        'education_admin_9th_local',
+        'education_admin_7th_local',
+      ],
+      memberCount: 18000,
+      description: '교육행정직 공무원 라운지',
+      order: 16,
+    ),
+
+    Lounge(
+      id: 'national_education_admin',
+      name: '국가 교육행정직',
+      emoji: '🏛️',
+      shortName: '국가 교육행정',
+      type: LoungeType.category,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'education_admin_9th_national',
+        'education_admin_7th_national',
+      ],
+      parentLoungeId: 'education_admin',
+      memberCount: 5000,
+      description: '국가 교육행정직 공무원 라운지',
+      order: 161,
+    ),
+
+    Lounge(
+      id: 'education_admin_9th_national',
+      name: '9급 국가 교육행정직',
+      emoji: '📋',
+      shortName: '9급 국가교육행정',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['education_admin_9th_national'],
+      parentLoungeId: 'national_education_admin',
+      memberCount: 2500,
+      description: '9급 국가 교육행정직 공무원 라운지',
+      order: 1611,
+    ),
+
+    Lounge(
+      id: 'education_admin_7th_national',
+      name: '7급 국가 교육행정직',
+      emoji: '📊',
+      shortName: '7급 국가교육행정',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['education_admin_7th_national'],
+      parentLoungeId: 'national_education_admin',
+      memberCount: 2500,
+      description: '7급 국가 교육행정직 공무원 라운지',
+      order: 1612,
+    ),
+
+    Lounge(
+      id: 'local_education_admin',
+      name: '지방 교육행정직',
+      emoji: '🏢',
+      shortName: '지방 교육행정',
+      type: LoungeType.category,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'education_admin_9th_local',
+        'education_admin_7th_local',
+      ],
+      parentLoungeId: 'education_admin',
+      memberCount: 13000,
+      description: '지방 교육행정직 공무원 라운지',
+      order: 162,
+    ),
+
+    Lounge(
+      id: 'education_admin_9th_local',
+      name: '9급 지방 교육행정직',
+      emoji: '📋',
+      shortName: '9급 지방교육행정',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['education_admin_9th_local'],
+      parentLoungeId: 'local_education_admin',
+      memberCount: 8000,
+      description: '9급 지방 교육행정직 공무원 라운지',
+      order: 1621,
+    ),
+
+    Lounge(
+      id: 'education_admin_7th_local',
+      name: '7급 지방 교육행정직',
+      emoji: '📊',
+      shortName: '7급 지방교육행정',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['education_admin_7th_local'],
+      parentLoungeId: 'local_education_admin',
+      memberCount: 5000,
+      description: '7급 지방 교육행정직 공무원 라운지',
+      order: 1622,
+    ),
+
+    // ========================================
+    // 2. 행정직
+    // ========================================
     Lounge(
       id: 'admin',
       name: '행정직',
@@ -511,7 +363,6 @@ class LoungeDefinitions {
       order: 2,
     ),
 
-    // 국가 행정직
     Lounge(
       id: 'national_admin',
       name: '국가행정직',
@@ -572,7 +423,6 @@ class LoungeDefinitions {
       order: 213,
     ),
 
-    // 지방 행정직
     Lounge(
       id: 'local_admin',
       name: '지방행정직',
@@ -633,7 +483,6 @@ class LoungeDefinitions {
       order: 223,
     ),
 
-    // 세무·관세직
     Lounge(
       id: 'tax_customs',
       name: '세무·관세직',
@@ -648,7 +497,6 @@ class LoungeDefinitions {
       order: 23,
     ),
 
-    // 전문행정직
     Lounge(
       id: 'specialized_admin',
       name: '전문행정직',
@@ -669,51 +517,9 @@ class LoungeDefinitions {
       order: 24,
     ),
 
-    // 보건복지직
-    Lounge(
-      id: 'health_welfare',
-      name: '보건복지직',
-      emoji: '🏥',
-      shortName: '보건복지직',
-      type: LoungeType.specific,
-      accessType: LoungeAccessType.careerOnly,
-      requiredCareerIds: [
-        'public_health_officer',
-        'medical_technician',
-        'nurse',
-        'medical_officer',
-        'pharmacist',
-        'food_sanitation',
-        'social_worker',
-      ],
-      memberCount: 80000,
-      description: '보건·의료·간호·약무·복지직 라운지',
-      order: 5,
-    ),
-
-    // 공안직
-    Lounge(
-      id: 'public_security',
-      name: '공안직',
-      emoji: '⚖️',
-      shortName: '공안직',
-      type: LoungeType.specific,
-      accessType: LoungeAccessType.careerOnly,
-      requiredCareerIds: [
-        'correction_officer',
-        'probation_officer',
-        'prosecution_officer',
-        'drug_investigation_officer',
-        'immigration_officer',
-        'railroad_police',
-        'security_guard',
-      ],
-      memberCount: 50000,
-      description: '교정·검찰·마약수사·출입국관리직 라운지',
-      order: 6,
-    ),
-
-    // 치안/안전
+    // ========================================
+    // 3. 치안/안전직
+    // ========================================
     Lounge(
       id: 'police',
       name: '경찰관',
@@ -753,7 +559,57 @@ class LoungeDefinitions {
       order: 41,
     ),
 
-    // 군인
+    // ========================================
+    // 4. 보건복지직
+    // ========================================
+    Lounge(
+      id: 'health_welfare',
+      name: '보건복지직',
+      emoji: '🏥',
+      shortName: '보건복지직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'public_health_officer',
+        'medical_technician',
+        'nurse',
+        'medical_officer',
+        'pharmacist',
+        'food_sanitation',
+        'social_worker',
+      ],
+      memberCount: 80000,
+      description: '보건·의료·간호·약무·복지직 라운지',
+      order: 5,
+    ),
+
+    // ========================================
+    // 5. 공안직
+    // ========================================
+    Lounge(
+      id: 'public_security',
+      name: '공안직',
+      emoji: '⚖️',
+      shortName: '공안직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'correction_officer',
+        'probation_officer',
+        'prosecution_officer',
+        'drug_investigation_officer',
+        'immigration_officer',
+        'railroad_police',
+        'security_guard',
+      ],
+      memberCount: 50000,
+      description: '교정·검찰·마약수사·출입국관리직 라운지',
+      order: 6,
+    ),
+
+    // ========================================
+    // 6. 군인
+    // ========================================
     Lounge(
       id: 'military',
       name: '군인',
@@ -823,7 +679,9 @@ class LoungeDefinitions {
       order: 74,
     ),
 
-    // 기술직
+    // ========================================
+    // 7. 기술직
+    // ========================================
     Lounge(
       id: 'technical',
       name: '기술직',
@@ -964,7 +822,9 @@ class LoungeDefinitions {
       order: 85,
     ),
 
-    // 기타 직렬
+    // ========================================
+    // 8. 기타 직렬
+    // ========================================
     Lounge(
       id: 'postal_service',
       name: '우정직',
@@ -989,6 +849,101 @@ class LoungeDefinitions {
       memberCount: 20000,
       description: '연구직 공무원 라운지',
       order: 10,
+    ),
+
+    // ========================================
+    // 9. 신규 라운지 - 법조직 (신규)
+    // ========================================
+    Lounge(
+      id: 'legal_profession',
+      name: '법조직',
+      emoji: '⚖️',
+      shortName: '법조직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['judge', 'prosecutor'],
+      memberCount: 5000,
+      description: '판사·검사 전용 라운지',
+      order: 11,
+    ),
+
+    // ========================================
+    // 10. 신규 라운지 - 외교관 (신규)
+    // ========================================
+    Lounge(
+      id: 'diplomat',
+      name: '외교관',
+      emoji: '🌐',
+      shortName: '외교관',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'diplomat_5th',
+        'diplomat_consular',
+        'diplomat_3rd',
+      ],
+      memberCount: 4000,
+      description: '외교관 전용 라운지',
+      order: 12,
+    ),
+
+    // ========================================
+    // 11. 신규 라운지 - 문화예술직 (신규)
+    // ========================================
+    Lounge(
+      id: 'culture_arts',
+      name: '문화예술직',
+      emoji: '🎨',
+      shortName: '문화예술직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: ['curator', 'cultural_heritage'],
+      memberCount: 3000,
+      description: '학예직·문화재직 라운지',
+      order: 13,
+    ),
+
+    // ========================================
+    // 12. 신규 라운지 - 과학기술 전문직 (신규)
+    // ========================================
+    Lounge(
+      id: 'science_technology_specialized',
+      name: '과학기술 전문직',
+      emoji: '🔬',
+      shortName: '과학기술 전문직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'meteorologist',
+        'disaster_safety',
+        'nursing_assistant',
+        'health_care',
+      ],
+      memberCount: 7500,
+      description: '기상·방재안전·간호조무·보건진료직 라운지',
+      order: 14,
+    ),
+
+    // ========================================
+    // 13. 신규 라운지 - 독립기관직 (신규)
+    // ========================================
+    Lounge(
+      id: 'independent_agencies',
+      name: '독립기관직',
+      emoji: '🏛️',
+      shortName: '독립기관직',
+      type: LoungeType.specific,
+      accessType: LoungeAccessType.careerOnly,
+      requiredCareerIds: [
+        'national_assembly',
+        'constitutional_court',
+        'election_commission',
+        'audit_board',
+        'human_rights_commission',
+      ],
+      memberCount: 6000,
+      description: '국회·헌법재판소·선관위·감사원·인권위 라운지',
+      order: 15,
     ),
   ];
 }
