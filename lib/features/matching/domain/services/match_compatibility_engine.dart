@@ -6,6 +6,7 @@ import '../../../profile/domain/user_profile.dart';
 import '../entities/match_compatibility.dart';
 import '../entities/match_flow.dart';
 import '../entities/match_preferences.dart';
+import '../entities/match_preference_enums.dart';
 
 class MatchCompatibilityEngine {
   const MatchCompatibilityEngine({

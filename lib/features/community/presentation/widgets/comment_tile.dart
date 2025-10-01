@@ -1,0 +1,301 @@
+/// Comment Tile - Displays a single comment with interaction buttons
+///
+/// Responsibilities:
+/// - Renders comment content with author information
+/// - Handles different display modes (serial/all scope)
+/// - Shows like and reply buttons
+/// - Formats timestamp and author display names
+/// - Supports visual highlighting for featured comments
+/// - Handles profile navigation
+
+import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import '../../domain/models/comment.dart';
+import '../../domain/models/feed_filters.dart';
+import '../../../profile/domain/career_track.dart';
+import '../../../../routing/app_router.dart';
+import 'comment_utils.dart';
+
+class CommentTile extends StatelessWidget {
+  const CommentTile({
+    super.key,
+    required this.comment,
+    required this.scope,
+    required this.onToggleLike,
+    required this.onReply,
+    this.highlight = false,
+    this.isReply = false,
+  });
+
+  final Comment comment;
+  final LoungeScope scope;
+  final VoidCallback onToggleLike;
+  final void Function(Comment comment) onReply;
+  final bool highlight;
+  final bool isReply;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isSerialScope = scope == LoungeScope.serial;
+    final bool hasTrack =
+        comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
+    final String trackLabel = serialLabel(
+      comment.authorTrack,
+      comment.authorSerialVisible,
+      includeEmoji: isSerialScope ? true : hasTrack,
+    );
+    final String timestamp = _formatTimestamp(comment.createdAt);
+    final String nicknameSource = comment.authorNickname.isNotEmpty
+        ? comment.authorNickname
+        : comment.authorUid;
+    final String maskedNickname = maskNickname(nicknameSource);
+    final String displayName = isSerialScope
+        ? comment.authorNickname
+        : maskedNickname;
+    final String displayInitial = displayName.trim().isEmpty
+        ? '공'
+        : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
+
+    final Widget header = isSerialScope
+        ? _buildSerialHeader(theme, displayInitial, displayName, timestamp)
+        : _buildAllHeader(theme, displayName, trackLabel, hasTrack, timestamp);
+
+    final EdgeInsetsGeometry containerPadding = highlight
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+        : const EdgeInsets.symmetric(vertical: 12);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isReply ? 12 : 16),
+      child: Container(
+        decoration: highlight
+            ? BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
+        padding: containerPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header,
+            const Gap(8),
+            Text(comment.text, style: theme.textTheme.bodyMedium),
+            const Gap(12),
+            _buildActionButtons(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== Header Builders ====================
+
+  Widget _buildSerialHeader(
+    ThemeData theme,
+    String displayInitial,
+    String displayName,
+    String timestamp,
+  ) {
+    return Builder(
+      builder: (context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => _openProfile(context, comment.authorUid),
+              borderRadius: BorderRadius.circular(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (!isReply) ...[
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.12,
+                    ),
+                    foregroundColor: theme.colorScheme.primary,
+                    child: Text(displayInitial),
+                  ),
+                  const Gap(12),
+                ],
+                if (comment.authorIsSupporter) ...[
+                  Icon(
+                    Icons.verified,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const Gap(4),
+                ],
+                Expanded(
+                  child: Text(
+                    displayName,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              timestamp,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllHeader(
+    ThemeData theme,
+    String displayName,
+    String trackLabel,
+    bool hasTrack,
+    String timestamp,
+  ) {
+    return Builder(
+      builder: (context) => InkWell(
+        onTap: () => _openProfile(context, comment.authorUid),
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: hasTrack
+                    ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                trackLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: hasTrack
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Gap(8),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (comment.authorIsSupporter) ...[
+                    const Gap(6),
+                    Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Gap(8),
+            Text(
+              timestamp,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== Action Buttons ====================
+
+  Widget _buildActionButtons(ThemeData theme) {
+    return Row(
+      children: [
+        TextButton.icon(
+          onPressed: onToggleLike,
+          icon: Icon(
+            comment.isLiked ? Icons.favorite : Icons.favorite_border,
+            size: 16,
+            color: comment.isLiked
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          label: Text(
+            '${comment.likeCount}',
+            style: theme.textTheme.labelSmall,
+          ),
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+        const Gap(8),
+        TextButton.icon(
+          onPressed: () => onReply(comment),
+          icon: const Icon(Icons.reply_outlined, size: 16),
+          label: const Text('답글'),
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4,
+            ),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== Helpers ====================
+
+  static String _formatTimestamp(DateTime createdAt) {
+    final DateTime now = DateTime.now();
+    final Duration difference = now.difference(createdAt);
+    if (difference.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    }
+    return '${createdAt.month}월 ${createdAt.day}일';
+  }
+
+  void _openProfile(BuildContext context, String uid) {
+    if (uid.isEmpty || uid == 'dummy_user') {
+      return;
+    }
+    context.pushNamed(
+      MemberProfileRoute.name,
+      pathParameters: <String, String>{'uid': uid},
+    );
+  }
+}

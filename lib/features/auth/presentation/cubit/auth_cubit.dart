@@ -1,3 +1,7 @@
+/// Refactored to meet AI token optimization guidelines
+/// Main auth cubit - extracted helper methods to separate files
+/// Target: ≤300 lines (logic file guideline)
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -12,6 +16,8 @@ import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../../notifications/data/notification_repository.dart';
+import 'auth_cubit_helpers.dart';
+import 'auth_profile_manager.dart';
 
 part 'auth_state.dart';
 
@@ -21,11 +27,15 @@ class AuthCubit extends Cubit<AuthState> {
     required LoginSessionStore sessionStore,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
-  }) : _authRepository = authRepository,
-       _sessionStore = sessionStore,
-       _userProfileRepository = userProfileRepository,
-       _notificationRepository = notificationRepository,
-       super(const AuthState()) {
+  })  : _authRepository = authRepository,
+        _sessionStore = sessionStore,
+        _userProfileRepository = userProfileRepository,
+        _notificationRepository = notificationRepository,
+        _profileManager = AuthProfileManager(
+          userProfileRepository: userProfileRepository,
+          notificationRepository: notificationRepository,
+        ),
+        super(const AuthState()) {
     _authSubscription = _authRepository.authStateChanges().listen(_onAuthUserChanged);
   }
 
@@ -33,11 +43,12 @@ class AuthCubit extends Cubit<AuthState> {
   final LoginSessionStore _sessionStore;
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
+  final AuthProfileManager _profileManager;
   late final StreamSubscription<AuthUser?> _authSubscription;
-  StreamSubscription<UserProfile?>? _profileSubscription;
   static const Duration _sessionMaxAge = Duration(days: 30);
   String? _pendingForcedLogoutMessage;
 
+  // Authentication operations
   Future<void> signIn({required String email, required String password}) async {
     return _runAuthOperation(
       () => _authRepository.signIn(email: email.trim(), password: password.trim()),
@@ -69,6 +80,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // Government email verification
   Future<void> requestGovernmentEmailVerification({required String email}) async {
     final String trimmedEmail = email.trim();
     emit(
@@ -82,7 +94,6 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final String token = await _authRepository.requestGovernmentEmailVerification(trimmedEmail);
 
-      // @naver.com 도메인은 실제 메일 발송, 다른 도메인은 토큰만 표시
       final String message = trimmedEmail.endsWith('@naver.com')
           ? '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.'
           : '$trimmedEmail 인증 요청이 완료되었습니다.\n\n개발/테스트 모드 토큰: $token\n\n실제 메일 발송은 현재 해당 도메인에서 지원되지 않습니다.';
@@ -102,13 +113,11 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// 공직자 메일 인증 토큰 검증 (개발/테스트용)
   Future<void> verifyGovernmentEmailToken(String token) async {
     try {
       final bool isValid = await _authRepository.verifyGovernmentEmailToken(token);
       if (isValid) {
         emit(state.copyWith(lastMessage: '공직자 메일 인증이 완료되었습니다!'));
-        // 프로필 새로고침을 통해 업데이트된 governmentEmail 정보 반영
         await refreshAuthStatus();
       } else {
         emit(state.copyWith(lastMessage: '유효하지 않거나 만료된 토큰입니다.'));
@@ -128,6 +137,7 @@ class AuthCubit extends Cubit<AuthState> {
     _onAuthUserChanged(user);
   }
 
+  // Profile update operations
   Future<void> updateCareerTrack(CareerTrack track) async {
     final String? uid = state.userId;
     if (uid == null) {
@@ -143,7 +153,7 @@ class AuthCubit extends Cubit<AuthState> {
         serial: serial,
       );
 
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
 
       final String message = track == CareerTrack.none
           ? '직렬 설정이 초기화되었습니다.'
@@ -179,7 +189,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         newNickname: trimmed,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false, lastMessage: '닉네임이 변경되었습니다.'));
     } on StateError catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
@@ -204,7 +214,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         bio: trimmed.isEmpty ? null : trimmed,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트했습니다.'));
     } catch (_) {
       emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.'));
@@ -223,7 +233,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         notificationsEnabled: enabled,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
       emit(state.copyWith(isProcessing: false));
@@ -242,7 +252,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         serialVisible: visible,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
       emit(state.copyWith(isProcessing: false));
@@ -275,7 +285,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         photoUrl: downloadUrl,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false, lastMessage: '프로필 이미지가 변경되었습니다.'));
     } catch (_) {
       emit(
@@ -297,7 +307,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         photoUrl: null,
       );
-      _applyProfile(profile);
+      _profileManager.applyProfile(profile, emit: emit);
       emit(state.copyWith(isProcessing: false, lastMessage: '프로필 이미지를 기본 이미지로 변경했습니다.'));
     } catch (_) {
       emit(
@@ -388,51 +398,7 @@ class AuthCubit extends Cubit<AuthState> {
     final bool wasLoggedIn = state.isLoggedIn;
 
     if (user == null) {
-      unawaited(_sessionStore.clearLoginTimestamp());
-      _profileSubscription?.cancel();
-      unawaited(_notificationRepository.stopListening());
-
-      String? message = state.lastMessage;
-      if (_pendingForcedLogoutMessage != null) {
-        message = _pendingForcedLogoutMessage;
-        _pendingForcedLogoutMessage = null;
-      } else if (wasLoggedIn) {
-        message = '로그아웃 되었습니다.';
-      }
-
-      emit(
-        state.copyWith(
-          isLoggedIn: false,
-          userId: null,
-          email: null,
-          primaryEmail: null,
-          isAuthenticating: false,
-          isGovernmentEmailVerificationInProgress: false,
-          isEmailVerified: false,
-          authError: null,
-          userProfile: null,
-          nickname: '공무원',
-          careerTrack: CareerTrack.none,
-          serial: 'unknown',
-          department: 'unknown',
-          region: 'unknown',
-          jobTitle: '직무 미입력',
-          yearsOfService: 0,
-          points: 0,
-          level: 1,
-          badges: const <String>[],
-          photoUrl: null,
-          nicknameChangeCount: 0,
-          nicknameLastChangedAt: null,
-          nicknameResetAt: null,
-          extraNicknameTickets: 0,
-          excludedTracks: const <CareerTrack>{},
-          excludedSerials: const <String>{},
-          excludedDepartments: const <String>{},
-          excludedRegions: const <String>{},
-          lastMessage: message,
-        ),
-      );
+      _handleLogout(wasLoggedIn);
       return;
     }
 
@@ -443,7 +409,25 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     unawaited(_sessionStore.saveLoginTimestamp(DateTime.now()));
+    _handleLogin(user);
+  }
 
+  void _handleLogout(bool wasLoggedIn) {
+    unawaited(_sessionStore.clearLoginTimestamp());
+    unawaited(_notificationRepository.stopListening());
+
+    String? message = state.lastMessage;
+    if (_pendingForcedLogoutMessage != null) {
+      message = _pendingForcedLogoutMessage;
+      _pendingForcedLogoutMessage = null;
+    } else if (wasLoggedIn) {
+      message = '로그아웃 되었습니다.';
+    }
+
+    emit(AuthState(lastMessage: message));
+  }
+
+  void _handleLogin(AuthUser user) {
     final String? previousEmail = state.email;
     final String? newEmail = user.email;
     if (newEmail != null && newEmail.isNotEmpty) {
@@ -466,8 +450,6 @@ class AuthCubit extends Cubit<AuthState> {
       }
     }
 
-    String? message = state.lastMessage;
-
     emit(
       state.copyWith(
         isLoggedIn: true,
@@ -478,23 +460,28 @@ class AuthCubit extends Cubit<AuthState> {
         isGovernmentEmailVerificationInProgress: false,
         isEmailVerified: user.isEmailVerified,
         authError: null,
-        lastMessage: message,
+        lastMessage: state.lastMessage,
       ),
     );
 
-    if (newEmail != null && _isGovernmentEmail(newEmail)) {
+    if (newEmail != null && AuthCubitHelpers.isGovernmentEmail(newEmail)) {
       unawaited(_refreshPrimaryEmail(user.uid, newEmail));
     }
 
     unawaited(_userProfileRepository.recordLogin(user.uid));
-    _subscribeToProfile(uid: user.uid, fallbackEmail: newEmail);
+    _profileManager.subscribeToProfile(
+      uid: user.uid,
+      fallbackEmail: newEmail,
+      emit: emit,
+      currentState: state,
+    );
     unawaited(_notificationRepository.startListening(user.uid));
   }
 
   @override
   Future<void> close() async {
     await _authSubscription.cancel();
-    await _profileSubscription?.cancel();
+    await _profileManager.dispose();
     await _notificationRepository.stopListening();
     await super.close();
   }
@@ -514,7 +501,6 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       await operation();
-      // 로그인 액션이 성공했을 때만 메시지 설정
       emit(state.copyWith(isAuthenticating: false, lastMessage: '로그인 되었습니다.'));
     } on AuthException catch (error) {
       emit(state.copyWith(isAuthenticating: false, authError: error.message));
@@ -540,14 +526,6 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(lastMessage: null));
   }
 
-  bool _isGovernmentEmail(String email) {
-    final String normalized = email.trim().toLowerCase();
-    // 임시로 @naver.com 도메인도 허용
-    return normalized.endsWith('@korea.kr') ||
-        normalized.endsWith('.go.kr') ||
-        normalized.endsWith('@naver.com');
-  }
-
   Future<void> _refreshPrimaryEmail(String userId, String governmentEmail) async {
     try {
       final String? legacyEmail = await _authRepository.findLegacyEmailForGovernmentEmail(
@@ -571,105 +549,5 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error, stackTrace) {
       debugPrint('Failed to resolve primary email for $governmentEmail: $error\n$stackTrace');
     }
-  }
-
-  void _subscribeToProfile({required String uid, String? fallbackEmail}) {
-    _profileSubscription?.cancel();
-    final String fallbackNickname = _deriveNickname(fallbackEmail);
-
-    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((UserProfile? profile) {
-      if (profile == null) {
-        return;
-      }
-      _applyProfile(profile);
-    });
-
-    unawaited(
-      _userProfileRepository
-          .ensureUserProfile(
-            uid: uid,
-            nickname: fallbackNickname,
-            serial: state.serial,
-            department: state.department,
-            region: state.region,
-            jobTitle: state.jobTitle,
-            yearsOfService: state.yearsOfService,
-          )
-          .then(_applyProfile),
-    );
-  }
-
-  void _applyProfile(UserProfile profile) {
-    if (isClosed) {
-      return;
-    }
-
-    final Set<CareerTrack> excludedTracks = profile.excludedSerials
-        .map(_careerTrackFromSerial)
-        .where((CareerTrack track) => track != CareerTrack.none)
-        .toSet();
-
-    emit(
-      state.copyWith(
-        userProfile: profile,
-        nickname: profile.nickname,
-        handle: profile.handle,
-        serial: profile.serial,
-        department: profile.department,
-        region: profile.region,
-        jobTitle: profile.jobTitle,
-        yearsOfService: profile.yearsOfService,
-        bio: profile.bio,
-        points: profile.points,
-        level: profile.level,
-        badges: profile.badges,
-        careerTrack: profile.careerTrack,
-        photoUrl: profile.photoUrl,
-        nicknameChangeCount: profile.nicknameChangeCount,
-        nicknameLastChangedAt: profile.nicknameLastChangedAt,
-        nicknameResetAt: profile.nicknameResetAt,
-        extraNicknameTickets: profile.extraNicknameTickets,
-        followerCount: profile.followerCount,
-        followingCount: profile.followingCount,
-        notificationsEnabled: profile.notificationsEnabled,
-        serialVisible: profile.serialVisible,
-        excludedTracks: excludedTracks,
-        excludedSerials: profile.excludedSerials,
-        excludedDepartments: profile.excludedDepartments,
-        excludedRegions: profile.excludedRegions,
-        careerHierarchy: profile.careerHierarchy,
-      ),
-    );
-
-    if (profile.notificationsEnabled) {
-      final String uid = state.userId ?? profile.uid;
-      unawaited(_notificationRepository.startListening(uid));
-    } else {
-      unawaited(_notificationRepository.stopListening());
-    }
-  }
-
-  String _deriveNickname(String? email) {
-    if (email == null || email.isEmpty) {
-      return '공무원';
-    }
-    final String localPart = email.split('@').first;
-    if (localPart.isEmpty) {
-      return '공무원';
-    }
-    return localPart.length > 12 ? localPart.substring(0, 12) : localPart;
-  }
-
-  CareerTrack _careerTrackFromSerial(String serial) {
-    final String normalized = serial.trim().toLowerCase();
-    for (final CareerTrack track in CareerTrack.values) {
-      if (track == CareerTrack.none) {
-        continue;
-      }
-      if (normalized.contains(track.name.toLowerCase())) {
-        return track;
-      }
-    }
-    return CareerTrack.none;
   }
 }

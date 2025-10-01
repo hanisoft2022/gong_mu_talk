@@ -85,7 +85,16 @@
       "mcp__serena__read_file",
       "mcp__serena__get_symbols_overview",
       "mcp__serena__replace_regex",
-      "mcp__serena__create_text_file"
+      "mcp__serena__create_text_file",
+      "Bash(do echo \"\")",
+      "Bash(echo:*)",
+      "Bash(for file in \"lib/features/profile/presentation/views/profile_page.dart\" \"lib/features/community/presentation/widgets/post_card.dart\" \"lib/features/community/data/community_repository.dart\")",
+      "Bash(tree:*)",
+      "Bash(xargs:*)",
+      "Bash(for feature in auth calculator community life matching pension profile salary_insights transfer_posting year_end_tax notifications)",
+      "mcp__serena__list_memories",
+      "WebFetch(domain:support.claude.com)",
+      "Bash(git clean:*)"
     ],
     "deny": [],
     "ask": []

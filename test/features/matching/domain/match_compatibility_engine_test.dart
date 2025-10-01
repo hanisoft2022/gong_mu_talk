@@ -1,6 +1,8 @@
 import 'package:test/test.dart';
 import 'package:gong_mu_talk/features/matching/domain/entities/match_compatibility.dart';
 import 'package:gong_mu_talk/features/matching/domain/entities/match_preferences.dart';
+import 'package:gong_mu_talk/features/matching/domain/entities/match_preference_enums.dart';
+import 'package:gong_mu_talk/features/matching/domain/entities/match_preference_helpers.dart';
 import 'package:gong_mu_talk/features/matching/domain/services/match_compatibility_engine.dart';
 import 'package:gong_mu_talk/features/profile/domain/user_profile.dart';
 
