@@ -23,6 +23,7 @@ import '../../domain/career_hierarchy.dart';
 import '../../domain/paystub_verification.dart';
 import '../../domain/user_profile.dart';
 import '../../../community/domain/models/post.dart';
+import '../../../community/domain/services/lounge_access_service.dart';
 import '../cubit/profile_relations_cubit.dart';
 import '../cubit/profile_timeline_cubit.dart';
 
@@ -260,24 +261,61 @@ class _TimelineSection extends StatelessWidget {
           case ProfileTimelineStatus.loaded:
             if (state.posts.isEmpty) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.forum_outlined,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.primary,
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      width: 1,
                     ),
-                    const Gap(12),
-                    Text('아직 작성한 글이 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
-                    const Gap(4),
-                    Text(
-                      '라운지에서 첫 글을 작성해보세요!',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.forum_outlined,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
-                    ),
-                  ],
+                      const Gap(16),
+                      Text(
+                        '아직 작성한 글이 없습니다',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        '라운지에서 첫 글을 작성해보세요!',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const Gap(20),
+                      FilledButton.icon(
+                        onPressed: () {
+                          // 커뮤니티 탭으로 이동
+                          DefaultTabController.of(context).animateTo(0);
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('첫 글 작성하기'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
@@ -430,7 +468,10 @@ class _ProfileHeader extends StatelessWidget {
                       // 닉네임
                       Text(
                         displayNickname,
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const Gap(4),
@@ -439,14 +480,15 @@ class _ProfileHeader extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.calendar_today_outlined,
-                            size: 14,
-                            color: theme.colorScheme.onSurfaceVariant,
+                            size: 16,
+                            color: theme.colorScheme.primary,
                           ),
-                          const Gap(4),
+                          const Gap(6),
                           Text(
                             '2024년 9월에 가입',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -473,11 +515,11 @@ class _ProfileHeader extends StatelessWidget {
             ),
             // 자기소개
             if (state.bio != null && state.bio!.trim().isNotEmpty) ...[
-              const Gap(16),
+              const Gap(20),
               _BioCard(bio: state.bio!.trim()),
-              const Gap(16),
             ] else
-              const Gap(12),
+              const Gap(16),
+            const Gap(20),
             // 팔로워/팔로잉 통계
             Row(
               children: [
@@ -488,7 +530,7 @@ class _ProfileHeader extends StatelessWidget {
                     onTap: () => _showRelationsSheet(context, ProfileRelationType.following),
                   ),
                 ),
-                const Gap(12),
+                const Gap(16),
                 Expanded(
                   child: _StatCard(
                     title: '팔로워',
@@ -498,87 +540,116 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ],
             ),
-            const Gap(16),
+            const Gap(20),
             // 인증 상태
-            Column(
-              children: [
-                _VerificationStatusRow(
-                  icon: state.isGovernmentEmailVerified ? Icons.verified : Icons.email_outlined,
-                  label: '공직자 통합 메일 인증',
-                  isVerified: state.isGovernmentEmailVerified,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant,
+                  width: 1,
                 ),
-                if (state.userId != null) ...[const Gap(8), _PaystubStatusRow(uid: state.userId!)],
-
-                // 직렬 설정 상태 (인증 완료 시에만 표시)
-                if (state.serial != 'unknown' && state.careerHierarchy != null) ...[
-                  const Gap(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
                     children: [
-                      Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
-                      const Gap(8),
-                      const Expanded(
-                        child: Text('직렬', style: TextStyle(color: Colors.black)),
+                      Icon(
+                        Icons.verified_user_outlined,
+                        size: 16,
+                        color: theme.colorScheme.primary,
                       ),
+                      const Gap(8),
                       Text(
-                        state.careerTrack.displayName,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
+                        '인증 정보',
+                        style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ],
                   ),
-                ],
-
-                // 임시 직렬 선택 버튼 (테스트용)
-                if (kDebugMode) ...[
                   const Gap(12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  _VerificationStatusRow(
+                    icon: state.isGovernmentEmailVerified ? Icons.verified : Icons.email_outlined,
+                    label: '공직자 통합 메일 인증',
+                    isVerified: state.isGovernmentEmailVerified,
+                  ),
+                  if (state.userId != null) ...[const Gap(8), _PaystubStatusRow(uid: state.userId!)],
+
+                  // 직렬 설정 상태 (인증 완료 시에만 표시)
+                  if (state.serial != 'unknown' && state.careerHierarchy != null) ...[
+                    const Gap(8),
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.bug_report, size: 16, color: theme.colorScheme.error),
-                            const Gap(8),
-                            Text(
-                              '테스트 모드',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                        Icon(Icons.verified, size: 16, color: theme.colorScheme.primary),
                         const Gap(8),
+                        const Expanded(
+                          child: Text('직렬', style: TextStyle(color: Colors.black)),
+                        ),
                         Text(
-                          '라운지 시스템 테스트를 위한 임시 직렬 선택',
+                          state.careerTrack.displayName,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onErrorContainer,
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        const Gap(8),
-                        ElevatedButton(
-                          onPressed: () => _showTestCareerSelector(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.error,
-                            foregroundColor: theme.colorScheme.onError,
-                          ),
-                          child: const Text('임시 직렬 선택'),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
+            // 임시 직렬 선택 버튼 (테스트용)
+            if (kDebugMode) ...[
+              const Gap(12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.bug_report, size: 16, color: theme.colorScheme.error),
+                        const Gap(8),
+                        Text(
+                          '테스트 모드',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(8),
+                    Text(
+                      '라운지 시스템 테스트를 위한 임시 직렬 선택',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    const Gap(8),
+                    ElevatedButton(
+                      onPressed: () => _showTestCareerSelector(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.error,
+                        foregroundColor: theme.colorScheme.onError,
+                      ),
+                      child: const Text('임시 직렬 선택'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -779,20 +850,12 @@ class _ProfileHeader extends StatelessWidget {
       if (careerId != 'none') {
         careerHierarchy = CareerHierarchy.fromSpecificCareer(careerId);
 
-        // 접근 가능한 라운지 ID 생성
-        accessibleLoungeIds = [];
-        if (careerHierarchy.level1 != null) accessibleLoungeIds.add(careerHierarchy.level1!);
-        if (careerHierarchy.level2 != null) accessibleLoungeIds.add(careerHierarchy.level2!);
-        if (careerHierarchy.level3 != null) accessibleLoungeIds.add(careerHierarchy.level3!);
-        if (careerHierarchy.level4 != null) accessibleLoungeIds.add(careerHierarchy.level4!);
+        // LoungeAccessService를 사용하여 접근 가능한 라운지 ID 생성
+        final accessibleLounges = LoungeAccessService.getAccessibleLounges(careerHierarchy);
+        accessibleLoungeIds = accessibleLounges.map((lounge) => lounge.id).toList();
 
-        // 기본 라운지는 가장 구체적인 레벨
-        defaultLoungeId =
-            careerHierarchy.level4 ??
-            careerHierarchy.level3 ??
-            careerHierarchy.level2 ??
-            careerHierarchy.level1 ??
-            'all';
+        // 기본 라운지는 LoungeAccessService를 통해 가져옴
+        defaultLoungeId = LoungeAccessService.getDefaultLoungeId(careerHierarchy);
       }
 
       // Firestore 직접 업데이트
@@ -845,7 +908,7 @@ class _StatCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
@@ -858,21 +921,21 @@ class _StatCard extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 24,
+              size: 20,
               color: theme.colorScheme.primary,
             ),
-            const Gap(8),
+            const Gap(6),
             Text(
               '$count',
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const Gap(4),
+            const Gap(2),
             Text(
               title,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -883,14 +946,24 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _BioCard extends StatelessWidget {
+class _BioCard extends StatefulWidget {
   const _BioCard({required this.bio});
 
   final String bio;
 
   @override
+  State<_BioCard> createState() => _BioCardState();
+}
+
+class _BioCardState extends State<_BioCard> {
+  bool _isExpanded = false;
+  static const int _maxLines = 3;
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool isLongText = widget.bio.length > 100;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -924,12 +997,38 @@ class _BioCard extends StatelessWidget {
           ),
           const Gap(12),
           Text(
-            bio,
+            widget.bio,
             style: theme.textTheme.bodyMedium?.copyWith(
               height: 1.5,
               color: theme.colorScheme.onSurfaceVariant,
             ),
+            maxLines: _isExpanded ? null : _maxLines,
+            overflow: _isExpanded ? null : TextOverflow.ellipsis,
           ),
+          if (isLongText) ...[
+            const Gap(8),
+            InkWell(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isExpanded ? '접기' : '더보기',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Gap(4),
+                  Icon(
+                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1080,7 +1179,7 @@ class _ProfileAvatar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return CircleAvatar(
-      radius: 30,
+      radius: 32,
       backgroundColor: photoUrl != null && photoUrl!.isNotEmpty
           ? Colors.transparent
           : theme.colorScheme.primaryContainer,
