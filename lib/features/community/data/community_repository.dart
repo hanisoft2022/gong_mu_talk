@@ -16,6 +16,7 @@ import '../domain/models/report.dart';
 import '../domain/models/search_suggestion.dart';
 import '../domain/models/search_result.dart';
 import '../../auth/domain/user_session.dart';
+import '../../auth/presentation/cubit/auth_cubit.dart';
 import '../../profile/data/user_profile_repository.dart';
 import 'repositories/post_repository.dart';
 import 'repositories/comment_repository.dart';
@@ -50,11 +51,13 @@ class CommunityRepository {
     required UserSession userSession,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
+    required AuthCubit authCubit,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _storage = storage ?? FirebaseStorage.instance,
         _userSession = userSession,
         _userProfileRepository = userProfileRepository,
-        _notificationRepository = notificationRepository {
+        _notificationRepository = notificationRepository,
+        _authCubit = authCubit {
     // Initialize specialized repositories
     _postRepository = PostRepository(
       firestore: _firestore,
@@ -72,6 +75,24 @@ class CommunityRepository {
     );
     _searchRepository = SearchRepository(firestore: _firestore);
     _loungeRepository = LoungeRepository(firestore: _firestore);
+
+    // AuthCubit 상태 변화 구독 (로그아웃 시 캐시 클리어)
+    _authSubscription = _authCubit.stream.listen(_handleAuthStateChanged);
+  }
+
+  StreamSubscription<AuthState>? _authSubscription;
+
+  void _handleAuthStateChanged(AuthState state) {
+    // 로그아웃 감지 (userId가 null이 됨)
+    if (state.userId == null) {
+      clearInteractionCache();
+      resetCacheStats();
+      debugPrint('🔓 로그아웃 감지 - 모든 캐시 및 통계 삭제');
+    }
+  }
+
+  void dispose() {
+    _authSubscription?.cancel();
   }
 
   final FirebaseFirestore _firestore;
@@ -79,11 +100,16 @@ class CommunityRepository {
   final UserSession _userSession;
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
+  final AuthCubit _authCubit;
 
   // Like/Bookmark 캐시 (비용 최적화)
   final Map<String, Set<String>> _likedPostsCache = {};
   final Map<String, Set<String>> _bookmarkedPostsCache = {};
   DateTime? _lastCacheUpdate;
+
+  // 캐시 히트율 추적 (성능 모니터링)
+  int _cacheHitCount = 0;
+  int _cacheMissCount = 0;
 
   // 검색 Rate Limiting (비용 최적화)
   DateTime? _lastSearchTime;
@@ -552,6 +578,12 @@ class CommunityRepository {
   }
 
   Future<void> toggleCommentLikeById(String postId, String commentId) async {
+    await toggleCommentLike(
+      postId: postId,
+      commentId: commentId,
+      uid: currentUserId,
+    );
+  }
 
   // ============================================================================
   // CACHE MANAGEMENT - Performance optimization
@@ -590,11 +622,35 @@ class CommunityRepository {
 
     debugPrint('🔄 Like/Bookmark 캐시 강제 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
   }
-    await toggleCommentLike(
-      postId: postId,
-      commentId: commentId,
-      uid: currentUserId,
-    );
+
+  /// 캐시 히트율 통계 로깅
+  void _logCacheStats() {
+    final totalRequests = _cacheHitCount + _cacheMissCount;
+    if (totalRequests == 0) return;
+
+    final hitRate = (_cacheHitCount / totalRequests * 100).toStringAsFixed(1);
+    debugPrint('📊 캐시 히트율: $hitRate% (히트: $_cacheHitCount, 미스: $_cacheMissCount)');
+
+    // 100회마다 상세 통계 출력
+    if (totalRequests % 100 == 0) {
+      debugPrint('📈 누적 통계 ($totalRequests 요청)');
+      debugPrint('   - 캐시 히트: $_cacheHitCount회');
+      debugPrint('   - 캐시 미스: $_cacheMissCount회');
+      debugPrint('   - 절감 비용: ${_calculateSavedCost()} Firestore reads');
+    }
+  }
+
+  /// 캐시로 절감한 Firestore read 횟수 계산
+  int _calculateSavedCost() {
+    // 각 캐시 히트는 2번의 Firestore read를 절약 (likes + bookmarks)
+    return _cacheHitCount * 2;
+  }
+
+  /// 캐시 통계 초기화 (테스트용)
+  void resetCacheStats() {
+    _cacheHitCount = 0;
+    _cacheMissCount = 0;
+    debugPrint('📊 캐시 통계 초기화');
   }
 
   // ============================================================================
@@ -736,10 +792,10 @@ class CommunityRepository {
 
     final postIds = posts.map((p) => p.id).toList();
 
-    // 캐시 사용 (5분 유효)
+    // 캐시 사용 (10분 유효 - 비용 최적화)
     final now = DateTime.now();
     final shouldRefreshCache = _lastCacheUpdate == null ||
-        now.difference(_lastCacheUpdate!) > const Duration(minutes: 5);
+        now.difference(_lastCacheUpdate!) > const Duration(minutes: 10);
 
     Set<String> likedIds;
     Set<String> bookmarkedIds;
@@ -766,7 +822,10 @@ class CommunityRepository {
       };
       _lastCacheUpdate = now;
 
+      // 캐시 미스 기록
+      _cacheMissCount++;
       debugPrint('🔄 Like/Bookmark 캐시 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
+      _logCacheStats();
     } else {
       // 캐시에서 가져오기
       likedIds = _likedPostsCache[currentUid]!
@@ -776,7 +835,10 @@ class CommunityRepository {
           .where((id) => postIds.contains(id))
           .toSet();
 
+      // 캐시 히트 기록
+      _cacheHitCount++;
       debugPrint('✅ Like/Bookmark 캐시 사용 - Firestore 호출 없음');
+      _logCacheStats();
     }
 
     final enriched = <Post>[];

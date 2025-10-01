@@ -101,6 +101,7 @@ Future<void> configureDependencies() async {
         userSession: getIt(),
         userProfileRepository: getIt(),
         notificationRepository: getIt(),
+        authCubit: getIt(),
       ),
     )
     ..registerLazySingleton<ICommunityRepository>(
