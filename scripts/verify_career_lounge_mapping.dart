@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import '../lib/features/profile/domain/career_hierarchy.dart';
+import '../lib/features/community/domain/models/lounge_model.dart';
 import '../lib/features/community/domain/models/lounge_definitions.dart';
 
 /// 직렬-라운지 매핑 검증 스크립트

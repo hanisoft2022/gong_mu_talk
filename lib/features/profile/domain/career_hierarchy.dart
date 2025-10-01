@@ -530,7 +530,7 @@ class CareerHierarchy extends Equatable {
       case 'aviation': // 항공직 (~500명)
       case 'broadcasting_stage': // 방송무대직 (~300명)
       case 'driving': // 운전직 (~5,000명, 신원 특정 가능)
-        return const CareerHierarchy(
+        return CareerHierarchy(
           specificCareer: specificCareer,
           level1: 'all', // 전체 라운지만 접근
         );
