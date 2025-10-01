@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../../profile/domain/lounge_info.dart';
+import '../../domain/services/lounge_access_service.dart';
+import 'lounge_detail_sheet.dart';
 
 class LoungeFloatingMenu extends StatefulWidget {
   const LoungeFloatingMenu({
@@ -413,6 +415,23 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                 ),
               ),
 
+              // 통합 라운지 정보 아이콘
+              if (_isUnifiedLounge(lounge)) ...[
+                const Gap(4),
+                InkWell(
+                  onTap: () => _showLoungeDetailSheet(context, lounge),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+
               // 선택 표시
               if (isSelected) ...[
                 const Gap(8),
@@ -426,6 +445,23 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
           ),
         ),
       ),
+    );
+  }
+
+  /// 통합 라운지 여부 확인
+  bool _isUnifiedLounge(LoungeInfo lounge) {
+    final requiredCareerIds = LoungeAccessService.getRequiredCareerIds(lounge.id);
+    return requiredCareerIds.length > 1;
+  }
+
+  /// 라운지 상세 정보 표시
+  void _showLoungeDetailSheet(BuildContext context, LoungeInfo lounge) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LoungeDetailSheet(lounge: lounge),
     );
   }
 

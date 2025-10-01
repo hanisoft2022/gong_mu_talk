@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'lounge_info.dart';
 import 'career_track.dart';
+import '../../community/domain/services/lounge_access_service.dart';
 
 /// 계층적 직렬 정보를 담는 클래스
 class CareerHierarchy extends Equatable {
@@ -28,505 +29,9 @@ class CareerHierarchy extends Equatable {
   final String? level4;
 
   /// 접근 가능한 모든 라운지 정보 반환
+  /// LoungeAccessService를 통해 중앙 집중식으로 관리
   List<LoungeInfo> get accessibleLounges {
-    final lounges = <LoungeInfo>[];
-
-    // 1단계: 전체 (항상 포함)
-    lounges.add(
-      const LoungeInfo(
-        id: 'all',
-        name: '전체',
-        emoji: '🏛️',
-        shortName: '전체',
-        memberCount: 1000000,
-        description: '모든 공무원이 참여하는 라운지',
-      ),
-    );
-
-    // 2단계 추가
-    if (level2 != null) {
-      lounges.add(_getLoungeInfoForLevel(level2!));
-    }
-
-    // 3단계 추가
-    if (level3 != null) {
-      lounges.add(_getLoungeInfoForLevel(level3!));
-    }
-
-    // 4단계 추가
-    if (level4 != null) {
-      lounges.add(_getLoungeInfoForLevel(level4!));
-    }
-
-    return lounges;
-  }
-
-  /// 특정 레벨의 라운지 정보 반환
-  LoungeInfo _getLoungeInfoForLevel(String levelId) {
-    switch (levelId) {
-      // 교육 분야
-      case 'teacher':
-        return const LoungeInfo(
-          id: 'teacher',
-          name: '교사',
-          emoji: '📚',
-          shortName: '교사',
-          memberCount: 430000,
-          description: '모든 교사가 참여하는 라운지',
-        );
-      case 'elementary_teacher':
-        return const LoungeInfo(
-          id: 'elementary_teacher',
-          name: '초등교사',
-          emoji: '🏫',
-          shortName: '초등교사',
-          memberCount: 180000,
-          description: '초등교사 전용 라운지',
-        );
-      case 'secondary_teacher':
-        return const LoungeInfo(
-          id: 'secondary_teacher',
-          name: '중등교사',
-          emoji: '🎓',
-          shortName: '중등교사',
-          memberCount: 200000,
-          description: '중등교사 전용 라운지',
-        );
-      case 'secondary_math_teacher':
-        return const LoungeInfo(
-          id: 'secondary_math_teacher',
-          name: '중등수학교사',
-          emoji: '📐',
-          shortName: '중등수학교사',
-          memberCount: 30000,
-          description: '중등 수학교사 전용 라운지',
-        );
-      case 'secondary_korean_teacher':
-        return const LoungeInfo(
-          id: 'secondary_korean_teacher',
-          name: '중등국어교사',
-          emoji: '📖',
-          shortName: '중등국어교사',
-          memberCount: 30000,
-          description: '중등 국어교사 전용 라운지',
-        );
-      case 'secondary_english_teacher':
-        return const LoungeInfo(
-          id: 'secondary_english_teacher',
-          name: '중등영어교사',
-          emoji: '🌍',
-          shortName: '중등영어교사',
-          memberCount: 25000,
-          description: '중등 영어교사 전용 라운지',
-        );
-      case 'secondary_science_teacher':
-        return const LoungeInfo(
-          id: 'secondary_science_teacher',
-          name: '중등과학교사',
-          emoji: '🔬',
-          shortName: '중등과학교사',
-          memberCount: 30000,
-          description: '중등 과학교사 전용 라운지',
-        );
-      case 'secondary_social_teacher':
-        return const LoungeInfo(
-          id: 'secondary_social_teacher',
-          name: '중등사회교사',
-          emoji: '🌏',
-          shortName: '중등사회교사',
-          memberCount: 25000,
-          description: '중등 사회교사 전용 라운지',
-        );
-      case 'secondary_arts_teacher':
-        return const LoungeInfo(
-          id: 'secondary_arts_teacher',
-          name: '중등예체능교사',
-          emoji: '🎨',
-          shortName: '중등예체능교사',
-          memberCount: 60000,
-          description: '중등 예체능교사 전용 라운지',
-        );
-
-      // 행정직
-      case 'admin':
-        return const LoungeInfo(
-          id: 'admin',
-          name: '행정직',
-          emoji: '🗂️',
-          shortName: '행정직',
-          memberCount: 280000,
-          description: '행정직 공무원 라운지',
-        );
-      case 'national_admin':
-        return const LoungeInfo(
-          id: 'national_admin',
-          name: '국가행정직',
-          emoji: '🏛️',
-          shortName: '국가행정직',
-          memberCount: 80000,
-          description: '국가직 행정공무원 라운지',
-        );
-      case 'local_admin':
-        return const LoungeInfo(
-          id: 'local_admin',
-          name: '지방행정직',
-          emoji: '🏢',
-          shortName: '지방행정직',
-          memberCount: 150000,
-          description: '지방직 행정공무원 라운지',
-        );
-      case 'admin_9th_national':
-        return const LoungeInfo(
-          id: 'admin_9th_national',
-          name: '9급 국가행정직',
-          emoji: '📋',
-          shortName: '9급 국가행정직',
-          memberCount: 30000,
-          description: '9급 국가직 행정공무원 라운지',
-        );
-      case 'admin_7th_national':
-        return const LoungeInfo(
-          id: 'admin_7th_national',
-          name: '7급 국가행정직',
-          emoji: '📊',
-          shortName: '7급 국가행정직',
-          memberCount: 30000,
-          description: '7급 국가직 행정공무원 라운지',
-        );
-      case 'admin_5th_national':
-        return const LoungeInfo(
-          id: 'admin_5th_national',
-          name: '5급 국가행정직',
-          emoji: '💼',
-          shortName: '5급 국가행정직',
-          memberCount: 20000,
-          description: '5급 국가직 행정공무원 라운지',
-        );
-      case 'admin_9th_local':
-        return const LoungeInfo(
-          id: 'admin_9th_local',
-          name: '9급 지방행정직',
-          emoji: '📋',
-          shortName: '9급 지방행정직',
-          memberCount: 80000,
-          description: '9급 지방직 행정공무원 라운지',
-        );
-      case 'admin_7th_local':
-        return const LoungeInfo(
-          id: 'admin_7th_local',
-          name: '7급 지방행정직',
-          emoji: '📊',
-          shortName: '7급 지방행정직',
-          memberCount: 50000,
-          description: '7급 지방직 행정공무원 라운지',
-        );
-      case 'admin_5th_local':
-        return const LoungeInfo(
-          id: 'admin_5th_local',
-          name: '5급 지방행정직',
-          emoji: '💼',
-          shortName: '5급 지방행정직',
-          memberCount: 20000,
-          description: '5급 지방직 행정공무원 라운지',
-        );
-
-      // 치안/안전
-      case 'police':
-        return const LoungeInfo(
-          id: 'police',
-          name: '경찰관',
-          emoji: '👮‍♂️',
-          shortName: '경찰관',
-          memberCount: 120000,
-          description: '경찰관 전용 라운지',
-        );
-      case 'firefighter':
-        return const LoungeInfo(
-          id: 'firefighter',
-          name: '소방관',
-          emoji: '👨‍🚒',
-          shortName: '소방관',
-          memberCount: 50000,
-          description: '소방관 전용 라운지',
-        );
-      case 'coast_guard':
-        return const LoungeInfo(
-          id: 'coast_guard',
-          name: '해양경찰',
-          emoji: '🌊',
-          shortName: '해양경찰',
-          memberCount: 10000,
-          description: '해양경찰 전용 라운지',
-        );
-
-      // 군인
-      case 'military':
-        return const LoungeInfo(
-          id: 'military',
-          name: '군인',
-          emoji: '🎖️',
-          shortName: '군인',
-          memberCount: 80000,
-          description: '군인 전용 라운지',
-        );
-      case 'army':
-        return const LoungeInfo(
-          id: 'army',
-          name: '육군',
-          emoji: '🪖',
-          shortName: '육군',
-          memberCount: 50000,
-          description: '육군 전용 라운지',
-        );
-      case 'navy':
-        return const LoungeInfo(
-          id: 'navy',
-          name: '해군',
-          emoji: '⚓',
-          shortName: '해군',
-          memberCount: 15000,
-          description: '해군 전용 라운지',
-        );
-      case 'air_force':
-        return const LoungeInfo(
-          id: 'air_force',
-          name: '공군',
-          emoji: '✈️',
-          shortName: '공군',
-          memberCount: 15000,
-          description: '공군 전용 라운지',
-        );
-
-      // ================================
-      // 교육공무원 (추가 라운지)
-      // ================================
-
-      case 'kindergarten_teacher':
-        return const LoungeInfo(
-          id: 'kindergarten_teacher',
-          name: '유치원교사',
-          emoji: '👶',
-          shortName: '유치원교사',
-          memberCount: 5000,
-          description: '유치원교사 전용 라운지',
-        );
-      case 'special_education_teacher':
-        return const LoungeInfo(
-          id: 'special_education_teacher',
-          name: '특수교육교사',
-          emoji: '🤝',
-          shortName: '특수교육교사',
-          memberCount: 4000,
-          description: '특수교육교사 전용 라운지',
-        );
-      case 'non_subject_teacher':
-        return const LoungeInfo(
-          id: 'non_subject_teacher',
-          name: '비교과교사',
-          emoji: '💼',
-          shortName: '비교과교사',
-          memberCount: 15000,
-          description: '상담·보건·사서·영양 교사 라운지',
-        );
-
-      // ================================
-      // 행정직 (추가 라운지)
-      // ================================
-
-      case 'tax_customs':
-        return const LoungeInfo(
-          id: 'tax_customs',
-          name: '세무·관세직',
-          emoji: '💰',
-          shortName: '세무·관세직',
-          memberCount: 25000,
-          description: '세무직 및 관세직 공무원 라운지',
-        );
-      case 'specialized_admin':
-        return const LoungeInfo(
-          id: 'specialized_admin',
-          name: '전문행정직',
-          emoji: '📋',
-          shortName: '전문행정직',
-          memberCount: 30000,
-          description: '고용노동·통계·사서·감사·방호직 라운지',
-        );
-
-      // ================================
-      // 보건복지직 (Health & Welfare)
-      // ================================
-
-      case 'health_welfare':
-        return const LoungeInfo(
-          id: 'health_welfare',
-          name: '보건복지직',
-          emoji: '🏥',
-          shortName: '보건복지직',
-          memberCount: 80000,
-          description: '보건·의료·간호·약무·복지직 라운지',
-        );
-
-      // ================================
-      // 공안직 (Public Security)
-      // ================================
-
-      case 'public_security':
-        return const LoungeInfo(
-          id: 'public_security',
-          name: '공안직',
-          emoji: '⚖️',
-          shortName: '공안직',
-          memberCount: 50000,
-          description: '교정·검찰·마약수사·출입국관리직 라운지',
-        );
-
-      // ================================
-      // 군인 (추가)
-      // ================================
-
-      case 'military_civilian':
-        return const LoungeInfo(
-          id: 'military_civilian',
-          name: '군무원',
-          emoji: '🎖️',
-          shortName: '군무원',
-          memberCount: 30000,
-          description: '군무원 전용 라운지',
-        );
-
-      // ================================
-      // 기술직 (Technical Tracks)
-      // ================================
-
-      case 'technical':
-        return const LoungeInfo(
-          id: 'technical',
-          name: '기술직',
-          emoji: '⚙️',
-          shortName: '기술직',
-          memberCount: 300000,
-          description: '모든 기술직 공무원 라운지',
-        );
-      case 'industrial_engineer':
-        return const LoungeInfo(
-          id: 'industrial_engineer',
-          name: '공업직',
-          emoji: '⚙️',
-          shortName: '공업직',
-          memberCount: 50000,
-          description: '기계·전기·전자·화공직 등 공업 기술직',
-        );
-      case 'facilities_environment':
-        return const LoungeInfo(
-          id: 'facilities_environment',
-          name: '시설환경직',
-          emoji: '🏗️',
-          shortName: '시설환경직',
-          memberCount: 47000,
-          description: '토목·건축·환경직 등 시설환경 기술직',
-        );
-      case 'agriculture_forestry_fisheries':
-        return const LoungeInfo(
-          id: 'agriculture_forestry_fisheries',
-          name: '농림수산직',
-          emoji: '🌾',
-          shortName: '농림수산직',
-          memberCount: 70000,
-          description: '농업·수산·축산·수의직 등',
-        );
-      case 'it_communications':
-        return const LoungeInfo(
-          id: 'it_communications',
-          name: 'IT통신직',
-          emoji: '💻',
-          shortName: 'IT통신직',
-          memberCount: 20000,
-          description: '전산·방송통신직 라운지',
-        );
-      case 'management_operations':
-        return const LoungeInfo(
-          id: 'management_operations',
-          name: '관리운영직',
-          emoji: '🏢',
-          shortName: '관리운영직',
-          memberCount: 35000,
-          description: '시설관리·위생·조리직 라운지',
-        );
-
-      // ================================
-      // 기타 직렬
-      // ================================
-
-      case 'postal_service':
-        return const LoungeInfo(
-          id: 'postal_service',
-          name: '우정직',
-          emoji: '📮',
-          shortName: '우정직',
-          memberCount: 50000,
-          description: '우정직 공무원 라운지',
-        );
-      case 'researcher':
-        return const LoungeInfo(
-          id: 'researcher',
-          name: '연구직',
-          emoji: '🔬',
-          shortName: '연구직',
-          memberCount: 20000,
-          description: '연구직 공무원 라운지',
-        );
-
-      // ================================
-      // Legacy (기존 호환성)
-      // ================================
-
-      case 'legal_correction':
-        return const LoungeInfo(
-          id: 'legal_correction',
-          name: '법무/교정직',
-          emoji: '⚖️',
-          shortName: '법무/교정직',
-          memberCount: 10000,
-          description: '법무/교정직 공무원 라운지',
-        );
-      case 'security_protection':
-        return const LoungeInfo(
-          id: 'security_protection',
-          name: '교정/보안직',
-          emoji: '🔒',
-          shortName: '교정/보안직',
-          memberCount: 15000,
-          description: '교정/보안직 공무원 라운지',
-        );
-      case 'diplomatic_international':
-        return const LoungeInfo(
-          id: 'diplomatic_international',
-          name: '외교/국제직',
-          emoji: '🌍',
-          shortName: '외교/국제직',
-          memberCount: 4000,
-          description: '외교/국제직 공무원 라운지',
-        );
-      case 'independent_agencies':
-        return const LoungeInfo(
-          id: 'independent_agencies',
-          name: '독립기관',
-          emoji: '🏛️',
-          shortName: '독립기관',
-          memberCount: 5000,
-          description: '독립기관 공무원 라운지',
-        );
-
-      default:
-        return LoungeInfo(
-          id: levelId,
-          name: levelId,
-          emoji: '❓',
-          shortName: levelId,
-          memberCount: 0,
-          description: '알 수 없는 직렬',
-        );
-    }
+    return LoungeAccessService.convertToLoungeInfos(this);
   }
 
   /// 기존 CareerTrack enum과의 호환성을 위한 변환
@@ -534,6 +39,8 @@ class CareerHierarchy extends Equatable {
     switch (level2) {
       case 'teacher':
         return CareerTrack.teacher;
+      case 'education_admin':
+        return CareerTrack.educationAdmin;
       case 'admin':
         return CareerTrack.publicAdministration;
       case 'police':
@@ -541,6 +48,7 @@ class CareerHierarchy extends Equatable {
       case 'firefighter':
         return CareerTrack.firefighter;
       case 'legal_correction':
+      case 'legal_profession':
         return CareerTrack.customs; // 임시 매핑
       default:
         return CareerTrack.none;
@@ -906,13 +414,134 @@ class CareerHierarchy extends Equatable {
         );
 
       // ================================
+      // 교육행정직 (Education Administrative)
+      // ================================
+
+      // 국가 교육행정직
+      case 'education_admin_9th_national':
+        return const CareerHierarchy(
+          specificCareer: 'education_admin_9th_national',
+          level1: 'all',
+          level2: 'education_admin',
+          level3: 'national_education_admin',
+          level4: 'education_admin_9th_national',
+        );
+      case 'education_admin_7th_national':
+        return const CareerHierarchy(
+          specificCareer: 'education_admin_7th_national',
+          level1: 'all',
+          level2: 'education_admin',
+          level3: 'national_education_admin',
+          level4: 'education_admin_7th_national',
+        );
+
+      // 지방 교육행정직
+      case 'education_admin_9th_local':
+        return const CareerHierarchy(
+          specificCareer: 'education_admin_9th_local',
+          level1: 'all',
+          level2: 'education_admin',
+          level3: 'local_education_admin',
+          level4: 'education_admin_9th_local',
+        );
+      case 'education_admin_7th_local':
+        return const CareerHierarchy(
+          specificCareer: 'education_admin_7th_local',
+          level1: 'all',
+          level2: 'education_admin',
+          level3: 'local_education_admin',
+          level4: 'education_admin_7th_local',
+        );
+
+      // ================================
+      // 법조직 (Legal Profession)
+      // ================================
+
+      case 'judge':
+      case 'prosecutor':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'legal_profession',
+        );
+
+      // ================================
+      // 외교직 (Diplomatic Service)
+      // ================================
+
+      case 'diplomat_5th':
+      case 'diplomat_consular':
+      case 'diplomat_3rd':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'diplomat',
+        );
+
+      // ================================
+      // 문화예술직 (Culture & Arts)
+      // ================================
+
+      case 'curator':
+      case 'cultural_heritage':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'culture_arts',
+        );
+
+      // ================================
+      // 과학기술 전문직 (Science & Technology Specialized)
+      // ================================
+
+      case 'meteorologist':
+      case 'disaster_safety':
+      case 'nursing_assistant':
+      case 'health_care':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'science_technology_specialized',
+        );
+
+      // ================================
+      // 독립기관직 (Independent Agencies)
+      // ================================
+
+      case 'national_assembly':
+      case 'constitutional_court':
+      case 'election_commission':
+      case 'audit_board':
+      case 'human_rights_commission':
+        return CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all',
+          level2: 'independent_agencies',
+        );
+
+      // ================================
+      // 프라이버시 보호 직렬 (Privacy Protected - All Lounge Only)
+      // 소규모 직렬(1,000명 미만) 또는 보안 민감 직렬
+      // ================================
+
+      case 'constitutional_researcher': // 헌법연구관 (~50명)
+      case 'security_service': // 경호공무원 (~500명)
+      case 'intelligence_service': // 국가정보원 (보안 민감)
+      case 'aviation': // 항공직 (~500명)
+      case 'broadcasting_stage': // 방송무대직 (~300명)
+      case 'driving': // 운전직 (~5,000명, 신원 특정 가능)
+        return const CareerHierarchy(
+          specificCareer: specificCareer,
+          level1: 'all', // 전체 라운지만 접근
+        );
+
+      // ================================
       // Fallback / Legacy
       // ================================
 
       case 'legal_correction':
       case 'security_protection':
       case 'diplomatic_international':
-      case 'independent_agencies':
         return CareerHierarchy(
           specificCareer: specificCareer,
           level1: 'all',

@@ -71,6 +71,15 @@ class LoungeAccessService {
     )).toList();
   }
 
+  /// Lounge 정보에서 접근 가능한 직렬 목록 가져오기 (UI용)
+  static List<String> getRequiredCareerIds(String loungeId) {
+    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+      (l) => l.id == loungeId,
+      orElse: () => LoungeDefinitions.defaultLounges.first,
+    );
+    return lounge.requiredCareerIds;
+  }
+
   /// 직렬별 라운지 맵핑 정의 - 급여명세서 키워드와 라운지 연결
   static Map<String, List<String>> get careerToLoungeMapping => {
     // ================================
