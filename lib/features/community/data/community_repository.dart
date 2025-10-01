@@ -80,6 +80,15 @@ class CommunityRepository {
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
 
+  // Like/Bookmark 캐시 (비용 최적화)
+  final Map<String, Set<String>> _likedPostsCache = {};
+  final Map<String, Set<String>> _bookmarkedPostsCache = {};
+  DateTime? _lastCacheUpdate;
+
+  // 검색 Rate Limiting (비용 최적화)
+  DateTime? _lastSearchTime;
+  static const Duration _searchCooldown = Duration(seconds: 2);
+
   late final PostRepository _postRepository;
   late final CommentRepository _commentRepository;
   late final InteractionRepository _interactionRepository;
@@ -447,8 +456,20 @@ class CommunityRepository {
   Future<bool> togglePostLike({
     required String postId,
     required String uid,
-  }) {
-    return _interactionRepository.togglePostLike(postId: postId, uid: uid);
+  }) async {
+    final liked = await _interactionRepository.togglePostLike(postId: postId, uid: uid);
+    
+    // 캐시 즉시 업데이트
+    if (_likedPostsCache.containsKey(uid)) {
+      if (liked) {
+        _likedPostsCache[uid]!.add(postId);
+      } else {
+        _likedPostsCache[uid]!.remove(postId);
+      }
+      debugPrint('💾 Like 캐시 업데이트 - postId: $postId, liked: $liked');
+    }
+    
+    return liked;
   }
 
   Future<bool> toggleCommentLike({
@@ -466,8 +487,19 @@ class CommunityRepository {
   Future<void> toggleBookmark({
     required String uid,
     required String postId,
-  }) {
-    return _interactionRepository.toggleBookmark(uid: uid, postId: postId);
+  }) async {
+    await _interactionRepository.toggleBookmark(uid: uid, postId: postId);
+    
+    // 캐시 즉시 업데이트 (토글이므로 존재 여부 확인)
+    if (_bookmarkedPostsCache.containsKey(uid)) {
+      if (_bookmarkedPostsCache[uid]!.contains(postId)) {
+        _bookmarkedPostsCache[uid]!.remove(postId);
+        debugPrint('💾 Bookmark 캐시 업데이트 - postId: $postId, bookmarked: false');
+      } else {
+        _bookmarkedPostsCache[uid]!.add(postId);
+        debugPrint('💾 Bookmark 캐시 업데이트 - postId: $postId, bookmarked: true');
+      }
+    }
   }
 
   Future<Set<String>> fetchBookmarkedPostIds(String uid) {
@@ -520,6 +552,44 @@ class CommunityRepository {
   }
 
   Future<void> toggleCommentLikeById(String postId, String commentId) async {
+
+  // ============================================================================
+  // CACHE MANAGEMENT - Performance optimization
+  // ============================================================================
+
+  /// Like/Bookmark 캐시 초기화 (로그아웃 시 호출)
+  void clearInteractionCache({String? uid}) {
+    if (uid != null) {
+      _likedPostsCache.remove(uid);
+      _bookmarkedPostsCache.remove(uid);
+      debugPrint('🗑️  Like/Bookmark 캐시 삭제 - uid: $uid');
+    } else {
+      _likedPostsCache.clear();
+      _bookmarkedPostsCache.clear();
+      _lastCacheUpdate = null;
+      debugPrint('🗑️  모든 Like/Bookmark 캐시 삭제');
+    }
+  }
+
+  /// 특정 사용자의 캐시 강제 갱신
+  Future<void> refreshInteractionCache(String uid, List<String> postIds) async {
+    if (postIds.isEmpty) return;
+
+    final likedIds = await _interactionRepository.fetchLikedPostIds(
+      uid: uid,
+      postIds: postIds,
+    );
+    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
+      uid: uid,
+      postIds: postIds,
+    );
+
+    _likedPostsCache[uid] = likedIds;
+    _bookmarkedPostsCache[uid] = bookmarkedIds;
+    _lastCacheUpdate = DateTime.now();
+
+    debugPrint('🔄 Like/Bookmark 캐시 강제 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
+  }
     await toggleCommentLike(
       postId: postId,
       commentId: commentId,
@@ -538,6 +608,13 @@ class CommunityRepository {
     int commentLimit = 20,
     String? currentUid,
   }) async {
+    // Rate Limiting: 2초 이내 재검색 방지
+    final now = DateTime.now();
+    if (_lastSearchTime != null && now.difference(_lastSearchTime!) < _searchCooldown) {
+      debugPrint('⚠️  검색 Rate Limit - ${_searchCooldown.inSeconds}초 대기 필요');
+      return const CommunitySearchResults();
+    }
+    _lastSearchTime = now;
     final results = await _searchRepository.searchCommunity(
       query: query,
       scope: scope,
@@ -658,14 +735,49 @@ class CommunityRepository {
     if (currentUid == null) return posts;
 
     final postIds = posts.map((p) => p.id).toList();
-    final likedIds = await _interactionRepository.fetchLikedPostIds(
-      uid: currentUid,
-      postIds: postIds,
-    );
-    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
-      uid: currentUid,
-      postIds: postIds,
-    );
+
+    // 캐시 사용 (5분 유효)
+    final now = DateTime.now();
+    final shouldRefreshCache = _lastCacheUpdate == null ||
+        now.difference(_lastCacheUpdate!) > const Duration(minutes: 5);
+
+    Set<String> likedIds;
+    Set<String> bookmarkedIds;
+
+    if (shouldRefreshCache || !_likedPostsCache.containsKey(currentUid)) {
+      // 캐시 갱신 필요
+      likedIds = await _interactionRepository.fetchLikedPostIds(
+        uid: currentUid,
+        postIds: postIds,
+      );
+      bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
+        uid: currentUid,
+        postIds: postIds,
+      );
+
+      // 캐시 업데이트 (병합 방식)
+      _likedPostsCache[currentUid] = {
+        ...(_likedPostsCache[currentUid] ?? {}),
+        ...likedIds,
+      };
+      _bookmarkedPostsCache[currentUid] = {
+        ...(_bookmarkedPostsCache[currentUid] ?? {}),
+        ...bookmarkedIds,
+      };
+      _lastCacheUpdate = now;
+
+      debugPrint('🔄 Like/Bookmark 캐시 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
+    } else {
+      // 캐시에서 가져오기
+      likedIds = _likedPostsCache[currentUid]!
+          .where((id) => postIds.contains(id))
+          .toSet();
+      bookmarkedIds = _bookmarkedPostsCache[currentUid]!
+          .where((id) => postIds.contains(id))
+          .toSet();
+
+      debugPrint('✅ Like/Bookmark 캐시 사용 - Firestore 호출 없음');
+    }
 
     final enriched = <Post>[];
     for (final post in posts) {
