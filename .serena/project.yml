@@ -5,7 +5,7 @@ language_server_config:
   dart:
     command: dart
     args: ["language-server", "--protocol=lsp"]
-    root_path: /Users/shaunkim/Documents/gong_mu_talk/gong_mu_talk
+    root_path: /Users/shaunkim/Downloads/async/coding/gong_mu_talk/gong_mu_talk
 include_paths:
   - lib/
   - test/
