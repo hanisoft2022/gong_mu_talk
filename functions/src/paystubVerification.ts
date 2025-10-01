@@ -63,7 +63,10 @@ const ENHANCED_TRACK_KEYWORDS: Array<{
   },
   {
     track: "secondary_arts_teacher",
-    keywords: ["교사(중등)", "중등교사", "중등", "체육", "음악", "미술", "기술", "가정", "한문", "제2외국어"],
+    keywords: [
+      "교사(중등)", "중등교사", "중등", "체육", "음악", "미술",
+      "기술", "가정", "한문", "제2외국어",
+    ],
     institutionKeywords: ["중학교", "고등학교", "중·고등학교"],
     priority: 10,
   },
@@ -118,12 +121,30 @@ const ENHANCED_TRACK_KEYWORDS: Array<{
     priority: 9,
   },
 
-  // 교육행정직 (Priority 8)
+  // 교육행정직 - 국가직/지방직 (Priority 9)
   {
-    track: "education_admin",
-    keywords: ["교육행정", "교육공무원", "교육전문직"],
-    institutionKeywords: ["교육청", "교육지원청", "교육부"],
-    priority: 8,
+    track: "education_admin_9th_national",
+    keywords: ["9급", "서기보", "교육행정", "국가직"],
+    institutionKeywords: ["교육부", "교육청"],
+    priority: 9,
+  },
+  {
+    track: "education_admin_7th_national",
+    keywords: ["7급", "주사보", "교육행정", "국가직"],
+    institutionKeywords: ["교육부", "교육청"],
+    priority: 9,
+  },
+  {
+    track: "education_admin_9th_local",
+    keywords: ["9급", "서기보", "교육행정", "지방직"],
+    institutionKeywords: ["교육청", "교육지원청"],
+    priority: 9,
+  },
+  {
+    track: "education_admin_7th_local",
+    keywords: ["7급", "주사보", "교육행정", "지방직"],
+    institutionKeywords: ["교육청", "교육지원청"],
+    priority: 9,
   },
 
   // ================================
@@ -313,6 +334,46 @@ const ENHANCED_TRACK_KEYWORDS: Array<{
     keywords: ["경위직", "경비", "경호"],
     institutionKeywords: ["국회", "법원", "헌법재판소"],
     priority: 8,
+  },
+
+  // ================================
+  // 법조직 (Legal Profession)
+  // ================================
+
+  {
+    track: "judge",
+    keywords: ["판사", "법관", "재판연구원"],
+    institutionKeywords: ["법원", "대법원", "고등법원", "지방법원"],
+    priority: 10,
+  },
+  {
+    track: "prosecutor",
+    keywords: ["검사", "검사장", "차장검사", "부장검사"],
+    institutionKeywords: ["검찰청", "지방검찰청", "고등검찰청", "대검찰청"],
+    priority: 10,
+  },
+
+  // ================================
+  // 외교직 (Diplomatic Service)
+  // ================================
+
+  {
+    track: "diplomat_5th",
+    keywords: ["5급", "외무영사직", "외교관", "외교"],
+    institutionKeywords: ["외교부", "대사관", "영사관"],
+    priority: 9,
+  },
+  {
+    track: "diplomat_consular",
+    keywords: ["영사직", "영사"],
+    institutionKeywords: ["외교부", "영사관", "대사관"],
+    priority: 9,
+  },
+  {
+    track: "diplomat_3rd",
+    keywords: ["3급", "외무영사직", "외교관", "외교"],
+    institutionKeywords: ["외교부", "대사관"],
+    priority: 9,
   },
 
   // ================================
@@ -564,6 +625,87 @@ const ENHANCED_TRACK_KEYWORDS: Array<{
     keywords: ["조리직", "조리", "급식"],
     institutionKeywords: ["학교", "청사", "복지관"],
     priority: 6,
+  },
+
+  // ================================
+  // 문화예술직 (Culture & Arts)
+  // ================================
+
+  {
+    track: "curator",
+    keywords: ["학예직", "학예사", "학예연구사", "박물관", "미술관"],
+    institutionKeywords: ["박물관", "미술관", "문화재청", "문화체육관광부"],
+    priority: 7,
+  },
+  {
+    track: "cultural_heritage",
+    keywords: ["문화재직", "문화재", "문화재수리", "문화재보존"],
+    institutionKeywords: ["문화재청", "문화재연구소"],
+    priority: 7,
+  },
+
+  // ================================
+  // 과학기술 전문직 (Science & Technology Specialized)
+  // ================================
+
+  {
+    track: "meteorologist",
+    keywords: ["기상직", "기상", "기상예보관", "기상연구사"],
+    institutionKeywords: ["기상청", "기상과학원"],
+    priority: 7,
+  },
+  {
+    track: "disaster_safety",
+    keywords: ["재난안전직", "재난안전", "안전관리", "재난관리"],
+    institutionKeywords: ["행정안전부", "소방청", "시청", "도청"],
+    priority: 7,
+  },
+  {
+    track: "nursing_assistant",
+    keywords: ["간호조무직", "간호조무사"],
+    institutionKeywords: ["보건소", "병원", "의료원"],
+    priority: 6,
+  },
+  {
+    track: "health_care",
+    keywords: ["요양보호직", "요양보호사", "돌봄"],
+    institutionKeywords: ["보건소", "복지관", "요양원"],
+    priority: 6,
+  },
+
+  // ================================
+  // 독립기관 (Independent Agencies)
+  // ================================
+
+  {
+    track: "national_assembly",
+    keywords: ["국회직", "국회", "국회사무처"],
+    institutionKeywords: ["국회", "국회사무처"],
+    priority: 8,
+  },
+  {
+    track: "constitutional_court",
+    keywords: ["헌법재판소", "헌재"],
+    institutionKeywords: ["헌법재판소"],
+    priority: 8,
+  },
+  {
+    track: "election_commission",
+    keywords: ["선거관리위원회", "선관위", "선거"],
+    institutionKeywords: ["선거관리위원회", "중앙선거관리위원회"],
+    priority: 8,
+  },
+  {
+    track: "audit_board",
+    keywords: ["감사원"],
+    institutionKeywords: ["감사원"],
+    priority: 8,
+  },
+  {
+    track: "human_rights_commission",
+    keywords: ["국가인권위원회", "인권위원회", "인권"],
+    institutionKeywords: ["국가인권위원회"],
+    priority: 8,
   },
 
   // ================================
@@ -907,9 +1049,9 @@ function generateCareerHierarchy(
       level3: "non_subject_teacher",
     };
 
-  // ================================
-  // 일반행정직 (General Administrative)
-  // ================================
+    // ================================
+    // 일반행정직 (General Administrative)
+    // ================================
 
   // 국가직 (National)
   case "admin_9th_national":
@@ -973,9 +1115,9 @@ function generateCareerHierarchy(
       level3: "tax_customs",
     };
 
-  // ================================
-  // 전문행정직 (Specialized Administrative)
-  // ================================
+    // ================================
+    // 전문행정직 (Specialized Administrative)
+    // ================================
 
   case "job_counselor":
   case "statistics_officer":
@@ -989,9 +1131,9 @@ function generateCareerHierarchy(
       level3: "specialized_admin",
     };
 
-  // ================================
-  // 보건복지직 (Health & Welfare)
-  // ================================
+    // ================================
+    // 보건복지직 (Health & Welfare)
+    // ================================
 
   case "public_health_officer":
   case "medical_technician":
@@ -1006,9 +1148,9 @@ function generateCareerHierarchy(
       level2: "health_welfare",
     };
 
-  // ================================
-  // 공안직 (Public Security)
-  // ================================
+    // ================================
+    // 공안직 (Public Security)
+    // ================================
 
   case "correction_officer":
   case "probation_officer":
@@ -1023,9 +1165,9 @@ function generateCareerHierarchy(
       level2: "public_security",
     };
 
-  // ================================
-  // 치안/안전 (Public Safety)
-  // ================================
+    // ================================
+    // 치안/안전 (Public Safety)
+    // ================================
 
   case "police":
     return {
@@ -1046,9 +1188,9 @@ function generateCareerHierarchy(
       level2: "coast_guard",
     };
 
-  // ================================
-  // 군인 (Military)
-  // ================================
+    // ================================
+    // 군인 (Military)
+    // ================================
 
   case "army":
     return {
@@ -1079,9 +1221,9 @@ function generateCareerHierarchy(
       level3: "military_civilian",
     };
 
-  // ================================
-  // 기술직 (Technical Tracks)
-  // ================================
+    // ================================
+    // 기술직 (Technical Tracks)
+    // ================================
 
   // 공업직 (Industrial/Engineering) - 통합 라운지
   case "mechanical_engineer":
@@ -1152,9 +1294,9 @@ function generateCareerHierarchy(
       level3: "management_operations",
     };
 
-  // ================================
-  // 기타 직렬 (Others)
-  // ================================
+    // ================================
+    // 기타 직렬 (Others)
+    // ================================
 
   case "postal_service":
     return {
@@ -1169,9 +1311,9 @@ function generateCareerHierarchy(
       level2: "researcher",
     };
 
-  // ================================
-  // Fallback - 일반 직렬
-  // ================================
+    // ================================
+    // Fallback - 일반 직렬
+    // ================================
 
   case "teacher":
     return {
@@ -1373,10 +1515,14 @@ function getLoungeIdsFromCareer(careerTrack: string): string[] {
     livestock_officer: ["all", "technical", "agriculture_forestry_fisheries"],
     forestry_officer: ["all", "technical", "agriculture_forestry_fisheries"],
     marine_officer: ["all", "technical", "agriculture_forestry_fisheries"],
-    fisheries_officer: ["all", "technical", "agriculture_forestry_fisheries"],
+    fisheries_officer: [
+      "all", "technical", "agriculture_forestry_fisheries",
+    ],
     ship_officer: ["all", "technical", "agriculture_forestry_fisheries"],
     veterinarian: ["all", "technical", "agriculture_forestry_fisheries"],
-    agricultural_extension: ["all", "technical", "agriculture_forestry_fisheries"],
+    agricultural_extension: [
+      "all", "technical", "agriculture_forestry_fisheries",
+    ],
 
     // IT통신직 (IT & Communications) - 통합 라운지
     computer_officer: ["all", "technical", "it_communications"],
