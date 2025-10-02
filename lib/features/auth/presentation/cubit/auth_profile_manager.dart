@@ -1,6 +1,7 @@
 /// Extracted from auth_cubit.dart for better file organization
 /// Manages user profile subscription and updates
 
+library;
 import 'dart:async';
 
 

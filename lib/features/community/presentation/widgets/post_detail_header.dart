@@ -5,6 +5,7 @@
 /// - Provides popup menu for post actions (edit, delete, report, block)
 /// - Handles menu action selection and delegates to callbacks
 
+library;
 import 'package:flutter/material.dart';
 import '../../domain/models/post.dart';
 import 'post_card.dart';

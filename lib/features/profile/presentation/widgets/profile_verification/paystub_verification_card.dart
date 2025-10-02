@@ -9,6 +9,7 @@
  *
  * Phase 4 - Extracted from profile_page.dart
  */
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

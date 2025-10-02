@@ -24,6 +24,7 @@
 /// - Backend sync for notification preferences
 /// - Push notification token management
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

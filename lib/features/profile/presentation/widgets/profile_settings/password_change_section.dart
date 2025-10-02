@@ -25,6 +25,7 @@
 /// - Current password required for verification
 /// - Secure password update via AuthCubit
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';

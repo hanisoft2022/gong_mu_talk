@@ -31,6 +31,7 @@
 /// - test_career_selector.dart: Test mode career selection
 /// - ../../constants/test_careers.dart: Career options list
 
+library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';

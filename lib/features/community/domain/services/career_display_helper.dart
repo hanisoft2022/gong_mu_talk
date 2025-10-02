@@ -1,4 +1,5 @@
 /// 직렬 그룹 정보
+library;
 class CareerGroup {
   const CareerGroup({
     required this.name,

@@ -12,6 +12,7 @@
  *
  * File Size: ~60 lines (Green Zone ✅)
  */
+library;
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';

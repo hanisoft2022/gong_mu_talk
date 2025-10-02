@@ -3,6 +3,7 @@
 /// Extracted widgets moved to separate files for better organization
 /// Target: ≤400 lines (UI file guideline)
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';

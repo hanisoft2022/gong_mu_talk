@@ -12,6 +12,7 @@
  *
  * File Size: ~110 lines (Green Zone ✅)
  */
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

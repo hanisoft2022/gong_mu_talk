@@ -1,6 +1,7 @@
 /// Extracted from teacher_salary_insight_page.dart for better file organization
 /// This widget displays the annual salary projection table
 
+library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';

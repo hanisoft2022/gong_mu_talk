@@ -1,6 +1,7 @@
 /// Extracted from auth_cubit.dart for better file organization
 /// Helper methods for auth cubit operations
 
+library;
 import '../../../profile/domain/career_track.dart';
 
 class AuthCubitHelpers {

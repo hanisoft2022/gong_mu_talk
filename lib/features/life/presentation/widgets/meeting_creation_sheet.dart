@@ -1,6 +1,7 @@
 /// Extracted from life_home_page.dart for better file organization
 /// This widget displays the meeting creation bottom sheet form
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 

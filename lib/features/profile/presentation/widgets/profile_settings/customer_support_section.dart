@@ -27,9 +27,9 @@
 /// - Subject: [공무톡] 사용자 피드백
 /// - Body: User info + feedback content
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';

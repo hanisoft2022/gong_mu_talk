@@ -1,6 +1,7 @@
 /// Extracted from teacher_salary_insight_page.dart for better file organization
 /// This widget displays a single salary metric with label and value
 
+library;
 import 'package:flutter/material.dart';
 
 class SalarySummaryMetric extends StatelessWidget {

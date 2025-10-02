@@ -1,6 +1,7 @@
 /// Extracted from match_preferences.dart for better file organization
 /// Enum types for matching preferences
 
+library;
 import 'package:collection/collection.dart';
 
 enum AgeBand {

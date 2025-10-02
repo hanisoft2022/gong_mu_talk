@@ -1,6 +1,7 @@
 /// Extracted from teacher_salary_insight_page.dart for better file organization
 /// This widget displays a slider for adjusting projection parameters
 
+library;
 import 'package:flutter/material.dart';
 
 class ProjectionSlider extends StatelessWidget {

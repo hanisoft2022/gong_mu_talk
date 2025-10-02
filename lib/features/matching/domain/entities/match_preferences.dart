@@ -2,6 +2,7 @@
 /// Main match preferences entity - enums extracted to separate files
 /// Target: ≤200 lines (domain file guideline)
 
+library;
 import 'package:equatable/equatable.dart';
 
 import 'match_preference_enums.dart';

@@ -8,6 +8,7 @@
 /// - Displays loading state during submission
 /// - Adjusts padding for keyboard visibility
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';

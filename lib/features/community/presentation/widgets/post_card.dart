@@ -20,6 +20,7 @@
 /// - Handle image uploads for comments
 /// - Manage author menu overlay
 
+library;
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';

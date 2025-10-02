@@ -1,6 +1,7 @@
 /// Extracted from teacher_salary_insight_page.dart for better file organization
 /// This widget displays the input form for salary components
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

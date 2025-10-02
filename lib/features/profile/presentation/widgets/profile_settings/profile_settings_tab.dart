@@ -32,6 +32,7 @@
 /// - All section widgets in profile_settings/ directory
 /// - AuthCubit for authentication operations
 
+library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';

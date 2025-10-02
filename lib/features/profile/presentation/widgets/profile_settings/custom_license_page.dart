@@ -20,6 +20,7 @@
 /// - Individual license cards with preview
 /// - Full license text in dialog
 
+library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';

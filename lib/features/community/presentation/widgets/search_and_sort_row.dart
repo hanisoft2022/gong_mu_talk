@@ -5,6 +5,7 @@
 /// - Display sort buttons
 /// - Coordinate layout between search and sort controls
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';

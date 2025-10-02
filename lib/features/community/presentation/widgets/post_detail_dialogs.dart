@@ -6,6 +6,7 @@
 /// - Shows block user confirmation dialog
 /// - Handles dialog interactions and callbacks
 
+library;
 import 'package:flutter/material.dart';
 
 class PostDetailDialogs {

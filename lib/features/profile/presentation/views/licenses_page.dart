@@ -13,6 +13,7 @@
  *
  * File Size: ~250 lines (Green Zone ✅)
  */
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

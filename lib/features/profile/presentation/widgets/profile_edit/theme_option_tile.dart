@@ -12,6 +12,7 @@
  *
  * File Size: ~50 lines (Green Zone ✅)
  */
+library;
 
 import 'package:flutter/material.dart';
 

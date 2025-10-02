@@ -2,6 +2,7 @@
 /// Main auth cubit - extracted helper methods to separate files
 /// Target: ≤300 lines (logic file guideline)
 
+library;
 import 'dart:async';
 import 'dart:typed_data';
 

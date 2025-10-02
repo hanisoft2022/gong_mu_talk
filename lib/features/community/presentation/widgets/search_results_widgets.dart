@@ -7,6 +7,7 @@
 /// - Error state for search
 /// - Posts and comments results rendering
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 

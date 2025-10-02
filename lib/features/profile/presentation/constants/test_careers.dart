@@ -19,6 +19,7 @@
 /// - Technical Tracks (기술직)
 /// - Others (기타)
 
+library;
 const List<Map<String, String>> testCareers = [
   // ================================
   // 교육공무원 (Education Officials)

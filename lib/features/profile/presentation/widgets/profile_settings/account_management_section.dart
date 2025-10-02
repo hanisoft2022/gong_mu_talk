@@ -27,6 +27,7 @@
 /// 5. Dialog closes automatically
 /// 6. User is logged out and redirected
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';

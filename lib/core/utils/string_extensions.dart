@@ -1,4 +1,5 @@
 /// String 확장 메서드들
+library;
 extension StringExtensions on String {
   /// 문자열이 비어있지 않은지 확인
   bool get isNotNullOrEmpty => isNotEmpty;

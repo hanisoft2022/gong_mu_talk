@@ -7,6 +7,7 @@
 /// - Displays empty state when no comments exist
 /// - Shows loading state while comments are being fetched
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';

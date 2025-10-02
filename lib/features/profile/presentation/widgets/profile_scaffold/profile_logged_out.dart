@@ -6,6 +6,7 @@
  *
  * Phase 4 - Extracted from profile_page.dart
  */
+library;
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';

@@ -8,6 +8,7 @@
 /// - Delegates actions to appropriate handlers
 /// - Orchestrates dialogs and snackbar messages
 
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';

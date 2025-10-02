@@ -5,6 +5,7 @@
 /// - Provides retry button to reload content
 /// - Displays centered layout for optimal user experience
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 

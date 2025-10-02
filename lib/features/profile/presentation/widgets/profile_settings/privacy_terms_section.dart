@@ -17,6 +17,7 @@
 /// - Privacy Policy: https://www.hanisoft.kr/privacy
 /// - Terms of Service: https://www.hanisoft.kr/terms
 
+library;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 

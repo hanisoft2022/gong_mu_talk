@@ -6,6 +6,7 @@
 /// - Search options bottom sheet
 /// - Search suggestions card display
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 

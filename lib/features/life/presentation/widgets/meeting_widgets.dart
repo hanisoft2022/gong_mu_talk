@@ -1,6 +1,7 @@
 /// Extracted from life_home_page.dart for better file organization
 /// This file contains meeting-related display widgets
 
+library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 

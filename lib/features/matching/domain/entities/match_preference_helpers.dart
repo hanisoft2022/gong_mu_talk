@@ -1,6 +1,7 @@
 /// Extracted from match_preferences.dart for better file organization
 /// Helper classes for matching preferences
 
+library;
 import 'package:equatable/equatable.dart';
 
 import 'match_preference_enums.dart';
