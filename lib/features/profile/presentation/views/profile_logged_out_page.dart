@@ -1,17 +1,15 @@
-/**
- * ProfileLoggedOutPage
- *
- * 로그인하지 않은 사용자를 위한 프로필 페이지
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - 로그인 필요 메시지 표시
- * - 로그인/회원가입 버튼
- * - 인증 다이얼로그 연동
- *
- * File Size: ~60 lines (Green Zone ✅)
- */
+/// ProfileLoggedOutPage
+///
+/// 로그인하지 않은 사용자를 위한 프로필 페이지
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - 로그인 필요 메시지 표시
+/// - 로그인/회원가입 버튼
+/// - 인증 다이얼로그 연동
+///
+/// File Size: ~60 lines (Green Zone ✅)
 library;
 
 import 'package:flutter/material.dart';

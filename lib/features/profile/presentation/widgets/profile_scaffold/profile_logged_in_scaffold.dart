@@ -1,13 +1,11 @@
-/**
- * Profile Logged In Scaffold
- *
- * Main scaffold for authenticated profile view.
- * - TabBar with Overview and Settings tabs
- * - Message display with debouncing logic
- * - BLoC listener for auth state messages
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Profile Logged In Scaffold
+///
+/// Main scaffold for authenticated profile view.
+/// - TabBar with Overview and Settings tabs
+/// - Message display with debouncing logic
+/// - BLoC listener for auth state messages
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:flutter/material.dart';

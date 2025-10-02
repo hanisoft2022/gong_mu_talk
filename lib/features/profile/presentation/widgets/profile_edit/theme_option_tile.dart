@@ -1,17 +1,15 @@
-/**
- * ThemeOptionTile
- *
- * 테마 선택 다이얼로그의 옵션 타일
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - 테마 모드 옵션 표시 (라이트/다크/시스템)
- * - 현재 선택된 테마 하이라이트
- * - 선택 시 콜백 처리
- *
- * File Size: ~50 lines (Green Zone ✅)
- */
+/// ThemeOptionTile
+///
+/// 테마 선택 다이얼로그의 옵션 타일
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - 테마 모드 옵션 표시 (라이트/다크/시스템)
+/// - 현재 선택된 테마 하이라이트
+/// - 선택 시 콜백 처리
+///
+/// File Size: ~50 lines (Green Zone ✅)
 library;
 
 import 'package:flutter/material.dart';

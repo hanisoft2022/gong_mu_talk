@@ -1,10 +1,8 @@
-/**
- * Profile Authentication Utilities
- *
- * Helper functions for authentication-related UI actions.
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Profile Authentication Utilities
+///
+/// Helper functions for authentication-related UI actions.
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:flutter/material.dart';

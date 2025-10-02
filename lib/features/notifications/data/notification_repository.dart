@@ -8,28 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/notification_service.dart';
 import '../../community/domain/models/post.dart';
 import '../../profile/domain/career_track.dart';
+import '../domain/entities/notification.dart';
 
 typedef JsonMap = Map<String, Object?>;
-
-enum NotificationKind {
-  commentReply,
-  bookmarkedPostComment,
-  weeklySerialDigest,
-}
-
-extension NotificationKindX on NotificationKind {
-  String get id => name;
-
-  String get channelId {
-    switch (this) {
-      case NotificationKind.commentReply:
-      case NotificationKind.bookmarkedPostComment:
-        return 'comments_channel';
-      case NotificationKind.weeklySerialDigest:
-        return 'general_channel';
-    }
-  }
-}
 
 class NotificationRepository {
   NotificationRepository({
@@ -292,5 +273,96 @@ class NotificationRepository {
       return;
     }
     debugPrint('Notification listening error: $error\n$stackTrace');
+  }
+
+  /// 사용자의 모든 알림 가져오기
+  Future<List<AppNotification>> getAllNotifications(String userId) async {
+    if (userId.isEmpty) {
+      return [];
+    }
+
+    try {
+      final snapshot = await _notificationsRef(userId)
+          .orderBy('createdAt', descending: true)
+          .limit(100)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return AppNotification(
+          id: doc.id,
+          userId: userId,
+          kind: NotificationKind.values.firstWhere(
+            (k) => k.id == data['type'],
+            orElse: () => NotificationKind.commentReply,
+          ),
+          title: data['title'] as String? ?? '',
+          body: data['body'] as String? ?? '',
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          isRead: data['read'] as bool? ?? false,
+          data: data['payload'] as Map<String, dynamic>?,
+        );
+      }).toList();
+    } catch (error, stackTrace) {
+      debugPrint('Failed to get all notifications: $error\n$stackTrace');
+      return [];
+    }
+  }
+
+  /// 특정 알림을 읽음 처리
+  Future<void> markAsRead(String userId, String notificationId) async {
+    if (userId.isEmpty || notificationId.isEmpty) {
+      return;
+    }
+
+    try {
+      await _notificationsRef(userId).doc(notificationId).update({
+        'read': true,
+        'readAt': Timestamp.now(),
+      });
+    } catch (error, stackTrace) {
+      debugPrint('Failed to mark notification as read: $error\n$stackTrace');
+      rethrow;
+    }
+  }
+
+  /// 특정 알림 삭제
+  Future<void> deleteNotification(String userId, String notificationId) async {
+    if (userId.isEmpty || notificationId.isEmpty) {
+      return;
+    }
+
+    try {
+      await _notificationsRef(userId).doc(notificationId).delete();
+    } catch (error, stackTrace) {
+      debugPrint('Failed to delete notification: $error\n$stackTrace');
+      rethrow;
+    }
+  }
+
+  /// 모든 알림을 읽음 처리
+  Future<void> markAllAsRead(String userId) async {
+    if (userId.isEmpty) {
+      return;
+    }
+
+    try {
+      final snapshot = await _notificationsRef(userId)
+          .where('read', isEqualTo: false)
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {
+          'read': true,
+          'readAt': Timestamp.now(),
+        });
+      }
+
+      await batch.commit();
+    } catch (error, stackTrace) {
+      debugPrint('Failed to mark all notifications as read: $error\n$stackTrace');
+      rethrow;
+    }
   }
 }

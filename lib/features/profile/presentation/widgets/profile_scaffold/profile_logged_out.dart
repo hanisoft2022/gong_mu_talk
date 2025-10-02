@@ -1,11 +1,9 @@
-/**
- * Profile Logged Out Widget
- *
- * Displays login prompt when user is not authenticated.
- * Shows lock icon and login button.
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Profile Logged Out Widget
+///
+/// Displays login prompt when user is not authenticated.
+/// Shows lock icon and login button.
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:flutter/material.dart';

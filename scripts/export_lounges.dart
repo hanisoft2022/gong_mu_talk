@@ -12,8 +12,8 @@ void main() {
     ...l.toMap(),
   }).toList();
 
-  const file = File('lounges_export.json');
-  file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(jsonData));
+  final file = File('lounges_export.json');
+  file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(jsonData));
 
   print('✅ Exported ${lounges.length} lounges to lounges_export.json');
   print('📍 File location: ${file.absolute.path}');

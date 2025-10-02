@@ -1,15 +1,13 @@
-/**
- * Profile Overview Tab
- *
- * Main overview tab displaying:
- * - Profile header
- * - Paystub verification card
- * - Sponsorship banner
- * - Timeline section
- * - HANISOFT footer
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Profile Overview Tab
+///
+/// Main overview tab displaying:
+/// - Profile header
+/// - Paystub verification card
+/// - Sponsorship banner
+/// - Timeline section
+/// - HANISOFT footer
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:flutter/material.dart';

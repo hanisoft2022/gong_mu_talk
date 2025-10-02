@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/domain/lounge_info.dart';
 import '../models/lounge_model.dart';
@@ -62,14 +65,18 @@ class LoungeAccessService {
   static List<LoungeInfo> convertToLoungeInfos(CareerHierarchy careerHierarchy) {
     final accessibleLounges = getAccessibleLounges(careerHierarchy);
 
-    return accessibleLounges.map((lounge) => LoungeInfo(
-      id: lounge.id,
-      name: lounge.name,
-      emoji: lounge.emoji,
-      shortName: lounge.shortName ?? lounge.name,
-      memberCount: lounge.memberCount,
-      description: lounge.description,
-    )).toList();
+    return accessibleLounges
+        .map(
+          (lounge) => LoungeInfo(
+            id: lounge.id,
+            name: lounge.name,
+            emoji: lounge.emoji,
+            shortName: lounge.shortName ?? lounge.name,
+            memberCount: lounge.memberCount,
+            description: lounge.description,
+          ),
+        )
+        .toList();
   }
 
   /// Lounge 정보에서 접근 가능한 직렬 목록 가져오기 (UI용)
@@ -93,8 +100,18 @@ class LoungeAccessService {
     // 중등교사 - 교과별 (Secondary Teachers by Subject)
     'secondary_math_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_math_teacher'],
     'secondary_korean_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_korean_teacher'],
-    'secondary_english_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_english_teacher'],
-    'secondary_science_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_science_teacher'],
+    'secondary_english_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_english_teacher',
+    ],
+    'secondary_science_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_science_teacher',
+    ],
     'secondary_social_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_social_teacher'],
     'secondary_arts_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_arts_teacher'],
 
@@ -131,7 +148,6 @@ class LoungeAccessService {
     // ================================
     // 전문행정직 (Specialized Administrative)
     // ================================
-
     'job_counselor': ['all', 'admin', 'specialized_admin'],
     'statistics_officer': ['all', 'admin', 'specialized_admin'],
     'librarian': ['all', 'admin', 'specialized_admin'],
@@ -141,7 +157,6 @@ class LoungeAccessService {
     // ================================
     // 보건복지직 (Health & Welfare)
     // ================================
-
     'public_health_officer': ['all', 'health_welfare'],
     'medical_technician': ['all', 'health_welfare'],
     'nurse': ['all', 'health_welfare'],
@@ -153,7 +168,6 @@ class LoungeAccessService {
     // ================================
     // 공안직 (Public Security)
     // ================================
-
     'correction_officer': ['all', 'public_security'],
     'probation_officer': ['all', 'public_security'],
     'prosecution_officer': ['all', 'public_security'],
@@ -165,7 +179,6 @@ class LoungeAccessService {
     // ================================
     // 치안/안전 (Public Safety)
     // ================================
-
     'police': ['all', 'police'],
     'firefighter': ['all', 'firefighter'],
     'coast_guard': ['all', 'coast_guard'],
@@ -173,7 +186,6 @@ class LoungeAccessService {
     // ================================
     // 군인 (Military)
     // ================================
-
     'army': ['all', 'military', 'army'],
     'navy': ['all', 'military', 'navy'],
     'air_force': ['all', 'military', 'air_force'],
@@ -225,14 +237,12 @@ class LoungeAccessService {
     // ================================
     // 기타 직렬 (Others)
     // ================================
-
     'postal_service': ['all', 'postal_service'],
     'researcher': ['all', 'researcher'],
 
     // ================================
     // Fallback - 일반 직렬
     // ================================
-
     'teacher': ['all', 'teacher'],
     'admin': ['all', 'admin'],
   };
@@ -244,15 +254,17 @@ class LoungeAccessService {
 
   /// 라운지 계층 구조 검증 - 부모 라운지 접근 권한이 있는지 확인
   static bool hasParentAccess(String loungeId, List<String> accessibleLoungeIds) {
-    final lounge = LoungeDefinitions.defaultLounges
-        .firstWhere((l) => l.id == loungeId, orElse: () => const Lounge(
-          id: '',
-          name: '',
-          emoji: '',
-          type: LoungeType.specific,
-          accessType: LoungeAccessType.careerOnly,
-          requiredCareerIds: [],
-        ));
+    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+      (l) => l.id == loungeId,
+      orElse: () => const Lounge(
+        id: '',
+        name: '',
+        emoji: '',
+        type: LoungeType.specific,
+        accessType: LoungeAccessType.careerOnly,
+        requiredCareerIds: [],
+      ),
+    );
 
     if (lounge.parentLoungeId == null) {
       return true; // 최상위 라운지
@@ -261,12 +273,66 @@ class LoungeAccessService {
     return accessibleLoungeIds.contains(lounge.parentLoungeId);
   }
 
-  /// 라운지 멤버십 정보 업데이트 (Future enhancement)
+  /// 라운지 멤버십 정보 업데이트
+  /// 
+  /// Firestore에 사용자의 라운지 접근 권한을 저장하여
+  /// 실시간 멤버 수 업데이트, 라운지별 알림 설정 등에 활용
   static Future<void> updateLoungeMembership(
     String userId,
     List<String> newAccessibleLoungeIds,
   ) async {
-    // TODO: Firestore에 사용자의 라운지 멤버십 정보 저장
-    // 향후 실시간 멤버 수 업데이트, 라운지별 알림 설정 등에 활용
+    if (userId.isEmpty) return;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = firestore.collection('users').doc(userId);
+
+      // 사용자 문서의 라운지 멤버십 정보 업데이트
+      await userDoc.set({
+        'loungeMemberships': {
+          'accessibleLoungeIds': newAccessibleLoungeIds,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      }, SetOptions(merge: true));
+
+      // 각 라운지의 멤버 수 업데이트 (배치 작업)
+      final batch = firestore.batch();
+      
+      // 기존 멤버십 정보 가져오기
+      final doc = await userDoc.get();
+      final previousIds = (doc.data()?['loungeMemberships']?['accessibleLoungeIds'] as List?)
+          ?.cast<String>() ?? <String>[];
+
+      // 추가된 라운지 (멤버 수 +1)
+      final addedLounges = newAccessibleLoungeIds
+          .where((id) => !previousIds.contains(id))
+          .toList();
+
+      // 제거된 라운지 (멤버 수 -1)
+      final removedLounges = previousIds
+          .where((id) => !newAccessibleLoungeIds.contains(id))
+          .toList();
+
+      // 라운지 멤버 수 업데이트
+      for (final loungeId in addedLounges) {
+        final loungeRef = firestore.collection('lounges').doc(loungeId);
+        batch.update(loungeRef, {
+          'memberCount': FieldValue.increment(1),
+          'lastMemberJoinedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      for (final loungeId in removedLounges) {
+        final loungeRef = firestore.collection('lounges').doc(loungeId);
+        batch.update(loungeRef, {
+          'memberCount': FieldValue.increment(-1),
+        });
+      }
+
+      await batch.commit();
+    } catch (e) {
+      // 에러 로깅 (실패해도 앱 동작에는 영향 없음)
+      debugPrint('Failed to update lounge membership: $e');
+    }
   }
 }

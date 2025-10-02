@@ -1,14 +1,12 @@
-/**
- * Government Email Verification Card
- *
- * Government email verification form card.
- * - Email input with validation (korea.kr, .go.kr, naver.com)
- * - Verification email sending
- * - Status refresh functionality
- * - Shows verified state when complete
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Government Email Verification Card
+///
+/// Government email verification form card.
+/// - Email input with validation (korea.kr, .go.kr, naver.com)
+/// - Verification email sending
+/// - Status refresh functionality
+/// - Shows verified state when complete
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:flutter/material.dart';

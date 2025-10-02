@@ -1,18 +1,16 @@
-/**
- * ProfileImageSection
- *
- * 프로필 이미지 편집 섹션 위젯
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - 프로필 이미지 표시 (아바타)
- * - 프로필 사진 변경 버튼
- * - 이미지 선택 모달 (앨범 선택, 기본 이미지로 변경)
- * - 이미지 업로드 처리
- *
- * File Size: ~140 lines (Green Zone ✅)
- */
+/// ProfileImageSection
+///
+/// 프로필 이미지 편집 섹션 위젯
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - 프로필 이미지 표시 (아바타)
+/// - 프로필 사진 변경 버튼
+/// - 이미지 선택 모달 (앨범 선택, 기본 이미지로 변경)
+/// - 이미지 업로드 처리
+///
+/// File Size: ~140 lines (Green Zone ✅)
 library;
 
 import 'package:cached_network_image/cached_network_image.dart';

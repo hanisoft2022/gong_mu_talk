@@ -1,18 +1,16 @@
-/**
- * LicensesPage
- *
- * 오픈소스 라이선스 표시 페이지
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - Flutter 앱의 모든 오픈소스 라이선스 표시
- * - 앱 정보 및 버전 표시
- * - 라이선스 상세 보기 다이얼로그
- * - 직접 사용 vs 의존성 포함 구분 설명
- *
- * File Size: ~250 lines (Green Zone ✅)
- */
+/// LicensesPage
+///
+/// 오픈소스 라이선스 표시 페이지
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - Flutter 앱의 모든 오픈소스 라이선스 표시
+/// - 앱 정보 및 버전 표시
+/// - 라이선스 상세 보기 다이얼로그
+/// - 직접 사용 vs 의존성 포함 구분 설명
+///
+/// File Size: ~250 lines (Green Zone ✅)
 library;
 
 import 'package:flutter/foundation.dart';

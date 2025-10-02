@@ -1,17 +1,15 @@
-/**
- * ThemeSettingsSection
- *
- * 테마 설정 섹션 위젯
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - 현재 테마 모드 표시
- * - 테마 선택 다이얼로그 열기
- * - 라이트/다크/시스템 모드 선택
- *
- * File Size: ~110 lines (Green Zone ✅)
- */
+/// ThemeSettingsSection
+///
+/// 테마 설정 섹션 위젯
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - 현재 테마 모드 표시
+/// - 테마 선택 다이얼로그 열기
+/// - 라이트/다크/시스템 모드 선택
+///
+/// File Size: ~110 lines (Green Zone ✅)
 library;
 
 import 'package:flutter/material.dart';

@@ -1,19 +1,17 @@
-/**
- * ProfileEditPage
- *
- * 프로필 편집 페이지
- *
- * Phase 2 - Extracted from profile_page.dart
- *
- * Features:
- * - 프로필 이미지 변경
- * - 닉네임 수정
- * - 자기소개 수정
- * - 테마 설정 (라이트/다크/시스템)
- * - 직렬 공개 설정
- *
- * File Size: ~180 lines (Green Zone ✅)
- */
+/// ProfileEditPage
+///
+/// 프로필 편집 페이지
+///
+/// Phase 2 - Extracted from profile_page.dart
+///
+/// Features:
+/// - 프로필 이미지 변경
+/// - 닉네임 수정
+/// - 자기소개 수정
+/// - 테마 설정 (라이트/다크/시스템)
+/// - 직렬 공개 설정
+///
+/// File Size: ~180 lines (Green Zone ✅)
 library;
 
 import 'package:flutter/material.dart';

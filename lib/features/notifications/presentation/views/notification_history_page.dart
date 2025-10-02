@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/notification_service.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../data/notification_repository.dart';
 import '../../domain/entities/notification.dart';
 
 class NotificationHistoryPage extends StatefulWidget {
@@ -15,11 +20,22 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
+  late final NotificationRepository _repository;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    _initRepository();
+  }
+
+  Future<void> _initRepository() async {
+    final prefs = await SharedPreferences.getInstance();
+    final notificationService = NotificationService();
+    _repository = NotificationRepository(
+      notificationService: notificationService,
+      preferences: prefs,
+    );
+    await _loadNotifications();
   }
 
   Future<void> _loadNotifications() async {
@@ -30,13 +46,22 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     });
 
     try {
-      // TODO: NotificationRepository에 getAllNotifications 메서드 추가 필요
-      // 현재는 빈 리스트로 대체
-      await Future.delayed(const Duration(milliseconds: 500));
+      final authState = context.read<AuthCubit>().state;
+      if (!authState.isLoggedIn || authState.userId == null) {
+        if (mounted) {
+          setState(() {
+            _notifications = [];
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final notifications = await _repository.getAllNotifications(authState.userId!);
 
       if (mounted) {
         setState(() {
-          _notifications = _generateMockNotifications();
+          _notifications = notifications;
           _isLoading = false;
         });
       }
@@ -51,58 +76,17 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     }
   }
 
-  // TODO: 실제 알림 데이터로 대체 필요
-  List<AppNotification> _generateMockNotifications() {
-    final now = DateTime.now();
-    return [
-      AppNotification(
-        id: '1',
-        userId: 'current_user',
-        kind: NotificationKind.commentReply,
-        title: '새 댓글 알림',
-        body: '김공무원님이 회식 관련 질문글에 댓글을 남겼습니다.',
-        data: const {'type': 'comment', 'postId': 'post1'},
-        isRead: false,
-        createdAt: now.subtract(const Duration(minutes: 30)),
-      ),
-      AppNotification(
-        id: '2',
-        userId: 'current_user',
-        kind: NotificationKind.commentReply,
-        title: '좋아요 알림',
-        body: '이공직님이 급여 관련 질문에 좋아요를 눌렀습니다.',
-        data: const {'type': 'like', 'postId': 'post2'},
-        isRead: true,
-        createdAt: now.subtract(const Duration(hours: 2)),
-      ),
-      AppNotification(
-        id: '3',
-        userId: 'current_user',
-        kind: NotificationKind.weeklySerialDigest,
-        title: '주간 요약',
-        body: '이번 주 인기 글과 활동 요약을 확인해보세요.',
-        data: const {'type': 'weekly_digest'},
-        isRead: true,
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-      AppNotification(
-        id: '4',
-        userId: 'current_user',
-        kind: NotificationKind.commentReply,
-        title: '새 글 알림',
-        body: '교육행정직 커뮤니티에 새로운 글이 올라왔습니다.',
-        data: const {'type': 'new_post', 'postId': 'post3'},
-        isRead: true,
-        createdAt: now.subtract(const Duration(days: 2)),
-      ),
-    ];
-  }
+
 
   Future<void> _markAsRead(AppNotification notification) async {
     if (notification.isRead) return;
 
     try {
-      // TODO: 실제 mark as read 구현
+      final authState = context.read<AuthCubit>().state;
+      if (!authState.isLoggedIn || authState.userId == null) return;
+
+      await _repository.markAsRead(authState.userId!, notification.id);
+
       if (mounted) {
         setState(() {
           final index = _notifications.indexWhere((n) => n.id == notification.id);
@@ -122,7 +106,11 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
 
   Future<void> _deleteNotification(AppNotification notification) async {
     try {
-      // TODO: 실제 delete 구현
+      final authState = context.read<AuthCubit>().state;
+      if (!authState.isLoggedIn || authState.userId == null) return;
+
+      await _repository.deleteNotification(authState.userId!, notification.id);
+
       if (mounted) {
         setState(() {
           _notifications.removeWhere((n) => n.id == notification.id);
@@ -145,7 +133,11 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
 
   Future<void> _markAllAsRead() async {
     try {
-      // TODO: 실제 mark all as read 구현
+      final authState = context.read<AuthCubit>().state;
+      if (!authState.isLoggedIn || authState.userId == null) return;
+
+      await _repository.markAllAsRead(authState.userId!);
+
       if (mounted) {
         setState(() {
           _notifications = _notifications

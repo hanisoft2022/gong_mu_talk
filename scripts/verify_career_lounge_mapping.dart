@@ -142,8 +142,7 @@ void main() {
   print('  - 고아 라운지: ${orphanedLounges.length}개');
 
   // 최종 결과
-  print('
-${'=' * 60}');
+  print('\n${'=' * 60}');
   if (errorCount == 0 && warningCount == 0) {
     print('✅ 검증 완료 - 문제 없음!');
   } else {

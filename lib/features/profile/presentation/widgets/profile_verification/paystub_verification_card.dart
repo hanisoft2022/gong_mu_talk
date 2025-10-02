@@ -1,14 +1,12 @@
-/**
- * Paystub Verification Card
- *
- * Real-time paystub verification status card.
- * - Firebase stream subscription for verification status
- * - Processing timeout detection (2 minutes)
- * - Shows verification prompt when not verified
- * - Hides when verified or test mode active
- *
- * Phase 4 - Extracted from profile_page.dart
- */
+/// Paystub Verification Card
+///
+/// Real-time paystub verification status card.
+/// - Firebase stream subscription for verification status
+/// - Processing timeout detection (2 minutes)
+/// - Shows verification prompt when not verified
+/// - Hides when verified or test mode active
+///
+/// Phase 4 - Extracted from profile_page.dart
 library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';

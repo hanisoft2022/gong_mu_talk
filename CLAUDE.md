@@ -46,6 +46,45 @@ firebase deploy --only hosting
 
 # Deploy Firestore indexes
 firebase deploy --only firestore:indexes
+
+# Deploy specific functions codebase
+firebase deploy --only functions:default
+firebase deploy --only functions:paystub-functions
+
+# Start Firebase Emulator Suite
+firebase emulators:start
+
+# Start specific emulators
+firebase emulators:start --only firestore,auth
+
+# View emulator UI
+# Automatically available at http://localhost:4000 when emulators run
+```
+
+### Shorebird Commands (OTA Updates)
+```bash
+# Create a new release
+shorebird release android
+shorebird release ios
+
+# Create a patch (OTA update)
+shorebird patch android
+shorebird patch ios
+
+# Preview patches
+shorebird preview
+```
+
+### Data Scripts
+```bash
+# Export lounge data
+dart run scripts/export_lounges.dart
+
+# Migrate lounge data
+dart run scripts/migrate_lounges.dart
+
+# Verify career-lounge mapping
+dart run scripts/verify_career_lounge_mapping.dart
 ```
 
 ## Architecture
@@ -60,7 +99,9 @@ firebase deploy --only firestore:indexes
 - **lib/routing/**: GoRouter configuration and navigation
 
 ### Feature Module Structure
-Each feature module follows clean architecture:
+Most feature modules follow clean architecture with some variations:
+
+**Standard Structure** (auth, calculator, community, life, matching, pension, profile, transfer_posting):
 ```
 features/[feature_name]/
 ├── domain/          # Business logic and entities
@@ -78,15 +119,40 @@ features/[feature_name]/
     └── widgets/     # Feature-specific widgets
 ```
 
+**Simplified Structure** (salary_insights):
+```
+features/salary_insights/
+├── domain/          # Business logic and entities
+└── presentation/    # UI layer (no separate data layer)
+```
+
+**In Development** (year_end_tax):
+```
+features/year_end_tax/
+├── domain/
+├── data/
+└── presentation/    # Placeholder only
+```
+
+**Note**: Not all features use BLoC/Cubit. Some simpler features use StatefulWidget or Provider patterns.
+
 ### Key Features
 - **auth**: Firebase authentication with Google/Kakao sign-in
 - **calculator**: Salary calculator for public servants
 - **community**: Social feed, posts, comments, likes
-- **profile**: User profiles and verification
-- **matching**: Professional matching service
 - **life**: Life management and meetings
+- **matching**: Professional matching service
+- **notifications**: Push notifications via Firebase
 - **pension**: Pension calculator
-- **monetization**: Premium features and payments (Bootpay integration)
+- **profile**: User profiles and verification
+- **salary_insights**: Salary insights and analysis for educators
+- **transfer_posting**: Job transfer and posting management
+- **year_end_tax**: Year-end tax settlement (planned/in development)
+
+### Feature Implementation Status
+Most features follow the standard clean architecture pattern (domain/data/presentation), with some variations:
+- **salary_insights**: No data layer (domain/presentation only)
+- **year_end_tax**: Presentation layer placeholder (feature in development)
 - **notifications**: Push notifications via Firebase
 
 ### State Management
@@ -95,13 +161,52 @@ features/[feature_name]/
 - GoRouter for navigation with authentication guards
 
 ### Key Dependencies
+
+**Core Firebase:**
 - **Firebase**: Core, Auth, Firestore, Storage, Messaging, Crashlytics
+
+**State Management & Architecture:**
 - **State Management**: flutter_bloc, bloc_concurrency
-- **Navigation**: go_router
-- **Code Generation**: freezed, json_serializable, build_runner
-- **UI**: google_fonts, lottie, rive, skeletonizer, fl_chart
-- **Payments**: bootpay
+- **Dependency Injection**: get_it, injectable
+- **Functional Programming**: dartz (Either, Option), tuple
+
+**Navigation & Routing:**
+- **Navigation**: go_router (manual configuration, no code generation)
+
+**HTTP & Networking:**
+- **HTTP Clients**: dio, retrofit
+- **Network Caching**: cached_network_image
+
+**Code Generation:**
+- **Serialization**: freezed, json_serializable
+- **API Client**: retrofit_generator
+- **DI**: injectable_generator
+- **Build**: build_runner
+
+**UI & Design:**
+- **Fonts**: google_fonts
+- **Animations**: lottie, rive
+- **Loading States**: skeletonizer
+- **Charts**: fl_chart
+- **Image Handling**: image_picker, file_picker, flutter_image_compress, image
+
+**Error Tracking & Deployment:**
+- **Error Monitoring**: sentry_flutter
+- **OTA Updates**: shorebird_code_push
+
+**Authentication:**
 - **Social Login**: google_sign_in, kakao_flutter_sdk_user
+
+**Utilities:**
+- **Storage**: shared_preferences, path_provider, path
+- **Sharing**: share_plus, url_launcher
+- **Package Info**: package_info_plus, collection
+- **Logging**: logger
+- **Streams**: stream_transform
+
+**Development Tools:**
+- **Linting**: flutter_lints, very_good_analysis
+- **Testing**: bloc_test, mocktail
 
 ## Firebase Configuration
 - Firestore is the primary database
@@ -109,29 +214,141 @@ features/[feature_name]/
 - Firebase Storage for file uploads
 - Firebase Messaging for push notifications
 - Indexes defined in `firestore.indexes.json`
+- Emulator suite configured for local development
 
-## Testing Strategy
-- Unit tests for business logic (usecases, repositories)
-- Widget tests for UI components
-- BLoC tests using bloc_test
-- Mock dependencies using mocktail
+## Firebase Functions
+
+The project uses **two separate Firebase Functions codebases**:
+
+### 1. Main Functions (`functions/`)
+**Purpose**: Core backend services
+- Community features (posts, comments, likes)
+- Notifications and push messaging
+- User management
+- General cloud functions
+
+**Tech Stack**: TypeScript, Node 22
+**Key Dependencies**: firebase-admin, firebase-functions, @google-cloud/storage, @google-cloud/vision
+
+### 2. Paystub Functions (`paystub-functions/`)
+**Purpose**: Payroll verification and OCR
+- Paystub/salary statement OCR processing
+- Document verification
+- Vision API integration
+- Email notifications for verification results
+
+**Tech Stack**: TypeScript, Node 22
+**Key Dependencies**: firebase-admin, firebase-functions, @google-cloud/vision, nodemailer, pdf-parse
+
+### Functions Development Workflow
+```bash
+# Main functions development
+cd functions
+npm install
+npm run build
+npm run serve  # Start emulator
+
+# Paystub functions development
+cd paystub-functions
+npm install
+npm run build
+npm run serve  # Start emulator
+
+# Deploy both
+firebase deploy --only functions
+
+# Deploy specific codebase
+firebase deploy --only functions:default
+firebase deploy --only functions:paystub-functions
+```
+
+## Testing & Quality Assurance
+
+### Testing Strategy
+- **Unit tests**: Business logic (usecases, repositories)
+- **Widget tests**: UI components
+- **BLoC tests**: State management using bloc_test
+- **Mocking**: Dependencies mocked with mocktail
+
+### Linting & Code Quality
+The project uses multiple levels of linting:
+- **Base**: flutter_lints (included in analysis_options.yaml)
+- **Enhanced**: very_good_analysis (available in dev dependencies)
+- **Custom rules**: Defined in analysis_options.yaml
+  - `prefer_const_constructors: true`
+  - `prefer_const_literals_to_create_immutables: true`
+
+**Generated files excluded from analysis:**
+- `**/*.g.dart`
+- `**/*.freezed.dart`
+- `lib/generated_plugin_registrant.dart`
+
+### Error Tracking
+- **Production**: Sentry Flutter integration for crash reporting and error monitoring
+- **Development**: Firebase Crashlytics for additional telemetry
+
+### Code Analysis Commands
+```bash
+# Run static analysis
+flutter analyze
+
+# Format code
+dart format lib test
+
+# Run tests with coverage
+flutter test --coverage
+```
 
 ## Code Generation
+
 The project uses several code generation tools. Always run after modifying:
-- Models with `@freezed` or `@JsonSerializable` annotations
-- Injectable services with `@injectable` annotations
-- GoRouter routes with `@TypedGoRoute` annotations
+- **Models** with `@freezed` or `@JsonSerializable` annotations
+- **Injectable services** with `@injectable` annotations
+- **Retrofit API clients** with `@RestApi` annotations
 
 Run: `flutter pub run build_runner build --delete-conflicting-outputs`
 
+**Note**: GoRouter routes are configured manually in `lib/routing/app_router.dart` (no code generation for routes)
+
+## Data Scripts
+
+The project includes Dart scripts for data management and migration in the `scripts/` directory:
+
+### Available Scripts
+- **export_lounges.dart**: Export lounge data from Firestore to JSON
+- **migrate_lounges.dart**: Migrate lounge data between environments or schema versions
+- **verify_career_lounge_mapping.dart**: Verify the integrity of career-lounge relationships
+
+### Running Scripts
+```bash
+dart run scripts/<script_name>.dart
+```
+
+**Note**: Scripts may require Firebase credentials and proper configuration
+
 ## Important Conventions
+
+**Architecture & Design:**
 - Follow Material 3 design guidelines
 - Use BLoC/Cubit for complex state management
 - Implement repository pattern for data access
 - Keep Firebase logic isolated in data layer
 - Use dependency injection via GetIt
+- Use Dartz's `Either<Failure, Success>` pattern for error handling
+- Use Retrofit for type-safe HTTP API clients
+
+**Code Quality:**
 - Prefer const constructors for performance
 - Handle errors gracefully with proper user feedback
+- Follow the file size guidelines (see below)
+- Write unit tests for business logic
+- Use Sentry for production error tracking
+
+**Data Layer Patterns:**
+- Repositories return `Either<Failure, Data>` for explicit error handling
+- Firebase operations isolated in datasources
+- Models use freezed for immutability and json_serializable for serialization
+- API clients use Retrofit with Dio for HTTP communication
 
 ## 파일 크기 및 구조 관리 원칙
 
