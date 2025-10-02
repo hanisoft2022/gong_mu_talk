@@ -106,17 +106,20 @@ Most feature modules follow clean architecture with some variations:
 features/[feature_name]/
 ├── domain/          # Business logic and entities
 │   ├── entities/
-│   ├── repositories/
+│   ├── repositories/  # Repository interfaces
 │   └── usecases/
 ├── data/            # Data layer implementations
 │   ├── datasources/
 │   ├── models/
-│   └── repositories/
+│   ├── repositories/  # Repository implementations
+│   └── services/      # 🆕 Business services (caching, enrichment, validation)
 └── presentation/    # UI layer
     ├── bloc/        # BLoC pattern state management
     ├── cubit/       # Cubit state management
     ├── views/       # Pages/screens
-    └── widgets/     # Feature-specific widgets
+    ├── widgets/     # Feature-specific widgets
+    │   └── [feature_name]/  # 🆕 Organized by concern (e.g., post/, comment/)
+    └── utils/       # 🆕 Presentation helpers
 ```
 
 **Simplified Structure** (salary_insights):
@@ -134,7 +137,102 @@ features/year_end_tax/
 └── presentation/    # Placeholder only
 ```
 
-**Note**: Not all features use BLoC/Cubit. Some simpler features use StatefulWidget or Provider patterns.
+### Architecture Patterns
+
+#### Repository Pattern
+- **Interface** in domain layer, **implementation** in data layer
+- Returns `Either<Failure, Data>` for explicit error handling
+- Coordinates datasources and external APIs
+- Delegates complex logic to services
+
+**Example**:
+```dart
+// domain/repositories/post_repository.dart
+abstract class PostRepository {
+  Future<Either<Failure, List<Post>>> fetchPosts();
+}
+
+// data/repositories/post_repository_impl.dart
+class PostRepositoryImpl implements PostRepository {
+  final PostDataSource _dataSource;
+  
+  @override
+  Future<Either<Failure, List<Post>>> fetchPosts() async {
+    try {
+      final posts = await _dataSource.fetchPosts();
+      return Right(posts);
+    } catch (e) {
+      return Left(ServerFailure());
+    }
+  }
+}
+```
+
+#### Service Layer Pattern
+Services handle cross-cutting concerns and complex business logic that don't belong in repositories:
+
+**Types of Services**:
+- **CacheManager**: In-memory caching with TTL management
+- **EnrichmentService**: Coordinate multiple repositories to enrich domain entities
+- **ValidationService**: Complex validation logic
+- **CalculationService**: Complex algorithms (salary, pension calculations)
+
+**Location**: `data/services/` or `domain/services/` depending on dependencies
+
+**Real Examples from This Project**:
+```dart
+// lib/features/community/data/services/interaction_cache_manager.dart
+class InteractionCacheManager {
+  // Manages cache lifecycle for likes/bookmarks
+  // TTL: 10 minutes, tracks hit/miss statistics
+  bool shouldRefreshCache() { ... }
+  void updateCache({required String uid, ...}) { ... }
+  Map<String, int> getCacheStats() { ... }
+}
+
+// lib/features/community/data/services/post_enrichment_service.dart
+class PostEnrichmentService {
+  // Enriches posts with user-specific data (likes, bookmarks, top comments)
+  // Coordinates InteractionRepository, CommentRepository, CacheManager
+  Future<List<Post>> enrichPosts(List<Post> posts, {String? currentUid}) { ... }
+}
+```
+
+#### Facade Pattern
+Large repositories can act as facades, delegating to specialized services and repositories:
+
+**Example**:
+```dart
+// lib/features/community/data/community_repository.dart (822 lines)
+class CommunityRepository {
+  final InteractionCacheManager _cacheManager;
+  final PostEnrichmentService _enrichmentService;
+  final ReportRepository _reportRepository;
+  
+  // Delegates to specialized services
+  Future<Post?> fetchPostById(String postId, {String? currentUid}) async {
+    final post = await _postRepository.fetchPostById(postId);
+    if (post == null) return null;
+    return _enrichmentService.enrichPost(post, currentUid: currentUid);
+  }
+  
+  void clearInteractionCache({String? uid}) {
+    _cacheManager.clearInteractionCache(uid: uid);
+  }
+}
+```
+
+#### Widget Organization Pattern
+Complex widgets should be split into smaller, focused components:
+
+**Example from Community Feature**:
+```
+lib/features/community/presentation/widgets/
+├── post/
+│   ├── comment_image_uploader.dart  # Handles image picking, compression, upload
+│   └── post_share_handler.dart      # Handles share via clipboard/external apps
+└── post_card.dart  # Main widget using above components (885 lines)
+```
 
 ### Key Features
 - **auth**: Firebase authentication with Google/Kakao sign-in
@@ -149,16 +247,80 @@ features/year_end_tax/
 - **transfer_posting**: Job transfer and posting management
 - **year_end_tax**: Year-end tax settlement (planned/in development)
 
-### Feature Implementation Status
-Most features follow the standard clean architecture pattern (domain/data/presentation), with some variations:
-- **salary_insights**: No data layer (domain/presentation only)
-- **year_end_tax**: Presentation layer placeholder (feature in development)
-- **notifications**: Push notifications via Firebase
-
 ### State Management
-- BLoC/Cubit pattern using flutter_bloc
-- GetIt for dependency injection
-- GoRouter for navigation with authentication guards
+
+**Project Policy: BLoC/Cubit First**
+
+This project follows a **BLoC/Cubit-centric state management approach** for consistency, testability, and maintainability.
+
+#### When to Use BLoC/Cubit (Default)
+
+**Use BLoC/Cubit for all features involving**:
+- Business logic and data flow
+- API calls and data loading
+- Form handling with validation
+- User interactions that modify state
+- Any state that needs testing
+
+**Examples**:
+```dart
+// ✅ Good: Use Cubit for authentication
+class AuthCubit extends Cubit<AuthState> {
+  Future<void> signIn(String email, String password) async { ... }
+}
+
+// ✅ Good: Use Cubit for community feed
+class CommunityCubit extends Cubit<CommunityState> {
+  Future<void> fetchPosts() async { ... }
+  Future<void> likePost(String postId) async { ... }
+}
+
+// ✅ Good: Even simple forms should use Cubit
+class CommentFormCubit extends Cubit<CommentFormState> {
+  void updateText(String text) { ... }
+  Future<void> submitComment() async { ... }
+}
+```
+
+#### Rare Exception: StatefulWidget
+
+**Only use StatefulWidget for**:
+- Pure UI-only state with zero business logic
+- Temporary UI states (e.g., expandable card animation)
+- No testing required
+
+**Important**: Even for these cases, **prefer Cubit** unless the widget is extremely simple.
+
+**Acceptable Exception Example**:
+```dart
+// ✅ Acceptable: Pure UI animation state
+class _ExpandableCardState extends State<ExpandableCard> {
+  bool _isExpanded = false;
+  
+  void _toggle() {
+    setState(() => _isExpanded = !_isExpanded);
+  }
+}
+```
+
+**Should Move to Cubit**:
+```dart
+// ❌ Bad: Form state in StatefulWidget
+class _CommentFormState extends State<CommentForm> {
+  final _controller = TextEditingController();  // ❌ Move to Cubit
+  String _errorMessage = '';  // ❌ Move to Cubit
+  
+  Future<void> _submit() async { ... }  // ❌ Move to Cubit
+}
+
+// ✅ Good: Use CommentFormCubit instead
+class CommentFormCubit extends Cubit<CommentFormState> { ... }
+```
+
+#### State Management Stack
+- **BLoC/Cubit**: Primary state management (flutter_bloc, bloc_concurrency)
+- **GetIt**: Dependency injection
+- **GoRouter**: Navigation with authentication guards
 
 ### Key Dependencies
 
@@ -265,10 +427,60 @@ firebase deploy --only functions:paystub-functions
 ## Testing & Quality Assurance
 
 ### Testing Strategy
-- **Unit tests**: Business logic (usecases, repositories)
-- **Widget tests**: UI components
+
+**Testing Priority (in order)**:
+1. **Domain Logic** (usecases, entities) - **Critical**, must have 80%+ coverage
+2. **Services** (CacheManager, EnrichmentService, CalculationService) - **Important**, target 70%+ coverage
+3. **Repositories** - **Important**, target 60%+ coverage
+4. **BLoC/Cubit** - **Moderate**, target 50%+ coverage
+5. **Widgets** - **Nice to have**, focus on complex widgets only
+
+**Test Types**:
+- **Unit tests**: Business logic (usecases, repositories, services)
+- **Widget tests**: UI components (focus on complex widgets)
 - **BLoC tests**: State management using bloc_test
-- **Mocking**: Dependencies mocked with mocktail
+- **Integration tests**: Critical user flows (authentication, payments)
+
+**Testing Patterns**:
+```dart
+// ✅ Good: Test business logic
+test('should cache liked posts for 10 minutes', () {
+  cacheManager.updateCache(uid: 'user1', likedIds: {'post1'}, bookmarkedIds: {});
+  expect(cacheManager.shouldRefreshCache(), isFalse);
+});
+
+// ✅ Good: Test error handling
+test('should return Failure when network fails', () async {
+  when(() => dataSource.fetchPosts()).thenThrow(ServerException());
+  final result = await repository.fetchPosts();
+  expect(result, isA<Left<Failure, List<Post>>>());
+});
+
+// ✅ Good: Test BLoC state transitions
+blocTest<CommunityCubit, CommunityState>(
+  'emits [loading, loaded] when fetchPosts succeeds',
+  build: () => CommunityCubit(repository),
+  act: (cubit) => cubit.fetchPosts(),
+  expect: () => [
+    CommunityState.loading(),
+    CommunityState.loaded(posts: mockPosts),
+  ],
+);
+
+// ❌ Skip: Testing generated code
+// Don't test .g.dart, .freezed.dart files
+```
+
+**Coverage Goals**:
+- **Overall project**: 40%+ (gradually increasing from current <2%)
+- **Critical paths**: 80%+ (auth, payments, salary/pension calculations)
+- **New features**: 50%+ coverage required before merge
+- **Services & repositories**: 60%+ coverage
+
+**Mocking Strategy**:
+- Use **mocktail** for mocking dependencies
+- Mock external dependencies (Firebase, HTTP clients)
+- Don't mock entities or value objects
 
 ### Linting & Code Quality
 The project uses multiple levels of linting:
@@ -325,6 +537,195 @@ dart run scripts/<script_name>.dart
 ```
 
 **Note**: Scripts may require Firebase credentials and proper configuration
+
+## Performance & Cost Optimization
+
+### Caching Strategy
+
+**When to Implement Caching**:
+- Frequently accessed, rarely changed data
+- Expensive Firestore queries (multiple document reads)
+- User-specific interaction data (likes, bookmarks, view history)
+- Computed/aggregated data
+
+**Cache Implementation Pattern**:
+```dart
+class InteractionCacheManager {
+  static const Duration _cacheTTL = Duration(minutes: 10);
+  DateTime? _lastCacheUpdate;
+  
+  bool shouldRefreshCache() {
+    if (_lastCacheUpdate == null) return true;
+    return DateTime.now().difference(_lastCacheUpdate!) > _cacheTTL;
+  }
+  
+  // Track cache effectiveness
+  Map<String, int> getCacheStats() {
+    return {
+      'hitCount': _cacheHitCount,
+      'missCount': _cacheMissCount,
+      'savedCost': _cacheHitCount * 2, // Each hit saves 2 Firestore reads
+    };
+  }
+}
+```
+
+**Cache TTL Guidelines**:
+- **Real-time data** (chat messages): No cache or 30 seconds
+- **User interactions** (likes, bookmarks): 5-10 minutes
+- **User profiles**: 15-30 minutes
+- **Static content** (app settings, categories): 1-24 hours
+
+### Firebase Cost Optimization
+
+**Query Best Practices**:
+```dart
+// ✅ Good: Use limit for pagination
+final snapshot = await postsRef
+  .orderBy('createdAt', descending: true)
+  .limit(20)
+  .get();
+
+// ✅ Good: Batch queries instead of loops
+final postIds = ['id1', 'id2', 'id3', ...];
+final snapshot = await postsRef
+  .where(FieldPath.documentId, whereIn: postIds.take(10).toList())
+  .get();
+
+// ✅ Good: Use cache-first strategy
+final snapshot = await postsRef.get(
+  GetOptions(source: Source.cache),
+);
+
+// ❌ Bad: N+1 queries in loop
+for (final postId in postIds) {
+  await postsRef.doc(postId).get(); // Expensive!
+}
+
+// ❌ Bad: Fetching entire collection
+final snapshot = await postsRef.get(); // Avoid!
+
+// ❌ Bad: No pagination
+final snapshot = await postsRef
+  .orderBy('createdAt')
+  .get(); // Gets ALL documents!
+```
+
+**Firestore Cost Reduction Checklist**:
+- ✅ Implement pagination with `.limit()`
+- ✅ Cache frequently accessed data
+- ✅ Use composite indexes for complex queries
+- ✅ Batch reads using `whereIn` (max 10 items per query)
+- ✅ Monitor cache hit rates
+- ❌ Never query entire collections
+- ❌ Avoid `.get()` calls inside loops
+
+**Real Example - 50% Cost Reduction**:
+```dart
+// Before: Always fetch from Firestore (expensive)
+Future<List<Post>> enrichPosts(List<Post> posts, String uid) async {
+  final likedIds = await fetchLikedPostIds(uid, posts.map((p) => p.id));
+  final bookmarkedIds = await fetchBookmarkedIds(uid, posts.map((p) => p.id));
+  // 2 Firestore queries per call
+}
+
+// After: Use cache with 10-min TTL (cost-effective)
+Future<List<Post>> enrichPosts(List<Post> posts, String uid) async {
+  if (!_cacheManager.shouldRefreshCache()) {
+    final likedIds = _cacheManager.getLikedPostIds(uid, postIds);
+    final bookmarkedIds = _cacheManager.getBookmarkedPostIds(uid, postIds);
+    // 0 Firestore queries on cache hit!
+  }
+  // Only queries on cache miss or expiration
+}
+```
+
+### Memory Management
+
+**Resource Disposal Checklist**:
+```dart
+class _MyWidgetState extends State<MyWidget> {
+  late StreamSubscription _subscription;
+  late AnimationController _controller;
+  late TextEditingController _textController;
+  Timer? _debounceTimer;
+  
+  @override
+  void dispose() {
+    // ✅ Always dispose resources
+    _subscription.cancel();
+    _controller.dispose();
+    _textController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+}
+```
+
+**Must Dispose**:
+- ✅ StreamSubscription
+- ✅ AnimationController
+- ✅ TextEditingController
+- ✅ Timer
+- ✅ ScrollController
+- ✅ FocusNode
+- ✅ VideoPlayerController
+
+**Performance Best Practices**:
+```dart
+// ✅ Good: Use const for static widgets
+const Text('Static Label');
+const SizedBox(height: 16);
+
+// ✅ Good: Extract widgets to reduce rebuilds
+class _StaticHeader extends StatelessWidget {
+  const _StaticHeader();
+  // Won't rebuild when parent rebuilds
+}
+
+// ✅ Good: Use keys for list items
+ListView.builder(
+  itemBuilder: (context, index) {
+    return PostCard(
+      key: ValueKey(posts[index].id),
+      post: posts[index],
+    );
+  },
+);
+
+// ❌ Bad: Non-const for static content
+Text('Static Label'); // Creates new instance every build
+
+// ❌ Bad: Anonymous functions recreated every build
+onPressed: () => _handleTap(), // Use method reference instead
+onPressed: _handleTap, // Better
+```
+
+### Image Optimization
+
+**Compression Guidelines**:
+```dart
+// Use different compression levels based on use case
+enum ImageCompressionType {
+  profile,   // High quality: 90%
+  post,      // Medium quality: 85%
+  comment,   // Lower quality: 80%
+  thumbnail, // Lowest quality: 70%
+}
+
+// Example from project
+final compressed = await ImageCompressionUtil.compressImage(
+  image,
+  ImageCompressionType.comment,
+);
+```
+
+**Best Practices**:
+- ✅ Compress images before upload
+- ✅ Use `cached_network_image` for network images
+- ✅ Set `maxWidth` and `maxHeight` when picking images
+- ✅ Use thumbnails for list views
+- ❌ Don't upload raw camera images (can be 5-10MB!)
 
 ## Important Conventions
 
@@ -426,6 +827,7 @@ class ProfileSettingsPage { }
 
 ### 권장 파일 구조
 
+**이상적인 구조**:
 ```
 feature/
 ├── presentation/
@@ -450,11 +852,49 @@ feature/
 │   └── usecases/
 │       └── feature_usecase.dart     (100-300줄)
 └── data/
+    ├── services/
+    │   ├── cache_manager.dart       (150-250줄)
+    │   └── enrichment_service.dart  (200-300줄)
     ├── repositories/
     │   └── feature_repository.dart  (200-400줄)
     └── models/
         └── feature_model.dart       (100-200줄)
 ```
+
+**실제 프로젝트 예시 (Community Feature)**:
+```
+lib/features/community/
+├── data/
+│   ├── services/
+│   │   ├── interaction_cache_manager.dart        (172줄) ✅
+│   │   └── post_enrichment_service.dart          (213줄) ✅
+│   ├── repositories/
+│   │   ├── community_repository.dart             (822줄) 🟡
+│   │   └── report_repository.dart                (129줄) ✅
+│   └── models/
+│       └── post_model.dart                       (~150줄) ✅
+├── domain/
+│   ├── entities/
+│   │   └── post.dart                             (~100줄) ✅
+│   └── repositories/
+│       └── community_repository.dart             (인터페이스)
+└── presentation/
+    ├── cubit/
+    │   ├── community_cubit.dart                  (~250줄) ✅
+    │   └── community_state.dart                  (~80줄) ✅
+    ├── views/
+    │   └── community_page.dart                   (~350줄) ✅
+    └── widgets/
+        ├── post/
+        │   ├── comment_image_uploader.dart       (178줄) ✅
+        │   └── post_share_handler.dart           (108줄) ✅
+        └── post_card.dart                        (885줄) 🟡
+```
+
+**주요 개선 포인트**:
+- ✅ **Services 분리**: CacheManager, EnrichmentService로 로직 캡슐화
+- ✅ **Widget 세분화**: 이미지 업로드, 공유 기능을 별도 파일로 분리
+- 🟡 **추가 개선 필요**: post_card.dart를 더 작은 컴포넌트로 분리 권장
 
 ### 예외 허용 케이스
 
