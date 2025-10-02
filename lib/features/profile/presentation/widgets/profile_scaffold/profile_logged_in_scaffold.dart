@@ -1,0 +1,94 @@
+/**
+ * Profile Logged In Scaffold
+ *
+ * Main scaffold for authenticated profile view.
+ * - TabBar with Overview and Settings tabs
+ * - Message display with debouncing logic
+ * - BLoC listener for auth state messages
+ *
+ * Phase 4 - Extracted from profile_page.dart
+ */
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../auth/presentation/cubit/auth_cubit.dart';
+import '../profile_overview/profile_overview_tab.dart';
+import '../profile_settings/profile_settings_tab.dart';
+
+class ProfileLoggedInScaffold extends StatefulWidget {
+  const ProfileLoggedInScaffold({super.key});
+
+  @override
+  State<ProfileLoggedInScaffold> createState() => _ProfileLoggedInScaffoldState();
+}
+
+class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
+  String? _lastShownMessage;
+  DateTime? _lastMessageTime;
+
+  /// Shows message with debouncing to prevent duplicate snackbars
+  void _showMessageIfDifferent(BuildContext context, String message) {
+    final now = DateTime.now();
+
+    // 같은 메시지를 1초 이내에 연속으로 표시하지 않음
+    if (_lastShownMessage == message &&
+        _lastMessageTime != null &&
+        now.difference(_lastMessageTime!).inMilliseconds < 1000) {
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.clearSnackBars(); // 큐의 모든 스낵바 제거
+    scaffoldMessenger.removeCurrentSnackBar(); // 현재 스낵바도 제거
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    _lastShownMessage = message;
+    _lastMessageTime = now;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listenWhen: (AuthState previous, AuthState current) =>
+          previous.lastMessage != current.lastMessage && current.lastMessage != null,
+      listener: (BuildContext context, AuthState state) {
+        final String? message = state.lastMessage;
+        if (message == null) {
+          return;
+        }
+        _showMessageIfDifferent(context, message);
+        context.read<AuthCubit>().clearLastMessage();
+      },
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            leading: BackButton(onPressed: () => context.pop()),
+            title: const Text('마이페이지'),
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: '프로필'),
+                Tab(text: '앱 설정'),
+              ],
+            ),
+          ),
+          body: const TabBarView(
+            children: [
+              ProfileOverviewTab(),
+              ProfileSettingsTab(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

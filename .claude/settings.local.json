@@ -94,7 +94,14 @@
       "Bash(for feature in auth calculator community life matching pension profile salary_insights transfer_posting year_end_tax notifications)",
       "mcp__serena__list_memories",
       "WebFetch(domain:support.claude.com)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(while read f)",
+      "Bash(for file in lib/features/profile/presentation/constants/test_careers.dart lib/features/profile/presentation/widgets/profile_overview/*.dart lib/features/profile/presentation/widgets/profile_settings/*.dart)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(for:*)",
+      "Bash(sort:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []
