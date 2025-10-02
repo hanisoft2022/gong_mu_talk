@@ -30,10 +30,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:share_plus/share_plus.dart';
-
-import '../../../../core/utils/image_compression_util.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import '../../../../core/utils/date_time_helpers.dart';
 import '../../../../routing/app_router.dart';
@@ -55,6 +51,8 @@ import 'post/post_comments_section.dart';
 import 'post/author_menu_overlay.dart';
 import 'post/reply_sheet.dart';
 import 'post/profile_screen.dart';
+import 'post/comment_image_uploader.dart';
+import 'post/post_share_handler.dart';
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -107,7 +105,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   List<XFile> _selectedImages = [];
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
-  final ImagePicker _imagePicker = ImagePicker();
+  final CommentImageUploader _imageUploader = CommentImageUploader();
 
   // Dependencies
   late final CommunityRepository _repository;
@@ -322,7 +320,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _handleShare(Post post) {
     _registerInteraction();
-    _showShareOptions(post);
+    PostShareHandler.showShareOptions(context, post);
   }
 
   void _handleAuthorMenuTap() {
@@ -723,103 +721,30 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // ==================== Image Upload ====================
 
   Future<void> _pickImages() async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
-
-      if (image == null) return;
-
-      if (_selectedImages.isNotEmpty) {
+    final result = await _imageUploader.pickAndCompressImage(
+      context,
+      currentImages: _selectedImages,
+      onStart: () {
         if (mounted) {
-          final bool? replace = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('이미지 교체'),
-              content: const Text('댓글에는 이미지를 1장만 첨부할 수 있습니다. 기존 이미지를 교체하시겠습니까?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('취소'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('교체'),
-                ),
-              ],
-            ),
-          );
-
-          if (replace != true) return;
-        }
-      }
-
-      setState(() {
-        _isUploadingImages = true;
-      });
-
-      try {
-        final XFile? compressedImage = await ImageCompressionUtil.compressImage(
-          image,
-          ImageCompressionType.comment,
-        );
-
-        if (compressedImage != null) {
           setState(() {
-            _selectedImages = [compressedImage];
+            _isUploadingImages = true;
+          });
+        }
+      },
+      onComplete: () {
+        if (mounted) {
+          setState(() {
             _isUploadingImages = false;
           });
-          _handleCommentInputChanged();
-        } else {
-          throw const ImageCompressionException('이미지 압축에 실패했습니다.');
         }
-      } on ImageCompressionException catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(e.message),
-                duration: const Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-        }
-        setState(() {
-          _isUploadingImages = false;
-          _uploadProgress = 0.0;
-        });
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(
-                content: Text('이미지 처리 중 오류가 발생했습니다.'),
-                duration: Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-        }
-        setState(() {
-          _isUploadingImages = false;
-          _uploadProgress = 0.0;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('이미지를 선택하는 중 오류가 발생했습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-      }
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedImages = [result];
+      });
+      _handleCommentInputChanged();
     }
   }
 
@@ -833,153 +758,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Future<List<String>> _uploadImages() async {
     if (_selectedImages.isEmpty) return [];
 
-    setState(() {
-      _isUploadingImages = true;
-      _uploadProgress = 0.0;
-    });
-
-    try {
-      final List<String> imageUrls = [];
-      final String userId = _authCubit.state.userId ?? 'anonymous';
-      final String postId = widget.post.id;
-
-      for (int i = 0; i < _selectedImages.length; i++) {
-        final XFile image = _selectedImages[i];
-        final DateTime now = DateTime.now();
-        final String year = now.year.toString();
-        final String month = now.month.toString().padLeft(2, '0');
-        final String fileName =
-            'comments/$year/$month/$postId/${userId}_${now.millisecondsSinceEpoch}.jpg';
-
-        final Reference ref = FirebaseStorage.instance.ref().child(fileName);
-        final UploadTask uploadTask = ref.putFile(File(image.path));
-
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          final double progress = snapshot.bytesTransferred / snapshot.totalBytes;
-          final double totalProgress = (i + progress) / _selectedImages.length;
+    return await _imageUploader.uploadImages(
+      images: _selectedImages,
+      userId: _authCubit.state.userId ?? 'anonymous',
+      postId: widget.post.id,
+      onProgress: (progress) {
+        if (mounted) {
           setState(() {
-            _uploadProgress = totalProgress;
+            _uploadProgress = progress;
           });
-        });
-
-        final TaskSnapshot snapshot = await uploadTask;
-        final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-        imageUrls.add(downloadUrl);
-      }
-
-      return imageUrls;
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('이미지 업로드 중 오류가 발생했습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-      }
-      return [];
-    } finally {
-      setState(() {
-        _isUploadingImages = false;
-        _uploadProgress = 0.0;
-      });
-    }
-  }
-
-  // ==================== Share ====================
-
-  void _showShareOptions(Post post) {
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) {
-        final ThemeData theme = Theme.of(context);
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '공유하기',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.link),
-                title: const Text('링크 복사'),
-                onTap: () {
-                  _copyLinkToClipboard(post);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text('다른 앱으로 공유'),
-                onTap: () {
-                  _sharePost(post);
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
+        }
       },
+      context: context,
     );
   }
 
-  void _copyLinkToClipboard(Post post) {
-    final Uri shareUri = Uri.parse(
-      'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
-    );
-
-    Clipboard.setData(ClipboardData(text: shareUri.toString()));
-
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('링크가 클립보드에 복사되었습니다'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-    }
-  }
-
-  Future<void> _sharePost(Post post) async {
-    final String source = post.text.trim();
-    final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
-    final String snippet = truncated.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final Uri shareUri = Uri.parse(
-      'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
-    );
-
-    final String message = snippet.isEmpty ? shareUri.toString() : '$snippet\n\n${shareUri.toString()}';
-
-    try {
-      await Share.share(message, subject: '공뮤톡 라운지 글 공유');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('공유하기를 실행할 수 없습니다'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-      }
-    }
-  }
+  // Share methods moved to PostShareHandler
 
   // ==================== Profile ====================
 

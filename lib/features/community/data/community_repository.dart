@@ -23,6 +23,9 @@ import 'repositories/comment_repository.dart';
 import 'repositories/interaction_repository.dart';
 import 'repositories/search_repository.dart';
 import 'repositories/lounge_repository.dart';
+import 'repositories/report_repository.dart';
+import 'services/interaction_cache_manager.dart';
+import 'services/post_enrichment_service.dart';
 
 typedef JsonMap = Map<String, Object?>;
 typedef QueryJson = Query<JsonMap>;
@@ -75,6 +78,16 @@ class CommunityRepository {
     );
     _searchRepository = SearchRepository(firestore: _firestore);
     _loungeRepository = LoungeRepository(firestore: _firestore);
+    _reportRepository = ReportRepository(firestore: _firestore);
+
+    // Initialize cache and enrichment services
+    _cacheManager = InteractionCacheManager();
+    _enrichmentService = PostEnrichmentService(
+      interactionRepository: _interactionRepository,
+      commentRepository: _commentRepository,
+      postRepository: _postRepository,
+      cacheManager: _cacheManager,
+    );
 
     // AuthCubit 상태 변화 구독 (로그아웃 시 캐시 클리어)
     _authSubscription = _authCubit.stream.listen(_handleAuthStateChanged);
@@ -85,8 +98,8 @@ class CommunityRepository {
   void _handleAuthStateChanged(AuthState state) {
     // 로그아웃 감지 (userId가 null이 됨)
     if (state.userId == null) {
-      clearInteractionCache();
-      resetCacheStats();
+      _cacheManager.clearInteractionCache();
+      _cacheManager.resetCacheStats();
       debugPrint('🔓 로그아웃 감지 - 모든 캐시 및 통계 삭제');
     }
   }
@@ -102,30 +115,21 @@ class CommunityRepository {
   final NotificationRepository _notificationRepository;
   final AuthCubit _authCubit;
 
-  // Like/Bookmark 캐시 (비용 최적화)
-  final Map<String, Set<String>> _likedPostsCache = {};
-  final Map<String, Set<String>> _bookmarkedPostsCache = {};
-  DateTime? _lastCacheUpdate;
-
-  // Comment Like 캐시 (추가 최적화)
-  final Map<String, Map<String, Set<String>>> _likedCommentsCache = {}; // uid -> postId -> commentIds
-
-  // Top Comment 캐시 (추가 최적화)
-  final Map<String, CachedComment?> _topCommentsCache = {}; // postId -> topComment
-
-  // 캐시 히트율 추적 (성능 모니터링)
-  int _cacheHitCount = 0;
-  int _cacheMissCount = 0;
-
   // 검색 Rate Limiting (비용 최적화)
   DateTime? _lastSearchTime;
   static const Duration _searchCooldown = Duration(seconds: 2);
 
+  // Specialized repositories and services
   late final PostRepository _postRepository;
   late final CommentRepository _commentRepository;
   late final InteractionRepository _interactionRepository;
   late final SearchRepository _searchRepository;
   late final LoungeRepository _loungeRepository;
+  late final ReportRepository _reportRepository;
+  
+  // Cache and enrichment services
+  late final InteractionCacheManager _cacheManager;
+  late final PostEnrichmentService _enrichmentService;
 
   String get currentUserId => _userSession.userId;
 
@@ -134,11 +138,7 @@ class CommunityRepository {
     return profile?.nickname ?? 'Unknown User';
   }
 
-  CollectionReference<JsonMap> get _reportsRef =>
-      _firestore.collection('reports');
-
-  DocumentReference<JsonMap> _userDoc(String uid) =>
-      _firestore.collection('users').doc(uid);
+  // Removed - delegated to ReportRepository
 
   // ============================================================================
   // POST OPERATIONS - Delegate to PostRepository
@@ -207,7 +207,7 @@ class CommunityRepository {
     final Post? post = await _postRepository.fetchPostById(postId);
     if (post == null) return null;
 
-    return _enrichPostWithUserData(post, currentUid: currentUid);
+    return _enrichmentService.enrichPost(post, currentUid: currentUid);
   }
 
   Future<PaginatedQueryResult<Post>> fetchChirpFeed({
@@ -219,7 +219,7 @@ class CommunityRepository {
       limit: limit,
       startAfter: startAfter,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<PaginatedQueryResult<Post>> fetchHotFeed({
@@ -231,7 +231,7 @@ class CommunityRepository {
       limit: limit,
       startAfter: startAfter,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<PaginatedQueryResult<Post>> fetchBoardPosts({
@@ -245,7 +245,7 @@ class CommunityRepository {
       limit: limit,
       startAfter: startAfter,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
@@ -259,7 +259,7 @@ class CommunityRepository {
       limit: limit,
       startAfter: startAfter,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<void> incrementViewCount(String postId) {
@@ -329,7 +329,7 @@ class CommunityRepository {
       startAfter: startAfter,
       serial: serial,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<PaginatedQueryResult<Post>> fetchSerialFeed({
@@ -343,7 +343,7 @@ class CommunityRepository {
       limit: limit,
       startAfter: startAfter,
     );
-    return _enrichPostPageWithUserData(result, currentUid: currentUid);
+    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
   Future<List<Board>> fetchBoards({bool includeHidden = false}) {
@@ -609,7 +609,7 @@ class CommunityRepository {
         .whereType<Post>()
         .toList();
 
-    final enrichedPosts = await _enrichPostsWithUserData(posts, currentUid: uid);
+    final enrichedPosts = await _enrichmentService.enrichPosts(posts, currentUid: uid);
 
     return PaginatedQueryResult<Post>(
       items: enrichedPosts,
@@ -732,11 +732,11 @@ class CommunityRepository {
 
     // Enrich posts with user data
     final enrichedPosts = currentUid != null
-        ? await _enrichPostsWithUserData(results.posts, currentUid: currentUid)
+        ? await _enrichmentService.enrichPosts(results.posts, currentUid: currentUid)
         : results.posts;
 
     // Enrich comments with post data
-    final commentResults = await _enrichCommentSearchResults(
+    final commentResults = await _enrichmentService.enrichCommentSearchResults(
       results.comments,
       currentUid: currentUid,
     );
@@ -771,217 +771,52 @@ class CommunityRepository {
     required String reason,
     required String reporterUid,
     Map<String, Object?> metadata = const <String, Object?>{},
-  }) async {
-    await _reportsRef.add(
-      ContentReport(
-        id: '',
-        targetType: targetType,
-        targetId: targetId,
-        reason: reason,
-        reporterUid: reporterUid,
-        createdAt: DateTime.now(),
-        metadata: metadata,
-      ).toMap(),
+  }) {
+    return _reportRepository.submitReport(
+      targetType: targetType,
+      targetId: targetId,
+      reason: reason,
+      reporterUid: reporterUid,
+      metadata: metadata,
     );
   }
 
-  Future<void> reportPost(String postId, String reason) async {
-    await submitReport(
-      targetType: ReportTargetType.post,
-      targetId: postId,
+  Future<void> reportPost(String postId, String reason) {
+    return _reportRepository.reportPost(
+      postId: postId,
       reason: reason,
       reporterUid: currentUserId,
     );
   }
 
-  Future<void> blockUser(String userId) async {
-    await _userDoc(currentUserId)
-        .collection('blocked_users')
-        .doc(userId)
-        .set({'blockedAt': Timestamp.now()});
+  Future<void> blockUser(String userId) {
+    return _reportRepository.blockUser(
+      userId: userId,
+      blockerUid: currentUserId,
+    );
   }
 
   // ============================================================================
-  // HELPER METHODS - Data enrichment
+  // CACHE MANAGEMENT - Delegate to services
   // ============================================================================
 
-  Future<Post> _enrichPostWithUserData(
-    Post post, {
-    String? currentUid,
-  }) async {
-    if (currentUid == null) return post;
-
-    final likedIds = await _interactionRepository.fetchLikedPostIds(
-      uid: currentUid,
-      postIds: [post.id],
-    );
-    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
-      uid: currentUid,
-      postIds: [post.id],
-    );
-
-    Post enriched = post.copyWith(
-      isLiked: likedIds.contains(post.id),
-      isBookmarked: bookmarkedIds.contains(post.id),
-    );
-
-    if (enriched.topComment == null && enriched.commentCount > 0) {
-      // Top Comment 캐시 사용
-      CachedComment? topComment;
-      
-      if (_topCommentsCache.containsKey(post.id)) {
-        topComment = _topCommentsCache[post.id];
-        debugPrint('✅ Top Comment 캐시 사용 - postId: ${post.id}');
-      } else {
-        topComment = await _commentRepository.loadTopComment(post.id);
-        _topCommentsCache[post.id] = topComment;
-        debugPrint('🔄 Top Comment 캐시 갱신 - postId: ${post.id}');
-      }
-      
-      if (topComment != null) {
-        enriched = enriched.copyWith(topComment: topComment);
-      }
-    }
-
-    return enriched;
+  /// Clear interaction cache (called on logout)
+  void clearInteractionCache({String? uid}) {
+    _cacheManager.clearInteractionCache(uid: uid);
   }
 
-  Future<List<Post>> _enrichPostsWithUserData(
-    List<Post> posts, {
-    String? currentUid,
-  }) async {
-    if (posts.isEmpty) return posts;
-    if (currentUid == null) return posts;
-
-    final postIds = posts.map((p) => p.id).toList();
-
-    // 캐시 사용 (10분 유효 - 비용 최적화)
-    final now = DateTime.now();
-    final shouldRefreshCache = _lastCacheUpdate == null ||
-        now.difference(_lastCacheUpdate!) > const Duration(minutes: 10);
-
-    Set<String> likedIds;
-    Set<String> bookmarkedIds;
-
-    if (shouldRefreshCache || !_likedPostsCache.containsKey(currentUid)) {
-      // 캐시 갱신 필요
-      likedIds = await _interactionRepository.fetchLikedPostIds(
-        uid: currentUid,
-        postIds: postIds,
-      );
-      bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
-        uid: currentUid,
-        postIds: postIds,
-      );
-
-      // 캐시 업데이트 (병합 방식)
-      _likedPostsCache[currentUid] = {
-        ...(_likedPostsCache[currentUid] ?? {}),
-        ...likedIds,
-      };
-      _bookmarkedPostsCache[currentUid] = {
-        ...(_bookmarkedPostsCache[currentUid] ?? {}),
-        ...bookmarkedIds,
-      };
-      _lastCacheUpdate = now;
-
-      // 캐시 미스 기록
-      _cacheMissCount++;
-      debugPrint('🔄 Like/Bookmark 캐시 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
-      _logCacheStats();
-    } else {
-      // 캐시에서 가져오기
-      likedIds = _likedPostsCache[currentUid]!
-          .where((id) => postIds.contains(id))
-          .toSet();
-      bookmarkedIds = _bookmarkedPostsCache[currentUid]!
-          .where((id) => postIds.contains(id))
-          .toSet();
-
-      // 캐시 히트 기록
-      _cacheHitCount++;
-      debugPrint('✅ Like/Bookmark 캐시 사용 - Firestore 호출 없음');
-      _logCacheStats();
-    }
-
-    final enriched = <Post>[];
-    for (final post in posts) {
-      Post p = post.copyWith(
-        isLiked: likedIds.contains(post.id),
-        isBookmarked: bookmarkedIds.contains(post.id),
-      );
-
-      if (p.topComment == null && p.commentCount > 0) {
-        // Top Comment 캐시 사용
-        CachedComment? topComment;
-        
-        if (_topCommentsCache.containsKey(post.id)) {
-          topComment = _topCommentsCache[post.id];
-        } else {
-          topComment = await _commentRepository.loadTopComment(post.id);
-          _topCommentsCache[post.id] = topComment;
-        }
-        
-        if (topComment != null) {
-          p = p.copyWith(topComment: topComment);
-        }
-      }
-      enriched.add(p);
-    }
-
-    return enriched;
+  /// Refresh interaction cache for user
+  Future<void> refreshInteractionCache(String uid, List<String> postIds) {
+    return _enrichmentService.refreshCache(uid, postIds);
   }
 
-  Future<PaginatedQueryResult<Post>> _enrichPostPageWithUserData(
-    PaginatedQueryResult<Post> page, {
-    String? currentUid,
-  }) async {
-    final enrichedPosts = await _enrichPostsWithUserData(
-      page.items,
-      currentUid: currentUid,
-    );
-
-    return PaginatedQueryResult<Post>(
-      items: enrichedPosts,
-      hasMore: page.hasMore,
-      lastDocument: page.lastDocument,
-    );
+  /// Reset cache statistics
+  void resetCacheStats() {
+    _cacheManager.resetCacheStats();
   }
 
-  Future<List<CommentSearchResult>> _enrichCommentSearchResults(
-    List<CommentSearchResult> results, {
-    String? currentUid,
-  }) async {
-    if (results.isEmpty) return results;
-
-    final postIds = results
-        .map((r) => r.comment.postId)
-        .where((id) => id.isNotEmpty)
-        .toSet();
-
-    final postMap = await _postRepository.fetchPostsByIds(postIds);
-
-    final enriched = <CommentSearchResult>[];
-    for (final result in results) {
-      final comment = result.comment;
-      Comment enrichedComment = comment;
-
-      if (currentUid != null) {
-        final likedIds = await _interactionRepository.fetchLikedCommentIds(
-          postId: comment.postId,
-          uid: currentUid,
-          commentIds: [comment.id],
-        );
-        enrichedComment =
-            comment.copyWith(isLiked: likedIds.contains(comment.id));
-      }
-
-      enriched.add(CommentSearchResult(
-        comment: enrichedComment,
-        post: postMap[comment.postId],
-      ));
-    }
-
-    return enriched;
+  /// Get cache statistics
+  Map<String, int> getCacheStats() {
+    return _cacheManager.getCacheStats();
   }
 }
