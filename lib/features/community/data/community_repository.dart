@@ -107,6 +107,12 @@ class CommunityRepository {
   final Map<String, Set<String>> _bookmarkedPostsCache = {};
   DateTime? _lastCacheUpdate;
 
+  // Comment Like 캐시 (추가 최적화)
+  final Map<String, Map<String, Set<String>>> _likedCommentsCache = {}; // uid -> postId -> commentIds
+
+  // Top Comment 캐시 (추가 최적화)
+  final Map<String, CachedComment?> _topCommentsCache = {}; // postId -> topComment
+
   // 캐시 히트율 추적 (성능 모니터링)
   int _cacheHitCount = 0;
   int _cacheMissCount = 0;
@@ -366,11 +372,31 @@ class CommunityRepository {
 
     if (currentUid == null) return result;
 
-    final Set<String> likedIds = await _interactionRepository.fetchLikedCommentIds(
-      postId: postId,
-      uid: currentUid,
-      commentIds: result.items.map((c) => c.id).toList(),
-    );
+    // Comment Like 캐시 사용
+    final commentIds = result.items.map((c) => c.id).toList();
+    Set<String> likedIds;
+
+    // 캐시 확인
+    if (_likedCommentsCache.containsKey(currentUid) &&
+        _likedCommentsCache[currentUid]!.containsKey(postId)) {
+      // 캐시에서 가져오기
+      likedIds = _likedCommentsCache[currentUid]![postId]!
+          .where((id) => commentIds.contains(id))
+          .toSet();
+      debugPrint('✅ Comment Like 캐시 사용 - postId: $postId');
+    } else {
+      // Firestore에서 조회
+      likedIds = await _interactionRepository.fetchLikedCommentIds(
+        postId: postId,
+        uid: currentUid,
+        commentIds: commentIds,
+      );
+
+      // 캐시 업데이트
+      _likedCommentsCache.putIfAbsent(currentUid, () => {});
+      _likedCommentsCache[currentUid]![postId] = likedIds;
+      debugPrint('🔄 Comment Like 캐시 갱신 - postId: $postId, ${likedIds.length} likes');
+    }
 
     final enrichedComments = result.items
         .map((comment) =>
@@ -396,8 +422,8 @@ class CommunityRepository {
     bool authorIsSupporter = false,
     bool awardPoints = true,
     List<String>? imageUrls,
-  }) {
-    return _commentRepository.createComment(
+  }) async {
+    final comment = await _commentRepository.createComment(
       postId: postId,
       authorUid: authorUid,
       authorNickname: authorNickname,
@@ -410,18 +436,28 @@ class CommunityRepository {
       awardPoints: awardPoints,
       imageUrls: imageUrls,
     );
+    
+    // Top Comment 캐시 무효화 (새 댓글이 top이 될 수 있음)
+    _topCommentsCache.remove(postId);
+    debugPrint('🗑️  Top Comment 캐시 무효화 - postId: $postId (새 댓글 생성)');
+    
+    return comment;
   }
 
   Future<void> deleteComment({
     required String postId,
     required String commentId,
     required String requesterUid,
-  }) {
-    return _commentRepository.deleteComment(
+  }) async {
+    await _commentRepository.deleteComment(
       postId: postId,
       commentId: commentId,
       requesterUid: requesterUid,
     );
+    
+    // Top Comment 캐시 무효화 (top comment가 삭제되었을 수 있음)
+    _topCommentsCache.remove(postId);
+    debugPrint('🗑️  Top Comment 캐시 무효화 - postId: $postId (댓글 삭제)');
   }
 
   Future<List<Comment>> getComments(String postId) async {
@@ -502,12 +538,25 @@ class CommunityRepository {
     required String postId,
     required String commentId,
     required String uid,
-  }) {
-    return _interactionRepository.toggleCommentLike(
+  }) async {
+    final liked = await _interactionRepository.toggleCommentLike(
       postId: postId,
       commentId: commentId,
       uid: uid,
     );
+
+    // Comment Like 캐시 즉시 업데이트
+    if (_likedCommentsCache.containsKey(uid) &&
+        _likedCommentsCache[uid]!.containsKey(postId)) {
+      if (liked) {
+        _likedCommentsCache[uid]![postId]!.add(commentId);
+      } else {
+        _likedCommentsCache[uid]![postId]!.remove(commentId);
+      }
+      debugPrint('💾 Comment Like 캐시 업데이트 - commentId: $commentId, liked: $liked');
+    }
+
+    return liked;
   }
 
   Future<void> toggleBookmark({
@@ -594,12 +643,15 @@ class CommunityRepository {
     if (uid != null) {
       _likedPostsCache.remove(uid);
       _bookmarkedPostsCache.remove(uid);
-      debugPrint('🗑️  Like/Bookmark 캐시 삭제 - uid: $uid');
+      _likedCommentsCache.remove(uid);
+      debugPrint('🗑️  Like/Bookmark/Comment 캐시 삭제 - uid: $uid');
     } else {
       _likedPostsCache.clear();
       _bookmarkedPostsCache.clear();
+      _likedCommentsCache.clear();
+      _topCommentsCache.clear();
       _lastCacheUpdate = null;
-      debugPrint('🗑️  모든 Like/Bookmark 캐시 삭제');
+      debugPrint('🗑️  모든 캐시 삭제 (Like/Bookmark/Comment/TopComment)');
     }
   }
 
@@ -774,7 +826,18 @@ class CommunityRepository {
     );
 
     if (enriched.topComment == null && enriched.commentCount > 0) {
-      final topComment = await _commentRepository.loadTopComment(post.id);
+      // Top Comment 캐시 사용
+      CachedComment? topComment;
+      
+      if (_topCommentsCache.containsKey(post.id)) {
+        topComment = _topCommentsCache[post.id];
+        debugPrint('✅ Top Comment 캐시 사용 - postId: ${post.id}');
+      } else {
+        topComment = await _commentRepository.loadTopComment(post.id);
+        _topCommentsCache[post.id] = topComment;
+        debugPrint('🔄 Top Comment 캐시 갱신 - postId: ${post.id}');
+      }
+      
       if (topComment != null) {
         enriched = enriched.copyWith(topComment: topComment);
       }
@@ -849,7 +912,16 @@ class CommunityRepository {
       );
 
       if (p.topComment == null && p.commentCount > 0) {
-        final topComment = await _commentRepository.loadTopComment(post.id);
+        // Top Comment 캐시 사용
+        CachedComment? topComment;
+        
+        if (_topCommentsCache.containsKey(post.id)) {
+          topComment = _topCommentsCache[post.id];
+        } else {
+          topComment = await _commentRepository.loadTopComment(post.id);
+          _topCommentsCache[post.id] = topComment;
+        }
+        
         if (topComment != null) {
           p = p.copyWith(topComment: topComment);
         }

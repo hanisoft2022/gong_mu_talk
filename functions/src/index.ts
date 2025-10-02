@@ -223,10 +223,13 @@ export const onCommentWrite = onDocumentWritten(
   }
 );
 
-/** Recalculate hot scores periodically (run every hour). */
+/**
+ * Recalculate hot scores periodically.
+ * Run every 12 hours (cost optimized).
+ */
 export const recalculateHotScores = onSchedule(
   {
-    schedule: "0 * * * *",
+    schedule: "0 */12 * * *",
     timeZone: "Asia/Seoul",
     region: "us-central1",
   },
