@@ -12,12 +12,12 @@ service firebase.storage {
 
     match /paystub_uploads/{userId}/{fileName} {
       allow write: if isOwner(userId);
-      allow read: if false;
+      allow read: if false;  // Admin SDK only (paystub verification functions)
     }
 
     match /profile_images/{userId}/{fileName} {
       allow write: if isOwner(userId);
-      allow read: if isOwner(userId);
+      allow read: if isSignedIn();  // All signed-in users can view profile images
     }
 
     match /{allPaths=**} {

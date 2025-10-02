@@ -52,7 +52,7 @@ class AuthorInfoHeader extends StatelessWidget {
                   if (supporter != null) ...[supporter, const Gap(6)],
                   Expanded(
                     child: Text(
-                      post.authorNickname,
+                      maskNickname(post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid),
                       style: nameStyle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

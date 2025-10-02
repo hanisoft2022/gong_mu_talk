@@ -244,23 +244,5 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if false; // 라운지 정보는 관리자만 수정 가능
     }
-
-    match /lounge_posts/{postId} {
-      allow read: if isSignedIn() && canAccessLounge(resource.data.loungeId);
-      allow create: if isSignedIn() && canAccessLounge(request.resource.data.loungeId) &&
-        request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && canAccessLounge(resource.data.loungeId) &&
-        resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;  // 본인 라운지 글만 삭제 가능
-
-      match /comments/{commentId} {
-        allow read: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId);
-        allow create: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId) &&
-          request.resource.data.authorId == request.auth.uid;
-        allow update: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId) &&
-          resource.data.authorId == request.auth.uid;
-        allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;  // 본인 라운지 댓글만 삭제 가능
-      }
-    }
   }
 }

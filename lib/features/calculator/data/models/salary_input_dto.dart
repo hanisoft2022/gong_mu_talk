@@ -104,7 +104,7 @@ class SalaryInputDto extends Equatable {
   static SalaryAllowanceType _allowanceTypeFromKey(String key) {
     return SalaryAllowanceType.values.firstWhere(
       (type) => type.name == key,
-      orElse: () => SalaryAllowanceType.replacement,
+      orElse: () => SalaryAllowanceType.other,
     );
   }
 

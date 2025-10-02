@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../../../core/utils/result.dart';
-import '../models/board.dart';
 import '../models/comment.dart';
 import '../models/feed_filters.dart';
 import '../models/post.dart';
@@ -20,7 +19,6 @@ abstract class ICommunityRepository {
     required PostType type,
     required LoungeScope scope,
     List<String> imageUrls = const [],
-    String? boardId,
   });
 
   Future<AppResult<void>> updatePost({
@@ -59,13 +57,6 @@ abstract class ICommunityRepository {
 
   Future<AppResult<PaginatedQueryResult<Post>>> fetchHotFeed({
     int limit = 20,
-    String? currentUid,
-  });
-
-  Future<AppResult<PaginatedQueryResult<Post>>> fetchBoardPosts({
-    required String boardId,
-    int limit = 20,
-    DocumentSnapshot? startAfter,
     String? currentUid,
   });
 
@@ -117,9 +108,6 @@ abstract class ICommunityRepository {
   Future<AppResult<void>> togglePostBookmark(String postId);
 
   Future<AppResult<void>> incrementViewCount(String postId);
-
-  // Board operations
-  Future<AppResult<List<Board>>> fetchBoards({bool includeHidden = false});
 
   // Search operations
   Future<AppResult<CommunitySearchResults>> searchCommunity({

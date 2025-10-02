@@ -184,18 +184,23 @@ class CommentTile extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => onToggleLike(comment),
-                    icon: Icon(
-                      comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 16,
-                      color: comment.isLiked
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
+                    icon: AnimatedScale(
+                      duration: const Duration(milliseconds: 200),
+                      scale: comment.isLiked ? 1.3 : 1,
+                      curve: Curves.elasticOut,
+                      child: Icon(
+                        comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
+                        color: comment.isLiked
+                            ? Colors.pink[400]
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     label: Text(
                       '${comment.likeCount}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: comment.isLiked
-                            ? theme.colorScheme.primary
+                            ? Colors.pink[400]
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -260,7 +265,7 @@ Widget _buildCommentIdentityRow({
             radius: 16,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
             foregroundColor: theme.colorScheme.primary,
-            child: Text(maskNickname(comment.authorNickname).substring(0, 1)),
+            child: Text(_getFirstChar(maskNickname(comment.authorNickname))),
           ),
           const Gap(12),
         ],
@@ -279,7 +284,7 @@ Widget _buildCommentIdentityRow({
               ],
               Flexible(
                 child: Text(
-                  comment.authorNickname,
+                  maskNickname(comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -399,4 +404,12 @@ Widget _buildCommentTrackTag(ThemeData theme, Comment comment) {
       ),
     ),
   );
+}
+
+String _getFirstChar(String text) {
+  final String normalized = text.trim();
+  if (normalized.isEmpty) {
+    return '공';
+  }
+  return String.fromCharCode(normalized.runes.first).toUpperCase();
 }

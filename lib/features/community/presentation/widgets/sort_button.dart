@@ -27,7 +27,7 @@ class SortButton extends StatelessWidget {
       // Show icon + text for selected button
       return Container(
         height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: theme.colorScheme.primaryContainer,
           borderRadius: BorderRadius.circular(12),
@@ -39,7 +39,7 @@ class SortButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 18, color: iconColor),
-              const Gap(6),
+              const Gap(5),
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(

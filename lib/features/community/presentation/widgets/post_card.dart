@@ -9,7 +9,6 @@
 /// - PostCommentsSection: Comments display
 /// - AuthorMenuOverlay: Author action menu
 /// - InlineReplySheet: Reply composition
-/// - MockMemberProfileScreen: Profile screen
 ///
 /// Responsibilities:
 /// - Main post card layout and state management
@@ -21,21 +20,20 @@
 /// - Manage author menu overlay
 
 library;
+
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import '../../../../core/utils/date_time_helpers.dart';
 import '../../../../routing/app_router.dart';
 
 import '../../data/community_repository.dart';
-import '../../data/mock_social_graph.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
@@ -50,7 +48,6 @@ import 'post/comment_composer_widget.dart';
 import 'post/post_comments_section.dart';
 import 'post/author_menu_overlay.dart';
 import 'post/reply_sheet.dart';
-import 'post/profile_screen.dart';
 import 'post/comment_image_uploader.dart';
 import 'post/post_share_handler.dart';
 
@@ -109,7 +106,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // Dependencies
   late final CommunityRepository _repository;
-  late final MockSocialGraph _socialGraph;
   late final AuthCubit _authCubit;
 
   // ==================== Lifecycle Methods ====================
@@ -118,7 +114,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _repository = context.read<CommunityRepository>();
-    _socialGraph = context.read<MockSocialGraph>();
     _authCubit = context.read<AuthCubit>();
     _commentCount = widget.post.commentCount;
     _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
@@ -330,12 +325,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == widget.post.authorUid;
     final bool canFollow = _canFollowUser(authState, currentUid, isSelf, widget.post.authorUid);
-    final bool isFollowing = canFollow && _socialGraph.isFollowing(widget.post.authorUid);
+    final bool isFollowing = false; // Social graph feature not yet implemented
 
-    _showAuthorMenuAtPosition(
-      canFollow: canFollow,
-      isFollowing: isFollowing,
-    );
+    _showAuthorMenuAtPosition(canFollow: canFollow, isFollowing: isFollowing);
   }
 
   void _handleCommentInputChanged() {
@@ -349,10 +341,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // ==================== Author Menu ====================
 
-  void _showAuthorMenuAtPosition({
-    required bool canFollow,
-    required bool isFollowing,
-  }) {
+  void _showAuthorMenuAtPosition({required bool canFollow, required bool isFollowing}) {
     if (_menuOverlayEntry != null) {
       _closeAuthorMenu();
       return;
@@ -363,14 +352,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorButtonKey: _authorButtonKey,
       canFollow: canFollow,
       isFollowing: isFollowing,
-      onViewProfile: () => _handleAuthorAction(
-        AuthorMenuAction.viewProfile,
-        isFollowing: isFollowing,
-      ),
-      onToggleFollow: () => _handleAuthorAction(
-        AuthorMenuAction.toggleFollow,
-        isFollowing: isFollowing,
-      ),
+      onViewProfile: () =>
+          _handleAuthorAction(AuthorMenuAction.viewProfile, isFollowing: isFollowing),
+      onToggleFollow: () =>
+          _handleAuthorAction(AuthorMenuAction.toggleFollow, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -390,7 +375,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
     final bool isSelf = currentUid != null && currentUid == comment.authorUid;
-    final bool canFollow = authState.isLoggedIn &&
+    final bool canFollow =
+        authState.isLoggedIn &&
         currentUid != null &&
         currentUid.isNotEmpty &&
         !isSelf &&
@@ -401,7 +387,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
 
-    final bool isFollowing = canFollow && _socialGraph.isFollowing(comment.authorUid);
+    final bool isFollowing = false; // Social graph feature not yet implemented
     final overlayEntry = AuthorMenuOverlay.show(
       context: context,
       authorButtonKey: authorKey,
@@ -442,10 +428,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleAuthorAction(
-    AuthorMenuAction action, {
-    required bool isFollowing,
-  }) async {
+  Future<void> _handleAuthorAction(AuthorMenuAction action, {required bool isFollowing}) async {
     _closeAuthorMenu();
     if (!mounted) return;
 
@@ -455,10 +438,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(
-          uid: widget.post.authorUid,
-          nickname: widget.post.authorNickname,
-        );
+        _openMockProfile(uid: widget.post.authorUid, nickname: widget.post.authorNickname);
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -484,10 +464,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(
-          uid: comment.authorUid,
-          nickname: comment.authorNickname,
-        );
+        _openMockProfile(uid: comment.authorUid, nickname: comment.authorNickname);
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -572,14 +549,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            _featuredComments = _applyRandomLikes(featured);
-            _timelineComments = _applyRandomLikes(mergedTimeline);
+            _featuredComments = featured;
+            _timelineComments = mergedTimeline;
             _commentsLoaded = true;
             _isLoadingComments = false;
           });
         }
       });
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading comments for post ${widget.post.id}: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _isLoadingComments = false);
@@ -669,10 +648,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           .toList(growable: false);
     }
 
+    // Optimistic update - 즉시 반영
     if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => updateLists(willLike, nextCount));
-      });
+      setState(() => updateLists(willLike, nextCount));
     }
 
     if (_isSynthetic(widget.post)) return;
@@ -680,10 +658,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     try {
       await _repository.toggleCommentLikeById(widget.post.id, comment.id);
     } catch (_) {
+      // 실패 시 롤백
       if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => updateLists(!willLike, comment.likeCount));
-        });
+        setState(() => updateLists(!willLike, comment.likeCount));
       }
     }
   }
@@ -783,42 +760,17 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     required bool isFollowing,
   }) async {
     if (!mounted) return;
-
-    final AuthState authState = _authCubit.state;
-    final String? currentUid = authState.userId;
-    if (currentUid == null || currentUid.isEmpty) {
-      _showSnack('로그인이 필요합니다.');
-      return;
-    }
-
-    try {
-      final bool nowFollowing = await _socialGraph.toggleFollow(
-        targetUid,
-        shouldFollow: !isFollowing,
-      );
-      if (!mounted) return;
-      setState(() {});
-      _showSnack(nowFollowing ? '$nickname 님을 팔로우했어요.' : '$nickname 님을 팔로우 취소했어요.');
-    } catch (_) {
-      if (!mounted) return;
-      _showSnack('요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
-    }
+    // TODO: Implement follow functionality
+    _showSnack('팔로우 기능은 곧 제공될 예정입니다.');
   }
 
-  void _openMockProfile({
-    required String uid,
-    required String nickname,
-  }) {
-    final MockMemberProfileData? profile = _socialGraph.getProfile(uid);
-    if (profile == null) {
-      _showSnack('$nickname 님의 정보를 찾을 수 없어요.');
+  void _openMockProfile({required String uid, required String nickname}) {
+    if (uid.isEmpty || uid == 'dummy_user') {
       return;
     }
-
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MockMemberProfileScreen(profile: profile, socialGraph: _socialGraph),
-      ),
+    context.pushNamed(
+      MemberProfileRoute.name,
+      pathParameters: <String, String>{'uid': uid},
     );
   }
 

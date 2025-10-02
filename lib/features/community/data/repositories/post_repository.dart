@@ -261,24 +261,7 @@ class PostRepository {
     }
   }
 
-  Future<PaginatedQueryResult<Post>> fetchBoardPosts({
-    required String boardId,
-    int limit = 20,
-    QueryDocumentSnapshotJson? startAfter,
-  }) async {
-    QueryJson query = _postsRef
-        .where('type', isEqualTo: PostType.board.name)
-        .where('boardId', isEqualTo: boardId)
-        .where('visibility', isEqualTo: PostVisibility.public.name)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
-
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
-    }
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    return _buildPostPage(snapshot, limit: limit);
-  }
+  
 
   Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
     required String authorUid,

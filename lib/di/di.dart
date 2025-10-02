@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,19 +21,29 @@ import '../features/calculator/domain/usecases/calculate_salary.dart';
 import '../features/calculator/domain/usecases/get_base_salary_from_reference.dart';
 import '../features/calculator/domain/usecases/get_salary_grades.dart';
 import '../features/calculator/presentation/bloc/salary_calculator_bloc.dart';
-import '../features/matching/data/matching_repository.dart';
+import '../features/calculator/domain/services/tax_calculator.dart';
+import '../features/calculator/domain/services/insurance_calculator.dart';
+import '../features/calculator/domain/services/career_simulation_engine.dart';
+import '../features/calculator/domain/repositories/salary_table_repository.dart';
+import '../features/calculator/data/repositories/salary_table_repository_impl.dart';
+import '../features/calculator/data/datasources/salary_table_remote_data_source.dart';
+import '../features/calculator/data/datasources/salary_table_local_data_source.dart';
+import '../features/calculator/domain/usecases/simulate_career_usecase.dart';
+import '../features/pension/domain/services/pension_calculator.dart';
+import '../features/pension/domain/usecases/calculate_pension_usecase.dart';
+import '../features/pension/presentation/cubit/pension_calculator_cubit.dart';
+
 import '../features/community/data/community_repository.dart';
 import '../features/community/data/community_repository_impl.dart';
 import '../features/community/domain/repositories/i_community_repository.dart';
 import '../features/community/domain/usecases/search_community.dart';
-import '../features/community/data/mock_social_graph.dart';
-import '../features/life/data/mock_life_repository.dart';
+
+
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
-import '../features/community/presentation/cubit/board_catalog_cubit.dart';
 import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/notifications/data/notification_repository.dart';
-import '../features/matching/presentation/cubit/matching_cubit.dart';
+
 import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
 import '../features/profile/data/follow_repository.dart';
@@ -91,11 +102,6 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<UserSession>(
       () => AuthUserSession(getIt<AuthCubit>()),
     )
-    ..registerLazySingleton<MockSocialGraph>(MockSocialGraph.new)
-    ..registerLazySingleton<MockLifeRepository>(
-      () => MockLifeRepository(socialGraph: getIt()),
-    )
-    ..registerLazySingleton<MatchingRepository>(MatchingRepository.new)
     ..registerLazySingleton<CommunityRepository>(
       () => CommunityRepository(
         userSession: getIt(),
@@ -109,12 +115,6 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton<SearchCommunity>(
       () => SearchCommunity(getIt()),
-    )
-    ..registerFactory<BoardCatalogCubit>(
-      () => BoardCatalogCubit(repository: getIt()),
-    )
-    ..registerFactory<MatchingCubit>(
-      () => MatchingCubit(repository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<CommunityFeedCubit>(
       () => CommunityFeedCubit(
@@ -133,8 +133,48 @@ Future<void> configureDependencies() async {
     ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
     ..registerLazySingleton<GoRouter>(createRouter)
+    // Calculator 서비스
+    ..registerLazySingleton<TaxCalculator>(() => TaxCalculator())
+    ..registerLazySingleton<InsuranceCalculator>(() => InsuranceCalculator())
+    // Firestore
+    ..registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance)
+    // Salary Table
+    ..registerLazySingleton<SalaryTableRemoteDataSource>(
+      () => SalaryTableRemoteDataSource(firestore: getIt()),
+    )
+    ..registerLazySingleton<SalaryTableLocalDataSource>(
+      () => SalaryTableLocalDataSource(sharedPreferences: getIt()),
+    )
+    ..registerLazySingleton<SalaryTableRepository>(
+      () => SalaryTableRepositoryImpl(
+        remoteDataSource: getIt(),
+        localDataSource: getIt(),
+      ),
+    )
+    // Career Simulation
+    ..registerLazySingleton<CareerSimulationEngine>(
+      () => CareerSimulationEngine(
+        salaryTableRepository: getIt(),
+        taxCalculator: getIt(),
+        insuranceCalculator: getIt(),
+      ),
+    )
+    ..registerLazySingleton<SimulateCareerUseCase>(
+      () => SimulateCareerUseCase(engine: getIt()),
+    )
+    // Pension
+    ..registerLazySingleton<PensionCalculator>(() => PensionCalculator())
+    ..registerLazySingleton<CalculatePensionUseCase>(
+      () => CalculatePensionUseCase(calculator: getIt()),
+    )
+    ..registerFactory<PensionCalculatorCubit>(
+      () => PensionCalculatorCubit(calculatePension: getIt()),
+    )
     ..registerLazySingleton<SalaryCalculatorLocalDataSource>(
-      () => SalaryCalculatorLocalDataSource(),
+      () => SalaryCalculatorLocalDataSource(
+        taxCalculator: getIt(),
+        insuranceCalculator: getIt(),
+      ),
     )
     ..registerLazySingleton<SalaryReferenceLocalDataSource>(
       () => SalaryReferenceLocalDataSource(),

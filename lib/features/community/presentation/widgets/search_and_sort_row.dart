@@ -111,29 +111,29 @@ class _SortButtonsRow extends StatelessWidget {
           },
           theme: theme,
         ),
-        const Gap(8),
+        const Gap(6),
         SortButton(
-          sortType: LoungeSort.popular,
-          isSelected: currentSort == LoungeSort.popular,
+          sortType: LoungeSort.dailyPopular,
+          isSelected: currentSort == LoungeSort.dailyPopular,
           onPressed: () {
             PerformanceProfiler.start('change_sort');
-            onSelect(LoungeSort.popular);
+            onSelect(LoungeSort.dailyPopular);
             PerformanceProfiler.end('change_sort');
           },
           theme: theme,
         ),
-        const Gap(8),
+        const Gap(6),
         SortButton(
-          sortType: LoungeSort.likes,
-          isSelected: currentSort == LoungeSort.likes,
+          sortType: LoungeSort.weeklyPopular,
+          isSelected: currentSort == LoungeSort.weeklyPopular,
           onPressed: () {
             PerformanceProfiler.start('change_sort');
-            onSelect(LoungeSort.likes);
+            onSelect(LoungeSort.weeklyPopular);
             PerformanceProfiler.end('change_sort');
           },
           theme: theme,
         ),
-      ],
+],
     );
   }
 }

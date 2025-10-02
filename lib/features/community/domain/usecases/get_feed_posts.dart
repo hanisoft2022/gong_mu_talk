@@ -10,7 +10,6 @@ enum FeedType {
   lounge,
   serial,
   hot,
-  board,
   author,
   bookmarks,
 }
@@ -26,7 +25,6 @@ class GetFeedPosts {
     DocumentSnapshot? startAfter,
     String? currentUid,
     LoungeScope scope = LoungeScope.all,
-    String? boardId,
     String? authorUid,
     String? serial,
   }) async {
@@ -57,16 +55,6 @@ class GetFeedPosts {
       case FeedType.hot:
         return _repository.fetchHotFeed(
           limit: limit,
-          currentUid: currentUid,
-        );
-      case FeedType.board:
-        if (boardId == null) {
-          return AppResultHelpers.failure(const ValidationError('게시판을 선택해주세요.'));
-        }
-        return _repository.fetchBoardPosts(
-          boardId: boardId,
-          limit: limit,
-          startAfter: startAfter,
           currentUid: currentUid,
         );
       case FeedType.author:

@@ -30,7 +30,6 @@ class CreatePost {
       type: type,
       scope: scope,
       imageUrls: imageUrls,
-      boardId: boardId,
     );
   }
 }

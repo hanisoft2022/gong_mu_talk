@@ -37,6 +37,7 @@ class PostActionsBar extends StatelessWidget {
           label: '${post.likeCount}',
           isHighlighted: post.isLiked,
           onPressed: onLikeTap,
+          highlightColor: Colors.pink[400],
         ),
         const Gap(16),
 
@@ -72,22 +73,26 @@ class PostActionButton extends StatelessWidget {
     required this.label,
     this.onPressed,
     this.isHighlighted = false,
+    this.highlightColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
   final bool isHighlighted;
+  final Color? highlightColor;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color iconColor = isHighlighted ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final Color iconColor = isHighlighted
+        ? (highlightColor ?? colorScheme.primary)
+        : colorScheme.onSurfaceVariant;
 
     final Widget iconWidget = AnimatedScale(
-      duration: const Duration(milliseconds: 180),
-      scale: isHighlighted ? 1.1 : 1,
-      curve: Curves.easeOutBack,
+      duration: const Duration(milliseconds: 200),
+      scale: isHighlighted ? 1.3 : 1,
+      curve: Curves.elasticOut,
       child: Icon(icon, size: 16, color: iconColor),
     );
 

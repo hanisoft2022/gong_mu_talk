@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/paginated_query.dart';
 import '../../../../core/firebase/firestore_refs.dart';
-import '../../domain/models/board.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 
@@ -25,11 +24,10 @@ class LoungeRepository {
   }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-  static const Duration _loungeLookback = Duration(hours: 24);
+  static const Duration _dailyLookback = Duration(hours: 24);
+  static const Duration _weeklyLookback = Duration(days: 7);
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
-  CollectionReference<JsonMap> get _boardsRef =>
-      _firestore.collection(Fs.boards);
 
   Future<PaginatedQueryResult<Post>> fetchLoungeFeed({
     required LoungeScope scope,
@@ -43,19 +41,9 @@ class LoungeRepository {
           .where('type', isEqualTo: PostType.chirp.name)
           .where('visibility', isEqualTo: PostVisibility.public.name);
 
-      if (scope == LoungeScope.serial) {
-        if (serial == null || serial.isEmpty || serial == 'unknown') {
-          return const PaginatedQueryResult<Post>(
-            items: <Post>[],
-            lastDocument: null,
-            hasMore: false,
-          );
-        }
-
-        query = query
-            .where('audience', isEqualTo: PostAudience.serial.name)
-            .where('serial', isEqualTo: serial);
-      }
+      // 라운지별 필터링 (동적 라운지 시스템)
+      // 전체 라운지(all)도 serial == 'all'인 글만 표시
+      query = query.where('serial', isEqualTo: scope.loungeId);
 
       query = _applyLoungeSort(query, sort);
 
@@ -103,48 +91,32 @@ class LoungeRepository {
     }
   }
 
-  Future<List<Board>> fetchBoards({bool includeHidden = false}) async {
-    Query<JsonMap> query = _boardsRef.orderBy('order');
-    if (!includeHidden) {
-      query = query.where('visibility', isEqualTo: BoardVisibility.public.name);
-    }
-    final QuerySnapshot<JsonMap> snapshot = await query.get();
-    return snapshot.docs.map(Board.fromSnapshot).toList(growable: false);
-  }
+  
 
-  Stream<List<Board>> watchBoards({bool includeHidden = false}) {
-    Query<JsonMap> query = _boardsRef.orderBy('order');
-    if (!includeHidden) {
-      query = query.where('visibility', isEqualTo: BoardVisibility.public.name);
-    }
-    return query.snapshots().map(
-          (QuerySnapshot<JsonMap> snapshot) =>
-              snapshot.docs.map(Board.fromSnapshot).toList(growable: false),
-        );
-  }
+  
 
   QueryJson _applyLoungeSort(QueryJson query, LoungeSort sort) {
     switch (sort) {
       case LoungeSort.latest:
         return query.orderBy('createdAt', descending: true);
-      case LoungeSort.popular:
-        final Timestamp since = _popularCutoffTimestamp();
+      case LoungeSort.dailyPopular:
+        final Timestamp dailySince = _dailyPopularCutoffTimestamp();
         return query
-            .where('createdAt', isGreaterThanOrEqualTo: since)
-            .orderBy('createdAt', descending: true)
+            .where('createdAt', isGreaterThanOrEqualTo: dailySince)
             .orderBy('hotScore', descending: true);
-      case LoungeSort.likes:
-        final Timestamp since = _popularCutoffTimestamp();
+      case LoungeSort.weeklyPopular:
+        final Timestamp weeklySince = _weeklyPopularCutoffTimestamp();
         return query
-            .where('createdAt', isGreaterThanOrEqualTo: since)
-            .orderBy('createdAt', descending: true)
-            .orderBy('likeCount', descending: true);
+            .where('createdAt', isGreaterThanOrEqualTo: weeklySince)
+            .orderBy('hotScore', descending: true);
     }
   }
 
-  Timestamp _popularCutoffTimestamp() => Timestamp.fromDate(_popularCutoff());
+  Timestamp _dailyPopularCutoffTimestamp() => Timestamp.fromDate(_dailyPopularCutoff());
+  DateTime _dailyPopularCutoff() => DateTime.now().subtract(_dailyLookback);
 
-  DateTime _popularCutoff() => DateTime.now().subtract(_loungeLookback);
+  Timestamp _weeklyPopularCutoffTimestamp() => Timestamp.fromDate(_weeklyPopularCutoff());
+  DateTime _weeklyPopularCutoff() => DateTime.now().subtract(_weeklyLookback);
 
   PaginatedQueryResult<Post> _buildPostPage(
     QuerySnapshot<JsonMap> snapshot, {

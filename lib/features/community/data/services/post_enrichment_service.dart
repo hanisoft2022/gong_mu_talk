@@ -1,4 +1,4 @@
-import '../../../core/firebase/paginated_query.dart';
+import 'package:gong_mu_talk/core/firebase/paginated_query.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_result.dart';

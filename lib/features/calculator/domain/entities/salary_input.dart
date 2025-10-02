@@ -32,9 +32,9 @@ class SalaryInput extends Equatable {
     baseMonthlySalary: 0,
     workingDaysPerMonth: 21,
     allowances: const {
-      SalaryAllowanceType.replacement: 0,
-      SalaryAllowanceType.nightDuty: 0,
-      SalaryAllowanceType.hazard: 0,
+      SalaryAllowanceType.mealAllowance: 0,
+      SalaryAllowanceType.transportationAllowance: 0,
+      SalaryAllowanceType.overtimeAllowance: 0,
     },
     annualBonus: 0,
     pensionContributionRate: 0.098, // 공무원 연금 기본율 참고값

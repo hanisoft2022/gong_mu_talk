@@ -5,15 +5,21 @@ import 'package:gap/gap.dart';
 import '../../../../di/di.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../profile/domain/career_track.dart';
+import '../../../profile/domain/lounge_info.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../cubit/community_feed_cubit.dart';
 import '../cubit/post_composer_cubit.dart';
 
 class InlinePostComposer extends StatefulWidget {
-  const InlinePostComposer({super.key, required this.scope});
+  const InlinePostComposer({
+    super.key,
+    required this.scope,
+    this.selectedLoungeInfo,
+  });
 
   final LoungeScope scope;
+  final LoungeInfo? selectedLoungeInfo;
 
   @override
   State<InlinePostComposer> createState() => _InlinePostComposerState();
@@ -37,6 +43,14 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
   }
 
   @override
+  void didUpdateWidget(InlinePostComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLoungeInfo?.id != widget.selectedLoungeInfo?.id) {
+      _lastScope = widget.scope;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<PostComposerCubit>(
       create: (_) => PostComposerCubit(
@@ -45,6 +59,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
         initialAudience: widget.scope == LoungeScope.serial
             ? PostAudience.serial
             : PostAudience.all,
+        initialLoungeId: widget.selectedLoungeInfo?.id ?? 'all',
       ),
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
         listenWhen: (previous, current) =>
@@ -86,19 +101,37 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
               ? _serialDisplayName(authState)
               : null;
 
+          // 라운지 변경 감지 및 업데이트 (build 후 처리)
+          final String currentLoungeId = widget.selectedLoungeInfo?.id ?? 'all';
+          if (state.selectedLoungeId != currentLoungeId) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                context.read<PostComposerCubit>().setLoungeId(currentLoungeId);
+              }
+            });
+          }
+
           if (_lastScope != widget.scope) {
             final PostAudience desiredAudience = _audienceForScope(
               scope: widget.scope,
               hasSerial: hasSerial,
             );
             if (state.audience != desiredAudience) {
-              cubit.selectAudience(desiredAudience);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.read<PostComposerCubit>().selectAudience(desiredAudience);
+                }
+              });
             }
             _lastScope = widget.scope;
           }
 
           if (!hasSerial && state.audience == PostAudience.serial) {
-            cubit.selectAudience(PostAudience.all);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                context.read<PostComposerCubit>().selectAudience(PostAudience.all);
+              }
+            });
           }
 
           final bool canSubmit =
@@ -120,7 +153,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                   Row(
                     children: [
                       Text(
-                        _getTitleForScope(widget.scope, serialDisplayName),
+                        _getTitleForScope(widget.selectedLoungeInfo, serialDisplayName),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -253,9 +286,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
     return PostAudience.all;
   }
 
-  String _getTitleForScope(LoungeScope scope, String? serialDisplayName) {
-    if (scope == LoungeScope.serial && serialDisplayName != null) {
-      return '$serialDisplayName 라운지에 글 남기기';
+  String _getTitleForScope(LoungeInfo? loungeInfo, String? serialDisplayName) {
+    if (loungeInfo != null && loungeInfo.id != 'all') {
+      return '${loungeInfo.name} 라운지에 글 남기기';
     }
     return '전체 라운지에 글 남기기';
   }

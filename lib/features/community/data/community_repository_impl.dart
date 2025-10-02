@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/result.dart';
 import '../../profile/domain/career_track.dart';
-import '../domain/models/board.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/feed_filters.dart';
 import '../domain/models/post.dart';
@@ -29,7 +28,6 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required PostType type,
     required LoungeScope scope,
     List<String> imageUrls = const [],
-    String? boardId,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {
       return _repository.createPost(
@@ -41,7 +39,6 @@ class CommunityRepositoryImpl implements ICommunityRepository {
         authorNickname: await currentUserNickname,
         authorTrack: CareerTrack.none, // Default value, should be passed properly
         serial: '', // Should be determined from context
-        boardId: boardId,
       );
     });
   }
@@ -145,22 +142,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     });
   }
 
-  @override
-  Future<AppResult<PaginatedQueryResult<Post>>> fetchBoardPosts({
-    required String boardId,
-    int limit = 20,
-    DocumentSnapshot? startAfter,
-    String? currentUid,
-  }) async {
-    return AppResultHelpers.tryCallAsync(() async {
-      return _repository.fetchBoardPosts(
-        boardId: boardId,
-        limit: limit,
-        startAfter: startAfter as QueryDocumentSnapshot<Map<String, Object?>>?,
-        currentUid: currentUid,
-      );
-    });
-  }
+  
 
   @override
   Future<AppResult<PaginatedQueryResult<Post>>> fetchPostsByAuthor({
@@ -285,12 +267,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     });
   }
 
-  @override
-  Future<AppResult<List<Board>>> fetchBoards({bool includeHidden = false}) async {
-    return AppResultHelpers.tryCallAsync(() async {
-      return _repository.fetchBoards(includeHidden: includeHidden);
-    });
-  }
+  
 
   @override
   Future<AppResult<CommunitySearchResults>> searchCommunity({

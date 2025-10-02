@@ -51,10 +51,7 @@ class CommentTile extends StatelessWidget {
     final String nicknameSource = comment.authorNickname.isNotEmpty
         ? comment.authorNickname
         : comment.authorUid;
-    final String maskedNickname = maskNickname(nicknameSource);
-    final String displayName = isSerialScope
-        ? comment.authorNickname
-        : maskedNickname;
+    final String displayName = maskNickname(nicknameSource);
     final String displayInitial = displayName.trim().isEmpty
         ? '공'
         : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
@@ -235,12 +232,17 @@ class CommentTile extends StatelessWidget {
       children: [
         TextButton.icon(
           onPressed: onToggleLike,
-          icon: Icon(
-            comment.isLiked ? Icons.favorite : Icons.favorite_border,
-            size: 16,
-            color: comment.isLiked
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+          icon: AnimatedScale(
+            duration: const Duration(milliseconds: 200),
+            scale: comment.isLiked ? 1.3 : 1,
+            curve: Curves.elasticOut,
+            child: Icon(
+              comment.isLiked ? Icons.favorite : Icons.favorite_border,
+              size: 16,
+              color: comment.isLiked
+                  ? Colors.pink[400]
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           label: Text(
             '${comment.likeCount}',

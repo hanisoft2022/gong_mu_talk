@@ -46,7 +46,29 @@ class PostCommentsSection extends StatelessWidget {
       sectionChildren.add(const Center(child: CircularProgressIndicator()));
     } else if (timelineComments.isEmpty) {
       sectionChildren.add(
-        Text('아직 댓글이 없습니다. 첫 댓글을 남겨보세요!', style: theme.textTheme.bodyMedium),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.comment_outlined,
+                  size: 32,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+                const Gap(8),
+                Text(
+                  '아직 댓글이 없습니다. 첫 댓글을 남겨보세요!',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     } else {
       // Organize comments into threads

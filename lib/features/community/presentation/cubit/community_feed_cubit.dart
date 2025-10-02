@@ -38,6 +38,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
   final Map<String, QueryDocumentSnapshotJson?> _cursors = <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
+  
+  // 동기적 pending 상태 관리 (race condition 방지)
+  final Set<String> _pendingLikePostIds = <String>{};
 
   static const int _pageSize = 20;
 
@@ -233,10 +236,13 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
+    // 즉시 loading 상태로 전환하여 부드러운 애니메이션 제공
     emit(
       state.copyWith(
         selectedLoungeInfo: loungeInfo,
         isLoungeMenuOpen: false, // 라운지 변경 시 메뉴 닫기
+        status: CommunityFeedStatus.loading,
+        scope: newScope,
       ),
     );
     await loadInitial(scope: newScope);
@@ -274,11 +280,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
-    // 이미 처리 중인 좋아요 요청인지 확인
-    if (state.pendingLikePostIds.contains(post.id)) {
+    // 동기적 체크: 클래스 레벨 변수로 race condition 방지
+    if (_pendingLikePostIds.contains(post.id)) {
       debugPrint('⚠️  이미 처리 중인 좋아요 요청 - PostId: ${post.id}');
       return;
     }
+    
+    // 즉시 pending에 추가 (동기적)
+    _pendingLikePostIds.add(post.id);
 
     final List<Post> previousPosts = List<Post>.from(state.posts);
     final Set<String> previousLiked = Set<String>.from(state.likedPostIds);
@@ -314,58 +323,35 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     bool success = false;
     Object? lastError;
-    StackTrace? lastStackTrace;
 
-    // 재시도 로직 (최대 3회)
-    for (int attempt = 1; attempt <= 3; attempt++) {
-      try {
-        await _repository.togglePostLike(postId: post.id, uid: uid);
-        success = true;
-        break; // 성공 시 루프 종료
-      } catch (e, stackTrace) {
-        lastError = e;
-        lastStackTrace = stackTrace;
-
-        final String errorType = _classifyError(e);
-
-        // 재시도 가능한 에러인지 확인
-        final bool shouldRetry = _shouldRetryError(errorType) && attempt < 3;
-
-        debugPrint('❌ 좋아요 처리 실패 (시도 $attempt/3) - PostId: ${post.id}, UserId: $uid');
-        debugPrint('   에러 타입: $errorType');
-        debugPrint('   에러 내용: $e');
-
-        if (shouldRetry) {
-          debugPrint('   🔄 ${_getRetryDelay(attempt)}ms 후 재시도...');
-          await Future.delayed(Duration(milliseconds: _getRetryDelay(attempt)));
-        } else {
-          debugPrint('   ❌ 재시도 불가능한 에러이거나 최대 시도 횟수 도달');
-          break;
-        }
-      }
+    // 한 번만 시도 (Firestore 트랜잭션이 자동으로 재시도 처리)
+    try {
+      await _repository.togglePostLike(postId: post.id, uid: uid);
+      success = true;
+    } catch (e, stackTrace) {
+      lastError = e;
+      debugPrint('❌ 좋아요 처리 실패 - PostId: ${post.id}');
+      debugPrint('   에러: $e');
+      debugPrint('   스택: $stackTrace');
     }
 
-    // pending 상태에서 제거
+    // pending 상태에서 제거 (동기적)
+    _pendingLikePostIds.remove(post.id);
+    
     final Set<String> finalPendingLikes = Set<String>.from(state.pendingLikePostIds)
       ..remove(post.id);
 
     if (!success && lastError != null) {
-      // 모든 재시도가 실패한 경우
-      final String userMessage = _getUserFriendlyErrorMessage(lastError);
-
-      debugPrint('   스택 트레이스: $lastStackTrace');
-
-      // 실패 시 이전 상태로 복원하고 사용자에게 알림
+      // 실패 시 이전 상태로 복원
       emit(
         state.copyWith(
           posts: previousPosts,
           likedPostIds: previousLiked,
           pendingLikePostIds: finalPendingLikes,
-          errorMessage: userMessage,
+          errorMessage: '좋아요 처리 중 오류가 발생했습니다.',
         ),
       );
     } else if (success) {
-      debugPrint('✅ 좋아요 처리 성공 - PostId: ${post.id}, UserId: $uid');
       // 성공 시 pending 상태만 업데이트 (이미 optimistic update 완료)
       emit(state.copyWith(pendingLikePostIds: finalPendingLikes));
     }
@@ -503,72 +489,4 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     );
   }
 
-  /// 에러 타입을 분류하여 문자열로 반환
-  String _classifyError(Object error) {
-    final String errorString = error.toString().toLowerCase();
-
-    if (errorString.contains('network') ||
-        errorString.contains('socket') ||
-        errorString.contains('connection') ||
-        errorString.contains('timeout')) {
-      return 'NETWORK_ERROR';
-    }
-
-    if (errorString.contains('permission') ||
-        errorString.contains('unauthorized') ||
-        errorString.contains('auth') ||
-        errorString.contains('forbidden')) {
-      return 'PERMISSION_ERROR';
-    }
-
-    if (errorString.contains('not found') || errorString.contains('게시글을 찾을 수 없습니다')) {
-      return 'POST_NOT_FOUND';
-    }
-
-    if (errorString.contains('firestore') ||
-        errorString.contains('database') ||
-        errorString.contains('transaction')) {
-      return 'DATABASE_ERROR';
-    }
-
-    return 'UNKNOWN_ERROR';
-  }
-
-  /// 사용자에게 친화적인 에러 메시지 생성
-  String _getUserFriendlyErrorMessage(Object error) {
-    final String errorType = _classifyError(error);
-
-    switch (errorType) {
-      case 'NETWORK_ERROR':
-        return '네트워크 연결을 확인한 후 다시 시도해주세요.';
-      case 'PERMISSION_ERROR':
-        return '권한이 없습니다. 로그인 상태를 확인해주세요.';
-      case 'POST_NOT_FOUND':
-        return '게시글을 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.';
-      case 'DATABASE_ERROR':
-        return '서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.';
-      default:
-        return '좋아요 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
-    }
-  }
-
-  /// 에러 타입에 따라 재시도 가능 여부 판단
-  bool _shouldRetryError(String errorType) {
-    switch (errorType) {
-      case 'NETWORK_ERROR':
-      case 'DATABASE_ERROR':
-        return true; // 네트워크나 데이터베이스 오류는 재시도 가능
-      case 'PERMISSION_ERROR':
-      case 'POST_NOT_FOUND':
-        return false; // 권한이나 데이터 누락 오류는 재시도 불가
-      default:
-        return false; // 알 수 없는 에러는 재시도하지 않음
-    }
-  }
-
-  /// 재시도 딜레이 계산 (Exponential backoff)
-  int _getRetryDelay(int attempt) {
-    // 1초, 2초, 4초 순으로 증가
-    return (1000 * (1 << (attempt - 1))).clamp(1000, 4000);
-  }
 }

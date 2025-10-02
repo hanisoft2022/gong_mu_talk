@@ -32,7 +32,7 @@ class CommentSearchResultCard extends StatelessWidget {
                     alpha: 0.12,
                   ),
                   foregroundColor: theme.colorScheme.primary,
-                  child: Text(comment.authorNickname.substring(0, 1)),
+                  child: Text(_getFirstChar(comment.authorNickname)),
                 ),
                 const Gap(12),
                 Expanded(
@@ -58,12 +58,17 @@ class CommentSearchResultCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 16,
-                      color: comment.isLiked
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 200),
+                      scale: comment.isLiked ? 1.3 : 1,
+                      curve: Curves.elasticOut,
+                      child: Icon(
+                        comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
+                        color: comment.isLiked
+                            ? Colors.pink[400]
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const Gap(4),
                     Text(
@@ -119,6 +124,14 @@ class CommentSearchResultCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getFirstChar(String text) {
+    final String normalized = text.trim();
+    if (normalized.isEmpty) {
+      return '공';
+    }
+    return String.fromCharCode(normalized.runes.first).toUpperCase();
   }
 
   String _formatTimestamp(DateTime createdAt) {

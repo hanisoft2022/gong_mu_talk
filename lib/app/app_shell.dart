@@ -15,7 +15,6 @@ class AppShell extends StatelessWidget {
 
   bool get _isCommunityTab => navigationShell.currentIndex == 0;
   bool get _isCalculatorTab => navigationShell.currentIndex == 1;
-  bool get _isLifeTab => navigationShell.currentIndex == 2;
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +40,8 @@ class AppShell extends StatelessWidget {
         builder: (context, themeMode) {
           final bool isCommunityTab = _isCommunityTab;
           final bool isCalculatorTab = _isCalculatorTab;
-          final bool isLifeTab = _isLifeTab;
           final ColorScheme colorScheme = Theme.of(context).colorScheme;
-          final bool hideAppBar = isCommunityTab || isCalculatorTab || isLifeTab;
+          final bool hideAppBar = isCommunityTab || isCalculatorTab;
           return Scaffold(
             appBar: hideAppBar
                 ? null
@@ -100,11 +98,6 @@ class AppShell extends StatelessWidget {
                   selectedIcon: Icon(Icons.calculate),
                   label: '계산기',
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.groups_outlined),
-                  selectedIcon: Icon(Icons.groups),
-                  label: '라이프',
-                ),
               ],
             ),
           );
@@ -119,8 +112,6 @@ class AppShell extends StatelessWidget {
         return '라운지';
       case 1:
         return '계산기';
-      case 2:
-        return '모임/매칭';
       default:
         return '공무톡';
     }

@@ -248,16 +248,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   void _handleScopeChange(CommunityFeedState feedState) {
     if (_lastScope != feedState.scope) {
       _lastScope = feedState.scope;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      // 부드럽게 상단으로 스크롤
+      // AnimatedSwitcher와 조화롭게 동작하도록 짧은 애니메이션 추가
+      if (_scrollController.hasClients && _scrollController.offset > 0) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     }
   }
 
@@ -293,16 +292,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
               const Gap(16),
               Text(
                 '라운지 게시물을 불러오고 있습니다...',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -363,19 +360,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                       position: Tween<Offset>(
                         begin: const Offset(0.0, 0.015),
                         end: Offset.zero,
-                      ).animate(
-                        CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutQuart,
-                        ),
-                      ),
+                      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart)),
                       child: child,
                     ),
                   );
                 },
                 child: OptimizedListView(
                   key: ValueKey<String>(
-                    'feed_${feedState.scope.name}_${showSearchResults ? 'search' : 'feed'}_${searchState.scope.name}_${searchState.query}',
+                    'feed_${feedState.scope.loungeId}_${feedState.sort}_${showSearchResults ? 'search' : 'feed'}',
                   ),
                   itemCount: children.length,
                   itemBuilder: (context, index) => children[index],
@@ -406,7 +398,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     final List<Widget> children = <Widget>[
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: InlinePostComposer(scope: feedState.scope),
+        child: InlinePostComposer(
+          scope: feedState.scope,
+          selectedLoungeInfo: feedState.selectedLoungeInfo,
+        ),
       ),
       const Gap(12),
       Padding(

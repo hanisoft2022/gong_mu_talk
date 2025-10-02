@@ -9,6 +9,8 @@ import '../../domain/entities/salary_allowance_type.dart';
 import '../../domain/entities/salary_grade_option.dart';
 import '../../domain/entities/salary_track.dart';
 import '../bloc/salary_calculator_bloc.dart';
+import '../widgets/salary_chart.dart';
+import '../widgets/salary_deduction_section.dart';
 import '../widgets/salary_result_card.dart';
 
 class SalaryCalculatorPage extends StatelessWidget {
@@ -153,6 +155,13 @@ class _SalaryCalculatorViewState extends State<SalaryCalculatorView> {
                           ),
                       ],
                     ),
+                    // 차트 섹션 (결과가 있을 때만 표시)
+                    if (state.result.monthlyTotal > 0) ...[
+                      const Gap(20),
+                      SalaryChart(breakdown: state.result),
+                      const Gap(20),
+                      SalaryDeductionSection(breakdown: state.result),
+                    ],
                     const Gap(28),
                     _buildReferenceSection(state, bloc, theme, isWide),
                     const Gap(28),

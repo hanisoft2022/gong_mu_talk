@@ -235,7 +235,7 @@ lib/features/community/presentation/widgets/
 ```
 
 ### Key Features
-- **auth**: Firebase authentication with Google/Kakao sign-in
+- **auth**: Firebase authentication with Google sign-in
 - **calculator**: Salary calculator for public servants
 - **community**: Social feed, posts, comments, likes
 - **life**: Life management and meetings
@@ -357,7 +357,7 @@ class CommentFormCubit extends Cubit<CommentFormState> { ... }
 - **OTA Updates**: shorebird_code_push
 
 **Authentication:**
-- **Social Login**: google_sign_in, kakao_flutter_sdk_user
+- **Social Login**: google_sign_in
 
 **Utilities:**
 - **Storage**: shared_preferences, path_provider, path

@@ -101,7 +101,15 @@
       "Bash(head:*)",
       "Bash(for:*)",
       "Bash(sort:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \"git rm --cached --ignore-unmatch functions/serviceAccountKey.json\" --prune-empty --tag-name-filter cat -- --all)",
+      "Bash(brew install:*)",
+      "Bash(git rm:*)",
+      "Bash(sed:*)",
+      "Bash(pod install:*)",
+      "Bash(pod cache clean:*)",
+      "WebFetch(domain:console.firebase.google.com)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

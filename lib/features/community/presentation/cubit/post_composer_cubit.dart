@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 
@@ -11,7 +10,6 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../core/utils/image_compression_util.dart';
 // Removed unused import
 import '../../data/community_repository.dart';
-import '../../domain/models/board.dart';
 import '../../domain/models/post.dart';
 
 class PostMediaDraft extends Equatable {
@@ -32,13 +30,7 @@ class PostMediaDraft extends Equatable {
   String get fileName => file.name;
 
   @override
-  List<Object?> get props => <Object?>[
-    file.path,
-    contentType,
-    width,
-    height,
-    bytes,
-  ];
+  List<Object?> get props => <Object?>[file.path, contentType, width, height, bytes];
 }
 
 class PostComposerState extends Equatable {
@@ -49,8 +41,7 @@ class PostComposerState extends Equatable {
     this.isSubmitting = false,
     this.isAnonymous = true,
     this.attachments = const <PostMediaDraft>[],
-    this.boards = const <Board>[],
-    this.selectedBoardId,
+    this.selectedLoungeId,
     this.errorMessage,
     this.submissionSuccess = false,
     this.editingPost,
@@ -63,8 +54,7 @@ class PostComposerState extends Equatable {
   final bool isSubmitting;
   final bool isAnonymous;
   final List<PostMediaDraft> attachments;
-  final List<Board> boards;
-  final String? selectedBoardId;
+  final String? selectedLoungeId;
   final String? errorMessage;
   final bool submissionSuccess;
   final Post? editingPost;
@@ -77,8 +67,7 @@ class PostComposerState extends Equatable {
     bool? isSubmitting,
     bool? isAnonymous,
     List<PostMediaDraft>? attachments,
-    List<Board>? boards,
-    String? selectedBoardId,
+    String? selectedLoungeId,
     String? errorMessage,
     bool? submissionSuccess,
     Post? editingPost,
@@ -91,8 +80,7 @@ class PostComposerState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isAnonymous: isAnonymous ?? this.isAnonymous,
       attachments: attachments ?? this.attachments,
-      boards: boards ?? this.boards,
-      selectedBoardId: selectedBoardId ?? this.selectedBoardId,
+      selectedLoungeId: selectedLoungeId ?? this.selectedLoungeId,
       errorMessage: errorMessage,
       submissionSuccess: submissionSuccess ?? this.submissionSuccess,
       editingPost: editingPost ?? this.editingPost,
@@ -108,8 +96,7 @@ class PostComposerState extends Equatable {
     isSubmitting,
     isAnonymous,
     attachments,
-    boards,
-    selectedBoardId,
+    selectedLoungeId,
     errorMessage,
     submissionSuccess,
     editingPost,
@@ -122,20 +109,17 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     required CommunityRepository communityRepository,
     required AuthCubit authCubit,
     PostAudience initialAudience = PostAudience.all,
+    String? initialLoungeId,
   }) : _repository = communityRepository,
        _authCubit = authCubit,
-       super(PostComposerState(audience: initialAudience)) {
-    unawaited(_loadBoards());
-  }
+       super(PostComposerState(audience: initialAudience, selectedLoungeId: initialLoungeId));
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
   final ImagePicker _picker = ImagePicker();
 
   void updateText(String value) {
-    emit(
-      state.copyWith(text: value, errorMessage: null, submissionSuccess: false),
-    );
+    emit(state.copyWith(text: value, errorMessage: null, submissionSuccess: false));
   }
 
   void updateTags(String raw) {
@@ -156,16 +140,14 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     emit(state.copyWith(isAnonymous: value, submissionSuccess: false));
   }
 
-  void selectBoard(String? boardId) {
-    emit(state.copyWith(selectedBoardId: boardId, submissionSuccess: false));
+void setLoungeId(String? loungeId) {
+    emit(state.copyWith(selectedLoungeId: loungeId, submissionSuccess: false));
   }
 
   Future<void> addAttachmentFromGallery() async {
     // 최대 5개 이미지 제한
     if (state.attachments.length >= 5) {
-      emit(state.copyWith(
-        errorMessage: '최대 5개의 이미지만 첨부할 수 있습니다.',
-      ));
+      emit(state.copyWith(errorMessage: '최대 5개의 이미지만 첨부할 수 있습니다.'));
       return;
     }
 
@@ -182,9 +164,8 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   }
 
   void removeAttachment(PostMediaDraft draft) {
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
-      state.attachments,
-    )..remove(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)
+      ..remove(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -192,11 +173,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     await _submitPost(type: PostType.chirp);
   }
 
-  Future<void> submitBoardPost() async {
-    await _submitPost(type: PostType.board);
-  }
-
-  Future<void> _submitPost({required PostType type}) async {
+Future<void> _submitPost({required PostType type}) async {
     final AuthState authState = _authCubit.state;
     final String? uid = authState.userId;
     if (uid == null) {
@@ -210,22 +187,17 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       return;
     }
 
-    if (type == PostType.board &&
-        (state.selectedBoardId == null || state.selectedBoardId!.isEmpty)) {
-      emit(state.copyWith(errorMessage: '게시판을 선택해주세요.'));
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        isSubmitting: true,
-        errorMessage: null,
-        submissionSuccess: false,
-      ),
-    );
+emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
 
     try {
       final int supporterLevel = 0;
+      final String serialValue = state.selectedLoungeId ?? authState.serial;
+
+      debugPrint('🔍 [PostComposer] Creating post with:');
+      debugPrint('   selectedLoungeId: ${state.selectedLoungeId}');
+      debugPrint('   authState.serial: ${authState.serial}');
+      debugPrint('   final serial: $serialValue');
+
       final Post post = await _repository.createPost(
         type: type,
         authorUid: uid,
@@ -236,10 +208,9 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         authorIsSupporter: supporterLevel > 0,
         text: text,
         audience: type == PostType.chirp ? state.audience : PostAudience.all,
-        serial: authState.serial,
+        serial: serialValue,
         media: const <PostMedia>[],
         tags: state.tags,
-        boardId: type == PostType.board ? state.selectedBoardId : null,
       );
 
       if (state.attachments.isNotEmpty) {
@@ -257,11 +228,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
           uploaded.add(media);
         }
 
-        await _repository.updatePost(
-          postId: post.id,
-          authorUid: uid,
-          media: uploaded,
-        );
+        await _repository.updatePost(postId: post.id, authorUid: uid, media: uploaded);
       }
 
       emit(
@@ -274,12 +241,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         ),
       );
     } catch (_) {
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isSubmitting: false, errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.'));
     }
   }
 
@@ -322,41 +284,17 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         height: height,
       );
 
-      final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
-        state.attachments,
-      )..add(draft);
+      final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)..add(draft);
 
-      emit(state.copyWith(
-        attachments: updated,
-        submissionSuccess: false,
-        isLoading: false,
-      ));
+      emit(state.copyWith(attachments: updated, submissionSuccess: false, isLoading: false));
     } on ImageCompressionException catch (e) {
-      emit(state.copyWith(
-        errorMessage: e.message,
-        isLoading: false,
-      ));
+      emit(state.copyWith(errorMessage: e.message, isLoading: false));
     } catch (e) {
-      emit(state.copyWith(
-        errorMessage: '이미지 처리 중 오류가 발생했습니다.',
-        isLoading: false,
-      ));
+      emit(state.copyWith(errorMessage: '이미지 처리 중 오류가 발생했습니다.', isLoading: false));
     }
   }
 
-  Future<void> _loadBoards() async {
-    try {
-      final List<Board> boards = await _repository.fetchBoards();
-      emit(state.copyWith(boards: boards));
-    } catch (_) {
-      // Silently ignore board load failures to avoid showing a global snackbar
-      // when the composer opens in '라운지' mode. The board selector UI will
-      // handle empty lists gracefully.
-      emit(state.copyWith(boards: const <Board>[], errorMessage: null));
-    }
-  }
-
-  String _contentTypeFromExtension(String fileName) {
+String _contentTypeFromExtension(String fileName) {
     final String lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) {
       return 'image/png';
@@ -385,15 +323,12 @@ class PostComposerCubit extends Cubit<PostComposerState> {
           text: post.text,
           tags: post.tags,
           audience: post.audience,
-          selectedBoardId: post.boardId,
           editingPost: post,
           isLoading: false,
         ),
       );
     } catch (e) {
-      emit(
-        state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'),
-      );
+      emit(state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'));
     }
   }
 }

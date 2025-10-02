@@ -26,17 +26,17 @@ class LoungeScope {
   String get name => loungeId;
 }
 
-enum LoungeSort { latest, popular, likes }
+enum LoungeSort { latest, dailyPopular, weeklyPopular }
 
 extension LoungeSortLabel on LoungeSort {
   String get label {
     switch (this) {
       case LoungeSort.latest:
-        return '최신순';
-      case LoungeSort.popular:
-        return '오늘의 인기순';
-      case LoungeSort.likes:
-        return '오늘의 좋아요순';
+        return '최신';
+      case LoungeSort.dailyPopular:
+        return '일간';
+      case LoungeSort.weeklyPopular:
+        return '주간';
     }
   }
 
@@ -44,10 +44,10 @@ extension LoungeSortLabel on LoungeSort {
     switch (this) {
       case LoungeSort.latest:
         return Icons.access_time;
-      case LoungeSort.popular:
+      case LoungeSort.dailyPopular:
         return Icons.local_fire_department;
-      case LoungeSort.likes:
-        return Icons.favorite;
+      case LoungeSort.weeklyPopular:
+        return Icons.trending_up;
     }
   }
 
@@ -56,10 +56,10 @@ extension LoungeSortLabel on LoungeSort {
     switch (this) {
       case LoungeSort.latest:
         return isDark ? Colors.blue.shade300 : Colors.blue.shade600;
-      case LoungeSort.popular:
+      case LoungeSort.dailyPopular:
         return isDark ? Colors.orange.shade300 : Colors.deepOrange.shade600;
-      case LoungeSort.likes:
-        return isDark ? Colors.red.shade300 : Colors.red.shade600;
+      case LoungeSort.weeklyPopular:
+        return isDark ? Colors.purple.shade300 : Colors.purple.shade600;
     }
   }
 }

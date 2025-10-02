@@ -8,7 +8,6 @@ import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/result.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../profile/domain/career_track.dart';
-import '../domain/models/board.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/feed_filters.dart';
 import '../domain/models/post.dart';
@@ -130,6 +129,12 @@ class CommunityRepository {
   // Cache and enrichment services
   late final InteractionCacheManager _cacheManager;
   late final PostEnrichmentService _enrichmentService;
+  
+  // Legacy cache variables (TODO: migrate to services)
+  final Map<String, Set<String>> _likedPostsCache = {};
+  final Map<String, Set<String>> _bookmarkedPostsCache = {};
+  final Map<String, Map<String, Set<String>>> _likedCommentsCache = {};
+  final Map<String, List<Comment>> _topCommentsCache = {};
 
   String get currentUserId => _userSession.userId;
 
@@ -157,7 +162,6 @@ class CommunityRepository {
     required String serial,
     List<PostMedia> media = const <PostMedia>[],
     List<String> tags = const <String>[],
-    String? boardId,
     bool awardPoints = true,
   }) {
     return _postRepository.createPost(
@@ -173,7 +177,6 @@ class CommunityRepository {
       serial: serial,
       media: media,
       tags: tags,
-      boardId: boardId,
       awardPoints: awardPoints,
     );
   }
@@ -234,19 +237,7 @@ class CommunityRepository {
     return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
-  Future<PaginatedQueryResult<Post>> fetchBoardPosts({
-    required String boardId,
-    int limit = 20,
-    QueryDocumentSnapshotJson? startAfter,
-    String? currentUid,
-  }) async {
-    final result = await _postRepository.fetchBoardPosts(
-      boardId: boardId,
-      limit: limit,
-      startAfter: startAfter,
-    );
-    return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
-  }
+  
 
   Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
     required String authorUid,
@@ -346,13 +337,9 @@ class CommunityRepository {
     return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
-  Future<List<Board>> fetchBoards({bool includeHidden = false}) {
-    return _loungeRepository.fetchBoards(includeHidden: includeHidden);
-  }
+  
 
-  Stream<List<Board>> watchBoards({bool includeHidden = false}) {
-    return _loungeRepository.watchBoards(includeHidden: includeHidden);
-  }
+  
 
   // ============================================================================
   // COMMENT OPERATIONS - Delegate to CommentRepository
@@ -632,77 +619,6 @@ class CommunityRepository {
       commentId: commentId,
       uid: currentUserId,
     );
-  }
-
-  // ============================================================================
-  // CACHE MANAGEMENT - Performance optimization
-  // ============================================================================
-
-  /// Like/Bookmark 캐시 초기화 (로그아웃 시 호출)
-  void clearInteractionCache({String? uid}) {
-    if (uid != null) {
-      _likedPostsCache.remove(uid);
-      _bookmarkedPostsCache.remove(uid);
-      _likedCommentsCache.remove(uid);
-      debugPrint('🗑️  Like/Bookmark/Comment 캐시 삭제 - uid: $uid');
-    } else {
-      _likedPostsCache.clear();
-      _bookmarkedPostsCache.clear();
-      _likedCommentsCache.clear();
-      _topCommentsCache.clear();
-      _lastCacheUpdate = null;
-      debugPrint('🗑️  모든 캐시 삭제 (Like/Bookmark/Comment/TopComment)');
-    }
-  }
-
-  /// 특정 사용자의 캐시 강제 갱신
-  Future<void> refreshInteractionCache(String uid, List<String> postIds) async {
-    if (postIds.isEmpty) return;
-
-    final likedIds = await _interactionRepository.fetchLikedPostIds(
-      uid: uid,
-      postIds: postIds,
-    );
-    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
-      uid: uid,
-      postIds: postIds,
-    );
-
-    _likedPostsCache[uid] = likedIds;
-    _bookmarkedPostsCache[uid] = bookmarkedIds;
-    _lastCacheUpdate = DateTime.now();
-
-    debugPrint('🔄 Like/Bookmark 캐시 강제 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
-  }
-
-  /// 캐시 히트율 통계 로깅
-  void _logCacheStats() {
-    final totalRequests = _cacheHitCount + _cacheMissCount;
-    if (totalRequests == 0) return;
-
-    final hitRate = (_cacheHitCount / totalRequests * 100).toStringAsFixed(1);
-    debugPrint('📊 캐시 히트율: $hitRate% (히트: $_cacheHitCount, 미스: $_cacheMissCount)');
-
-    // 100회마다 상세 통계 출력
-    if (totalRequests % 100 == 0) {
-      debugPrint('📈 누적 통계 ($totalRequests 요청)');
-      debugPrint('   - 캐시 히트: $_cacheHitCount회');
-      debugPrint('   - 캐시 미스: $_cacheMissCount회');
-      debugPrint('   - 절감 비용: ${_calculateSavedCost()} Firestore reads');
-    }
-  }
-
-  /// 캐시로 절감한 Firestore read 횟수 계산
-  int _calculateSavedCost() {
-    // 각 캐시 히트는 2번의 Firestore read를 절약 (likes + bookmarks)
-    return _cacheHitCount * 2;
-  }
-
-  /// 캐시 통계 초기화 (테스트용)
-  void resetCacheStats() {
-    _cacheHitCount = 0;
-    _cacheMissCount = 0;
-    debugPrint('📊 캐시 통계 초기화');
   }
 
   // ============================================================================

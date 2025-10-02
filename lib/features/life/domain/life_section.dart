@@ -1,1 +1,0 @@
-enum LifeSection { meetings, matching }

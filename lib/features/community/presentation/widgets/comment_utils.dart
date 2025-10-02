@@ -9,7 +9,7 @@ String serialLabel(
     return '공무원';
   }
   if (track == CareerTrack.none) {
-    return '직렬 비공개';
+    return '공무원';  // 직렬 정보가 없을 때는 "공무원"으로 표시
   }
   if (!includeEmoji) {
     return track.displayName;

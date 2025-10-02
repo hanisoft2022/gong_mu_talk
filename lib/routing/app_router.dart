@@ -12,9 +12,10 @@ import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/community/presentation/views/post_detail_page.dart';
-import '../features/life/presentation/cubit/life_section_cubit.dart';
-import '../features/life/presentation/life_home_page.dart';
+
 import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
+import '../features/pension/presentation/views/pension_calculator_page.dart';
+import '../features/pension/presentation/cubit/pension_calculator_cubit.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
 import '../features/community/presentation/views/search_page.dart';
@@ -23,7 +24,7 @@ import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
-import '../features/matching/presentation/cubit/matching_cubit.dart';
+
 import '../features/notifications/presentation/views/notification_history_page.dart';
 import '../features/notifications/presentation/views/notification_settings_page.dart';
 import 'router_refresh_stream.dart';
@@ -64,13 +65,8 @@ GoRouter createRouter() {
     },
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => MultiBlocProvider(
-          providers: [
-            BlocProvider<CommunityFeedCubit>(
-              create: (_) => getIt<CommunityFeedCubit>(),
-            ),
-            BlocProvider<LifeSectionCubit>(create: (_) => LifeSectionCubit()),
-          ],
+        builder: (context, state, navigationShell) => BlocProvider<CommunityFeedCubit>(
+          create: (_) => getIt<CommunityFeedCubit>(),
           child: AppShell(navigationShell: navigationShell),
         ),
         branches: [
@@ -89,18 +85,6 @@ GoRouter createRouter() {
                 path: CalculatorRoute.path,
                 name: CalculatorRoute.name,
                 builder: (context, state) => const CalculatorHomePage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: MatchingRoute.path,
-                name: MatchingRoute.name,
-                builder: (context, state) => BlocProvider<MatchingCubit>(
-                  create: (_) => getIt<MatchingCubit>()..loadCandidates(),
-                  child: const LifeHomePage(),
-                ),
               ),
             ],
           ),
@@ -213,6 +197,15 @@ GoRouter createRouter() {
         name: 'calculator-pension',
         builder: (context, state) => const PensionCalculatorGatePage(),
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/calculator/pension/calculate',
+        name: 'calculator-pension-calculate',
+        builder: (context, state) => BlocProvider<PensionCalculatorCubit>(
+          create: (_) => getIt<PensionCalculatorCubit>(),
+          child: const PensionCalculatorPage(),
+        ),
+      ),
     ],
   );
 }
@@ -263,13 +256,6 @@ class PaystubVerificationRoute {
 
   static const String name = 'paystub-verification';
   static const String path = '${ProfileRoute.path}/verify-paystub';
-}
-
-class MatchingRoute {
-  const MatchingRoute._();
-
-  static const String name = 'matching';
-  static const String path = '/matching';
 }
 
 
@@ -366,8 +352,6 @@ String _pathForBranch(String? branchParam) {
       return CommunityRoute.path;
     case 1:
       return CalculatorRoute.path;
-    case 2:
-      return MatchingRoute.path;
     default:
       return CommunityRoute.path;
   }

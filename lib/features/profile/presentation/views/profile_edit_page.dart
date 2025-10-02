@@ -56,6 +56,34 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     );
   }
 
+  void _showNicknameInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.visibility_outlined,
+            color: Theme.of(context).colorScheme.primary,
+            size: 32,
+          ),
+          title: const Text('닉네임 공개 정보'),
+          content: const Text(
+            '다른 사용자에게는 닉네임의 첫 글자만 보입니다.\n\n'
+            '예: "공무원" → "공***"\n\n'
+            '본인에게만 전체 닉네임이 표시됩니다.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _nicknameController.dispose();
@@ -117,10 +145,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       controller: _nicknameController,
                       enabled: !isProcessing,
                       maxLength: 20,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '닉네임을 입력하세요',
                         counterText: '',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            Icons.info_outline,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          onPressed: () => _showNicknameInfo(context),
+                          tooltip: '닉네임 공개 정보',
+                        ),
                       ),
                     ),
                   ),

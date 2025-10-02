@@ -13,13 +13,14 @@ extension StringExtensions on String {
     return '${this[0].toUpperCase()}${substring(1)}';
   }
 
-  /// 닉네임 마스킹 (기존 maskNickname 함수를 확장 메서드로)
+  /// 닉네임 마스킹 (첫 글자만 보이고 나머지는 ***)
   String get masked {
-    if (length <= 2) return this;
-    final int visibleChars = (length * 0.4).ceil();
-    final String visible = substring(0, visibleChars);
-    final String masked = '*' * (length - visibleChars);
-    return visible + masked;
+    final String normalized = trim();
+    if (normalized.isEmpty) {
+      return '공***';
+    }
+    final String firstChar = String.fromCharCode(normalized.runes.first).toUpperCase();
+    return '$firstChar***';
   }
 
   /// 텍스트 줄바꿈 처리
