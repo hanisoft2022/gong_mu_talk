@@ -131,7 +131,7 @@ service cloud.firestore {
           isValidNotificationCreate(request.resource.data);
         allow update: if isOwner(userId) &&
           isValidNotificationUpdate(request.resource.data, resource.data);
-        allow delete: if false;
+        allow delete: if isOwner(userId);  // 본인 알림 삭제 가능
       }
 
       match /verifications/{verificationId} {
@@ -171,21 +171,24 @@ service cloud.firestore {
     }
 
     match /government_email_index/{docId} {
-      allow get, list, read: if isSignedIn();
+      allow get: if isSignedIn();
+      allow list: if false;  // 🔒 대량 조회 차단
       allow create, update: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;
       allow delete: if false;
     }
 
     match /government_email_aliases/{docId} {
-      allow get, list, read: if isSignedIn();
+      allow get: if isSignedIn();
+      allow list: if false;  // 🔒 대량 조회 차단
       allow create, update: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;
       allow delete: if false;
     }
 
     match /government_email_verification_tokens/{tokenId} {
-      allow get, list, read: if isSignedIn();
+      allow get: if isSignedIn();
+      allow list: if false;  // 🔒 대량 조회 차단
       allow create, update: if isSignedIn() &&
         request.resource.data.userId == request.auth.uid;
       allow delete: if false;
@@ -194,12 +197,12 @@ service cloud.firestore {
     match /posts/{postId} {
       allow get, list, read: if isSignedIn();
       allow create, update: if isSignedIn();
-      allow delete: if false;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;  // 본인 글만 삭제 가능
 
       match /comments/{commentId} {
         allow read: if isSignedIn();
         allow create, update: if isSignedIn();
-        allow delete: if false;
+        allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;  // 본인 댓글만 삭제 가능
       }
 
       match /comment_likes/{docId} {
@@ -248,7 +251,7 @@ service cloud.firestore {
         request.resource.data.authorId == request.auth.uid;
       allow update: if isSignedIn() && canAccessLounge(resource.data.loungeId) &&
         resource.data.authorId == request.auth.uid;
-      allow delete: if false;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;  // 본인 라운지 글만 삭제 가능
 
       match /comments/{commentId} {
         allow read: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId);
@@ -256,7 +259,7 @@ service cloud.firestore {
           request.resource.data.authorId == request.auth.uid;
         allow update: if isSignedIn() && canAccessLounge(get(/databases/$(database)/documents/lounge_posts/$(postId)).data.loungeId) &&
           resource.data.authorId == request.auth.uid;
-        allow delete: if false;
+        allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;  // 본인 라운지 댓글만 삭제 가능
       }
     }
   }

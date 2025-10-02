@@ -32,7 +32,7 @@ class InteractionRepository {
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
   final Random _random = Random();
-  static const int _counterShardCount = 20;
+  static const int _counterShardCount = 10;
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
   CollectionReference<JsonMap> get _likesRef => _firestore.collection(Fs.likes);
