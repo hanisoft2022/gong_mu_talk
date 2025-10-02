@@ -3,8 +3,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../lib/features/community/domain/models/lounge_model.dart';
-import '../lib/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
 
 /// Firestore 라운지 데이터 마이그레이션 스크립트
 /// 

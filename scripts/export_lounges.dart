@@ -2,8 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-import '../lib/features/community/domain/models/lounge_model.dart';
-import '../lib/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
 
 /// 라운지 데이터를 JSON 파일로 내보내기
 void main() {
@@ -13,7 +12,7 @@ void main() {
     ...l.toMap(),
   }).toList();
 
-  final file = File('lounges_export.json');
+  const file = File('lounges_export.json');
   file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(jsonData));
 
   print('✅ Exported ${lounges.length} lounges to lounges_export.json');

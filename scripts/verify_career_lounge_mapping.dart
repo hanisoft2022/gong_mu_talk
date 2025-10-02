@@ -1,8 +1,8 @@
 // ignore_for_file: avoid_print
 
-import '../lib/features/profile/domain/career_hierarchy.dart';
-import '../lib/features/community/domain/models/lounge_model.dart';
-import '../lib/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/profile/domain/career_hierarchy.dart';
+import 'package:gong_mu_talk/features/community/domain/models/lounge_model.dart';
+import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
 
 /// 직렬-라운지 매핑 검증 스크립트
 /// 
@@ -142,7 +142,8 @@ void main() {
   print('  - 고아 라운지: ${orphanedLounges.length}개');
 
   // 최종 결과
-  print('\n' + '=' * 60);
+  print('
+${'=' * 60}');
   if (errorCount == 0 && warningCount == 0) {
     print('✅ 검증 완료 - 문제 없음!');
   } else {
