@@ -127,26 +127,3 @@ class UserStats extends Equatable {
     lastActiveAt,
   ];
 }
-
-enum BadgeType {
-  firstPost('첫 글 작성자', '첫 번째 게시글을 작성했습니다', '🎉'),
-  firstComment('첫 댓글러', '첫 번째 댓글을 작성했습니다', '💬'),
-  firstLike('첫 좋아요', '첫 번째 좋아요를 받았습니다', '❤️'),
-  popularPost('인기글 작성자', '좋아요 10개 이상받은 글을 작성했습니다', '🔥'),
-  activeCommenter('활발한 댓글러', '댓글 50개 이상 작성했습니다', '💭'),
-  helpful('도움왕', '좋아요를 많이 받는 댓글을 작성합니다', '👍'),
-  consistent('꾸준이', '7일 연속 접속했습니다', '📅'),
-  earlyBird('얼리어답터', '서비스 초기 가입자입니다', '🐣'),
-  mentor('멘토', '신규 사용자를 도와주었습니다', '🎓'),
-  expert('전문가', '특정 분야에서 인정받고 있습니다', '💯');
-
-  const BadgeType(this.title, this.description, this.emoji);
-
-  final String title;
-  final String description;
-  final String emoji;
-
-  static BadgeType? fromString(String value) {
-    return BadgeType.values.where((badge) => badge.name == value).firstOrNull;
-  }
-}

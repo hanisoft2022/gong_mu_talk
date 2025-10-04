@@ -13,16 +13,6 @@ extension StringExtensions on String {
     return '${this[0].toUpperCase()}${substring(1)}';
   }
 
-  /// 닉네임 마스킹 (첫 글자만 보이고 나머지는 ***)
-  String get masked {
-    final String normalized = trim();
-    if (normalized.isEmpty) {
-      return '공***';
-    }
-    final String firstChar = String.fromCharCode(normalized.runes.first).toUpperCase();
-    return '$firstChar***';
-  }
-
   /// 텍스트 줄바꿈 처리
   String get withLineBreaks => replaceAll('\\n', '\n');
 

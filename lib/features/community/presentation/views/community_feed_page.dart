@@ -194,15 +194,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         return cubit;
       },
       child: BlocSelector<AuthCubit, AuthState, bool>(
-        selector: (state) => state.hasLoungeAccess,
-        builder: (context, hasLoungeAccess) {
+        selector: (state) => state.hasLoungeReadAccess,
+        builder: (context, hasLoungeReadAccess) {
           return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
             builder: (context, feedState) {
               return BlocSelector<SearchCubit, SearchState, ({String query, bool isLoading})>(
                 selector: (state) => (query: state.query, isLoading: state.isLoading),
                 builder: (context, searchData) {
-                  // Check lounge access
-                  if (!hasLoungeAccess) {
+                  // Check lounge read access (로그인 필요)
+                  if (!hasLoungeReadAccess) {
                     return _buildNoAccessScaffold(feedState);
                   }
 
@@ -272,7 +272,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             onLogoTap: _scrollToTop,
           ),
         ],
-        body: const AuthRequiredView(message: '라운지 기능을 이용하려면\n공직자 메일 인증을 완료해주세요.'),
+        body: const AuthRequiredView(message: '라운지를 이용하려면\n로그인이 필요합니다.'),
       ),
     );
   }

@@ -293,7 +293,6 @@ class _MemberHeader extends StatelessWidget {
                             ? '직렬 미설정'
                             : profile.careerTrack.displayName,
                       ),
-                      _HeaderChip(icon: Icons.location_city_outlined, label: profile.region),
                     ],
                   ),
                 ],
@@ -323,8 +322,6 @@ class _MemberStats extends StatelessWidget {
             _StatTile(label: '팔로워', value: profile.followerCount),
             Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant),
             _StatTile(label: '팔로잉', value: profile.followingCount),
-            Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant),
-            _StatTile(label: '포인트', value: profile.points),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/annual_salary_detail_page.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/views/lifetime_earnings_page.dart';
 
 /// 연도별 급여 계산 카드
 class AnnualSalaryCard extends StatelessWidget {
@@ -48,8 +49,8 @@ class AnnualSalaryCard extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: isLocked
-                            ? Colors.grey.withOpacity(0.1)
-                            : Colors.green.withOpacity(0.1),
+                            ? Colors.grey.withValues(alpha: 0.1)
+                            : Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -130,32 +131,49 @@ class AnnualSalaryCard extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // CTA 버튼
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AnnualSalaryDetailPage(
-                                  lifetimeSalary: lifetimeSalary!,
-                                ),
+                      // CTA 버튼들
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LifetimeEarningsPage(
+                                      lifetimeSalary: lifetimeSalary!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.analytics_outlined, size: 18),
+                              label: const Text('시뮬레이션'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
                           ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('자세히 보기'),
-                              SizedBox(width: 8),
-                              Icon(Icons.arrow_forward, size: 16),
-                            ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AnnualSalaryDetailPage(
+                                      lifetimeSalary: lifetimeSalary!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.list_alt, size: 18),
+                              label: const Text('상세보기'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),

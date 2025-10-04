@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/feed_filters.dart';
-import 'comment_utils.dart';
 
 class CommentComposer extends StatefulWidget {
   const CommentComposer({
@@ -107,12 +106,9 @@ class _CommentComposerState extends State<CommentComposer> {
     Comment replyingTo,
     bool isSerialScope,
   ) {
-    final String nicknameSource = replyingTo.authorNickname.isNotEmpty
+    final String displayName = replyingTo.authorNickname.isNotEmpty
         ? replyingTo.authorNickname
         : replyingTo.authorUid;
-    final String displayName = isSerialScope
-        ? replyingTo.authorNickname
-        : maskNickname(nicknameSource);
     final String preview = replyingTo.text.trim();
 
     return Container(

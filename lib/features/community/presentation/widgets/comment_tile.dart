@@ -48,10 +48,9 @@ class CommentTile extends StatelessWidget {
       includeEmoji: isSerialScope ? true : hasTrack,
     );
     final String timestamp = _formatTimestamp(comment.createdAt);
-    final String nicknameSource = comment.authorNickname.isNotEmpty
+    final String displayName = comment.authorNickname.isNotEmpty
         ? comment.authorNickname
         : comment.authorUid;
-    final String displayName = maskNickname(nicknameSource);
     final String displayInitial = displayName.trim().isEmpty
         ? '공'
         : String.fromCharCode(displayName.trim().runes.first).toUpperCase();

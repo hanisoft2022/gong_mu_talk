@@ -4,7 +4,6 @@ import 'package:gap/gap.dart';
 import '../../../data/community_repository.dart';
 import '../../../domain/models/comment.dart';
 import '../../../domain/models/feed_filters.dart';
-import '../comment_utils.dart';
 
 class InlineReplySheet extends StatefulWidget {
   const InlineReplySheet({
@@ -58,13 +57,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
     final ThemeData theme = Theme.of(context);
     final double bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final Comment target = widget.target;
-    final bool isSerialScope = widget.scope == LoungeScope.serial;
-    final String nicknameSource = target.authorNickname.isNotEmpty
+    final String displayName = target.authorNickname.isNotEmpty
         ? target.authorNickname
         : target.authorUid;
-    final String displayName = isSerialScope
-        ? target.authorNickname
-        : maskNickname(nicknameSource);
     final String preview = target.text.trim();
 
     return Padding(

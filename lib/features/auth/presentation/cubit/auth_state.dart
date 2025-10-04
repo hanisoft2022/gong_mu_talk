@@ -241,7 +241,15 @@ class AuthState extends Equatable {
 
   String? get governmentEmail => userProfile?.governmentEmail;
 
-  bool get hasLoungeAccess => isGovernmentEmailVerified;
+  /// 라운지 읽기 권한: 로그인한 모든 사용자
+  bool get hasLoungeReadAccess => isLoggedIn;
+
+  /// 라운지 쓰기 권한: 공직자 메일 인증 완료 사용자
+  bool get hasLoungeWriteAccess => isGovernmentEmailVerified;
+
+  /// @deprecated Use hasLoungeReadAccess or hasLoungeWriteAccess instead
+  @Deprecated('Use hasLoungeReadAccess or hasLoungeWriteAccess')
+  bool get hasLoungeAccess => hasLoungeWriteAccess;
 
   bool get hasSerialTabAccess => isGovernmentEmailVerified;
 }

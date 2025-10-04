@@ -48,8 +48,8 @@ class PensionCard extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: isLocked
-                            ? Colors.grey.withOpacity(0.1)
-                            : Colors.blue.withOpacity(0.1),
+                            ? Colors.grey.withValues(alpha: 0.1)
+                            : Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(

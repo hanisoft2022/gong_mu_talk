@@ -3,7 +3,6 @@ import 'package:gap/gap.dart';
 
 import '../../../domain/models/comment.dart';
 import '../../../domain/models/feed_filters.dart';
-import '../../../../profile/domain/career_track.dart';
 import '../comment_utils.dart';
 
 class CommentTile extends StatelessWidget {
@@ -106,29 +105,26 @@ class CommentTile extends StatelessWidget {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    _buildCommentTrackTag(theme, comment),
-                                    const Gap(8),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (comment.authorIsSupporter) ...[
-                                          Icon(
-                                            Icons.verified,
-                                            size: 16,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                          const Gap(6),
-                                        ],
-                                        Text(
-                                          maskNickname(comment.authorNickname.isNotEmpty
-                                              ? comment.authorNickname
-                                              : comment.authorUid),
-                                          style: theme.textTheme.titleSmall?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                    if (comment.authorIsSupporter) ...[
+                                      Icon(
+                                        Icons.verified,
+                                        size: 16,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const Gap(6),
+                                    ],
+                                    Text(
+                                      getDisplayName(
+                                        nickname: comment.authorNickname.isNotEmpty
+                                            ? comment.authorNickname
+                                            : comment.authorUid,
+                                        track: comment.authorTrack,
+                                        serialVisible: comment.authorSerialVisible,
+                                      ),
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -265,7 +261,7 @@ Widget _buildCommentIdentityRow({
             radius: 16,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
             foregroundColor: theme.colorScheme.primary,
-            child: Text(_getFirstChar(maskNickname(comment.authorNickname))),
+            child: Text(_getFirstChar(comment.authorNickname)),
           ),
           const Gap(12),
         ],
@@ -284,7 +280,11 @@ Widget _buildCommentIdentityRow({
               ],
               Flexible(
                 child: Text(
-                  maskNickname(comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid),
+                  getDisplayName(
+                    nickname: comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
+                    track: comment.authorTrack,
+                    serialVisible: comment.authorSerialVisible,
+                  ),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -306,61 +306,26 @@ Widget _buildCommentIdentityRow({
     );
   }
 
-  final bool hasTrack =
-      comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
-  final Color background = hasTrack
-      ? theme.colorScheme.primary.withValues(alpha: 0.12)
-      : theme.colorScheme.surfaceContainerHighest;
-  final Color foreground = hasTrack
-      ? theme.colorScheme.primary
-      : theme.colorScheme.onSurfaceVariant;
-  final String trackLabel = serialLabel(
-    comment.authorTrack,
-    comment.authorSerialVisible,
-    includeEmoji: hasTrack,
-  );
   final Widget? supporterIcon = comment.authorIsSupporter
       ? Icon(Icons.verified, size: 16, color: theme.colorScheme.primary)
       : null;
-  final String maskedName = maskNickname(
-    comment.authorNickname.isNotEmpty
-        ? comment.authorNickname
-        : comment.authorUid,
+  final String displayName = getDisplayName(
+    nickname: comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
+    track: comment.authorTrack,
+    serialVisible: comment.authorSerialVisible,
   );
 
   return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-        ),
+      if (supporterIcon != null) ...[supporterIcon, const Gap(6)],
+      Flexible(
         child: Text(
-          trackLabel,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: foreground,
+          displayName,
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
           ),
-        ),
-      ),
-      const Gap(8),
-      IntrinsicWidth(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (supporterIcon != null) ...[supporterIcon, const Gap(6)],
-            Flexible(
-              child: Text(
-                maskedName,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       if (showTimestamp) ...[
@@ -376,35 +341,7 @@ Widget _buildCommentIdentityRow({
   );
 }
 
-Widget _buildCommentTrackTag(ThemeData theme, Comment comment) {
-  final bool hasTrack = comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
-  final Color background = hasTrack
-      ? theme.colorScheme.primary.withValues(alpha: 0.12)
-      : theme.colorScheme.surfaceContainerHighest;
-  final Color foreground = hasTrack
-      ? theme.colorScheme.primary
-      : theme.colorScheme.onSurfaceVariant;
-  final String trackLabel = serialLabel(
-    comment.authorTrack,
-    comment.authorSerialVisible,
-    includeEmoji: hasTrack,
-  );
 
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: Text(
-      trackLabel,
-      style: theme.textTheme.labelSmall?.copyWith(
-        color: foreground,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  );
-}
 
 String _getFirstChar(String text) {
   final String normalized = text.trim();

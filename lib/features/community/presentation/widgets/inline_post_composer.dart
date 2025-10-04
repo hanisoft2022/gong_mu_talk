@@ -173,12 +173,18 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     controller: _controller,
                     minLines: 2,
                     maxLines: 4,
-                    enabled: !state.isSubmitting,
+                    enabled: !state.isSubmitting && authState.isGovernmentEmailVerified,
+                    readOnly: !authState.isGovernmentEmailVerified,
+                    onTap: authState.isGovernmentEmailVerified
+                        ? null
+                        : () => _showVerificationRequiredDialog(context),
                     onChanged: cubit.updateText,
                     decoration: InputDecoration(
-                      hintText: authState.isLoggedIn
+                      hintText: authState.isGovernmentEmailVerified
                           ? '나누고 싶은 이야기를 적어보세요.'
-                          : '로그인 후 글을 작성할 수 있어요.',
+                          : authState.isLoggedIn
+                              ? '글 작성은 공직자 메일 인증 후 가능합니다'
+                              : '로그인 후 글을 작성할 수 있어요.',
                       hintStyle: theme.textTheme.bodyMedium,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -311,6 +317,30 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
     }
 
     return null;
+  }
+
+  void _showVerificationRequiredDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('공직자 메일 인증 필요'),
+        content: const Text('글 작성은 공직자 메일 인증 후 가능합니다.\n지금 인증하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: 인증 페이지로 이동
+              // context.push('/profile/verify-email');
+            },
+            child: const Text('지금 인증하기'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

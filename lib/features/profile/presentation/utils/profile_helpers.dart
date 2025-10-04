@@ -30,17 +30,3 @@ String formatDateRelative(DateTime dateTime) {
 
   return '${dateTime.year}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')}';
 }
-
-/// Returns a masked version of the nickname for privacy.
-///
-/// If [isOwnProfile] is true or the [nickname] is empty, returns the original nickname.
-/// Otherwise, returns the first character followed by '***' (e.g., 'John' -> 'J***').
-String getMaskedNickname(String nickname, bool isOwnProfile) {
-  if (isOwnProfile || nickname.isEmpty) {
-    return nickname;
-  }
-
-  // 다른 사람의 프로필: 첫 글자 + ***
-  final String firstChar = nickname.substring(0, 1);
-  return '$firstChar***';
-}

@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
@@ -59,6 +60,11 @@ class AnnualSalaryDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // 연도별 급여 증가 차트
+            _buildSalaryTrendChart(context),
 
             const SizedBox(height: 24),
 
@@ -208,6 +214,147 @@ class AnnualSalaryDetailPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSalaryTrendChart(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '📈 연도별 급여 증가 추이',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              height: 250,
+              child: _buildLineChart(theme),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLineChart(ThemeData theme) {
+    // 연도별 급여 데이터
+    final netPayData = lifetimeSalary.annualSalaries
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.netPay.toDouble()))
+        .toList();
+
+    final grossPayData = lifetimeSalary.annualSalaries
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.grossPay.toDouble()))
+        .toList();
+
+    final maxPay = lifetimeSalary.annualSalaries
+        .map((s) => s.grossPay)
+        .reduce((a, b) => a > b ? a : b)
+        .toDouble();
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxPay / 5,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              strokeWidth: 1,
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 60,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  '${(value / 10000).toInt()}만',
+                  style: theme.textTheme.bodySmall,
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: 5,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= lifetimeSalary.annualSalaries.length) {
+                  return const SizedBox();
+                }
+                if (value.toInt() % 5 != 0) return const SizedBox();
+                return Text(
+                  '${value.toInt() + 1}년',
+                  style: theme.textTheme.bodySmall,
+                );
+              },
+            ),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: grossPayData,
+            isCurved: true,
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            barWidth: 2,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: false),
+            dashArray: [5, 5],
+          ),
+          LineChartBarData(
+            spots: netPayData,
+            isCurved: true,
+            color: theme.colorScheme.primary,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            ),
+          ),
+        ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final salary = lifetimeSalary.annualSalaries[spot.x.toInt()];
+                final isNetPay = spot.barIndex == 1;
+                return LineTooltipItem(
+                  '${salary.year}년 (${salary.grade}호봉)\n'
+                  '${isNetPay ? "실수령" : "세전"}: ${NumberFormatter.formatCurrency(spot.y.toInt())}',
+                  theme.textTheme.bodySmall!.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }

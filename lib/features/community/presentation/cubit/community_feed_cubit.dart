@@ -54,6 +54,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     LoungeScope? scope,
     LoungeSort? sort,
     bool isSortChange = false,
+    bool isLoungeChange = false,
   }) async {
     if (_isFetching) {
       return;
@@ -63,8 +64,15 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     final LoungeScope targetScope = scope ?? state.scope;
     final LoungeSort targetSort = sort ?? state.sort;
 
-    // 정렬 변경 시에는 기존 posts를 유지하면서 sorting 상태로 전환
-    final newStatus = isSortChange ? CommunityFeedStatus.sorting : CommunityFeedStatus.loading;
+    // 상태 결정: sorting/lounging/loading
+    final CommunityFeedStatus newStatus;
+    if (isSortChange) {
+      newStatus = CommunityFeedStatus.sorting;
+    } else if (isLoungeChange) {
+      newStatus = CommunityFeedStatus.lounging;
+    } else {
+      newStatus = CommunityFeedStatus.loading;
+    }
 
     emit(
       state.copyWith(
@@ -81,17 +89,11 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     _cursors[_cursorKey(targetScope, targetSort)] = null;
 
     try {
-      // 🧪 테스트용: Skeleton UI 확인을 위한 최소 표시 시간 (개발 완료 후 제거)
-      final minDisplayTime = Future.delayed(const Duration(seconds: 2));
-      
       final PaginatedQueryResult<Post> result = await _fetchPosts(
         targetScope,
         targetSort,
         reset: true,
       );
-      
-      // Skeleton이 최소 2초간 표시되도록 보장
-      await minDisplayTime;
       final Set<String> liked = result.items
           .where((Post post) => post.isLiked)
           .map((Post post) => post.id)
@@ -252,7 +254,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         // posts는 유지 (파라미터 전달하지 않음)
       ),
     );
-    await loadInitial(scope: newScope);
+    await loadInitial(scope: newScope, isLoungeChange: true);
   }
 
   /// 라운지 메뉴 토글

@@ -14,8 +14,6 @@ import 'package:gap/gap.dart';
 
 import '../../../domain/models/feed_filters.dart';
 import '../../../domain/models/post.dart';
-import '../../../../profile/domain/career_track.dart';
-import '../../../../../core/utils/string_extensions.dart';
 import '../comment_utils.dart';
 
 class PostHeader extends StatelessWidget {
@@ -110,6 +108,12 @@ class AuthorInfoHeader extends StatelessWidget {
         theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
         const TextStyle(fontSize: 15, fontWeight: FontWeight.w600);
 
+    final String displayName = getDisplayName(
+      nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
+      track: post.authorTrack,
+      serialVisible: post.authorSerialVisible,
+    );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -121,36 +125,18 @@ class AuthorInfoHeader extends StatelessWidget {
         ),
         const Gap(10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (supporter != null) ...[supporter, const Gap(6)],
-                  Expanded(
-                    child: Text(
-                      maskNickname(post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid),
-                      style: nameStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              if (scope != LoungeScope.serial) ...[
-                const Gap(2),
-                Text(
-                  serialLabel(post.authorTrack, post.authorSerialVisible, includeEmoji: true),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
+              if (supporter != null) ...[supporter, const Gap(6)],
+              Expanded(
+                child: Text(
+                  displayName,
+                  style: nameStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -158,65 +144,34 @@ class AuthorInfoHeader extends StatelessWidget {
     );
   }
 
-  /// Public lounge header with track tag
+  /// Public lounge header: "직렬 닉네임" 통합 표시
   Widget _buildPublicHeader(ThemeData theme) {
     final Widget? supporter = _buildSupporterBadge(theme);
     final TextStyle nameStyle =
         theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
         const TextStyle(fontSize: 14, fontWeight: FontWeight.w600);
 
+    final String displayName = getDisplayName(
+      nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
+      track: post.authorTrack,
+      serialVisible: post.authorSerialVisible,
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildTrackTag(theme),
-        const Gap(6),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 220),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (supporter != null) ...[supporter, const Gap(6)],
-              Flexible(
-                child: Text(_maskedUid(), style: nameStyle, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
+        if (supporter != null) ...[supporter, const Gap(6)],
+        Flexible(
+          child: Text(displayName, style: nameStyle, overflow: TextOverflow.ellipsis),
         ),
       ],
     );
   }
 
-  /// Build career track tag
-  Widget _buildTrackTag(ThemeData theme) {
-    final bool hasTrack = post.authorSerialVisible && post.authorTrack != CareerTrack.none;
-    final Color background = hasTrack
-        ? theme.colorScheme.primary.withValues(alpha: 0.12)
-        : theme.colorScheme.surfaceContainerHighest;
-    final Color foreground = hasTrack
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
-    final String label = serialLabel(
-      post.authorTrack,
-      post.authorSerialVisible,
-      includeEmoji: hasTrack,
-    );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(color: foreground, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
+
 
   Widget? _buildSupporterBadge(ThemeData theme) {
     return null;
-  }
-
-  String _maskedUid() {
-    final String fallback = post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid;
-    return fallback.masked;
   }
 
   String _avatarInitial() {

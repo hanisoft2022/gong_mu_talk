@@ -19,6 +19,7 @@ import '../cubit/community_feed_cubit.dart';
 import '../../../../core/utils/performance_optimizations.dart';
 import 'empty_state_view.dart';
 import 'post_card.dart';
+import 'skeleton_post_card.dart';
 
 /// Builds the main feed section with posts
 class FeedSectionBuilder extends StatelessWidget {
@@ -51,28 +52,40 @@ class FeedSectionBuilder extends StatelessWidget {
       return _buildEmptyPostsState(cubit);
     }
 
-    // Skeleton UI for sorting and lounging states
+    // Skeleton UI for sorting and lounging states (identical appearance)
     final bool isSorting = feedState.status == CommunityFeedStatus.sorting;
     final bool isLounging = feedState.status == CommunityFeedStatus.lounging;
     
-    // Lounging state: Fade out + Skeleton (for lounge transition)
-    if (isLounging) {
-      return AnimatedOpacity(
-        opacity: 0.3,
-        duration: const Duration(milliseconds: 200),
-        child: Skeletonizer(
-          enabled: true,
-          enableSwitchAnimation: true,
-          child: _buildPostsList(context, cubit, feedState),
+    // Show skeleton for both sorting and lounging
+    if (isSorting || isLounging) {
+      return Skeletonizer(
+        enabled: true,
+        enableSwitchAnimation: true,
+        effect: ShimmerEffect(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          duration: const Duration(milliseconds: 1000),
         ),
+        child: _buildSkeletonList(),
       );
     }
     
-    // Sorting state: Simple Skeleton (for sort order change)
-    return Skeletonizer(
-      enabled: isSorting,
-      enableSwitchAnimation: true,
-      child: _buildPostsList(context, cubit, feedState),
+    // Normal state: Show actual posts
+    return _buildPostsList(context, cubit, feedState.posts, feedState.scope);
+  }
+
+  /// Builds a simple skeleton list for loading states
+  Widget _buildSkeletonList() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          SkeletonPostCard(),
+          SkeletonPostCard(),
+          SkeletonPostCard(),
+          SkeletonPostCard(),
+        ],
+      ),
     );
   }
 
@@ -99,13 +112,15 @@ class FeedSectionBuilder extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsList(BuildContext context, CommunityFeedCubit cubit, CommunityFeedState feedState) {
-    const int adInterval = 10;
-    int renderedCount = 0;
-    final int totalPosts = feedState.posts.length;
+  Widget _buildPostsList(
+    BuildContext context, 
+    CommunityFeedCubit cubit, 
+    List<Post> posts,
+    LoungeScope scope,
+  ) {
     final List<Widget> children = <Widget>[];
 
-    for (final Post post in feedState.posts) {
+    for (final Post post in posts) {
       children.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,7 +133,7 @@ class FeedSectionBuilder extends StatelessWidget {
                 post.likeCount,
                 post.isBookmarked,
                 post.commentCount,
-                feedState.scope,
+                scope,
               ],
               child: PostCard(
                 post: post,
@@ -132,31 +147,12 @@ class FeedSectionBuilder extends StatelessWidget {
                   cubit.toggleBookmark(post);
                   PerformanceProfiler.end('toggle_bookmark_feed');
                 },
-                displayScope: feedState.scope,
+                displayScope: scope,
                 showShare: false,
                 showBookmark: false,
               ),
             ),
           ),
-        ),
-      );
-      renderedCount += 1;
-
-      final bool shouldInsertAd =
-          feedState.showAds && renderedCount % adInterval == 0 && renderedCount < totalPosts;
-
-      if (shouldInsertAd) {
-        children
-          ..add(const SizedBox.shrink())
-          ..add(const SizedBox(height: 12));
-      }
-    }
-
-    if (feedState.isLoadingMore) {
-      children.add(
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: Center(child: CircularProgressIndicator()),
         ),
       );
     }

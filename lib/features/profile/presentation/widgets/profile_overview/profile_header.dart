@@ -11,7 +11,6 @@
 ///
 /// **Features**:
 /// - Profile avatar with placeholder for missing images
-/// - Nickname masking for other users' profiles (first char + ***)
 /// - Bio section with expand/collapse for long text
 /// - Clickable follower/following stats
 /// - Verification status indicators
@@ -60,10 +59,6 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    // 닉네임 마스킹 처리
-    final String displayNickname =
-        _getMaskedNickname(state.nickname, isOwnProfile);
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -83,7 +78,7 @@ class ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ProfileAvatar(
-                  nickname: displayNickname,
+                  nickname: state.nickname,
                 ),
                 const Gap(12),
                 Expanded(
@@ -92,7 +87,7 @@ class ProfileHeader extends StatelessWidget {
                     children: [
                       // 닉네임
                       Text(
-                        displayNickname,
+                        state.nickname,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           fontSize: 20,
@@ -315,19 +310,4 @@ class ProfileHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/// Masks nickname for other users' profiles (shows first character + ***)
-String _getMaskedNickname(String nickname, bool isOwnProfile) {
-  if (isOwnProfile || nickname.isEmpty) {
-    return nickname;
-  }
-
-  // 다른 사람의 프로필: 첫 글자 + ***
-  final String firstChar = nickname.characters.first;
-  return '$firstChar***';
 }
