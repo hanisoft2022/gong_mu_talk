@@ -46,6 +46,7 @@ class OptimizedListView extends StatelessWidget {
     this.controller,
     this.physics,
     this.shrinkWrap = false,
+    this.padding,
   });
 
   final int itemCount;
@@ -53,6 +54,7 @@ class OptimizedListView extends StatelessWidget {
   final ScrollController? controller;
   final ScrollPhysics? physics;
   final bool shrinkWrap;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +64,9 @@ class OptimizedListView extends StatelessWidget {
       shrinkWrap: shrinkWrap,
       itemCount: itemCount,
       itemBuilder: itemBuilder,
-      padding: EdgeInsets.zero, // 기본 패딩 제거
+      padding: padding ?? EdgeInsets.zero, // 패딩 설정 (기본값: zero)
       // 성능 최적화 설정
-      cacheExtent: 200, // 캐시 영역 확장
+      cacheExtent: 400, // 캐시 영역 확장 (스크롤 성능 개선)
       addAutomaticKeepAlives: true, // 자동 keep alive
       addRepaintBoundaries: true, // repaint 경계 추가
       addSemanticIndexes: true, // 접근성 인덱스 추가

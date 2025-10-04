@@ -100,7 +100,13 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
     final int deductionsMonthly = _currentSalary.totalDeductions;
     final int netMonthly = _currentSalary.netPay;
 
-    return SingleChildScrollView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('월급 계산기', style: TextStyle(fontWeight: FontWeight.w700)),
+        centerTitle: false,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,6 +168,7 @@ class _TeacherSalaryInsightPageState extends State<TeacherSalaryInsightPage> {
             label: const Text('상세 월급 계산기로 이동'),
           ),
         ],
+      ),
       ),
     );
   }

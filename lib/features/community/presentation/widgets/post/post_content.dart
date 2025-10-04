@@ -66,7 +66,9 @@ class PostContent extends StatelessWidget {
         // Media preview
         if (post.media.isNotEmpty) ...[
           const Gap(12),
-          PostMediaPreview(mediaList: post.media),
+          RepaintBoundary(
+            child: PostMediaPreview(mediaList: post.media),
+          ),
         ],
       ],
     );
@@ -108,17 +110,21 @@ class PostMediaPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (mediaList.length == 1) {
       final PostMedia media = mediaList.first;
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: CachedNetworkImage(
-          imageUrl: media.thumbnailUrl ?? media.url,
-          placeholder: (context, url) => Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            height: 180,
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: RepaintBoundary(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+            imageUrl: media.thumbnailUrl ?? media.url,
+            placeholder: (context, url) => Container(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
+            fit: BoxFit.cover,
           ),
-          errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
-          fit: BoxFit.cover,
+        ),
         ),
       );
     }
@@ -134,10 +140,12 @@ class PostMediaPreview extends StatelessWidget {
           crossAxisCount: 3,
           mainAxisSpacing: 4,
           crossAxisSpacing: 4,
+          childAspectRatio: 1.0,  // Square grid items
         ),
         itemBuilder: (context, index) {
           final PostMedia media = mediaList[index];
-          return CachedNetworkImage(
+          return RepaintBoundary(
+            child: CachedNetworkImage(
             imageUrl: media.thumbnailUrl ?? media.url,
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
@@ -145,6 +153,7 @@ class PostMediaPreview extends StatelessWidget {
               child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+            ),
           );
         },
       ),

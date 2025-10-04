@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 
 import '../../domain/models/feed_filters.dart';
@@ -34,7 +35,10 @@ class SortButton extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: onPressed,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onPressed();
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -61,7 +65,10 @@ class SortButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: onPressed,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onPressed();
+            },
             child: Icon(icon, size: 18, color: iconColor),
           ),
         ),

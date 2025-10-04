@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/usecases/search_community.dart';
@@ -13,7 +12,6 @@ import '../../domain/models/search_result.dart';
 
 part 'search_state.dart';
 
-@injectable
 class SearchCubit extends Cubit<SearchState> {
   SearchCubit(
     this._repository,

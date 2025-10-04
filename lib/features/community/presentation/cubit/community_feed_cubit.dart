@@ -81,11 +81,17 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     _cursors[_cursorKey(targetScope, targetSort)] = null;
 
     try {
+      // 🧪 테스트용: Skeleton UI 확인을 위한 최소 표시 시간 (개발 완료 후 제거)
+      final minDisplayTime = Future.delayed(const Duration(seconds: 2));
+      
       final PaginatedQueryResult<Post> result = await _fetchPosts(
         targetScope,
         targetSort,
         reset: true,
       );
+      
+      // Skeleton이 최소 2초간 표시되도록 보장
+      await minDisplayTime;
       final Set<String> liked = result.items
           .where((Post post) => post.isLiked)
           .map((Post post) => post.id)
@@ -236,13 +242,14 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
-    // 즉시 loading 상태로 전환하여 부드러운 애니메이션 제공
+    // 라운지 전환 상태로 변경 (기존 posts 유지하면서 fade + skeleton 효과)
     emit(
       state.copyWith(
         selectedLoungeInfo: loungeInfo,
         isLoungeMenuOpen: false, // 라운지 변경 시 메뉴 닫기
-        status: CommunityFeedStatus.loading,
+        status: CommunityFeedStatus.lounging,
         scope: newScope,
+        // posts는 유지 (파라미터 전달하지 않음)
       ),
     );
     await loadInitial(scope: newScope);

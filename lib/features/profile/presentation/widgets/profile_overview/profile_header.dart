@@ -41,6 +41,7 @@ import '../../../domain/career_track.dart';
 import '../../views/profile_edit_page.dart';
 import '../../cubit/profile_relations_cubit.dart';
 import 'profile_header_widgets.dart';
+import '../profile_common/profile_avatar.dart';
 import 'profile_relations_sheet.dart';
 import 'test_career_selector.dart';
 
@@ -77,12 +78,11 @@ class ProfileHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 상단: 프로필 이미지, 닉네임, 액션 버튼
+            // 상단: 프로필 아바타, 닉네임, 액션 버튼
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ProfileAvatar(
-                  photoUrl: state.photoUrl,
                   nickname: displayNickname,
                 ),
                 const Gap(12),

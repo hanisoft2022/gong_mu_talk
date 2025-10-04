@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../core/utils/performance_optimizations.dart';
+
 class CommunityErrorView extends StatelessWidget {
   const CommunityErrorView({
     super.key,
@@ -15,11 +17,12 @@ class CommunityErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: onRetry,
-      child: ListView(
+      child: OptimizedListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        children: [
-          Center(
+        itemCount: 1,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -42,7 +45,7 @@ class CommunityErrorView extends StatelessWidget {
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

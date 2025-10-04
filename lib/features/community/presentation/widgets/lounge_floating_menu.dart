@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 
 import '../../../profile/domain/lounge_info.dart';
@@ -364,7 +365,10 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => widget.onLoungeSelected(lounge),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          widget.onLoungeSelected(lounge);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

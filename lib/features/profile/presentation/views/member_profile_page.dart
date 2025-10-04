@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../di/di.dart';
 import '../../../../routing/app_router.dart';
+import '../../../../core/utils/performance_optimizations.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../community/domain/models/post.dart';
 import '../../../community/presentation/widgets/post_card.dart';
@@ -79,38 +80,71 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
               onRefresh: () async {
                 await _timelineCubit.refresh();
               },
-              child: ListView(
+              child: OptimizedListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                children: [
-                  _MemberHeader(
-                    profile: profile,
-                    isSelf: isSelf,
-                    isFollowPending: _isFollowActionPending,
-                    followButton: isSelf
-                        ? null
-                        : _FollowButton(
-                            targetUid: profile.uid,
-                            followerUid: authState.userId,
-                            followRepository: _followRepository,
-                            onToggle: _handleFollowToggle,
-                            isPending: _isFollowActionPending,
-                          ),
-                  ),
-                  const Gap(16),
-                  _MemberStats(profile: profile),
-                  const Gap(16),
-                  _MemberBioSection(profile: profile),
-                  const Gap(24),
-                  Text(
-                    '작성한 글',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const Gap(12),
-                  const _MemberTimelineSection(),
-                ],
+                itemCount: 8,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                      child: _MemberHeader(
+                        profile: profile,
+                        isSelf: isSelf,
+                        isFollowPending: _isFollowActionPending,
+                        followButton: isSelf
+                            ? null
+                            : _FollowButton(
+                                targetUid: profile.uid,
+                                followerUid: authState.userId,
+                                followRepository: _followRepository,
+                                onToggle: _handleFollowToggle,
+                                isPending: _isFollowActionPending,
+                              ),
+                      ),
+                    );
+                  } else if (index == 1) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Gap(16),
+                    );
+                  } else if (index == 2) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _MemberStats(profile: profile),
+                    );
+                  } else if (index == 3) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Gap(16),
+                    );
+                  } else if (index == 4) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _MemberBioSection(profile: profile),
+                    );
+                  } else if (index == 5) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Gap(24),
+                    );
+                  } else if (index == 6) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        '작성한 글',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    );
+                  } else if (index == 7) {
+                    return const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
+                      child: _MemberTimelineSection(),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             );
           },
@@ -202,12 +236,13 @@ class _MemberHeader extends StatelessWidget {
               radius: 36,
               backgroundColor: theme.colorScheme.primaryContainer,
               foregroundColor: theme.colorScheme.onPrimaryContainer,
-              backgroundImage: profile.photoUrl != null && profile.photoUrl!.isNotEmpty
-                  ? NetworkImage(profile.photoUrl!)
-                  : null,
-              child: profile.photoUrl == null || profile.photoUrl!.isEmpty
-                  ? Text(profile.nickname.characters.first, style: theme.textTheme.headlineSmall)
-                  : null,
+              child: Text(
+                profile.nickname.characters.firstOrNull ?? '공',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             const Gap(16),
             Expanded(

@@ -193,14 +193,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         });
         return cubit;
       },
-      child: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, authState) {
+      child: BlocSelector<AuthCubit, AuthState, bool>(
+        selector: (state) => state.hasLoungeAccess,
+        builder: (context, hasLoungeAccess) {
           return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
             builder: (context, feedState) {
-              return BlocBuilder<SearchCubit, SearchState>(
-                builder: (context, searchState) {
+              return BlocSelector<SearchCubit, SearchState, ({String query, bool isLoading})>(
+                selector: (state) => (query: state.query, isLoading: state.isLoading),
+                builder: (context, searchData) {
                   // Check lounge access
-                  if (!authState.hasLoungeAccess) {
+                  if (!hasLoungeAccess) {
                     return _buildNoAccessScaffold(feedState);
                   }
 
@@ -208,7 +210,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   _handleScopeChange(feedState);
 
                   final bool showSearchResults =
-                      _isSearchExpanded && (searchState.query.isNotEmpty || searchState.isLoading);
+                      _isSearchExpanded && (searchData.query.isNotEmpty || searchData.isLoading);
 
                   // Initial loading state
                   if (!showSearchResults && _isInitialLoading(feedState)) {
@@ -222,8 +224,6 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
                   return _buildMainScaffold(
                     feedState: feedState,
-                    searchState: searchState,
-                    authState: authState,
                     showSearchResults: showSearchResults,
                   );
                 },
@@ -319,8 +319,6 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   Widget _buildMainScaffold({
     required CommunityFeedState feedState,
-    required SearchState searchState,
-    required AuthState authState,
     required bool showSearchResults,
   }) {
     final Future<void> Function() onRefresh = showSearchResults
@@ -329,8 +327,6 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     final List<Widget> children = _buildContentChildren(
       feedState: feedState,
-      searchState: searchState,
-      authState: authState,
       showSearchResults: showSearchResults,
     );
 
@@ -350,19 +346,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             body: RefreshIndicator(
               onRefresh: onRefresh,
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                switchInCurve: Curves.easeOutQuart,
-                switchOutCurve: Curves.easeOut,
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
                 transitionBuilder: (Widget child, Animation<double> animation) {
                   return FadeTransition(
                     opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.0, 0.015),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart)),
-                      child: child,
-                    ),
+                    child: child,
                   );
                 },
                 child: OptimizedListView(
@@ -376,14 +366,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             ),
           ),
 
-          // Sorting overlay
-          if (feedState.status == CommunityFeedStatus.sorting) _buildSortingOverlay(),
-
           // Menu overlay
           if (feedState.isLoungeMenuOpen) _buildMenuOverlay(),
 
           // FAB + Lounge menu
-          _buildFloatingActions(feedState, authState),
+          _buildFloatingActions(feedState),
         ],
       ),
     );
@@ -391,8 +378,6 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   List<Widget> _buildContentChildren({
     required CommunityFeedState feedState,
-    required SearchState searchState,
-    required AuthState authState,
     required bool showSearchResults,
   }) {
     final List<Widget> children = <Widget>[
@@ -404,12 +389,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         ),
       ),
       const Gap(12),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SearchAndSortRow(
-          feedState: feedState,
-          searchState: searchState,
-          isSearchExpanded: _isSearchExpanded,
+      BlocBuilder<SearchCubit, SearchState>(
+        builder: (context, searchState) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SearchAndSortRow(
+              feedState: feedState,
+              searchState: searchState,
+              isSearchExpanded: _isSearchExpanded,
           searchController: _searchController,
           searchFocusNode: _searchFocusNode,
           onExpandSearch: _expandSearchField,
@@ -418,7 +405,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           onSearchChanged: _onQueryChanged,
           onClearSearch: _clearSearchQuery,
           onShowSearchOptions: _showSearchOptions,
-        ),
+            ),
+          );
+        },
       ),
       const Gap(16),
     ];
@@ -427,53 +416,40 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       final searchCubit = _searchCubit ?? context.read<SearchCubit>();
       children
         ..add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SearchSuggestionsCard(
-              searchState: searchState,
-              onSuggestionTap: _useSuggestion,
-              onClearRecentSearches: () => searchCubit.clearRecentSearches(),
-              onRemoveRecentSearch: (search) => searchCubit.removeRecentSearch(search),
-            ),
+          BlocBuilder<SearchCubit, SearchState>(
+            builder: (context, searchState) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SearchSuggestionsCard(
+                  searchState: searchState,
+                  onSuggestionTap: _useSuggestion,
+                  onClearRecentSearches: () => searchCubit.clearRecentSearches(),
+                  onRemoveRecentSearch: (search) => searchCubit.removeRecentSearch(search),
+                ),
+              );
+            },
           ),
         )
         ..add(const Gap(12))
-        ..add(FeedSectionBuilder(feedState: feedState, authState: authState));
+        ..add(const FeedSectionBuilder());
     } else if (showSearchResults) {
       children.add(
-        SearchResultsSection(
-          searchState: searchState,
-          searchCubit: _searchCubit ?? context.read<SearchCubit>(),
-          onClearSearch: _clearSearchQuery,
-          onCloseSearch: _collapseSearchField,
+        BlocBuilder<SearchCubit, SearchState>(
+          builder: (context, searchState) {
+            return SearchResultsSection(
+              searchState: searchState,
+              searchCubit: _searchCubit ?? context.read<SearchCubit>(),
+              onClearSearch: _clearSearchQuery,
+              onCloseSearch: _collapseSearchField,
+            );
+          },
         ),
       );
     } else {
-      children.add(FeedSectionBuilder(feedState: feedState, authState: authState));
+      children.add(const FeedSectionBuilder());
     }
 
     return children;
-  }
-
-  Widget _buildSortingOverlay() {
-    return Positioned.fill(
-      top: kToolbarHeight + MediaQuery.of(context).padding.top,
-      child: IgnorePointer(
-        child: Container(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-          child: Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildMenuOverlay() {
@@ -485,38 +461,43 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
     );
   }
 
-  Widget _buildFloatingActions(CommunityFeedState feedState, AuthState authState) {
+  Widget _buildFloatingActions(CommunityFeedState feedState) {
     return Positioned(
       right: 16,
       bottom: 24,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Lounge selection menu
-          LoungeFloatingMenu(
-            lounges: feedState.accessibleLounges,
-            selectedLounge: feedState.selectedLoungeInfo,
-            onLoungeSelected: (lounge) {
-              context.read<CommunityFeedCubit>().changeLounge(lounge);
-            },
-            isVisible: feedState.isLoungeMenuOpen,
-            hasCareerVerification: authState.careerHierarchy != null,
+      child: BlocSelector<AuthCubit, AuthState, bool>(
+        selector: (state) => state.careerHierarchy != null,
+        builder: (context, hasCareerVerification) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Lounge selection menu
+              LoungeFloatingMenu(
+                lounges: feedState.accessibleLounges,
+                selectedLounge: feedState.selectedLoungeInfo,
+                onLoungeSelected: (lounge) {
+                  context.read<CommunityFeedCubit>().changeLounge(lounge);
+                },
+                isVisible: feedState.isLoungeMenuOpen,
+                hasCareerVerification: hasCareerVerification,
             onVerifyCareer: () {
               context.read<CommunityFeedCubit>().toggleLoungeMenu();
               context.push('/profile/verify-paystub');
             },
           ),
 
-          // FAB
-          LoungeFAB(
-            selectedLounge: feedState.selectedLoungeInfo,
-            onTap: () {
-              context.read<CommunityFeedCubit>().toggleLoungeMenu();
-            },
-            isMenuOpen: feedState.isLoungeMenuOpen,
-          ),
-        ],
+              // FAB
+              LoungeFAB(
+                selectedLounge: feedState.selectedLoungeInfo,
+                onTap: () {
+                  context.read<CommunityFeedCubit>().toggleLoungeMenu();
+                },
+                isMenuOpen: feedState.isLoungeMenuOpen,
+              ),
+            ],
+          );
+        },
       ),
     );
   }

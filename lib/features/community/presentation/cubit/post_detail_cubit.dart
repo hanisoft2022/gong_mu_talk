@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:injectable/injectable.dart';
 
 import '../../data/community_repository.dart';
 import '../../domain/models/comment.dart';
@@ -8,7 +7,6 @@ import '../../domain/models/post.dart';
 
 part 'post_detail_state.dart';
 
-@injectable
 class PostDetailCubit extends Cubit<PostDetailState> {
   PostDetailCubit(this._repository) : super(const PostDetailState());
 

@@ -13,9 +13,6 @@ GongMuTalk (공무톡) is a Flutter-based comprehensive asset management and com
 # Install dependencies
 flutter pub get
 
-# Run code generation for freezed, json_serializable, etc.
-flutter pub run build_runner build --delete-conflicting-outputs
-
 # Run the app
 flutter run
 
@@ -329,21 +326,16 @@ class CommentFormCubit extends Cubit<CommentFormState> { ... }
 
 **State Management & Architecture:**
 - **State Management**: flutter_bloc, bloc_concurrency
-- **Dependency Injection**: get_it, injectable
+- **Dependency Injection**: get_it (manual registration)
 - **Functional Programming**: dartz (Either, Option), tuple
+- **Value Objects**: equatable
 
 **Navigation & Routing:**
 - **Navigation**: go_router (manual configuration, no code generation)
 
 **HTTP & Networking:**
-- **HTTP Clients**: dio, retrofit
+- **HTTP Clients**: dio
 - **Network Caching**: cached_network_image
-
-**Code Generation:**
-- **Serialization**: freezed, json_serializable
-- **API Client**: retrofit_generator
-- **DI**: injectable_generator
-- **Build**: build_runner
 
 **UI & Design:**
 - **Fonts**: google_fonts
@@ -466,9 +458,6 @@ blocTest<CommunityCubit, CommunityState>(
     CommunityState.loaded(posts: mockPosts),
   ],
 );
-
-// ❌ Skip: Testing generated code
-// Don't test .g.dart, .freezed.dart files
 ```
 
 **Coverage Goals**:
@@ -491,8 +480,6 @@ The project uses multiple levels of linting:
   - `prefer_const_literals_to_create_immutables: true`
 
 **Generated files excluded from analysis:**
-- `**/*.g.dart`
-- `**/*.freezed.dart`
 - `lib/generated_plugin_registrant.dart`
 
 ### Error Tracking
@@ -511,16 +498,123 @@ dart format lib test
 flutter test --coverage
 ```
 
-## Code Generation
+## Architecture Patterns: No Code Generation
 
-The project uses several code generation tools. Always run after modifying:
-- **Models** with `@freezed` or `@JsonSerializable` annotations
-- **Injectable services** with `@injectable` annotations
-- **Retrofit API clients** with `@RestApi` annotations
+**⚠️ This project does NOT use code generation.**
 
-Run: `flutter pub run build_runner build --delete-conflicting-outputs`
+### What We Use Instead
 
-**Note**: GoRouter routes are configured manually in `lib/routing/app_router.dart` (no code generation for routes)
+#### 1. Equatable (instead of Freezed)
+Use Equatable for immutable entities with value equality:
+
+```dart
+class TeacherProfile extends Equatable {
+  const TeacherProfile({
+    required this.name,
+    required this.grade,
+    this.allowances = const Allowance(),
+  });
+
+  final String name;
+  final int grade;
+  final Allowance allowances;
+
+  @override
+  List<Object?> get props => [name, grade, allowances];
+
+  TeacherProfile copyWith({
+    String? name,
+    int? grade,
+    Allowance? allowances,
+  }) {
+    return TeacherProfile(
+      name: name ?? this.name,
+      grade: grade ?? this.grade,
+      allowances: allowances ?? this.allowances,
+    );
+  }
+}
+```
+
+**Benefits:**
+- No build_runner dependency
+- No compilation issues (experienced with Freezed)
+- Explicit and debuggable
+- IDE-friendly
+
+#### 2. Manual GetIt Registration (instead of Injectable)
+Register dependencies manually in `lib/di/di.dart`:
+
+```dart
+final GetIt getIt = GetIt.instance;
+
+Future<void> configureDependencies() async {
+  // Singletons
+  getIt.registerLazySingleton<MyRepository>(MyRepository.new);
+
+  // Factories (new instance each time)
+  getIt.registerFactory<MyCubit>(() => MyCubit(getIt()));
+
+  // With dependencies
+  getIt.registerLazySingleton<CommunityFeedCubit>(
+    () => CommunityFeedCubit(
+      repository: getIt(),
+      authCubit: getIt(),
+      notificationRepository: getIt(),
+    ),
+  );
+}
+```
+
+**Benefits:**
+- Explicit dependency graph
+- No generated .config.dart files
+- Easier to debug DI issues
+- All registrations in one place
+
+#### 3. Manual Serialization (instead of json_serializable)
+If JSON serialization is needed, write manual toJson/fromJson:
+
+```dart
+class Post extends Equatable {
+  const Post({required this.id, required this.title});
+
+  final String id;
+  final String title;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+  };
+
+  factory Post.fromJson(Map<String, dynamic> json) => Post(
+    id: json['id'] as String,
+    title: json['title'] as String,
+  );
+
+  @override
+  List<Object?> get props => [id, title];
+}
+```
+
+#### 4. Dio Directly (instead of Retrofit)
+Use Dio directly for HTTP calls without @RestApi annotations.
+
+### Why We Avoid Code Generation
+
+**Historical Context:**
+- Freezed caused build failures in calculator feature
+- Generated code was harder to debug
+- build_runner added complexity and slow compile times
+
+**Current Policy:**
+- ❌ DO NOT add freezed, json_serializable, injectable, retrofit_generator
+- ❌ DO NOT add build_runner
+- ✅ Use Equatable for all entities
+- ✅ Use manual GetIt registration
+- ✅ Use manual serialization when needed
+
+**Note**: GoRouter routes are configured manually in `lib/routing/app_router.dart`
 
 ## Data Scripts
 
@@ -734,9 +828,9 @@ final compressed = await ImageCompressionUtil.compressImage(
 - Use BLoC/Cubit for complex state management
 - Implement repository pattern for data access
 - Keep Firebase logic isolated in data layer
-- Use dependency injection via GetIt
+- Use dependency injection via GetIt (manual registration)
 - Use Dartz's `Either<Failure, Success>` pattern for error handling
-- Use Retrofit for type-safe HTTP API clients
+- Use Dio directly for HTTP API clients
 
 **Code Quality:**
 - Prefer const constructors for performance
@@ -748,8 +842,8 @@ final compressed = await ImageCompressionUtil.compressImage(
 **Data Layer Patterns:**
 - Repositories return `Either<Failure, Data>` for explicit error handling
 - Firebase operations isolated in datasources
-- Models use freezed for immutability and json_serializable for serialization
-- API clients use Retrofit with Dio for HTTP communication
+- Models use Equatable for immutability and value equality
+- Use Dio directly for HTTP communication
 
 ## 파일 크기 및 구조 관리 원칙
 

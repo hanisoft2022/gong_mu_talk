@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/models/feed_filters.dart';
@@ -21,19 +22,25 @@ import 'post_card.dart';
 
 /// Builds the main feed section with posts
 class FeedSectionBuilder extends StatelessWidget {
-  const FeedSectionBuilder({
-    required this.feedState,
-    required this.authState,
-    super.key,
-  });
-
-  final CommunityFeedState feedState;
-  final AuthState authState;
+  const FeedSectionBuilder({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+      builder: (context, feedState) {
+        return BlocSelector<AuthCubit, AuthState, bool>(
+          selector: (state) => state.hasSerialTabAccess,
+          builder: (context, hasSerialTabAccess) {
+            return _buildContent(context, feedState, hasSerialTabAccess);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, CommunityFeedState feedState, bool hasSerialTabAccess) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    final bool showSerialGuide = feedState.scope == LoungeScope.serial && !authState.hasSerialTabAccess;
+    final bool showSerialGuide = feedState.scope == LoungeScope.serial && !hasSerialTabAccess;
     final bool showEmptyPosts = feedState.posts.isEmpty && !showSerialGuide;
 
     if (showSerialGuide) {
@@ -44,7 +51,29 @@ class FeedSectionBuilder extends StatelessWidget {
       return _buildEmptyPostsState(cubit);
     }
 
-    return _buildPostsList(context, cubit);
+    // Skeleton UI for sorting and lounging states
+    final bool isSorting = feedState.status == CommunityFeedStatus.sorting;
+    final bool isLounging = feedState.status == CommunityFeedStatus.lounging;
+    
+    // Lounging state: Fade out + Skeleton (for lounge transition)
+    if (isLounging) {
+      return AnimatedOpacity(
+        opacity: 0.3,
+        duration: const Duration(milliseconds: 200),
+        child: Skeletonizer(
+          enabled: true,
+          enableSwitchAnimation: true,
+          child: _buildPostsList(context, cubit, feedState),
+        ),
+      );
+    }
+    
+    // Sorting state: Simple Skeleton (for sort order change)
+    return Skeletonizer(
+      enabled: isSorting,
+      enableSwitchAnimation: true,
+      child: _buildPostsList(context, cubit, feedState),
+    );
   }
 
   Widget _buildSerialGuideState(CommunityFeedCubit cubit) {
@@ -70,7 +99,7 @@ class FeedSectionBuilder extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsList(BuildContext context, CommunityFeedCubit cubit) {
+  Widget _buildPostsList(BuildContext context, CommunityFeedCubit cubit, CommunityFeedState feedState) {
     const int adInterval = 10;
     int renderedCount = 0;
     final int totalPosts = feedState.posts.length;
@@ -80,31 +109,33 @@ class FeedSectionBuilder extends StatelessWidget {
       children.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: MemoizedWidget(
-            key: ValueKey('post_${post.id}'),
-            dependencies: [
-              post.id,
-              post.isLiked,
-              post.likeCount,
-              post.isBookmarked,
-              post.commentCount,
-              feedState.scope,
-            ],
-            child: PostCard(
-              post: post,
-              onToggleLike: () {
-                PerformanceProfiler.start('toggle_like_feed');
-                cubit.toggleLike(post);
-                PerformanceProfiler.end('toggle_like_feed');
-              },
-              onToggleBookmark: () {
-                PerformanceProfiler.start('toggle_bookmark_feed');
-                cubit.toggleBookmark(post);
-                PerformanceProfiler.end('toggle_bookmark_feed');
-              },
-              displayScope: feedState.scope,
-              showShare: false,
-              showBookmark: false,
+          child: RepaintBoundary(
+            child: MemoizedWidget(
+              key: ValueKey('post_${post.id}'),
+              dependencies: [
+                post.id,
+                post.isLiked,
+                post.likeCount,
+                post.isBookmarked,
+                post.commentCount,
+                feedState.scope,
+              ],
+              child: PostCard(
+                post: post,
+                onToggleLike: () {
+                  PerformanceProfiler.start('toggle_like_feed');
+                  cubit.toggleLike(post);
+                  PerformanceProfiler.end('toggle_like_feed');
+                },
+                onToggleBookmark: () {
+                  PerformanceProfiler.start('toggle_bookmark_feed');
+                  cubit.toggleBookmark(post);
+                  PerformanceProfiler.end('toggle_bookmark_feed');
+                },
+                displayScope: feedState.scope,
+                showShare: false,
+                showBookmark: false,
+              ),
             ),
           ),
         ),

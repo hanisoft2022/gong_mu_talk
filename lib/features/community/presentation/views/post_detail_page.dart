@@ -15,6 +15,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/routing/app_router.dart';
 
+import '../../../../core/utils/performance_optimizations.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
@@ -110,33 +111,46 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () => context.read<PostDetailCubit>().refresh(),
-                    child: ListView(
+                    child: OptimizedListView(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        PostDetailHeader(
-                          post: state.post!,
-                          currentUserId: context
-                              .read<PostDetailCubit>()
-                              .currentUserId,
-                          onToggleLike: () =>
-                              context.read<PostDetailCubit>().toggleLike(),
-                          onToggleBookmark: () =>
-                              context.read<PostDetailCubit>().toggleBookmark(),
-                          onMenuAction: _handleMenuAction,
-                        ),
-                        const Gap(24),
-                        CommentsSection(
-                          featuredComments: state.featuredComments,
-                          timelineComments: state.comments,
-                          isLoading: state.isLoadingComments,
-                          scope: scope,
-                          onToggleLike: (commentId) => context
-                              .read<PostDetailCubit>()
-                              .toggleCommentLike(commentId),
-                          onReply: _handleReply,
-                        ),
-                      ],
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                            child: PostDetailHeader(
+                              post: state.post!,
+                              currentUserId: context
+                                  .read<PostDetailCubit>()
+                                  .currentUserId,
+                              onToggleLike: () =>
+                                  context.read<PostDetailCubit>().toggleLike(),
+                              onToggleBookmark: () =>
+                                  context.read<PostDetailCubit>().toggleBookmark(),
+                              onMenuAction: _handleMenuAction,
+                            ),
+                          );
+                        } else if (index == 1) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Gap(24),
+                          );
+                        } else {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            child: CommentsSection(
+                              featuredComments: state.featuredComments,
+                              timelineComments: state.comments,
+                              isLoading: state.isLoadingComments,
+                              scope: scope,
+                              onToggleLike: (commentId) => context
+                                  .read<PostDetailCubit>()
+                                  .toggleCommentLike(commentId),
+                              onReply: _handleReply,
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ),
                 ),

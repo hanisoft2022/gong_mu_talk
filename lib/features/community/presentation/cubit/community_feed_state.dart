@@ -1,6 +1,6 @@
 part of 'community_feed_cubit.dart';
 
-enum CommunityFeedStatus { initial, loading, loaded, refreshing, sorting, error }
+enum CommunityFeedStatus { initial, loading, loaded, refreshing, sorting, lounging, error }
 
 class CommunityFeedState extends Equatable {
   const CommunityFeedState({

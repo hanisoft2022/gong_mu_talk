@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
+import '../../../../core/utils/performance_optimizations.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../domain/models/post.dart';
 import '../cubit/post_composer_cubit.dart';
@@ -104,9 +105,13 @@ class _PostCreatePageState extends State<PostCreatePage> {
               ],
             ),
             body: SafeArea(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
+              child: OptimizedListView(
+                itemCount: 1,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   if (widget.postType == null)
                     SegmentedButton<PostType>(
                       segments: const [
@@ -210,9 +215,11 @@ class _PostCreatePageState extends State<PostCreatePage> {
                       ),
                     ],
                   ),
-                  const Gap(24),
-                  if (state.isSubmitting) const LinearProgressIndicator(minHeight: 3),
-                ],
+                      const Gap(24),
+                      if (state.isSubmitting) const LinearProgressIndicator(minHeight: 3),
+                    ],
+                  ),
+                ),
               ),
             ),
           );

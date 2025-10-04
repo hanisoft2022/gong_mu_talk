@@ -81,8 +81,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // UI State
   final GlobalKey _authorButtonKey = GlobalKey();
   OverlayEntry? _menuOverlayEntry;
-  bool _isExpanded = false;
-  bool _showComments = false;
+  late final ValueNotifier<bool> _isExpandedNotifier;
+  late final ValueNotifier<bool> _showCommentsNotifier;
   bool _hasTrackedInteraction = false;
 
   // Comments State
@@ -118,6 +118,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _commentCount = widget.post.commentCount;
     _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
+    _isExpandedNotifier = ValueNotifier<bool>(false);
+    _showCommentsNotifier = ValueNotifier<bool>(false);
   }
 
   @override
@@ -135,6 +137,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       ..removeListener(_handleCommentInputChanged)
       ..dispose();
     _commentFocusNode.dispose();
+    _isExpandedNotifier.dispose();
+    _showCommentsNotifier.dispose();
     super.dispose();
   }
 
@@ -145,8 +149,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       _commentFocusNode.unfocus();
       setState(() {
         _commentCount = widget.post.commentCount;
-        _isExpanded = false;
-        _showComments = false;
+        _isExpandedNotifier.value = false;
+        _showCommentsNotifier.value = false;
         _isLoadingComments = false;
         _commentsLoaded = false;
         _featuredComments = const <Comment>[];
@@ -172,7 +176,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final Post post = widget.post;
     final String timestamp = _formatTimestamp(post.createdAt);
-    final bool showMoreButton = !_isExpanded && content.shouldShowMore(post.text, context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -193,11 +196,19 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   onAuthorMenuTap: _handleAuthorMenuTap,
                 ),
                 const Gap(14),
-                content.PostContent(
-                  post: post,
-                  isExpanded: _isExpanded,
-                  showMoreButton: showMoreButton,
-                  onExpand: _handleExpand,
+                RepaintBoundary(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _isExpandedNotifier,
+                    builder: (context, isExpanded, _) {
+                      final bool showMoreButton = !isExpanded && content.shouldShowMore(post.text, context);
+                      return content.PostContent(
+                      post: post,
+                      isExpanded: isExpanded,
+                      showMoreButton: showMoreButton,
+                      onExpand: _handleExpand,
+                    );
+                  },
+                ),
                 ),
                 const Gap(16),
                 PostActionsBar(
@@ -218,13 +229,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           ),
 
           // Comment composer (shown when comments are visible)
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: !_showComments
-                ? const SizedBox.shrink()
-                : Padding(
+          ValueListenableBuilder<bool>(
+            valueListenable: _showCommentsNotifier,
+            builder: (context, showComments, _) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: !showComments
+                    ? const SizedBox.shrink()
+                    : Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,20 +259,26 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
+              );
+            },
           ),
 
           // Comments section
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: !_showComments
+          ValueListenableBuilder<bool>(
+            valueListenable: _showCommentsNotifier,
+            builder: (context, showComments, _) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: !showComments
                 ? const SizedBox.shrink()
                 : AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
+                    duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
                     alignment: Alignment.topCenter,
-                    child: PostCommentsSection(
+                    child: RepaintBoundary(
+                      child: PostCommentsSection(
                       isLoading: _isLoadingComments,
                       timelineComments: _timelineComments,
                       featuredComments: _featuredComments,
@@ -266,8 +286,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       onToggleCommentLike: _handleCommentLike,
                       onReplyTap: _handleReplyTap,
                       onOpenCommentAuthorProfile: _showCommentAuthorMenu,
+                      ),
                     ),
                   ),
+              );
+            },
           ),
         ],
       ),
@@ -280,7 +303,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _registerInteraction();
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _isExpanded = true);
+        if (mounted) _isExpandedNotifier.value = true;
       });
     }
   }
@@ -479,10 +502,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // ==================== Comments ====================
 
   Future<void> _toggleComments() async {
-    if (_showComments) {
+    if (_showCommentsNotifier.value) {
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _showComments = false);
+          if (mounted) _showCommentsNotifier.value = false;
         });
       }
       return;
@@ -490,7 +513,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _showComments = true);
+        if (mounted) _showCommentsNotifier.value = true;
       });
     }
     await _loadComments();
@@ -609,9 +632,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       setState(() {
         _commentCount += 1;
         _canSubmitComment = false;
-        _showComments = true;
         _selectedImages.clear();
       });
+      _showCommentsNotifier.value = true;
       await _loadComments(force: true);
     } catch (_) {
       if (mounted) {
@@ -689,8 +712,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     if (added == true && mounted) {
       setState(() {
         _commentCount += 1;
-        _showComments = true;
       });
+      _showCommentsNotifier.value = true;
       await _loadComments(force: true);
     }
   }

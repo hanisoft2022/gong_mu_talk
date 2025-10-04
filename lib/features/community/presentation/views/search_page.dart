@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../core/utils/performance_optimizations.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_suggestion.dart';
 import '../../domain/models/search_result.dart';
@@ -175,10 +176,14 @@ class _SearchPageState extends State<SearchPage> {
 
     return RefreshIndicator(
       onRefresh: () => context.read<SearchCubit>().refresh(),
-      child: ListView(
+      child: OptimizedListView(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        children: [
+        itemCount: 1,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           _buildResultsHeader(state),
           if (showPosts) ...[
             _buildSectionHeader('글 결과', state.postResults.length),
@@ -211,12 +216,14 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
           ],
-          if (state.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-        ],
+              if (state.isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -235,31 +242,37 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Row(
+    return OptimizedListView(
+      itemCount: 1,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.trending_up_outlined),
-            const Gap(8),
-            Text(
-              '인기 검색어',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                const Icon(Icons.trending_up_outlined),
+                const Gap(8),
+                Text(
+                  '인기 검색어',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const Gap(16),
+            ...suggestions.map(
+              (suggestion) => ListTile(
+                leading: const Icon(Icons.search_outlined),
+                title: Text(suggestion.token),
+                subtitle: Text('${suggestion.count}회 검색'),
+                onTap: () => _performSearch(suggestion.token),
+              ),
             ),
           ],
         ),
-        const Gap(16),
-        ...suggestions.map(
-          (suggestion) => ListTile(
-            leading: const Icon(Icons.search_outlined),
-            title: Text(suggestion.token),
-            subtitle: Text('${suggestion.count}회 검색'),
-            onTap: () => _performSearch(suggestion.token),
-          ),
-        ),
-      ],
+      ),
     );
   }
 

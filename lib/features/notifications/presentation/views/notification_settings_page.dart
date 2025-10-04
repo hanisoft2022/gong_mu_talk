@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/utils/performance_optimizations.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
@@ -101,86 +103,106 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
+          : OptimizedListView(
+              itemCount: 9,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 20,
-                              color: theme.colorScheme.primary,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 20,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const Gap(8),
+                                Text(
+                                  '알림 설정',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
                             ),
                             const Gap(8),
                             Text(
-                              '알림 설정',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
+                              '받고 싶은 알림 유형을 선택하세요. 언제든지 변경할 수 있습니다.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        const Gap(8),
-                        Text(
-                          '받고 싶은 알림 유형을 선택하세요. 언제든지 변경할 수 있습니다.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-                const Gap(16),
-                ..._notificationOptions.entries.map(
-                  (entry) => _buildNotificationTile(
-                    context,
-                    entry.key,
-                    entry.value,
-                  ),
-                ),
-                const Gap(24),
-                Card(
-                  child: Padding(
+                  );
+                } else if (index == 1) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Gap(16),
+                  );
+                } else if (index >= 2 && index <= 6) {
+                  final entry = _notificationOptions.entries.elementAt(index - 2);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildNotificationTile(
+                      context,
+                      entry.key,
+                      entry.value,
+                    ),
+                  );
+                } else if (index == 7) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Gap(24),
+                  );
+                } else {
+                  return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.settings_outlined,
-                              size: 20,
-                              color: theme.colorScheme.onSurfaceVariant,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.settings_outlined,
+                                  size: 20,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const Gap(8),
+                                Text(
+                                  '기기 알림 설정',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                             const Gap(8),
                             Text(
-                              '기기 알림 설정',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
+                              '푸시 알림을 완전히 차단하려면 기기의 설정 > 알림에서 공무톡 앱의 알림을 비활성화하세요.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        const Gap(8),
-                        Text(
-                          '푸시 알림을 완전히 차단하려면 기기의 설정 > 알림에서 공무톡 앱의 알림을 비활성화하세요.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  );
+                }
+              },
             ),
     );
   }

@@ -115,9 +115,10 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
     // 테스트 모드에서는 testModeCareer 필드에 직렬 정보 저장
     await FirebaseFirestore.instance.collection('users').doc(userId).update({
       'careerHierarchy': careerHierarchy?.toMap(),
+      'careerTrack': careerHierarchy?.legacyCareerTrack.name ?? 'none',
       'accessibleLoungeIds': accessibleLoungeIds,
       'defaultLoungeId': defaultLoungeId,
-      'testModeCareer': careerHierarchy?.toMap(), // 테스트 모드 직렬 정보
+      'testModeCareer': careerHierarchy?.toMap(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 

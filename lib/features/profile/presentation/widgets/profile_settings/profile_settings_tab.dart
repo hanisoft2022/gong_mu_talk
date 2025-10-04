@@ -38,6 +38,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../../core/utils/performance_optimizations.dart';
 import 'notification_settings_section.dart';
 import 'password_change_section.dart';
 import 'customer_support_section.dart';
@@ -64,33 +65,71 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      children: [
-        // 알림 설정
-        const NotificationSettingsSection(),
-        const Gap(16),
-
-        // 비밀번호 변경
-        PasswordChangeSection(showMessage: _showMessage),
-        const Gap(16),
-
-        // 고객 지원
-        CustomerSupportSection(showMessage: _showMessage),
-        const Gap(16),
-
-        // 개인정보 및 약관
-        PrivacyTermsSection(showMessage: _showMessage),
-        const Gap(16),
-
-        // 앱 정보
-        const AppInfoSection(),
-        const Gap(16),
-
-        // 계정 관리
-        const AccountManagementSection(),
-        const Gap(16),
-      ],
+    return OptimizedListView(
+      itemCount: 12,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: NotificationSettingsSection(),
+          );
+        } else if (index == 1) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 2) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PasswordChangeSection(showMessage: _showMessage),
+          );
+        } else if (index == 3) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 4) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CustomerSupportSection(showMessage: _showMessage),
+          );
+        } else if (index == 5) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 6) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PrivacyTermsSection(showMessage: _showMessage),
+          );
+        } else if (index == 7) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 8) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: AppInfoSection(),
+          );
+        } else if (index == 9) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 10) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: AccountManagementSection(),
+          );
+        } else {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Gap(16),
+          );
+        }
+      },
     );
   }
 

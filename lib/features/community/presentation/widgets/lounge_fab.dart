@@ -118,10 +118,11 @@ class _LoungeFABState extends State<LoungeFAB>
     final theme = Theme.of(context);
     final selectedLounge = widget.selectedLounge;
 
-    return AnimatedBuilder(
-      animation: Listenable.merge([_rotationController, _pulseController]),
-      builder: (context, child) {
-        return Transform.scale(
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_rotationController, _pulseController]),
+        builder: (context, child) {
+          return Transform.scale(
           scale: _scaleAnimation.value * _pulseAnimation.value,
           child: Transform.rotate(
             angle: _rotationAnimation.value * 2 * 3.141592653589793, // 라디안 변환
@@ -200,6 +201,7 @@ class _LoungeFABState extends State<LoungeFAB>
           ),
         );
       },
+      ),
     );
   }
 }

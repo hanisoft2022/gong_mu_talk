@@ -8,7 +8,6 @@
 /// - Separate concerns for better maintainability
 ///
 /// **Widgets**:
-/// - ProfileAvatar: Circular avatar with fallback
 /// - BioCard: Expandable bio text display
 /// - StatCard: Follower/following statistics
 /// - VerificationStatusRow: Simple verification status indicator
@@ -20,7 +19,6 @@
 /// remain private (prefixed with underscore) to this feature.
 
 library;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,41 +29,7 @@ import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../data/paystub_verification_repository.dart';
 import '../../../domain/paystub_verification.dart';
 
-/// Profile avatar with circular design and fallback to initial letter
-class ProfileAvatar extends StatelessWidget {
-  const ProfileAvatar({
-    super.key,
-    required this.photoUrl,
-    required this.nickname,
-  });
 
-  final String? photoUrl;
-  final String nickname;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return CircleAvatar(
-      radius: 32,
-      backgroundColor: photoUrl != null && photoUrl!.isNotEmpty
-          ? Colors.transparent
-          : theme.colorScheme.primaryContainer,
-      backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
-          ? CachedNetworkImageProvider(photoUrl!)
-          : null,
-      child: photoUrl == null || photoUrl!.isEmpty
-          ? Text(
-              nickname.isEmpty ? '?' : nickname.characters.first,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            )
-          : null,
-    );
-  }
-}
 
 /// Bio card with expand/collapse functionality for long text
 class BioCard extends StatefulWidget {

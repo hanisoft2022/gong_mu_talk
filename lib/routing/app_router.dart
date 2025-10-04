@@ -6,16 +6,20 @@ import '../app/app_shell.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/auth/presentation/views/auth_page.dart';
-import '../features/calculator/presentation/views/salary_calculator_page.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
 import '../features/community/presentation/views/post_detail_page.dart';
 
-import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
-import '../features/pension/presentation/views/pension_calculator_page.dart';
-import '../features/pension/presentation/cubit/pension_calculator_cubit.dart';
+// TEMPORARILY DISABLED DUE TO IOS BUILD ISSUE
+// import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
+// import '../features/pension/presentation/views/pension_calculator_page.dart';
+// import '../features/pension/presentation/views/pension_quick_input_page.dart';
+// import '../features/pension/presentation/views/pension_mz_result_page.dart';
+// import '../features/pension/presentation/cubit/pension_calculator_cubit.dart';
+// import '../features/pension/presentation/cubit/pension_cubit.dart';
+// import '../features/pension/domain/entities/calculation_result.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
 import '../features/community/presentation/views/search_page.dart';
@@ -24,6 +28,7 @@ import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
+import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
 import '../features/notifications/presentation/views/notification_history_page.dart';
 import '../features/notifications/presentation/views/notification_settings_page.dart';
@@ -84,7 +89,10 @@ GoRouter createRouter() {
               GoRoute(
                 path: CalculatorRoute.path,
                 name: CalculatorRoute.name,
-                builder: (context, state) => const CalculatorHomePage(),
+                builder: (context, state) => BlocProvider(
+                  create: (_) => getIt<CalculatorCubit>(),
+                  child: const CalculatorHomePage(),
+                ),
               ),
             ],
           ),
@@ -185,27 +193,53 @@ GoRouter createRouter() {
         name: 'calculator-salary',
         builder: (context, state) => const TeacherSalaryInsightPage(),
       ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/calculator/salary/detail',
-        name: 'calculator-salary-detail',
-        builder: (context, state) => const SalaryCalculatorPage(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/calculator/pension',
-        name: 'calculator-pension',
-        builder: (context, state) => const PensionCalculatorGatePage(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/calculator/pension/calculate',
-        name: 'calculator-pension-calculate',
-        builder: (context, state) => BlocProvider<PensionCalculatorCubit>(
-          create: (_) => getIt<PensionCalculatorCubit>(),
-          child: const PensionCalculatorPage(),
-        ),
-      ),
+      // CALCULATOR ROUTES TEMPORARILY DISABLED - UNDER REDESIGN
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/salary/detail',
+      //   name: 'calculator-salary-detail',
+      //   builder: (context, state) => const SalaryCalculatorPage(),
+      // ),
+      // TEMPORARILY DISABLED DUE TO IOS BUILD ISSUE
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/pension',
+      //   name: 'calculator-pension',
+      //   builder: (context, state) => const PensionCalculatorGatePage(),
+      // ),
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/pension/calculate',
+      //   name: 'calculator-pension-calculate',
+      //   builder: (context, state) => BlocProvider<PensionCalculatorCubit>(
+      //     create: (_) => getIt<PensionCalculatorCubit>(),
+      //     child: const PensionCalculatorPage(),
+      //   ),
+      // ),
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/pension/quick',
+      //   name: 'calculator-pension-quick',
+      //   builder: (context, state) => BlocProvider<PensionCubit>(
+      //     create: (_) => getIt<PensionCubit>(),
+      //     child: const PensionQuickInputPage(),
+      //   ),
+      // ),
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/pension/result',
+      //   name: 'calculator-pension-result',
+      //   builder: (context, state) {
+      //     final result = state.extra as CalculationResult;
+      //     return PensionMzResultPage(result: result);
+      //   },
+      // ),
+      // GoRoute(
+      //   parentNavigatorKey: _rootNavigatorKey,
+      //   path: '/calculator/career-simulator',
+      //   name: 'calculator-career-simulator',
+      //   builder: (context, state) => const CareerSimulatorPage(),
+      // ),
     ],
   );
 }

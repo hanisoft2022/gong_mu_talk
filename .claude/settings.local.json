@@ -109,7 +109,18 @@
       "Bash(pod install:*)",
       "Bash(pod cache clean:*)",
       "WebFetch(domain:console.firebase.google.com)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__serena__find_referencing_symbols",
+      "Bash(xcrun simctl boot:*)",
+      "Bash(open:*)",
+      "Bash(xcrun simctl delete:*)",
+      "Bash(xcrun simctl list:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(pip3 list:*)",
+      "Bash(git restore:*)",
+      "Bash(tee:*)",
+      "WebFetch(domain:leancode.co)"
     ],
     "deny": [],
     "ask": []

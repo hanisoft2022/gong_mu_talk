@@ -20,7 +20,6 @@
 /// Called from ProfileHeader when user taps on follower/following stats.
 
 library;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -154,17 +153,20 @@ Widget _buildContent(
       controller: controller,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       itemBuilder: (BuildContext context, int index) {
+        final ThemeData theme = Theme.of(context);
         final UserProfile profile = state.users[index];
         return ListTile(
           contentPadding: EdgeInsets.zero,
           leading: CircleAvatar(
             radius: 22,
-            backgroundImage: profile.photoUrl == null
-                ? null
-                : CachedNetworkImageProvider(profile.photoUrl!),
-            child: profile.photoUrl == null
-                ? Text(profile.nickname.characters.first)
-                : null,
+            backgroundColor: theme.colorScheme.primaryContainer,
+            child: Text(
+              profile.nickname.characters.firstOrNull ?? '공',
+              style: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           title: Text(profile.nickname),
           subtitle: profile.bio != null && profile.bio!.isNotEmpty

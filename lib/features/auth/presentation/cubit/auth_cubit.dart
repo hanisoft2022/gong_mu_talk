@@ -4,7 +4,6 @@
 
 library;
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -257,63 +256,6 @@ class AuthCubit extends Cubit<AuthState> {
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
       emit(state.copyWith(isProcessing: false));
-    }
-  }
-
-  Future<void> updateProfileImage({
-    required Uint8List bytes,
-    String? fileName,
-    String contentType = 'image/jpeg',
-  }) async {
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 프로필 이미지를 변경할 수 있습니다.'));
-      return;
-    }
-
-    emit(state.copyWith(isProcessing: true, lastMessage: null));
-    try {
-      final String resolvedName = (fileName?.trim().isNotEmpty ?? false)
-          ? fileName!.trim()
-          : 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String downloadUrl = await _userProfileRepository.uploadProfileImage(
-        uid: uid,
-        path: resolvedName,
-        bytes: bytes,
-        contentType: contentType,
-      );
-      final UserProfile profile = await _userProfileRepository.updateProfileFields(
-        uid: uid,
-        photoUrl: downloadUrl,
-      );
-      _profileManager.applyProfile(profile, emit: emit);
-      emit(state.copyWith(isProcessing: false, lastMessage: '프로필 이미지가 변경되었습니다.'));
-    } catch (_) {
-      emit(
-        state.copyWith(isProcessing: false, lastMessage: '프로필 이미지를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.'),
-      );
-    }
-  }
-
-  Future<void> removeProfileImage() async {
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(state.copyWith(lastMessage: '로그인 후 프로필 이미지를 변경할 수 있습니다.'));
-      return;
-    }
-
-    emit(state.copyWith(isProcessing: true, lastMessage: null));
-    try {
-      final UserProfile profile = await _userProfileRepository.updateProfileFields(
-        uid: uid,
-        photoUrl: null,
-      );
-      _profileManager.applyProfile(profile, emit: emit);
-      emit(state.copyWith(isProcessing: false, lastMessage: '프로필 이미지를 기본 이미지로 변경했습니다.'));
-    } catch (_) {
-      emit(
-        state.copyWith(isProcessing: false, lastMessage: '프로필 이미지를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.'),
-      );
     }
   }
 

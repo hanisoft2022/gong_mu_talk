@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/performance_optimizations.dart';
+
 import '../../domain/models/post.dart';
 import '../cubit/bookmarks_cubit.dart';
 import '../widgets/post_card.dart';
@@ -77,7 +79,7 @@ class _BookmarksPageState extends State<BookmarksPage> {
 
           return RefreshIndicator(
             onRefresh: () => context.read<BookmarksCubit>().refresh(),
-            child: ListView.builder(
+            child: OptimizedListView(
               controller: _scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               itemCount: state.bookmarks.length + (state.hasMore ? 1 : 0),
