@@ -191,7 +191,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 PostHeader(
                   post: post,
                   timestamp: timestamp,
-                  scope: widget.displayScope,
                   authorButtonKey: _authorButtonKey,
                   onAuthorMenuTap: _handleAuthorMenuTap,
                 ),
@@ -282,7 +281,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       isLoading: _isLoadingComments,
                       timelineComments: _timelineComments,
                       featuredComments: _featuredComments,
-                      scope: widget.displayScope,
                       onToggleCommentLike: _handleCommentLike,
                       onReplyTap: _handleReplyTap,
                       onOpenCommentAuthorProfile: _showCommentAuthorMenu,
@@ -830,8 +828,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       text: cached.text,
       likeCount: cached.likeCount,
       createdAt: (post.updatedAt ?? post.createdAt).add(Duration(minutes: index)),
-      authorSupporterLevel: cached.authorSupporterLevel,
-      authorIsSupporter: cached.authorIsSupporter,
     );
   }
 

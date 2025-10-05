@@ -461,7 +461,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       );
 
       // 라운지 접근 권한이 변경되었거나 시리얼 탭이 더 이상 사용 불가능한 경우 새로고침
-      if (loungeAccessChanged || (state.scope == LoungeScope.serial && serialChanged)) {
+      if (loungeAccessChanged) {
         unawaited(loadInitial());
       }
     }

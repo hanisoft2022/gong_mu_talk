@@ -2,7 +2,6 @@
 ///
 /// Responsibilities:
 /// - Renders comment content with author information
-/// - Handles different display modes (serial/all scope)
 /// - Shows like and reply buttons
 /// - Formats timestamp and author display names
 /// - Supports visual highlighting for featured comments
@@ -13,16 +12,13 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/comment.dart';
-import '../../domain/models/feed_filters.dart';
-import '../../../profile/domain/career_track.dart';
 import '../../../../routing/app_router.dart';
-import 'comment_utils.dart';
+import 'author_display_widget.dart';
 
 class CommentTile extends StatelessWidget {
   const CommentTile({
     super.key,
     required this.comment,
-    required this.scope,
     required this.onToggleLike,
     required this.onReply,
     this.highlight = false,
@@ -30,7 +26,6 @@ class CommentTile extends StatelessWidget {
   });
 
   final Comment comment;
-  final LoungeScope scope;
   final VoidCallback onToggleLike;
   final void Function(Comment comment) onReply;
   final bool highlight;
@@ -39,25 +34,10 @@ class CommentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool isSerialScope = scope == LoungeScope.serial;
-    final bool hasTrack =
-        comment.authorSerialVisible && comment.authorTrack != CareerTrack.none;
-    final String trackLabel = serialLabel(
-      comment.authorTrack,
-      comment.authorSerialVisible,
-      includeEmoji: isSerialScope ? true : hasTrack,
-    );
     final String timestamp = _formatTimestamp(comment.createdAt);
     final String displayName = comment.authorNickname.isNotEmpty
         ? comment.authorNickname
         : comment.authorUid;
-    final String displayInitial = displayName.trim().isEmpty
-        ? '공'
-        : String.fromCharCode(displayName.trim().runes.first).toUpperCase();
-
-    final Widget header = isSerialScope
-        ? _buildSerialHeader(theme, displayInitial, displayName, timestamp)
-        : _buildAllHeader(theme, displayName, trackLabel, hasTrack, timestamp);
 
     final EdgeInsetsGeometry containerPadding = highlight
         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
@@ -76,7 +56,7 @@ class CommentTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            header,
+            _buildHeader(context, theme, displayName, timestamp),
             const Gap(8),
             Text(comment.text, style: theme.textTheme.bodyMedium),
             const Gap(12),
@@ -87,139 +67,35 @@ class CommentTile extends StatelessWidget {
     );
   }
 
-  // ==================== Header Builders ====================
+  // ==================== Header ====================
 
-  Widget _buildSerialHeader(
+  Widget _buildHeader(
+    BuildContext context,
     ThemeData theme,
-    String displayInitial,
     String displayName,
     String timestamp,
   ) {
-    return Builder(
-      builder: (context) => Row(
+    return InkWell(
+      onTap: () => _openProfile(context, comment.authorUid),
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () => _openProfile(context, comment.authorUid),
-              borderRadius: BorderRadius.circular(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (!isReply) ...[
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.12,
-                    ),
-                    foregroundColor: theme.colorScheme.primary,
-                    child: Text(displayInitial),
-                  ),
-                  const Gap(12),
-                ],
-                if (comment.authorIsSupporter) ...[
-                  Icon(
-                    Icons.verified,
-                    size: 16,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const Gap(4),
-                ],
-                Expanded(
-                  child: Text(
-                    displayName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-              ),
+            child: AuthorDisplayWidget(
+              nickname: displayName,
+              track: comment.authorTrack,
+              serialVisible: comment.authorSerialVisible,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Text(
-              timestamp,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          const Gap(8),
+          Text(
+            timestamp,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAllHeader(
-    ThemeData theme,
-    String displayName,
-    String trackLabel,
-    bool hasTrack,
-    String timestamp,
-  ) {
-    return Builder(
-      builder: (context) => InkWell(
-        onTap: () => _openProfile(context, comment.authorUid),
-        borderRadius: BorderRadius.circular(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: hasTrack
-                    ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                    : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                trackLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: hasTrack
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const Gap(8),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      displayName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (comment.authorIsSupporter) ...[
-                    const Gap(6),
-                    Icon(
-                      Icons.verified,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Gap(8),
-            Text(
-              timestamp,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

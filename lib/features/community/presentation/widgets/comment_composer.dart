@@ -12,7 +12,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';
-import '../../domain/models/feed_filters.dart';
 
 class CommentComposer extends StatefulWidget {
   const CommentComposer({
@@ -23,7 +22,6 @@ class CommentComposer extends StatefulWidget {
     required this.focusNode,
     required this.replyingTo,
     required this.onCancelReply,
-    required this.scope,
   });
 
   final TextEditingController controller;
@@ -32,7 +30,6 @@ class CommentComposer extends StatefulWidget {
   final FocusNode focusNode;
   final Comment? replyingTo;
   final VoidCallback onCancelReply;
-  final LoungeScope scope;
 
   @override
   State<CommentComposer> createState() => _CommentComposerState();
@@ -66,12 +63,12 @@ class _CommentComposerState extends State<CommentComposer> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Comment? replyingTo = widget.replyingTo;
-    final bool isSerialScope = widget.scope == LoungeScope.serial;
+    
 
     final List<Widget> children = <Widget>[];
 
     if (replyingTo != null) {
-      children.add(_buildReplyIndicator(theme, replyingTo, isSerialScope));
+      children.add(_buildReplyIndicator(theme, replyingTo));
     }
 
     children.add(_buildInputRow());
@@ -104,7 +101,6 @@ class _CommentComposerState extends State<CommentComposer> {
   Widget _buildReplyIndicator(
     ThemeData theme,
     Comment replyingTo,
-    bool isSerialScope,
   ) {
     final String displayName = replyingTo.authorNickname.isNotEmpty
         ? replyingTo.authorNickname

@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../../domain/models/comment.dart';
-import '../../../domain/models/feed_filters.dart';
-import '../comment_utils.dart';
+import '../author_display_widget.dart';
 
 class CommentTile extends StatelessWidget {
   const CommentTile({
     super.key,
     required this.comment,
     this.highlight = false,
-    required this.scope,
     required this.onToggleLike,
     this.onReply,
     this.isReply = false,
@@ -20,7 +18,6 @@ class CommentTile extends StatelessWidget {
 
   final Comment comment;
   final bool highlight;
-  final LoungeScope scope;
   final ValueChanged<Comment> onToggleLike;
   final ValueChanged<Comment>? onReply;
   final bool isReply;
@@ -43,109 +40,48 @@ class CommentTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              scope == LoungeScope.serial
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        IntrinsicWidth(
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              key: authorKey,
-                              onTap: onOpenProfile,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                child: _buildCommentIdentityRow(
-                                  theme: theme,
-                                  comment: comment,
-                                  timestamp: timestamp,
-                                  scope: scope,
-                                  includeAvatar:
-                                      scope == LoungeScope.serial && !isReply,
-                                  showTimestamp: false,
-                                  isReply: isReply,
-                                ),
-                              ),
-                            ),
+              // Author header
+              Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        key: authorKey,
+                        onTap: onOpenProfile,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
+                          child: AuthorDisplayWidget(
+                            nickname: comment.authorNickname.isNotEmpty
+                                ? comment.authorNickname
+                                : comment.authorUid,
+                            track: comment.authorTrack,
+                            serialVisible: comment.authorSerialVisible,
                           ),
                         ),
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Text(
-                            timestamp,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              key: authorKey,
-                              onTap: onOpenProfile,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (comment.authorIsSupporter) ...[
-                                      Icon(
-                                        Icons.verified,
-                                        size: 16,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                      const Gap(6),
-                                    ],
-                                    Text(
-                                      getDisplayName(
-                                        nickname: comment.authorNickname.isNotEmpty
-                                            ? comment.authorNickname
-                                            : comment.authorUid,
-                                        track: comment.authorTrack,
-                                        serialVisible: comment.authorSerialVisible,
-                                      ),
-                                      style: theme.textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Text(
-                              timestamp,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        timestamp,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const Gap(6),
               Align(
                 alignment: Alignment.centerLeft,
@@ -238,115 +174,4 @@ class CommentTile extends StatelessWidget {
     }
     return '${createdAt.month}월 ${createdAt.day}일';
   }
-}
-
-Widget _buildCommentIdentityRow({
-  required ThemeData theme,
-  required Comment comment,
-  required String timestamp,
-  required LoungeScope scope,
-  required bool includeAvatar,
-  bool showTimestamp = true,
-  bool isReply = false,
-}) {
-  final bool isSerialScope = scope == LoungeScope.serial;
-
-  if (isSerialScope) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (includeAvatar) ...[
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-            foregroundColor: theme.colorScheme.primary,
-            child: Text(_getFirstChar(comment.authorNickname)),
-          ),
-          const Gap(12),
-        ],
-        Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (comment.authorIsSupporter) ...[
-                Icon(
-                  Icons.verified,
-                  size: 16,
-                  color: theme.colorScheme.primary,
-                ),
-                const Gap(4),
-              ],
-              Flexible(
-                child: Text(
-                  getDisplayName(
-                    nickname: comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
-                    track: comment.authorTrack,
-                    serialVisible: comment.authorSerialVisible,
-                  ),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isSerialScope && showTimestamp) ...[
-                Text(
-                  timestamp,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  final Widget? supporterIcon = comment.authorIsSupporter
-      ? Icon(Icons.verified, size: 16, color: theme.colorScheme.primary)
-      : null;
-  final String displayName = getDisplayName(
-    nickname: comment.authorNickname.isNotEmpty ? comment.authorNickname : comment.authorUid,
-    track: comment.authorTrack,
-    serialVisible: comment.authorSerialVisible,
-  );
-
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (supporterIcon != null) ...[supporterIcon, const Gap(6)],
-      Flexible(
-        child: Text(
-          displayName,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      if (showTimestamp) ...[
-        const Gap(8),
-        Text(
-          timestamp,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    ],
-  );
-}
-
-
-
-String _getFirstChar(String text) {
-  final String normalized = text.trim();
-  if (normalized.isEmpty) {
-    return '공';
-  }
-  return String.fromCharCode(normalized.runes.first).toUpperCase();
 }

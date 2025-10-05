@@ -41,12 +41,7 @@ class FeedSectionBuilder extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, CommunityFeedState feedState, bool hasSerialTabAccess) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    final bool showSerialGuide = feedState.scope == LoungeScope.serial && !hasSerialTabAccess;
-    final bool showEmptyPosts = feedState.posts.isEmpty && !showSerialGuide;
-
-    if (showSerialGuide) {
-      return _buildSerialGuideState(cubit);
-    }
+    final bool showEmptyPosts = feedState.posts.isEmpty;
 
     if (showEmptyPosts) {
       return _buildEmptyPostsState(cubit);

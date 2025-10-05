@@ -34,7 +34,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
         text: text,
         tags: tags,
         type: type,
-        audience: scope == LoungeScope.serial ? PostAudience.serial : PostAudience.all,
+        audience: PostAudience.all,
         authorUid: currentUserId ?? '',
         authorNickname: await currentUserNickname,
         authorTrack: CareerTrack.none, // Default value, should be passed properly

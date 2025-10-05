@@ -305,8 +305,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
-              authorSupporterLevel: comment.authorSupporterLevel,
-              authorIsSupporter: comment.authorIsSupporter,
             ),
           )
           .toList(growable: false);
@@ -324,8 +322,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           createdAt: post.updatedAt ?? post.createdAt,
           authorTrack: post.topComment!.authorTrack,
           authorSerialVisible: post.topComment!.authorSerialVisible,
-          authorSupporterLevel: post.topComment!.authorSupporterLevel,
-          authorIsSupporter: post.topComment!.authorIsSupporter,
         ),
       ];
     }
@@ -342,13 +338,11 @@ class PostDetailCubit extends Cubit<PostDetailState> {
               postId: post.id,
               authorUid: 'preview',
               authorNickname: comment.authorNickname,
+              authorTrack: comment.authorTrack,
+              authorSerialVisible: comment.authorSerialVisible,
               text: comment.text,
               likeCount: comment.likeCount,
               createdAt: post.updatedAt ?? post.createdAt,
-              authorTrack: comment.authorTrack,
-              authorSerialVisible: comment.authorSerialVisible,
-              authorSupporterLevel: comment.authorSupporterLevel,
-              authorIsSupporter: comment.authorIsSupporter,
             ),
           )
           .toList(growable: false);
@@ -366,8 +360,6 @@ class PostDetailCubit extends Cubit<PostDetailState> {
           createdAt: post.updatedAt ?? post.createdAt,
           authorTrack: post.topComment!.authorTrack,
           authorSerialVisible: post.topComment!.authorSerialVisible,
-          authorSupporterLevel: post.topComment!.authorSupporterLevel,
-          authorIsSupporter: post.topComment!.authorIsSupporter,
         ),
       ];
     }

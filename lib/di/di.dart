@@ -14,8 +14,16 @@ import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/calculator/domain/services/tax_calculation_service.dart';
 import '../features/calculator/domain/services/salary_calculation_service.dart';
 import '../features/calculator/domain/services/pension_calculation_service.dart';
+import '../features/calculator/domain/services/base_income_estimation_service.dart';
+import '../features/calculator/domain/services/retirement_benefit_calculation_service.dart';
+import '../features/calculator/domain/services/early_retirement_calculation_service.dart';
+import '../features/calculator/domain/services/monthly_breakdown_service.dart';
 import '../features/calculator/domain/usecases/calculate_lifetime_salary_usecase.dart';
 import '../features/calculator/domain/usecases/calculate_pension_usecase.dart';
+import '../features/calculator/domain/usecases/calculate_retirement_benefit_usecase.dart';
+import '../features/calculator/domain/usecases/calculate_early_retirement_usecase.dart';
+import '../features/calculator/domain/usecases/calculate_after_tax_pension_usecase.dart';
+import '../features/calculator/domain/usecases/calculate_monthly_breakdown_usecase.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
 import '../features/community/data/community_repository.dart';
@@ -127,6 +135,18 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<PensionCalculationService>(
       PensionCalculationService.new,
     )
+    ..registerLazySingleton<BaseIncomeEstimationService>(
+      BaseIncomeEstimationService.new,
+    )
+    ..registerLazySingleton<RetirementBenefitCalculationService>(
+      RetirementBenefitCalculationService.new,
+    )
+    ..registerLazySingleton<EarlyRetirementCalculationService>(
+      EarlyRetirementCalculationService.new,
+    )
+    ..registerLazySingleton<MonthlyBreakdownService>(
+      () => MonthlyBreakdownService(getIt()),
+    )
     // Calculator usecases
     ..registerLazySingleton<CalculateLifetimeSalaryUseCase>(
       () => CalculateLifetimeSalaryUseCase(getIt()),
@@ -134,11 +154,28 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<CalculatePensionUseCase>(
       () => CalculatePensionUseCase(getIt()),
     )
+    ..registerLazySingleton<CalculateRetirementBenefitUseCase>(
+      () => CalculateRetirementBenefitUseCase(getIt()),
+    )
+    ..registerLazySingleton<CalculateEarlyRetirementUseCase>(
+      () => CalculateEarlyRetirementUseCase(getIt()),
+    )
+    ..registerLazySingleton<CalculateAfterTaxPensionUseCase>(
+      () => CalculateAfterTaxPensionUseCase(getIt()),
+    )
+    ..registerLazySingleton<CalculateMonthlyBreakdownUseCase>(
+      () => CalculateMonthlyBreakdownUseCase(getIt()),
+    )
     // Calculator cubit
     ..registerFactory<CalculatorCubit>(
       () => CalculatorCubit(
         calculateLifetimeSalaryUseCase: getIt(),
         calculatePensionUseCase: getIt(),
+        calculateRetirementBenefitUseCase: getIt(),
+        calculateEarlyRetirementUseCase: getIt(),
+        calculateAfterTaxPensionUseCase: getIt(),
+        calculateMonthlyBreakdownUseCase: getIt(),
+        baseIncomeEstimationService: getIt(),
       ),
     )
     ..registerLazySingleton<GoRouter>(createRouter)

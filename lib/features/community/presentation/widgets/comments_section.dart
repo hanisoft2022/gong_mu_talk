@@ -11,7 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';
-import '../../domain/models/feed_filters.dart';
+
 import 'comment_tile.dart';
 
 class CommentsSection extends StatelessWidget {
@@ -20,7 +20,6 @@ class CommentsSection extends StatelessWidget {
     required this.featuredComments,
     required this.timelineComments,
     required this.isLoading,
-    required this.scope,
     required this.onToggleLike,
     required this.onReply,
   });
@@ -28,7 +27,6 @@ class CommentsSection extends StatelessWidget {
   final List<Comment> featuredComments;
   final List<Comment> timelineComments;
   final bool isLoading;
-  final LoungeScope scope;
   final void Function(String commentId) onToggleLike;
   final void Function(Comment comment) onReply;
 
@@ -63,7 +61,6 @@ class CommentsSection extends StatelessWidget {
           (Comment parent) => _CommentThread(
             parent: parent,
             replies: replies[parent.id] ?? const <Comment>[],
-            scope: scope,
             featuredIds: featuredIds,
             onToggleLike: onToggleLike,
             onReply: onReply,
@@ -84,7 +81,6 @@ class CommentsSection extends StatelessWidget {
           if (featuredComments.isNotEmpty) ...[
             _FeaturedCommentsSection(
               comments: featuredComments,
-              scope: scope,
               onToggleLike: onToggleLike,
               onReply: onReply,
             ),
@@ -144,7 +140,6 @@ class _CommentThread extends StatelessWidget {
   const _CommentThread({
     required this.parent,
     required this.replies,
-    required this.scope,
     required this.featuredIds,
     required this.onToggleLike,
     required this.onReply,
@@ -152,7 +147,6 @@ class _CommentThread extends StatelessWidget {
 
   final Comment parent;
   final List<Comment> replies;
-  final LoungeScope scope;
   final Set<String> featuredIds;
   final void Function(String commentId) onToggleLike;
   final void Function(Comment comment) onReply;
@@ -163,7 +157,6 @@ class _CommentThread extends StatelessWidget {
       children: [
         CommentTile(
           comment: parent,
-          scope: scope,
           highlight: featuredIds.contains(parent.id),
           onToggleLike: () => onToggleLike(parent.id),
           onReply: onReply,
@@ -176,7 +169,6 @@ class _CommentThread extends StatelessWidget {
                   .map(
                     (Comment reply) => CommentTile(
                       comment: reply,
-                      scope: scope,
                       isReply: true,
                       highlight: featuredIds.contains(reply.id),
                       onToggleLike: () => onToggleLike(reply.id),
@@ -196,13 +188,11 @@ class _CommentThread extends StatelessWidget {
 class _FeaturedCommentsSection extends StatelessWidget {
   const _FeaturedCommentsSection({
     required this.comments,
-    required this.scope,
     required this.onToggleLike,
     required this.onReply,
   });
 
   final List<Comment> comments;
-  final LoungeScope scope;
   final void Function(String commentId) onToggleLike;
   final void Function(Comment comment) onReply;
 
@@ -240,7 +230,6 @@ class _FeaturedCommentsSection extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: CommentTile(
                     comment: comment,
-                    scope: scope,
                     highlight: true,
                     onToggleLike: () => onToggleLike(comment.id),
                     onReply: onReply,

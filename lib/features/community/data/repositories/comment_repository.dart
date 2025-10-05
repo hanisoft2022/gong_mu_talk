@@ -172,8 +172,6 @@ class CommentRepository {
       likeCount: 0,
       createdAt: now,
       parentCommentId: parentCommentId,
-      authorSupporterLevel: authorSupporterLevel,
-      authorIsSupporter: authorIsSupporter,
     );
   }
 
@@ -257,9 +255,6 @@ class CommentRepository {
         authorNickname: data['authorNickname'] as String? ?? '익명',
         authorTrack: _careerTrackFromRaw(data['authorTrack']),
         authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
-        authorSupporterLevel:
-            (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
-        authorIsSupporter: data['authorIsSupporter'] as bool? ?? false,
       );
     } catch (e) {
       debugPrint('Error loading top comment: $e');

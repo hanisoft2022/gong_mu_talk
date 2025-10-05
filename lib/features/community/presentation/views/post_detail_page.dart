@@ -17,7 +17,7 @@ import 'package:gong_mu_talk/routing/app_router.dart';
 
 import '../../../../core/utils/performance_optimizations.dart';
 import '../../domain/models/comment.dart';
-import '../../domain/models/feed_filters.dart';
+
 import '../../domain/models/post.dart';
 import '../cubit/post_detail_cubit.dart';
 import '../widgets/post_detail_header.dart';
@@ -101,10 +101,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               return const Center(child: Text('게시글을 찾을 수 없습니다.'));
             }
 
-            final LoungeScope scope =
-                state.post!.audience == PostAudience.serial
-                ? LoungeScope.serial
-                : LoungeScope.all;
+            
 
             return Column(
               children: [
@@ -142,7 +139,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                               featuredComments: state.featuredComments,
                               timelineComments: state.comments,
                               isLoading: state.isLoadingComments,
-                              scope: scope,
                               onToggleLike: (commentId) => context
                                   .read<PostDetailCubit>()
                                   .toggleCommentLike(commentId),
@@ -161,7 +157,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   focusNode: _commentFocusNode,
                   replyingTo: state.replyingTo,
                   onCancelReply: _cancelReply,
-                  scope: scope,
                 ),
               ],
             );

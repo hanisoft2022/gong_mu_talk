@@ -56,9 +56,7 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
       create: (_) => PostComposerCubit(
         communityRepository: getIt(),
         authCubit: getIt<AuthCubit>(),
-        initialAudience: widget.scope == LoungeScope.serial
-            ? PostAudience.serial
-            : PostAudience.all,
+        initialAudience: PostAudience.all,
         initialLoungeId: widget.selectedLoungeInfo?.id ?? 'all',
       ),
       child: BlocConsumer<PostComposerCubit, PostComposerState>(
@@ -286,9 +284,6 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
     required LoungeScope scope,
     required bool hasSerial,
   }) {
-    if (scope == LoungeScope.serial && hasSerial) {
-      return PostAudience.serial;
-    }
     return PostAudience.all;
   }
 

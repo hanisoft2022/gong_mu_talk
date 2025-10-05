@@ -17,8 +17,6 @@ class Comment extends Equatable {
     this.parentCommentId,
     this.deleted = false,
     this.isLiked = false,
-    this.authorSupporterLevel = 0,
-    this.authorIsSupporter = false,
     this.imageUrls = const [],
   });
 
@@ -34,8 +32,6 @@ class Comment extends Equatable {
   final String? parentCommentId;
   final bool deleted;
   final bool isLiked;
-  final int authorSupporterLevel;
-  final bool authorIsSupporter;
   final List<String> imageUrls;
 
   bool get isReply => parentCommentId != null && parentCommentId!.isNotEmpty;
@@ -46,8 +42,6 @@ class Comment extends Equatable {
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
       'authorSerialVisible': authorSerialVisible,
-      'authorSupporterLevel': authorSupporterLevel,
-      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'likeCount': likeCount,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -93,11 +87,7 @@ class Comment extends Equatable {
       parentCommentId: data['parentCommentId'] as String?,
       deleted: data['deleted'] as bool? ?? false,
       isLiked: isLiked,
-      authorSupporterLevel:
-          (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
-      authorIsSupporter:
-          data['authorIsSupporter'] as bool? ??
-          ((data['authorSupporterLevel'] as num?)?.toInt() ?? 0) > 0,
+      
       imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
@@ -109,8 +99,6 @@ class Comment extends Equatable {
     bool? isLiked,
     CareerTrack? authorTrack,
     bool? authorSerialVisible,
-    int? authorSupporterLevel,
-    bool? authorIsSupporter,
   }) {
     return Comment(
       id: id,
@@ -125,8 +113,6 @@ class Comment extends Equatable {
       parentCommentId: parentCommentId,
       deleted: deleted ?? this.deleted,
       isLiked: isLiked ?? this.isLiked,
-      authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
-      authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
     );
   }
 
@@ -160,8 +146,6 @@ class Comment extends Equatable {
     parentCommentId,
     deleted,
     isLiked,
-    authorSupporterLevel,
-    authorIsSupporter,
   ];
 
   static CareerTrack _parseTrack(Object? raw) {

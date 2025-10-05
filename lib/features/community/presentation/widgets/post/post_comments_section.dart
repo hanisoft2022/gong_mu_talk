@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../../domain/models/comment.dart';
-import '../../../domain/models/feed_filters.dart';
+
 import 'comment_tile.dart';
 
 class PostCommentsSection extends StatelessWidget {
@@ -23,7 +23,6 @@ class PostCommentsSection extends StatelessWidget {
     required this.isLoading,
     required this.timelineComments,
     required this.featuredComments,
-    required this.scope,
     required this.onToggleCommentLike,
     required this.onReplyTap,
     required this.onOpenCommentAuthorProfile,
@@ -32,7 +31,6 @@ class PostCommentsSection extends StatelessWidget {
   final bool isLoading;
   final List<Comment> timelineComments;
   final List<Comment> featuredComments;
-  final LoungeScope scope;
   final void Function(Comment) onToggleCommentLike;
   final void Function(Comment) onReplyTap;
   final void Function(Comment, GlobalKey) onOpenCommentAuthorProfile;
@@ -105,7 +103,6 @@ class PostCommentsSection extends StatelessWidget {
                 CommentTile(
                   comment: comment,
                   highlight: _isFeatured(comment),
-                  scope: scope,
                   onToggleLike: onToggleCommentLike,
                   onReply: onReplyTap,
                   authorKey: commentAuthorKey,
@@ -123,7 +120,6 @@ class PostCommentsSection extends StatelessWidget {
                             return CommentTile(
                               comment: reply,
                               highlight: _isFeatured(reply),
-                              scope: scope,
                               isReply: true,
                               onToggleLike: onToggleCommentLike,
                               onReply: onReplyTap,

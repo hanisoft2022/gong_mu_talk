@@ -6,9 +6,8 @@ class LoungeScope {
 
   final String loungeId;
 
-  // 기본 스코프들 (하위 호환성)
+  // 기본 스코프
   static const LoungeScope all = LoungeScope('all');
-  static const LoungeScope serial = LoungeScope('serial'); // 더 이상 사용되지 않지만 호환성 유지
 
   @override
   bool operator ==(Object other) =>

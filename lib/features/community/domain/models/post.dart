@@ -58,8 +58,6 @@ class CachedComment extends Equatable {
     required this.authorNickname,
     required this.authorTrack,
     required this.authorSerialVisible,
-    this.authorSupporterLevel = 0,
-    this.authorIsSupporter = false,
   });
 
   final String id;
@@ -68,8 +66,6 @@ class CachedComment extends Equatable {
   final String authorNickname;
   final CareerTrack authorTrack;
   final bool authorSerialVisible;
-  final int authorSupporterLevel;
-  final bool authorIsSupporter;
 
   Map<String, Object?> toMap() {
     return <String, Object?>{
@@ -79,8 +75,6 @@ class CachedComment extends Equatable {
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
       'authorSerialVisible': authorSerialVisible,
-      'authorSupporterLevel': authorSupporterLevel,
-      'authorIsSupporter': authorIsSupporter,
     };
   }
 
@@ -96,10 +90,6 @@ class CachedComment extends Equatable {
     final CareerTrack authorTrack = Post._parseTrack(data['authorTrack']);
     final bool authorSerialVisible =
         data['authorSerialVisible'] as bool? ?? true;
-    final int supporterLevel =
-        (data['authorSupporterLevel'] as num?)?.toInt() ?? 0;
-    final bool isSupporter =
-        data['authorIsSupporter'] as bool? ?? supporterLevel > 0;
     if (id == null || text == null || authorNickname == null) {
       return null;
     }
@@ -111,8 +101,6 @@ class CachedComment extends Equatable {
       authorNickname: authorNickname,
       authorTrack: authorTrack,
       authorSerialVisible: authorSerialVisible,
-      authorSupporterLevel: supporterLevel,
-      authorIsSupporter: isSupporter,
     );
   }
 
@@ -124,8 +112,6 @@ class CachedComment extends Equatable {
     authorNickname,
     authorTrack,
     authorSerialVisible,
-    authorSupporterLevel,
-    authorIsSupporter,
   ];
 }
 
@@ -140,8 +126,6 @@ class Post extends Equatable {
     required this.authorNickname,
     required this.authorTrack,
     required this.authorSerialVisible,
-    this.authorSupporterLevel = 0,
-    this.authorIsSupporter = false,
     required this.text,
     required this.media,
     required this.tags,
@@ -168,8 +152,6 @@ class Post extends Equatable {
   final String authorNickname;
   final CareerTrack authorTrack;
   final bool authorSerialVisible;
-  final int authorSupporterLevel;
-  final bool authorIsSupporter;
   final String text;
   final List<PostMedia> media;
   final List<String> tags;
@@ -202,8 +184,6 @@ class Post extends Equatable {
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
       'authorSerialVisible': authorSerialVisible,
-      'authorSupporterLevel': authorSupporterLevel,
-      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'media': media
           .map((PostMedia media) => media.toMap())
@@ -258,11 +238,6 @@ class Post extends Equatable {
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
       authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
-      authorSupporterLevel:
-          (data['authorSupporterLevel'] as num?)?.toInt() ?? 0,
-      authorIsSupporter:
-          data['authorIsSupporter'] as bool? ??
-          ((data['authorSupporterLevel'] as num?)?.toInt() ?? 0) > 0,
       text: (data['text'] as String?) ?? '',
       media: _parseMedia(data['media']),
       tags: _parseStringList(data['tags']),
@@ -293,8 +268,6 @@ class Post extends Equatable {
     bool? isLiked,
     bool? isBookmarked,
     PostVisibility? visibility,
-    int? authorSupporterLevel,
-    bool? authorIsSupporter,
     bool? authorSerialVisible,
   }) {
     return Post(
@@ -307,8 +280,6 @@ class Post extends Equatable {
       authorNickname: authorNickname,
       authorTrack: authorTrack,
       authorSerialVisible: authorSerialVisible ?? this.authorSerialVisible,
-      authorSupporterLevel: authorSupporterLevel ?? this.authorSupporterLevel,
-      authorIsSupporter: authorIsSupporter ?? this.authorIsSupporter,
       text: text,
       media: media,
       tags: tags,
@@ -433,8 +404,6 @@ class Post extends Equatable {
     authorNickname,
     authorTrack,
     authorSerialVisible,
-    authorSupporterLevel,
-    authorIsSupporter,
     text,
     media,
     tags,

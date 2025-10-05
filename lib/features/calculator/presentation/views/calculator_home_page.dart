@@ -5,6 +5,10 @@ import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_s
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/annual_salary_card.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/pension_card.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_info_input_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/retirement_benefit_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/early_retirement_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/after_tax_pension_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/monthly_breakdown_card.dart';
 
 /// 계산기 홈 페이지
 class CalculatorHomePage extends StatelessWidget {
@@ -78,6 +82,40 @@ class CalculatorHomePage extends StatelessWidget {
                 PensionCard(
                   isLocked: !state.isDataEntered,
                   pensionEstimate: state.pensionEstimate,
+                ),
+
+                const SizedBox(height: 16),
+
+                // 4. 세후 연금 (실수령액)
+                AfterTaxPensionCard(
+                  isLocked: !state.isDataEntered,
+                  afterTaxPension: state.afterTaxPension,
+                ),
+
+                const SizedBox(height: 16),
+
+                // 5. 퇴직급여
+                RetirementBenefitCard(
+                  isLocked: !state.isDataEntered,
+                  retirementBenefit: state.retirementBenefit,
+                ),
+
+                const SizedBox(height: 16),
+
+                // 6. 명예퇴직금 (55세 이상만)
+                if (state.profile != null && state.profile!.retirementAge >= 55)
+                  EarlyRetirementCard(
+                    isLocked: !state.isDataEntered,
+                    earlyRetirementBonus: state.earlyRetirementBonus,
+                  ),
+
+                if (state.profile != null && state.profile!.retirementAge >= 55)
+                  const SizedBox(height: 16),
+
+                // 7. 월별 실수령액 분석
+                MonthlyBreakdownCard(
+                  isLocked: !state.isDataEntered,
+                  monthlyBreakdown: state.monthlyBreakdown,
                 ),
 
                 const SizedBox(height: 32),

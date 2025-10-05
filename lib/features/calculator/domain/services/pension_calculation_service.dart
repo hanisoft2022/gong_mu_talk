@@ -4,6 +4,7 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/income_redistr
 import 'package:gong_mu_talk/features/calculator/domain/constants/transition_rate_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
 
 /// 연금 계산 서비스
 class PensionCalculationService {
@@ -158,5 +159,108 @@ class PensionCalculationService {
       'difference': (futureValue - pensionTotal).round(),
       'recommendPension': futureValue < pensionTotal,
     };
+  }
+
+  /// 세후 연금 계산
+  ///
+  /// [pensionEstimate] 세전 연금 정보
+  /// [age] 수령 시점 연령
+  ///
+  /// Returns: 세후 연금 정보
+  AfterTaxPension calculateAfterTaxPension({
+    required PensionEstimate pensionEstimate,
+    int? age,
+  }) {
+    final pensionAge = age ?? pensionEstimate.retirementAge;
+    final monthlyPensionBeforeTax = pensionEstimate.monthlyPension;
+
+    // 1. 소득세 계산 (연금 소득세율표 적용)
+    final incomeTax = _calculatePensionIncomeTax(
+      monthlyPension: monthlyPensionBeforeTax,
+      age: pensionAge,
+    );
+
+    // 2. 주민세 (소득세의 10%)
+    final localTax = (incomeTax * 0.1).round();
+
+    // 3. 건강보험료 (연금액의 6.99%)
+    final healthInsurance = (monthlyPensionBeforeTax * 0.0699).round();
+
+    // 4. 장기요양보험료 (건강보험료의 12.95%)
+    final longTermCareInsurance = (healthInsurance * 0.1295).round();
+
+    // 5. 세후 월 연금액
+    final totalDeductions =
+        incomeTax + localTax + healthInsurance + longTermCareInsurance;
+    final monthlyPensionAfterTax = monthlyPensionBeforeTax - totalDeductions;
+
+    // 6. 세후 연간 연금액 (13개월 기준)
+    final annualPensionAfterTax = monthlyPensionAfterTax * 13;
+
+    return AfterTaxPension(
+      monthlyPensionBeforeTax: monthlyPensionBeforeTax,
+      incomeTax: incomeTax,
+      localTax: localTax,
+      healthInsurance: healthInsurance,
+      longTermCareInsurance: longTermCareInsurance,
+      monthlyPensionAfterTax: monthlyPensionAfterTax,
+      annualPensionAfterTax: annualPensionAfterTax,
+      age: pensionAge,
+    );
+  }
+
+  /// 연금 소득세 계산 (나이별, 금액별 차등)
+  ///
+  /// [monthlyPension] 월 연금액
+  /// [age] 연령
+  ///
+  /// Returns: 월 소득세
+  int _calculatePensionIncomeTax({
+    required int monthlyPension,
+    required int age,
+  }) {
+    // 연간 연금액 (12개월 기준)
+    final annualPension = monthlyPension * 12;
+
+    // 나이별 공제액
+    final deduction = _getPensionDeduction(age);
+
+    // 과세표준
+    final taxableIncome = max(annualPension - deduction, 0);
+
+    // 누진세율 적용
+    int annualTax = 0;
+    if (taxableIncome <= 14000000) {
+      annualTax = (taxableIncome * 0.06).round();
+    } else if (taxableIncome <= 50000000) {
+      annualTax = 840000 + ((taxableIncome - 14000000) * 0.15).round();
+    } else if (taxableIncome <= 88000000) {
+      annualTax = 6240000 + ((taxableIncome - 50000000) * 0.24).round();
+    } else if (taxableIncome <= 150000000) {
+      annualTax = 15360000 + ((taxableIncome - 88000000) * 0.35).round();
+    } else if (taxableIncome <= 300000000) {
+      annualTax = 37060000 + ((taxableIncome - 150000000) * 0.38).round();
+    } else if (taxableIncome <= 500000000) {
+      annualTax = 94060000 + ((taxableIncome - 300000000) * 0.40).round();
+    } else if (taxableIncome <= 1000000000) {
+      annualTax = 174060000 + ((taxableIncome - 500000000) * 0.42).round();
+    } else {
+      annualTax = 384060000 + ((taxableIncome - 1000000000) * 0.45).round();
+    }
+
+    // 월 소득세 (연 소득세 / 12)
+    return (annualTax / 12).round();
+  }
+
+  /// 나이별 연금 공제액
+  ///
+  /// [age] 연령
+  ///
+  /// Returns: 연간 공제액
+  int _getPensionDeduction(int age) {
+    // 공무원연금 공제액 (2025년 기준)
+    if (age < 70) return 5000000; // 70세 미만: 500만원
+    if (age < 80) return 7000000; // 70~79세: 700만원
+    return 10000000; // 80세 이상: 1,000만원
   }
 }

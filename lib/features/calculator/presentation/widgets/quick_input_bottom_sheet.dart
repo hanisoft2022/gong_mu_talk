@@ -446,6 +446,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
         family: 0, // SalaryCalculationService.calculateFamilyAllowance 사용
         veteran: 0, // SalaryCalculationService.calculateVeteranAllowance 사용
       ),
+      hasSpouse: _hasSpouse,
+      numberOfChildren: _numberOfChildren,
+      isHomeroom: _isHomeroom,
+      hasPosition: _hasPosition,
     );
 
     widget.onSubmit(profile);
