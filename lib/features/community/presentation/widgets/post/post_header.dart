@@ -49,22 +49,12 @@ class PostHeader extends StatelessWidget {
         TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11);
 
     final Widget timestampLabel = Text(timestamp, style: timestampStyle);
-    final Widget identityButton = Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        key: authorButtonKey,
-        borderRadius: BorderRadius.circular(12),
-        onTap: onAuthorMenuTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: AuthorDisplayWidget(
-            nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
-            track: post.authorTrack,
-            serialVisible: post.authorSerialVisible,
-          ),
-        ),
-      ),
+    final Widget identityButton = AuthorDisplayWidget(
+      key: authorButtonKey,
+      nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
+      track: post.authorTrack,
+      serialVisible: post.authorSerialVisible,
+      onTap: onAuthorMenuTap,
     );
 
     return Row(

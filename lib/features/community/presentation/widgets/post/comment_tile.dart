@@ -45,27 +45,14 @@ class CommentTile extends StatelessWidget {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        key: authorKey,
-                        onTap: onOpenProfile,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 4,
-                          ),
-                          child: AuthorDisplayWidget(
-                            nickname: comment.authorNickname.isNotEmpty
-                                ? comment.authorNickname
-                                : comment.authorUid,
-                            track: comment.authorTrack,
-                            serialVisible: comment.authorSerialVisible,
-                          ),
-                        ),
-                      ),
+                    child: AuthorDisplayWidget(
+                      key: authorKey,
+                      nickname: comment.authorNickname.isNotEmpty
+                          ? comment.authorNickname
+                          : comment.authorUid,
+                      track: comment.authorTrack,
+                      serialVisible: comment.authorSerialVisible,
+                      onTap: onOpenProfile,
                     ),
                   ),
                   Align(
