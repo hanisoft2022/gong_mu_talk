@@ -36,7 +36,7 @@ dependencies:
   stream_transform: ^2.1.1
   rive: ^0.13.3
   image_picker: ^1.0.7
-  file_picker: ^6.1.1
+  file_picker: ^10.3.3
   firebase_storage: ^12.4.10
   firebase_messaging: ^15.2.10
   flutter_local_notifications: ^17.2.4

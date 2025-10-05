@@ -19,31 +19,36 @@ class QuickInputBottomSheet extends StatefulWidget {
 }
 
 class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
+  late int? _birthYear;
+  late int? _birthMonth;
   late int _currentGrade;
   late Position _position;
   late DateTime _employmentStartDate;
   late int _retirementAge;
 
-  // 수당 정보
-  int _homeroomAllowance = 0;
-  int _headTeacherAllowance = 0;
-  int _familyAllowance = 0;
-  int _veteranAllowance = 0;
+  // 새로운 입력 방식
+  bool _isHomeroom = false;
+  bool _hasPosition = false;
+  bool _hasSpouse = false;
+  int _numberOfChildren = 0;
+  bool _retirementExtension = false;
+  bool _includeMealAllowance = false;
 
   @override
   void initState() {
     super.initState();
-    _currentGrade = widget.initialProfile?.currentGrade ?? 35;
+    _birthYear = widget.initialProfile?.birthYear;
+    _birthMonth = widget.initialProfile?.birthMonth;
+    _currentGrade = widget.initialProfile?.currentGrade ?? 20;
     _position = widget.initialProfile?.position ?? Position.teacher;
     _employmentStartDate = widget.initialProfile?.employmentStartDate ??
-        DateTime.now().subtract(const Duration(days: 365 * 20));
-    _retirementAge = widget.initialProfile?.retirementAge ?? 65;
+        DateTime.now().subtract(const Duration(days: 365 * 10));
+    _retirementAge = widget.initialProfile?.retirementAge ?? 62;
 
+    // 기존 allowances가 있으면 추정
     if (widget.initialProfile != null) {
-      _homeroomAllowance = widget.initialProfile!.allowances.homeroom;
-      _headTeacherAllowance = widget.initialProfile!.allowances.headTeacher;
-      _familyAllowance = widget.initialProfile!.allowances.family;
-      _veteranAllowance = widget.initialProfile!.allowances.veteran;
+      _isHomeroom = widget.initialProfile!.allowances.homeroom > 0;
+      _hasPosition = widget.initialProfile!.allowances.headTeacher > 0;
     }
   }
 
@@ -98,11 +103,66 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                   controller: scrollController,
                   padding: const EdgeInsets.all(20),
                   children: [
+                    // 생년월
+                    _buildSectionTitle('📍 출생년월'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _birthYear,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: '출생 년도',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            items: List.generate(60, (index) => 1960 + index)
+                                .map((year) => DropdownMenuItem(
+                                      value: year,
+                                      child: Text('$year년'),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => _birthYear = value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _birthMonth,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              labelText: '출생 월',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            items: List.generate(12, (index) => index + 1)
+                                .map((month) => DropdownMenuItem(
+                                      value: month,
+                                      child: Text('$month월'),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => _birthMonth = value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
                     // 현재 호봉
                     _buildSectionTitle('📍 현재 호봉'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
-                      value: _currentGrade,
+                      initialValue: _currentGrade,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
@@ -110,7 +170,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           vertical: 12,
                         ),
                       ),
-                      items: List.generate(40, (index) => index + 1)
+                      items: List.generate(35, (index) => index + 6)
                           .map((grade) => DropdownMenuItem(
                                 value: grade,
                                 child: Text('$grade호봉'),
@@ -183,7 +243,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     _buildSectionTitle('📍 퇴직 예정 연령'),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
-                      value: _retirementAge,
+                      initialValue: _retirementAge,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
@@ -210,31 +270,115 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     ExpansionTile(
                       title: const Text('⚙️ 더 정확하게 계산하기 (선택)'),
                       children: [
-                        const SizedBox(height: 16),
-                        _buildAllowanceInput(
-                          '담임수당',
-                          _homeroomAllowance,
-                          (value) => setState(() => _homeroomAllowance = value),
+                        // 담임 여부
+                        SwitchListTile(
+                          title: const Text('담임 여부'),
+                          subtitle: const Text('담임일 경우 월 20만원 지급'),
+                          value: _isHomeroom,
+                          onChanged: (val) => setState(() => _isHomeroom = val),
                         ),
-                        const SizedBox(height: 16),
-                        _buildAllowanceInput(
-                          '부장수당',
-                          _headTeacherAllowance,
-                          (value) =>
-                              setState(() => _headTeacherAllowance = value),
+                        
+                        // 보직교사 여부
+                        SwitchListTile(
+                          title: const Text('보직교사 (부장 등)'),
+                          subtitle: const Text('보직교사일 경우 월 15만원 지급'),
+                          value: _hasPosition,
+                          onChanged: (val) => setState(() => _hasPosition = val),
                         ),
-                        const SizedBox(height: 16),
-                        _buildAllowanceInput(
-                          '가족수당',
-                          _familyAllowance,
-                          (value) => setState(() => _familyAllowance = value),
+                        
+                        const Divider(),
+                        
+                        // 가족수당
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '가족수당',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SwitchListTile(
+                                title: const Text('배우자'),
+                                subtitle: const Text('월 4만원'),
+                                value: _hasSpouse,
+                                onChanged: (val) =>
+                                    setState(() => _hasSpouse = val),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Text('자녀 수'),
+                                  const SizedBox(width: 8),
+                                  const Spacer(),
+                                  DropdownButton<int>(
+                                    value: _numberOfChildren,
+                                    items: List.generate(6, (i) => i)
+                                        .map((n) => DropdownMenuItem(
+                                              value: n,
+                                              child: Text('$n명'),
+                                            ))
+                                        .toList(),
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        setState(
+                                          () => _numberOfChildren = val,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '첫째 5만원, 둘째 8만원, 셋째 이상 각 12만원',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildAllowanceInput(
-                          '원로수당',
-                          _veteranAllowance,
-                          (value) => setState(() => _veteranAllowance = value),
+                        
+                        const Divider(height: 32),
+                        
+                        // 정년 연장 시나리오
+                        SwitchListTile(
+                          title: const Text('정년 연장 적용 (62세 → 65세)'),
+                          subtitle: Text(
+                            _retirementExtension
+                                ? '정년: 65세'
+                                : '정년: 62세 (2027년 이후 연금 공백 가능)',
+                            style: TextStyle(
+                              color: _retirementExtension
+                                  ? Colors.blue
+                                  : Colors.orange,
+                            ),
+                          ),
+                          value: _retirementExtension,
+                          onChanged: (val) {
+                            setState(() {
+                              _retirementExtension = val;
+                              _retirementAge = val ? 65 : 62;
+                            });
+                          },
                         ),
+                        
+                        // 정액급식비 포함 여부
+                        SwitchListTile(
+                          title: const Text('정액급식비 포함'),
+                          subtitle: const Text('월 14만원'),
+                          value: _includeMealAllowance,
+                          onChanged: (val) =>
+                              setState(() => _includeMealAllowance = val),
+                        ),
+                        
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -275,51 +419,32 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     );
   }
 
-  Widget _buildAllowanceInput(
-    String label,
-    int value,
-    void Function(int) onChanged,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(label),
-        ),
-        Expanded(
-          flex: 3,
-          child: TextFormField(
-            initialValue: value == 0 ? '' : value.toString(),
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
-              suffixText: '원',
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              hintText: '0',
-            ),
-            onChanged: (text) {
-              onChanged(int.tryParse(text) ?? 0);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   void _handleSubmit() {
+    // 생년월 필수 입력 검증
+    if (_birthYear == null || _birthMonth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('출생년월을 선택해주세요.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // 새로운 방식: Allowance는 기본값으로 설정
+    // 실제 수당 계산은 SalaryCalculationService에서 처리
     final profile = TeacherProfile(
+      birthYear: _birthYear!,
+      birthMonth: _birthMonth!,
       currentGrade: _currentGrade,
       position: _position,
       employmentStartDate: _employmentStartDate,
       retirementAge: _retirementAge,
       allowances: Allowance(
-        homeroom: _homeroomAllowance,
-        headTeacher: _headTeacherAllowance,
-        family: _familyAllowance,
-        veteran: _veteranAllowance,
+        homeroom: _isHomeroom ? 200000 : 0,
+        headTeacher: _hasPosition ? 150000 : 0,
+        family: 0, // SalaryCalculationService.calculateFamilyAllowance 사용
+        veteran: 0, // SalaryCalculationService.calculateVeteranAllowance 사용
       ),
     );
 

@@ -133,6 +133,12 @@ class PensionDetailPage extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: 16),
+
+            // 소득 공백 경고 (62세 정년인 경우)
+            if (pensionEstimate.retirementAge == 62)
+              _buildIncomeGapWarning(context),
+
             const SizedBox(height: 24),
 
             // 연금 수령 시뮬레이션 차트
@@ -428,6 +434,121 @@ class PensionDetailPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 소득 공백 경고 위젯 (2027년 이후 퇴직자, 62세 정년)
+  Widget _buildIncomeGapWarning(BuildContext context) {
+    // 연금 수령 시작 나이 (일반적으로 65세)
+    const pensionStartAge = 65;
+    
+    // 소득 공백 기간 계산
+    final gapYears = pensionStartAge - pensionEstimate.retirementAge;
+    
+    // 2027년 이전 퇴직자는 경고 불필요 (임시 면제 기간)
+    final currentYear = DateTime.now().year;
+    if (currentYear < 2027 && gapYears > 0) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade300),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange.shade700,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ 소득 공백 주의',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '정년 퇴직 후 ${pensionEstimate.retirementAge}세~$pensionStartAge세 사이 $gapYears년간 연금 수령이 불가능합니다.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.orange.shade900,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '💡 대응 방안',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSuggestion('별도 생활비 준비 (약 $gapYears년분)'),
+                        _buildSuggestion('정년 연장 법안 통과 시 65세까지 재직'),
+                        _buildSuggestion('퇴직 후 시간제 근무 또는 재취업'),
+                        _buildSuggestion('개인연금/퇴직연금 활용'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return const SizedBox.shrink();
+  }
+
+  /// 대응 방안 항목
+  Widget _buildSuggestion(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.orange.shade700,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -120,7 +120,12 @@
       "Bash(pip3 list:*)",
       "Bash(git restore:*)",
       "Bash(tee:*)",
-      "WebFetch(domain:leancode.co)"
+      "WebFetch(domain:leancode.co)",
+      "Bash(claude doctor)",
+      "Bash(npm i:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(while read file)",
+      "WebFetch(domain:gist.github.com)"
     ],
     "deny": [],
     "ask": []

@@ -15,7 +15,7 @@ class NumberFormatter {
       final eok = amount ~/ 100000000;
       final man = (amount % 100000000) ~/ 10000;
       if (man > 0) {
-        return '$eok억 ${man}만원';
+        return '$eok억 $man만원';
       }
       return '$eok억원';
     } else if (amount >= 10000) {

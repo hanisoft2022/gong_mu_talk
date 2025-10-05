@@ -64,16 +64,19 @@ class SalaryTable {
   }
 }
 
-/// 수당 기준표
+/// 수당 기준표 (2025년 기준)
 class AllowanceTable {
-  /// 담임수당
-  static const int homeroomAllowance = 250000;
-
-  /// 부장수당 (기능직)
-  static const int headTeacherAllowance = 180000;
-
-  /// 교직수당
+  /// 교직수당 (모든 교사)
   static const int teachingAllowance = 250000;
+
+  /// 담임수당
+  static const int homeroomAllowance = 200000;
+
+  /// 보직교사수당 (부장 등)
+  static const int headTeacherAllowance = 150000;
+
+  /// 원로교사수당 (30년 이상 재직 + 55세 이상)
+  static const int veteranAllowance = 50000;
 
   /// 교감 관리수당
   static const int vicePrincipalManagementAllowance = 300000;
@@ -81,9 +84,23 @@ class AllowanceTable {
   /// 교장 관리수당
   static const int principalManagementAllowance = 450000;
 
-  /// 가족수당 (1인당)
+  /// 가족수당 (1인당, 참고용 - 실제 계산은 SalaryCalculationService 사용)
   static const int familyAllowancePerPerson = 40000;
 
-  /// 원로수당 (20년 이상)
-  static const int veteranAllowance = 100000;
+  /// 정액급식비
+  static const int mealAllowance = 140000;
+
+  /// 시간외근무수당 정액분 (호봉별)
+  static const Map<int, int> overtimeAllowanceByGrade = {
+    10: 120000, // 1~10호봉
+    20: 140000, // 11~20호봉
+    40: 160000, // 21호봉 이상
+  };
+
+  /// 호봉별 시간외근무수당 조회
+  static int getOvertimeAllowance(int grade) {
+    if (grade <= 10) return overtimeAllowanceByGrade[10]!;
+    if (grade <= 20) return overtimeAllowanceByGrade[20]!;
+    return overtimeAllowanceByGrade[40]!;
+  }
 }

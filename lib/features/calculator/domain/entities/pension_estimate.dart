@@ -12,6 +12,8 @@ class PensionEstimate extends Equatable {
     required this.avgBaseIncome,
     required this.pensionRate,
     this.totalContribution = 0,
+    this.transitionRate = 1.0,
+    this.redistributionRate = 1.0,
   });
 
   /// 월 연금액
@@ -41,6 +43,12 @@ class PensionEstimate extends Equatable {
   /// 기여금 총 납부액
   final int totalContribution;
 
+  /// 이행률 (2010년 연금 제도 개편 반영)
+  final double transitionRate;
+
+  /// 소득재분배 적용비율
+  final double redistributionRate;
+
   /// 수령 예상 년수
   int get receivingYears => lifeExpectancy - retirementAge;
 
@@ -61,6 +69,8 @@ class PensionEstimate extends Equatable {
         avgBaseIncome,
         pensionRate,
         totalContribution,
+        transitionRate,
+        redistributionRate,
       ];
 
   PensionEstimate copyWith({
@@ -73,6 +83,8 @@ class PensionEstimate extends Equatable {
     int? avgBaseIncome,
     double? pensionRate,
     int? totalContribution,
+    double? transitionRate,
+    double? redistributionRate,
   }) {
     return PensionEstimate(
       monthlyPension: monthlyPension ?? this.monthlyPension,
@@ -84,6 +96,8 @@ class PensionEstimate extends Equatable {
       avgBaseIncome: avgBaseIncome ?? this.avgBaseIncome,
       pensionRate: pensionRate ?? this.pensionRate,
       totalContribution: totalContribution ?? this.totalContribution,
+      transitionRate: transitionRate ?? this.transitionRate,
+      redistributionRate: redistributionRate ?? this.redistributionRate,
     );
   }
 }
