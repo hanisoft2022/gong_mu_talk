@@ -600,6 +600,166 @@ enum ImageCompressionType {
 
 ---
 
+## Git Commit Workflow
+
+### When AI Should Prompt for Commits
+
+AI agents should **proactively prompt the user** to commit when ANY of these conditions are met:
+
+#### 1. Feature Complete
+- ✅ New Cubit/BLoC created with tests passing
+- ✅ New feature fully implemented and verified
+- ✅ Refactoring work completed (e.g., extracted service, split large file)
+- ✅ Bug fix verified with tests
+
+**Example Trigger**:
+```
+✅ PostCard refactoring complete
+- Created PostCardCubit (217 lines)
+- 20/20 tests passing
+- File size reduced 978→925 lines
+```
+
+#### 2. Significant Code Changes
+- ✅ 3+ files modified with functional changes
+- ✅ 200+ lines of code added/modified
+- ✅ New service/repository created
+- ✅ Major architectural change
+
+**Example Trigger**:
+```
+Changed files:
+- lib/features/community/presentation/cubit/post_card_cubit.dart (new)
+- lib/features/community/presentation/cubit/post_card_state.dart (new)
+- test/features/community/presentation/cubit/post_card_cubit_test.dart (new)
+- lib/features/community/presentation/widgets/post_card.dart (modified)
+- lib/di/di.dart (modified)
+```
+
+#### 3. Testing Milestone
+- ✅ New test suite created (10+ tests)
+- ✅ Test coverage increased by 5%+
+- ✅ All tests passing after bug fixes
+- ✅ Critical path (Tier 1) tests added
+
+**Example Trigger**:
+```
+Test milestone reached:
+- Created post_card_cubit_test.dart with 20 tests
+- All 20/20 tests passing
+- Coverage: community/presentation 45% → 62%
+```
+
+#### 4. Documentation Updates
+- ✅ New architectural decision documented
+- ✅ CLAUDE.md or related docs updated
+- ✅ Completion report/guide created
+- ✅ API documentation added
+
+**Example Trigger**:
+```
+Documentation complete:
+- POST_CARD_REFACTORING_COMPLETION_REPORT.md
+- POST_CARD_CUBIT_IMPLEMENTATION_SUMMARY.md
+- POST_CARD_REFACTORING_E2E_TEST_GUIDE.md
+```
+
+### How to Prompt
+
+After completing work that meets the above criteria, AI should ask:
+
+```
+✅ [Summary of completed work]
+
+Should I commit and push these changes?
+
+**Changed files**: 
+- [list key files with change type: new/modified/deleted]
+
+**Suggested commit**: `[type]([scope]): [message]`
+```
+
+**Full Example**:
+```
+✅ PostCard refactoring complete:
+- Extracted business logic to PostCardCubit
+- Created comprehensive test suite (20 tests, 100% passing)
+- Reduced PostCard from 978 to 925 lines
+- Zero direct Repository calls remaining
+
+Should I commit and push these changes?
+
+**Changed files**: 
+- lib/features/community/presentation/cubit/post_card_cubit.dart (new)
+- lib/features/community/presentation/cubit/post_card_state.dart (new)
+- test/features/community/presentation/cubit/post_card_cubit_test.dart (new)
+- lib/features/community/presentation/widgets/post_card.dart (modified)
+- lib/di/di.dart (modified)
+- POST_CARD_REFACTORING_COMPLETION_REPORT.md (new)
+
+**Suggested commit**: 
+`refactor(community): extract PostCard business logic to PostCardCubit`
+```
+
+### When NOT to Prompt
+
+**Don't prompt for commits when**:
+- ❌ Minor typo fixes (1-2 lines changed)
+- ❌ Code formatting only (`dart format`)
+- ❌ Experimental/incomplete work
+- ❌ Work-in-progress that user requested to continue
+- ❌ Intermediate debugging steps
+- ❌ Reading files for analysis (no code changes)
+
+### Commit Message Format
+
+Follow CLAUDE.md Git Workflow conventions:
+
+**Format**: `&lt;type&gt;(&lt;scope&gt;): &lt;subject&gt;`
+
+**Types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring (no functional changes)
+- `test`: Test addition or modification
+- `docs`: Documentation changes
+- `chore`: Build process or auxiliary tools
+- `style`: Code formatting (no functional changes)
+
+**Scope**: Feature name (auth, community, calculator, profile, etc.)
+
+**Subject**: Imperative mood, concise (50 chars max for first line)
+
+**Body** (optional): Detailed explanation, bullet points for multiple changes
+
+**Footer**: Always include Claude Code attribution:
+```
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude &lt;noreply@anthropic.com&gt;
+```
+
+**Good Examples**:
+```bash
+refactor(community): extract PostCard business logic to PostCardCubit
+
+test(calculator): add comprehensive salary calculation tests
+
+feat(auth): implement email verification flow
+
+fix(profile): resolve null reference in profile fetch
+```
+
+**Bad Examples**:
+```bash
+update files  # Too vague
+fixed bug  # No scope, not descriptive
+WIP  # Not a proper commit for completed work
+refactor: changes  # No scope, no detail
+```
+
+---
+
 ## When to Reference This Document
 
 **AI agents should read CLAUDE-PATTERNS.md when**:

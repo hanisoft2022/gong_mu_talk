@@ -1034,6 +1034,7 @@ For detailed patterns, decision trees, domain knowledge, and best practices, see
 - Common Patterns & Anti-Patterns
 - AI Workflow Optimization
 - Performance & Cost Optimization
+- **Git Commit Workflow** (when to prompt for commits, commit message format)
 
 ### 📚 [CLAUDE-DOMAIN.md](CLAUDE-DOMAIN.md)
 **GongMuTalk Domain Knowledge**
