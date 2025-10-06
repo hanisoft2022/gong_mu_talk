@@ -154,6 +154,7 @@ class CommunityRepository {
     required String authorUid,
     required String authorNickname,
     required CareerTrack authorTrack,
+    String? authorSpecificCareer,
     bool authorSerialVisible = true,
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
@@ -169,6 +170,7 @@ class CommunityRepository {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible,
       authorSupporterLevel: authorSupporterLevel,
       authorIsSupporter: authorIsSupporter,
@@ -281,17 +283,6 @@ class CommunityRepository {
     );
   }
 
-  Future<void> hidePost({required String postId}) {
-    return _postRepository.hidePost(postId: postId);
-  }
-
-  Future<void> restorePost({required String postId}) {
-    return _postRepository.restorePost(postId: postId);
-  }
-
-  Future<void> batchHidePosts(List<String> postIds) {
-    return _postRepository.batchHidePosts(postIds);
-  }
 
   Future<Post?> getPost(String postId) async {
     return fetchPostById(postId, currentUid: currentUserId);
@@ -404,6 +395,7 @@ class CommunityRepository {
     required String text,
     String? parentCommentId,
     CareerTrack authorTrack = CareerTrack.none,
+    String? authorSpecificCareer,
     bool authorSerialVisible = true,
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
@@ -417,6 +409,7 @@ class CommunityRepository {
       text: text,
       parentCommentId: parentCommentId,
       authorTrack: authorTrack,
+      authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible,
       authorSupporterLevel: authorSupporterLevel,
       authorIsSupporter: authorIsSupporter,
@@ -482,6 +475,7 @@ class CommunityRepository {
   }) async {
     final nickname = await currentUserNickname;
     final CareerTrack track = _userSession.careerTrack;
+    final String? specificCareer = _userSession.specificCareer;
     final int supporterLevel = _userSession.supporterLevel;
     final bool serialVisible = _userSession.serialVisible;
     await createComment(
@@ -491,6 +485,7 @@ class CommunityRepository {
       text: text,
       parentCommentId: parentCommentId,
       authorTrack: track,
+      authorSpecificCareer: specificCareer,
       authorSerialVisible: serialVisible,
       authorSupporterLevel: supporterLevel,
       authorIsSupporter: supporterLevel > 0,

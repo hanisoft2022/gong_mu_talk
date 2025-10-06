@@ -26,7 +26,7 @@ class ImageCompressionUtil {
 
       // 파일 타입 검증
       if (!_isValidImageType(originalFile.path)) {
-        throw const ImageCompressionException('지원하지 않는 이미지 형식입니다. (JPEG, PNG, WebP만 지원)');
+        throw const ImageCompressionException('지원하지 않는 이미지 형식입니다.\nJPEG, PNG, WebP, HEIC, GIF만 지원됩니다.');
       }
 
       // 임시적으로 압축 없이 원본 파일 반환 (플러그인 오류 해결 전까지)
@@ -63,7 +63,7 @@ class ImageCompressionUtil {
   /// 이미지 파일 타입 검증
   static bool _isValidImageType(String filePath) {
     final String extension = path.extension(filePath).toLowerCase();
-    return ['.jpg', '.jpeg', '.png', '.webp'].contains(extension);
+    return ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.gif'].contains(extension);
   }
 
   /// 압축된 임시 파일들을 정리합니다.

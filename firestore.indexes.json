@@ -31,42 +31,20 @@
       "collectionGroup": "posts",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        {"fieldPath": "type", "order": "ASCENDING"},
-        {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "createdAt", "order": "DESCENDING"},
-        {"fieldPath": "likeCount", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "posts",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
         {"fieldPath": "serial", "order": "ASCENDING"},
         {"fieldPath": "type", "order": "ASCENDING"},
         {"fieldPath": "visibility", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
       ]
     },
+
     {
       "collectionGroup": "posts",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        {"fieldPath": "serial", "order": "ASCENDING"},
-        {"fieldPath": "type", "order": "ASCENDING"},
+        {"fieldPath": "authorUid", "order": "ASCENDING"},
         {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "createdAt", "order": "ASCENDING"},
-        {"fieldPath": "hotScore", "order": "DESCENDING"}
-      ]
-    },
-    {
-      "collectionGroup": "posts",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {"fieldPath": "serial", "order": "ASCENDING"},
-        {"fieldPath": "type", "order": "ASCENDING"},
-        {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "createdAt", "order": "DESCENDING"},
-        {"fieldPath": "likeCount", "order": "DESCENDING"}
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
       ]
     },
     {

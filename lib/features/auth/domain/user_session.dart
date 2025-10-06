@@ -7,6 +7,8 @@ abstract interface class UserSession {
 
   CareerTrack get careerTrack;
 
+  String? get specificCareer;
+
   int get supporterLevel;
 
   bool get serialVisible;

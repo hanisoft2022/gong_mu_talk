@@ -10,6 +10,7 @@ class Comment extends Equatable {
     required this.authorUid,
     required this.authorNickname,
     required this.authorTrack,
+    this.authorSpecificCareer,
     required this.authorSerialVisible,
     required this.text,
     required this.likeCount,
@@ -25,6 +26,7 @@ class Comment extends Equatable {
   final String authorUid;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final String? authorSpecificCareer;
   final bool authorSerialVisible;
   final String text;
   final int likeCount;
@@ -41,6 +43,7 @@ class Comment extends Equatable {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSpecificCareer': authorSpecificCareer,
       'authorSerialVisible': authorSerialVisible,
       'text': text,
       'likeCount': likeCount,
@@ -80,6 +83,7 @@ class Comment extends Equatable {
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
+      authorSpecificCareer: data['authorSpecificCareer'] as String?,
       authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
       text: (data['text'] as String?) ?? '',
       likeCount: (data['likeCount'] as num?)?.toInt() ?? 0,
@@ -106,6 +110,7 @@ class Comment extends Equatable {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack ?? this.authorTrack,
+      authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible ?? this.authorSerialVisible,
       text: text ?? this.text,
       likeCount: likeCount ?? this.likeCount,
@@ -139,6 +144,7 @@ class Comment extends Equatable {
     authorUid,
     authorNickname,
     authorTrack,
+    authorSpecificCareer,
     authorSerialVisible,
     text,
     likeCount,

@@ -147,6 +147,22 @@ service cloud.firestore {
         allow create, update, delete: if isOwner(userId);
       }
 
+      // Follow System - 팔로우/팔로워 관리
+      match /followers/{followerId} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSignedIn();
+      }
+
+      match /following/{targetUid} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSignedIn();
+      }
+
+      // 🔒 차단 사용자 목록 (본인만 접근 가능)
+      match /blocked_users/{blockedUid} {
+        allow read, write: if isOwner(userId);
+      }
+
       // 🔒 민감 정보 저장용 서브컬렉션 (본인만 접근 가능)
       match /private/{docId} {
         allow read, write: if isOwner(userId);
@@ -159,6 +175,12 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly(['uid']) &&
         request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // Top-level follows collection (레거시 - 향후 subcollection으로 마이그레이션 예정)
+    match /follows/{followId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSignedIn();
     }
 
     match /matches/{matchId} {

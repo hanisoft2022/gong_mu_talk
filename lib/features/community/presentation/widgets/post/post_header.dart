@@ -53,6 +53,7 @@ class PostHeader extends StatelessWidget {
       key: authorButtonKey,
       nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
       track: post.authorTrack,
+      specificCareer: post.authorSpecificCareer,
       serialVisible: post.authorSerialVisible,
       onTap: onAuthorMenuTap,
     );

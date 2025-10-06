@@ -85,15 +85,22 @@ class PostActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color iconColor = isHighlighted
-        ? (highlightColor ?? colorScheme.primary)
-        : colorScheme.onSurfaceVariant;
+
+    // Determine color based on state and value
+    final Color iconColor;
+    if (isHighlighted) {
+      iconColor = highlightColor ?? colorScheme.primary;
+    } else if (label == '0') {
+      iconColor = colorScheme.onSurfaceVariant;
+    } else {
+      iconColor = colorScheme.primary;
+    }
 
     final Widget iconWidget = AnimatedScale(
       duration: const Duration(milliseconds: 200),
-      scale: isHighlighted ? 1.3 : 1,
-      curve: Curves.elasticOut,
-      child: Icon(icon, size: 16, color: iconColor),
+      scale: isHighlighted ? 1.2 : 1.0,
+      curve: Curves.easeOutBack,
+      child: Icon(icon, size: 22, color: iconColor),
     );
 
     final TextStyle labelStyle =

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../community/domain/models/post.dart';
 import '../../cubit/profile_timeline_cubit.dart';
@@ -84,11 +85,11 @@ class TimelineSection extends StatelessWidget {
                       const Gap(20),
                       FilledButton.icon(
                         onPressed: () {
-                          // 커뮤니티 탭으로 이동
-                          DefaultTabController.of(context).animateTo(0);
+                          // 라운지로 이동
+                          context.go('/community');
                         },
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('첫 글 작성하기'),
+                        icon: const Icon(Icons.explore, size: 18),
+                        label: const Text('라운지 구경하기'),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),

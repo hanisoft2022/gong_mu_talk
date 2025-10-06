@@ -62,6 +62,7 @@ class PostRepository {
     required String authorUid,
     required String authorNickname,
     required CareerTrack authorTrack,
+    String? authorSpecificCareer,
     bool authorSerialVisible = true,
     int authorSupporterLevel = 0,
     bool authorIsSupporter = false,
@@ -89,6 +90,7 @@ class PostRepository {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSpecificCareer': authorSpecificCareer,
       'authorSerialVisible': authorSerialVisible,
       'authorSupporterLevel': authorSupporterLevel,
       'authorIsSupporter': authorIsSupporter,
@@ -267,7 +269,7 @@ class PostRepository {
     required String authorUid,
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
-  }) async {
+    }) async {
     try {
       QueryJson query = _postsRef
           .where('authorUid', isEqualTo: authorUid)
@@ -281,7 +283,9 @@ class PostRepository {
 
       final QuerySnapshot<JsonMap> snapshot = await query.get();
       return _buildPostPage(snapshot, limit: limit);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('Error fetching posts by author: $e');
+      debugPrint('Stack trace: $stackTrace');
       return const PaginatedQueryResult<Post>(
         items: <Post>[],
         hasMore: false,
@@ -344,30 +348,6 @@ class PostRepository {
     );
   }
 
-  Future<void> hidePost({required String postId}) async {
-    await _postDoc(postId).update(<String, Object?>{
-      'visibility': PostVisibility.hidden.name,
-      'updatedAt': Timestamp.now(),
-    });
-  }
-
-  Future<void> restorePost({required String postId}) async {
-    await _postDoc(postId).update(<String, Object?>{
-      'visibility': PostVisibility.public.name,
-      'updatedAt': Timestamp.now(),
-    });
-  }
-
-  Future<void> batchHidePosts(List<String> postIds) async {
-    final WriteBatch batch = _firestore.batch();
-    for (final String postId in postIds) {
-      batch.update(_postDoc(postId), <String, Object?>{
-        'visibility': PostVisibility.hidden.name,
-        'updatedAt': Timestamp.now(),
-      });
-    }
-    await batch.commit();
-  }
 
   Future<Map<String, Post>> fetchPostsByIds(
     Iterable<String> ids,

@@ -85,6 +85,7 @@ class CommentTile extends StatelessWidget {
             child: AuthorDisplayWidget(
               nickname: displayName,
               track: comment.authorTrack,
+              specificCareer: comment.authorSpecificCareer,
               serialVisible: comment.authorSerialVisible,
             ),
           ),

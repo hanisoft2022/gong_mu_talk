@@ -175,7 +175,6 @@ Future<void> configureDependencies() async {
         calculateEarlyRetirementUseCase: getIt(),
         calculateAfterTaxPensionUseCase: getIt(),
         calculateMonthlyBreakdownUseCase: getIt(),
-        baseIncomeEstimationService: getIt(),
       ),
     )
     ..registerLazySingleton<GoRouter>(createRouter)

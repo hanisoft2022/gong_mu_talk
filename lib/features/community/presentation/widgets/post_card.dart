@@ -176,9 +176,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final Post post = widget.post;
     final String timestamp = _formatTimestamp(post.createdAt);
+    final ThemeData theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0.5,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -194,7 +200,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                   authorButtonKey: _authorButtonKey,
                   onAuthorMenuTap: _handleAuthorMenuTap,
                 ),
-                const Gap(14),
+                const Gap(12),
                 RepaintBoundary(
                   child: ValueListenableBuilder<bool>(
                     valueListenable: _isExpandedNotifier,

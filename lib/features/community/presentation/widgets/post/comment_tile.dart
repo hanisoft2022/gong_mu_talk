@@ -51,6 +51,7 @@ class CommentTile extends StatelessWidget {
                           ? comment.authorNickname
                           : comment.authorUid,
                       track: comment.authorTrack,
+                      specificCareer: comment.authorSpecificCareer,
                       serialVisible: comment.authorSerialVisible,
                       onTap: onOpenProfile,
                     ),

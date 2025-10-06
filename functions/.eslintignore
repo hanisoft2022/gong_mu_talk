@@ -1,0 +1,3 @@
+# Legacy migration scripts
+migrate_lounges_node.js
+migrate_lounges_simple.js

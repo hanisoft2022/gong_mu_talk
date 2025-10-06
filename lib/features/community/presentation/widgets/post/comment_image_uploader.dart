@@ -24,6 +24,7 @@ import '../../../../../core/utils/image_compression_util.dart';
 /// ```
 class CommentImageUploader {
   final ImagePicker _imagePicker = ImagePicker();
+  bool _isPickingImage = false;  // ImagePicker 중복 호출 방지 플래그
 
   /// Pick and compress a single image for comment
   Future<XFile?> pickAndCompressImage(
@@ -32,15 +33,25 @@ class CommentImageUploader {
     VoidCallback? onStart,
     VoidCallback? onComplete,
   }) async {
+    // ImagePicker 중복 호출 방지
+    if (_isPickingImage) {
+      return null;
+    }
+
+    _isPickingImage = true;
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 85,
+        requestFullMetadata: false, // iOS HEIC → JPEG 자동 변환
       );
 
-      if (image == null) return null;
+      if (image == null) {
+        _isPickingImage = false;
+        return null;
+      }
 
       // Check if need to replace existing image
       if (currentImages.isNotEmpty && context.mounted) {
@@ -121,6 +132,8 @@ class CommentImageUploader {
           );
       }
       return null;
+    } finally {
+      _isPickingImage = false;
     }
   }
 
@@ -161,6 +174,28 @@ class CommentImageUploader {
       }
 
       return imageUrls;
+    } on FirebaseException catch (e) {
+      String errorMessage = '이미지 업로드 중 오류가 발생했습니다';
+      if (e.code == 'permission-denied' || e.code == 'unauthorized') {
+        errorMessage = '이미지 업로드 권한이 없습니다.\n앱을 재시작하거나 다시 로그인해주세요.';
+      } else if (e.code == 'quota-exceeded') {
+        errorMessage = '저장 공간이 부족합니다. 잠시 후 다시 시도해주세요.';
+      } else if (e.code == 'unauthenticated') {
+        errorMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
+      }
+
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      }
+      return [];
     } catch (e) {
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context)

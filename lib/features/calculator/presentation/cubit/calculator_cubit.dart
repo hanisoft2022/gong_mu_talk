@@ -6,7 +6,6 @@ import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_retir
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_early_retirement_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_after_tax_pension_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_monthly_breakdown_usecase.dart';
-import 'package:gong_mu_talk/features/calculator/domain/services/base_income_estimation_service.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_state.dart';
 
 class CalculatorCubit extends Cubit<CalculatorState> {
@@ -16,7 +15,6 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   final CalculateEarlyRetirementUseCase _calculateEarlyRetirementUseCase;
   final CalculateAfterTaxPensionUseCase _calculateAfterTaxPensionUseCase;
   final CalculateMonthlyBreakdownUseCase _calculateMonthlyBreakdownUseCase;
-  final BaseIncomeEstimationService _baseIncomeEstimationService;
 
   CalculatorCubit({
     required CalculateLifetimeSalaryUseCase calculateLifetimeSalaryUseCase,
@@ -25,14 +23,12 @@ class CalculatorCubit extends Cubit<CalculatorState> {
     required CalculateEarlyRetirementUseCase calculateEarlyRetirementUseCase,
     required CalculateAfterTaxPensionUseCase calculateAfterTaxPensionUseCase,
     required CalculateMonthlyBreakdownUseCase calculateMonthlyBreakdownUseCase,
-    required BaseIncomeEstimationService baseIncomeEstimationService,
   })  : _calculateLifetimeSalaryUseCase = calculateLifetimeSalaryUseCase,
         _calculatePensionUseCase = calculatePensionUseCase,
         _calculateRetirementBenefitUseCase = calculateRetirementBenefitUseCase,
         _calculateEarlyRetirementUseCase = calculateEarlyRetirementUseCase,
         _calculateAfterTaxPensionUseCase = calculateAfterTaxPensionUseCase,
         _calculateMonthlyBreakdownUseCase = calculateMonthlyBreakdownUseCase,
-        _baseIncomeEstimationService = baseIncomeEstimationService,
         super(const CalculatorState());
 
   /// 교사 프로필 저장

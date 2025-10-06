@@ -161,13 +161,6 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: PostCreateRoute.communityPath,
-        name: '${PostCreateRoute.name}-community',
-        builder: (context, state) =>
-            const PostCreatePage(postType: PostType.chirp),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: '${CommunityRoute.editPath}/:postId',
         name: 'post-edit',
         builder: (context, state) {
@@ -298,7 +291,6 @@ class CommunityRoute {
 
   static const String name = 'community';
   static const String path = '/community';
-  static const String writePath = '$path/write';
   static const String editPath = '$path/post/edit';
   static const String postDetailPath = '$path/post';
   static const String searchPath = '$path/search';
@@ -317,13 +309,6 @@ class CommunitySearchRoute {
   const CommunitySearchRoute._();
 
   static const String name = 'community-search';
-}
-
-class PostCreateRoute {
-  const PostCreateRoute._();
-
-  static const String name = 'post-create';
-  static const String communityPath = CommunityRoute.writePath;
 }
 
 class LoginRoute {

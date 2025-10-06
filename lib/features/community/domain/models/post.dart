@@ -57,6 +57,7 @@ class CachedComment extends Equatable {
     required this.likeCount,
     required this.authorNickname,
     required this.authorTrack,
+    this.authorSpecificCareer,
     required this.authorSerialVisible,
   });
 
@@ -65,6 +66,7 @@ class CachedComment extends Equatable {
   final int likeCount;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final String? authorSpecificCareer;
   final bool authorSerialVisible;
 
   Map<String, Object?> toMap() {
@@ -74,6 +76,7 @@ class CachedComment extends Equatable {
       'likeCount': likeCount,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSpecificCareer': authorSpecificCareer,
       'authorSerialVisible': authorSerialVisible,
     };
   }
@@ -88,6 +91,7 @@ class CachedComment extends Equatable {
     final int likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
     final String? authorNickname = data['authorNickname'] as String?;
     final CareerTrack authorTrack = Post._parseTrack(data['authorTrack']);
+    final String? authorSpecificCareer = data['authorSpecificCareer'] as String?;
     final bool authorSerialVisible =
         data['authorSerialVisible'] as bool? ?? true;
     if (id == null || text == null || authorNickname == null) {
@@ -100,6 +104,7 @@ class CachedComment extends Equatable {
       likeCount: likeCount,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible,
     );
   }
@@ -111,6 +116,7 @@ class CachedComment extends Equatable {
     likeCount,
     authorNickname,
     authorTrack,
+    authorSpecificCareer,
     authorSerialVisible,
   ];
 }
@@ -125,6 +131,7 @@ class Post extends Equatable {
     required this.authorUid,
     required this.authorNickname,
     required this.authorTrack,
+    this.authorSpecificCareer,
     required this.authorSerialVisible,
     required this.text,
     required this.media,
@@ -151,6 +158,7 @@ class Post extends Equatable {
   final String authorUid;
   final String authorNickname;
   final CareerTrack authorTrack;
+  final String? authorSpecificCareer;
   final bool authorSerialVisible;
   final String text;
   final List<PostMedia> media;
@@ -183,6 +191,7 @@ class Post extends Equatable {
       'authorUid': authorUid,
       'authorNickname': authorNickname,
       'authorTrack': authorTrack.name,
+      'authorSpecificCareer': authorSpecificCareer,
       'authorSerialVisible': authorSerialVisible,
       'text': text,
       'media': media
@@ -237,6 +246,7 @@ class Post extends Equatable {
       authorUid: (data['authorUid'] as String?) ?? '',
       authorNickname: (data['authorNickname'] as String?) ?? '익명',
       authorTrack: _parseTrack(data['authorTrack']),
+      authorSpecificCareer: data['authorSpecificCareer'] as String?,
       authorSerialVisible: data['authorSerialVisible'] as bool? ?? true,
       text: (data['text'] as String?) ?? '',
       media: _parseMedia(data['media']),
@@ -279,6 +289,7 @@ class Post extends Equatable {
       authorUid: authorUid,
       authorNickname: authorNickname,
       authorTrack: authorTrack,
+      authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible ?? this.authorSerialVisible,
       text: text,
       media: media,
@@ -403,6 +414,7 @@ class Post extends Equatable {
     authorUid,
     authorNickname,
     authorTrack,
+    authorSpecificCareer,
     authorSerialVisible,
     text,
     media,

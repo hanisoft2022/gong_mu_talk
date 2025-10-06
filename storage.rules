@@ -20,6 +20,18 @@ service firebase.storage {
       allow read: if isSignedIn();  // All signed-in users can view profile images
     }
 
+    // Post images (게시글 이미지)
+    match /post_images/{userId}/{postId}/{fileName} {
+      allow write: if isOwner(userId);
+      allow read: if isSignedIn();  // All signed-in users can view post images
+    }
+
+    // Comment images (댓글 이미지)
+    match /comments/{year}/{month}/{postId}/{fileName} {
+      allow write: if isSignedIn();  // Any signed-in user can upload comment images
+      allow read: if isSignedIn();   // All signed-in users can view comment images
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

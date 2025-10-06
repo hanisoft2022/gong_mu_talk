@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_cubit.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_state.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/annual_salary_card.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/pension_card.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_info_input_card.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/retirement_benefit_card.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/early_retirement_card.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/after_tax_pension_card.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/monthly_breakdown_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/current_salary_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/retirement_lumpsum_card.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/pension_net_income_card.dart';
 
-/// 계산기 홈 페이지
+/// 계산기 홈 페이지 (3단계 시간축 기반 재구성)
+///
+/// 구조:
+/// 1. Section 1: 재직 중 급여 분석 (현재)
+/// 2. Section 2: 퇴직 시 일시금 (퇴직 시점)
+/// 3. Section 3: 퇴직 후 연금 (퇴직 후)
 class CalculatorHomePage extends StatelessWidget {
   const CalculatorHomePage({super.key});
 
@@ -62,60 +64,67 @@ class CalculatorHomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. 급여 정보 입력 카드
+                // 급여 정보 입력 카드
                 SalaryInfoInputCard(
                   isDataEntered: state.isDataEntered,
                   profile: state.profile,
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-                // 2. 연도별 급여 계산 카드
-                AnnualSalaryCard(
+                // ═══════════════════════════════════════════
+                // Section 1: 💼 재직 중 급여 분석
+                // ═══════════════════════════════════════════
+                _SectionHeader(
+                  icon: Icons.work,
+                  title: '재직 중 급여 분석',
+                  subtitle: '현재 받고 있는 월급과 연간 실수령액',
+                ),
+
+                const SizedBox(height: 12),
+
+                CurrentSalaryCard(
                   isLocked: !state.isDataEntered,
+                  monthlyBreakdown: state.monthlyBreakdown,
                   lifetimeSalary: state.lifetimeSalary,
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-                // 3. 예상 연금 수령액 카드
-                PensionCard(
-                  isLocked: !state.isDataEntered,
-                  pensionEstimate: state.pensionEstimate,
+                // ═══════════════════════════════════════════
+                // Section 2: 🎁 퇴직 시 일시금
+                // ═══════════════════════════════════════════
+                _SectionHeader(
+                  icon: Icons.card_giftcard,
+                  title: '퇴직 시 일시금',
+                  subtitle: '퇴직할 때 한 번에 받는 금액',
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // 4. 세후 연금 (실수령액)
-                AfterTaxPensionCard(
-                  isLocked: !state.isDataEntered,
-                  afterTaxPension: state.afterTaxPension,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 5. 퇴직급여
-                RetirementBenefitCard(
+                RetirementLumpsumCard(
                   isLocked: !state.isDataEntered,
                   retirementBenefit: state.retirementBenefit,
+                  earlyRetirementBonus: state.earlyRetirementBonus,
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-                // 6. 명예퇴직금 (55세 이상만)
-                if (state.profile != null && state.profile!.retirementAge >= 55)
-                  EarlyRetirementCard(
-                    isLocked: !state.isDataEntered,
-                    earlyRetirementBonus: state.earlyRetirementBonus,
-                  ),
+                // ═══════════════════════════════════════════
+                // Section 3: 🏦 퇴직 후 연금
+                // ═══════════════════════════════════════════
+                _SectionHeader(
+                  icon: Icons.account_balance,
+                  title: '퇴직 후 연금',
+                  subtitle: '퇴직 후 매달 받는 실수령액',
+                ),
 
-                if (state.profile != null && state.profile!.retirementAge >= 55)
-                  const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // 7. 월별 실수령액 분석
-                MonthlyBreakdownCard(
+                PensionNetIncomeCard(
                   isLocked: !state.isDataEntered,
-                  monthlyBreakdown: state.monthlyBreakdown,
+                  pensionEstimate: state.pensionEstimate,
+                  afterTaxPension: state.afterTaxPension,
                 ),
 
                 const SizedBox(height: 32),
@@ -124,6 +133,70 @@ class CalculatorHomePage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 섹션 헤더 위젯
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Divider(
+          color: Colors.grey.withValues(alpha: 0.3),
+          thickness: 1,
+        ),
+      ],
     );
   }
 }

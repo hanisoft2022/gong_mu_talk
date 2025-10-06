@@ -20,6 +20,10 @@ export {
   verifyEmailToken,
 } from "./emailVerification";
 export {migrateMyData, migrateAllUsers} from "./migrateSensitiveInfo";
+export {
+  migrateFollowsData,
+  cleanupOldFollowsCollection,
+} from "./migrateFollowsData";
 
 const db = getFirestore();
 const COUNTER_SHARD_COUNT = 20;

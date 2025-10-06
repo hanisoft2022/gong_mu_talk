@@ -108,6 +108,8 @@ class PostMediaPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     if (mediaList.length == 1) {
       final PostMedia media = mediaList.first;
       return AspectRatio(
@@ -118,7 +120,7 @@ class PostMediaPreview extends StatelessWidget {
             child: CachedNetworkImage(
             imageUrl: media.thumbnailUrl ?? media.url,
             placeholder: (context, url) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: theme.colorScheme.surfaceContainerHighest,
               child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
@@ -129,13 +131,16 @@ class PostMediaPreview extends StatelessWidget {
       );
     }
 
-    // Multiple images grid
+    // Multiple images - show max 3 with "+N" badge if more
+    final int displayCount = mediaList.length > 3 ? 3 : mediaList.length;
+    final int remainingCount = mediaList.length - 3;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: mediaList.length,
+        itemCount: displayCount,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           mainAxisSpacing: 4,
@@ -144,15 +149,34 @@ class PostMediaPreview extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final PostMedia media = mediaList[index];
+          final bool showBadge = index == 2 && remainingCount > 0;
+
           return RepaintBoundary(
-            child: CachedNetworkImage(
-            imageUrl: media.thumbnailUrl ?? media.url,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: media.thumbnailUrl ?? media.url,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                  errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
+                ),
+                if (showBadge)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+$remainingCount',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           );
         },

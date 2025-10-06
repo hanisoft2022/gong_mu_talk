@@ -19,9 +19,8 @@ class QuickInputBottomSheet extends StatefulWidget {
 }
 
 class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
-  late int? _birthYear;
-  late int? _birthMonth;
-  late int _currentGrade;
+  late DateTime? _birthDate;
+  late int? _currentGrade;
   late Position _position;
   late DateTime _employmentStartDate;
   late int _retirementAge;
@@ -37,12 +36,27 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _birthYear = widget.initialProfile?.birthYear;
-    _birthMonth = widget.initialProfile?.birthMonth;
-    _currentGrade = widget.initialProfile?.currentGrade ?? 20;
-    _position = widget.initialProfile?.position ?? Position.teacher;
+    // 출생일: 기존 프로필이 있으면 사용, 없으면 null
+    if (widget.initialProfile != null) {
+      _birthDate = DateTime(
+        widget.initialProfile!.birthYear,
+        widget.initialProfile!.birthMonth,
+        1,
+      );
+    } else {
+      _birthDate = null;
+    }
+    
+    // 현재 호봉: 디폴트 없음 (필수 선택)
+    _currentGrade = widget.initialProfile?.currentGrade;
+    
+    // 직급: 항상 교사로 고정
+    _position = Position.teacher;
+    
+    // 임용일: 2025년 3월 1일 디폴트
     _employmentStartDate = widget.initialProfile?.employmentStartDate ??
-        DateTime.now().subtract(const Duration(days: 365 * 10));
+        DateTime(2025, 3, 1);
+    
     _retirementAge = widget.initialProfile?.retirementAge ?? 62;
 
     // 기존 allowances가 있으면 추정
@@ -104,56 +118,39 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                   padding: const EdgeInsets.all(20),
                   children: [
                     // 생년월
-                    _buildSectionTitle('📍 출생년월'),
+                    _buildSectionTitle('📍 출생 연월'),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: _birthYear,
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText: '출생 년도',
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            items: List.generate(60, (index) => 1960 + index)
-                                .map((year) => DropdownMenuItem(
-                                      value: year,
-                                      child: Text('$year년'),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() => _birthYear = value);
-                            },
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _birthDate ?? DateTime(1990, 1, 1),
+                          firstDate: DateTime(1960),
+                          lastDate: DateTime.now(),
+                          locale: const Locale('ko', 'KR'),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            // 일자는 항상 1일로 설정
+                            _birthDate = DateTime(picked.year, picked.month, 1);
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: '출생 연도 및 월',
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(
+                          _birthDate != null
+                              ? '${_birthDate!.year}년 ${_birthDate!.month}월'
+                              : '선택해주세요',
+                          style: TextStyle(
+                            color: _birthDate != null ? null : Colors.grey,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: _birthMonth,
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText: '출생 월',
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            items: List.generate(12, (index) => index + 1)
-                                .map((month) => DropdownMenuItem(
-                                      value: month,
-                                      child: Text('$month월'),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() => _birthMonth = value);
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -165,11 +162,13 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       initialValue: _currentGrade,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
+                        labelText: '호봉 선택 (필수)',
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
                         ),
                       ),
+                      hint: const Text('호봉을 선택해주세요'),
                       items: List.generate(35, (index) => index + 6)
                           .map((grade) => DropdownMenuItem(
                                 value: grade,
@@ -185,34 +184,8 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
                     const SizedBox(height: 24),
 
-                    // 직급
-                    _buildSectionTitle('📍 직급'),
-                    const SizedBox(height: 8),
-                    SegmentedButton<Position>(
-                      segments: const [
-                        ButtonSegment(
-                          value: Position.teacher,
-                          label: Text('교사'),
-                        ),
-                        ButtonSegment(
-                          value: Position.vicePrincipal,
-                          label: Text('교감'),
-                        ),
-                        ButtonSegment(
-                          value: Position.principal,
-                          label: Text('교장'),
-                        ),
-                      ],
-                      selected: {_position},
-                      onSelectionChanged: (Set<Position> newSelection) {
-                        setState(() => _position = newSelection.first);
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // 재직 시작일
-                    _buildSectionTitle('📍 재직 시작일'),
+                    // 임용일
+                    _buildSectionTitle('📍 임용일'),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
@@ -240,7 +213,20 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     const SizedBox(height: 24),
 
                     // 퇴직 예정 연령
-                    _buildSectionTitle('📍 퇴직 예정 연령'),
+                    Row(
+                      children: [
+                        _buildSectionTitle('📍 퇴직 예정 연령'),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: '만 나이 기준입니다',
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
                       initialValue: _retirementAge,
@@ -270,6 +256,46 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     ExpansionTile(
                       title: const Text('⚙️ 더 정확하게 계산하기 (선택)'),
                       children: [
+                        // 직급 선택
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '직급',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SegmentedButton<Position>(
+                                segments: const [
+                                  ButtonSegment(
+                                    value: Position.teacher,
+                                    label: Text('교사'),
+                                  ),
+                                  ButtonSegment(
+                                    value: Position.vicePrincipal,
+                                    label: Text('교감'),
+                                  ),
+                                  ButtonSegment(
+                                    value: Position.principal,
+                                    label: Text('교장'),
+                                  ),
+                                ],
+                                selected: {_position},
+                                onSelectionChanged: (Set<Position> newSelection) {
+                                  setState(() => _position = newSelection.first);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        const Divider(),
+                        
                         // 담임 여부
                         SwitchListTile(
                           title: const Text('담임 여부'),
@@ -349,8 +375,21 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                         const Divider(height: 32),
                         
                         // 정년 연장 시나리오
-                        SwitchListTile(
-                          title: const Text('정년 연장 적용 (62세 → 65세)'),
+                        ListTile(
+                          title: Row(
+                            children: [
+                              const Expanded(
+                                child: Text('정년 연장 적용 (62세 → 65세)'),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.info_outline),
+                                iconSize: 20,
+                                color: Colors.blue,
+                                onPressed: () => _showRetirementExtensionDialog(context),
+                                tooltip: '정년 연장 제도 상세 안내',
+                              ),
+                            ],
+                          ),
                           subtitle: Text(
                             _retirementExtension
                                 ? '정년: 65세'
@@ -361,13 +400,15 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                   : Colors.orange,
                             ),
                           ),
-                          value: _retirementExtension,
-                          onChanged: (val) {
-                            setState(() {
-                              _retirementExtension = val;
-                              _retirementAge = val ? 65 : 62;
-                            });
-                          },
+                          trailing: Switch(
+                            value: _retirementExtension,
+                            onChanged: (val) {
+                              setState(() {
+                                _retirementExtension = val;
+                                _retirementAge = val ? 65 : 62;
+                              });
+                            },
+                          ),
                         ),
                         
                         // 정액급식비 포함 여부
@@ -419,12 +460,213 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     );
   }
 
+  void _showRetirementExtensionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          '정년 연장 제도 안내',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDialogSection(
+                '📌 현재 상황 (2025년)',
+                [
+                  '• 교원 법정 정년: 만 62세',
+                  '• 연금 수령 시작 연령:',
+                  '  └ 2024~2026년 퇴직자: 62세',
+                  '  └ 2027~2029년 퇴직자: 63세',
+                  '  └ 2030~2032년 퇴직자: 64세',
+                  '  └ 2033년 이후 퇴직자: 65세',
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '핵심 문제: 소득 공백기',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '2033년 이후 62세에 정년퇴직하면\n65세까지 3년간 무소득 기간 발생!',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'OECD 국가 중 유일하게 정년과\n연금 수령 연령이 불일치합니다.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildDialogSection(
+                '🏛️ 정년 연장 논의 현황',
+                [
+                  '▪️ 현재 상태: 아직 확정되지 않음',
+                  '  - 13개 법안이 국회에 계류 중',
+                  '  - 입법 여부 불투명',
+                  '',
+                  '▪️ 정부 추진 일정 (계획안):',
+                  '  - 2025년: 법안 통과 목표',
+                  '  - 2027년: 만 63세 시행',
+                  '  - 2028~2032년: 만 64세',
+                  '  - 2033년: 만 65세 완전 시행',
+                  '',
+                  '▪️ 교원 특수성:',
+                  '  과거 65세 정년이었으나',
+                  '  IMF 이후 62세로 단축',
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildDialogSection(
+                '💭 주요 찬반 의견',
+                [
+                  '✅ 찬성',
+                  '• 연금 공백기 해소',
+                  '• 노동인력 부족 대응',
+                  '• 퇴직 후 재취업 어려움 해결',
+                  '',
+                  '❌ 반대',
+                  '• 학령인구 감소로 교사 과잉',
+                  '• 청년 교사 일자리 감소',
+                  '• 인사 적체 심화',
+                  '• 고령 교사의 교육 효과성 논란',
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lightbulb_outline, color: Colors.blue[700], size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '이 옵션을 켜면?',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '계산기는 정년 65세를 가정하여\n퇴직금 및 연금을 계산합니다.',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[200]!),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '주의사항',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '아직 확정되지 않은 사항이므로\n참고용으로만 활용하시기 바랍니다.\n\n실제 정년은 현행 62세입니다.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogSection(String title, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                item,
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+            )),
+      ],
+    );
+  }
+
   void _handleSubmit() {
     // 생년월 필수 입력 검증
-    if (_birthYear == null || _birthMonth == null) {
+    if (_birthDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('출생년월을 선택해주세요.'),
+          content: Text('출생 연월을 선택해주세요.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // 호봉 필수 입력 검증
+    if (_currentGrade == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('현재 호봉을 선택해주세요.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -434,9 +676,9 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     // 새로운 방식: Allowance는 기본값으로 설정
     // 실제 수당 계산은 SalaryCalculationService에서 처리
     final profile = TeacherProfile(
-      birthYear: _birthYear!,
-      birthMonth: _birthMonth!,
-      currentGrade: _currentGrade,
+      birthYear: _birthDate!.year,
+      birthMonth: _birthDate!.month,
+      currentGrade: _currentGrade!,
       position: _position,
       employmentStartDate: _employmentStartDate,
       retirementAge: _retirementAge,

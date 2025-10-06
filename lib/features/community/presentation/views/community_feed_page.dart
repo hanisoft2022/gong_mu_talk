@@ -414,24 +414,33 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
     if (_isSearchExpanded && !showSearchResults) {
       final searchCubit = _searchCubit ?? context.read<SearchCubit>();
-      children
-        ..add(
-          BlocBuilder<SearchCubit, SearchState>(
-            builder: (context, searchState) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SearchSuggestionsCard(
-                  searchState: searchState,
-                  onSuggestionTap: _useSuggestion,
-                  onClearRecentSearches: () => searchCubit.clearRecentSearches(),
-                  onRemoveRecentSearch: (search) => searchCubit.removeRecentSearch(search),
-                ),
-              );
-            },
-          ),
-        )
-        ..add(const Gap(12))
-        ..add(const FeedSectionBuilder());
+      children.add(
+        BlocBuilder<SearchCubit, SearchState>(
+          builder: (context, searchState) {
+            final bool hasContent = searchState.suggestions.isNotEmpty || 
+                                   searchState.recentSearches.isNotEmpty;
+            
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasContent) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SearchSuggestionsCard(
+                      searchState: searchState,
+                      onSuggestionTap: _useSuggestion,
+                      onClearRecentSearches: () => searchCubit.clearRecentSearches(),
+                      onRemoveRecentSearch: (search) => searchCubit.removeRecentSearch(search),
+                    ),
+                  ),
+                  const Gap(12),
+                ],
+                const FeedSectionBuilder(),
+              ],
+            );
+          },
+        ),
+      );
     } else if (showSearchResults) {
       children.add(
         BlocBuilder<SearchCubit, SearchState>(

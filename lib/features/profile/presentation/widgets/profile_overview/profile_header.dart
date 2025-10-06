@@ -17,7 +17,6 @@
 /// - Test mode career selector (kDebugMode only)
 ///
 /// **Key Components**:
-/// - ProfileAvatar: Circular avatar with fallback
 /// - BioCard: Expandable bio text
 /// - StatCard: Follower/following statistics
 /// - VerificationStatusRow: Email verification status
@@ -40,7 +39,6 @@ import '../../../domain/career_track.dart';
 import '../../views/profile_edit_page.dart';
 import '../../cubit/profile_relations_cubit.dart';
 import 'profile_header_widgets.dart';
-import '../profile_common/profile_avatar.dart';
 import 'profile_relations_sheet.dart';
 import 'test_career_selector.dart';
 
@@ -73,14 +71,10 @@ class ProfileHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 상단: 프로필 아바타, 닉네임, 액션 버튼
+            // 상단: 닉네임, 액션 버튼
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ProfileAvatar(
-                  nickname: state.nickname,
-                ),
-                const Gap(12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +110,7 @@ class ProfileHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                // 우측 액션 버튼
+                // 우측 액션 버튼 (본인 프로필만 표시됨)
                 if (isOwnProfile)
                   IconButton(
                     onPressed: () {
@@ -132,9 +126,7 @@ class ProfileHeader extends StatelessWidget {
                       color: theme.colorScheme.onSurface,
                     ),
                     tooltip: '프로필 수정',
-                  )
-                else
-                  FollowButton(targetUserId: state.userId ?? ''),
+                  ),
               ],
             ),
 

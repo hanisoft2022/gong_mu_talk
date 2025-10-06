@@ -18,6 +18,9 @@ class AuthUserSession implements UserSession {
   CareerTrack get careerTrack => _state.careerTrack;
 
   @override
+  String? get specificCareer => _state.careerHierarchy?.specificCareer;
+
+  @override
   bool get serialVisible => _state.serialVisible;
 
   @override

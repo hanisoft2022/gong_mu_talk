@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 
 import 'package:equatable/equatable.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -117,6 +118,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
   final ImagePicker _picker = ImagePicker();
+  bool _isPickingImage = false;  // ImagePicker 중복 호출 방지 플래그
 
   void updateText(String value) {
     emit(state.copyWith(text: value, errorMessage: null, submissionSuccess: false));
@@ -145,22 +147,33 @@ void setLoungeId(String? loungeId) {
   }
 
   Future<void> addAttachmentFromGallery() async {
+    // ImagePicker 중복 호출 방지
+    if (_isPickingImage) {
+      return;
+    }
+
     // 최대 5개 이미지 제한
     if (state.attachments.length >= 5) {
       emit(state.copyWith(errorMessage: '최대 5개의 이미지만 첨부할 수 있습니다.'));
       return;
     }
 
-    final XFile? file = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 2048,
-      imageQuality: 85,
-    );
-    if (file == null) {
-      return;
-    }
+    _isPickingImage = true;
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        imageQuality: 85,
+        requestFullMetadata: false, // iOS HEIC → JPEG 자동 변환
+      );
+      if (file == null) {
+        return;
+      }
 
-    await _addAttachment(file);
+      await _addAttachment(file);
+    } finally {
+      _isPickingImage = false;
+    }
   }
 
   void removeAttachment(PostMediaDraft draft) {
@@ -203,6 +216,7 @@ emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: f
         authorUid: uid,
         authorNickname: authState.nickname,
         authorTrack: authState.careerTrack,
+        authorSpecificCareer: authState.careerHierarchy?.specificCareer,
         authorSerialVisible: authState.serialVisible,
         authorSupporterLevel: supporterLevel,
         authorIsSupporter: supporterLevel > 0,
@@ -240,7 +254,19 @@ emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: f
           attachments: const <PostMediaDraft>[],
         ),
       );
-    } catch (_) {
+    } on FirebaseException catch (e) {
+      // Firebase Storage 권한 에러 구분 처리
+      String errorMessage = '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.';
+      if (e.code == 'permission-denied' || e.code == 'unauthorized') {
+        errorMessage = '이미지 업로드 권한이 없습니다.\n앱을 재시작하거나 다시 로그인해주세요.';
+      } else if (e.code == 'quota-exceeded') {
+        errorMessage = '저장 공간이 부족합니다. 잠시 후 다시 시도해주세요.';
+      } else if (e.code == 'unauthenticated') {
+        errorMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
+      }
+      emit(state.copyWith(isSubmitting: false, errorMessage: errorMessage));
+    } catch (e) {
+      debugPrint('❌ Post submission error: $e');
       emit(state.copyWith(isSubmitting: false, errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.'));
     }
   }
@@ -304,6 +330,12 @@ String _contentTypeFromExtension(String fileName) {
     }
     if (lower.endsWith('.webp')) {
       return 'image/webp';
+    }
+    if (lower.endsWith('.heic')) {
+      return 'image/heic';
+    }
+    if (lower.endsWith('.heif')) {
+      return 'image/heif';
     }
     return 'image/jpeg';
   }
