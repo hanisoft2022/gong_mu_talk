@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 enum NotificationKind {
   commentReply,
-  bookmarkedPostComment,
+  scrappedPostComment,
   weeklySerialDigest,
 }
 
@@ -12,7 +12,7 @@ extension NotificationKindX on NotificationKind {
   String get channelId {
     switch (this) {
       case NotificationKind.commentReply:
-      case NotificationKind.bookmarkedPostComment:
+      case NotificationKind.scrappedPostComment:
         return 'comments_channel';
       case NotificationKind.weeklySerialDigest:
         return 'general_channel';

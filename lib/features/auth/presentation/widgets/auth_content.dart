@@ -69,12 +69,12 @@ class _AuthContentState extends State<AuthContent> {
                   segments: const [
                     ButtonSegment<_SignUpFlow>(
                       value: _SignUpFlow.email,
-                      label: Text('이메일 주소로 가입'),
+                      label: Text('이메일 주소'),
                       icon: Icon(Icons.alternate_email_outlined),
                     ),
                     ButtonSegment<_SignUpFlow>(
                       value: _SignUpFlow.google,
-                      label: Text('Google 이메일로 가입'),
+                      label: Text('Google 이메일'),
                       icon: Icon(Icons.account_circle_outlined),
                     ),
                   ],

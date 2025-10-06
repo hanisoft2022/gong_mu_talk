@@ -147,7 +147,7 @@ class Post extends Equatable {
     this.topComment,
     this.previewComments = const <CachedComment>[],
     this.isLiked = false,
-    this.isBookmarked = false,
+    this.isScrapped = false,
   });
 
   final String id;
@@ -174,7 +174,7 @@ class Post extends Equatable {
   final CachedComment? topComment;
   final List<CachedComment> previewComments;
   final bool isLiked;
-  final bool isBookmarked;
+  final bool isScrapped;
 
   bool get isHidden => visibility != PostVisibility.public;
 
@@ -216,7 +216,7 @@ class Post extends Equatable {
   static Post fromSnapshot(
     DocumentSnapshot<Map<String, Object?>> snapshot, {
     bool isLiked = false,
-    bool isBookmarked = false,
+    bool isScrapped = false,
   }) {
     final Map<String, Object?>? data = snapshot.data();
     if (data == null) {
@@ -227,7 +227,7 @@ class Post extends Equatable {
       snapshot.id,
       data,
       isLiked: isLiked,
-      isBookmarked: isBookmarked,
+      isScrapped: isScrapped,
     );
   }
 
@@ -235,7 +235,7 @@ class Post extends Equatable {
     String id,
     Map<String, Object?> data, {
     bool isLiked = false,
-    bool isBookmarked = false,
+    bool isScrapped = false,
   }) {
     return Post(
       id: id,
@@ -264,7 +264,7 @@ class Post extends Equatable {
       ),
       previewComments: _parseCachedCommentList(data['previewComments']),
       isLiked: isLiked,
-      isBookmarked: isBookmarked,
+      isScrapped: isScrapped,
     );
   }
 
@@ -276,7 +276,7 @@ class Post extends Equatable {
     CachedComment? topComment,
     List<CachedComment>? previewComments,
     bool? isLiked,
-    bool? isBookmarked,
+    bool? isScrapped,
     PostVisibility? visibility,
     bool? authorSerialVisible,
   }) {
@@ -305,7 +305,7 @@ class Post extends Equatable {
       topComment: topComment ?? this.topComment,
       previewComments: previewComments ?? this.previewComments,
       isLiked: isLiked ?? this.isLiked,
-      isBookmarked: isBookmarked ?? this.isBookmarked,
+      isScrapped: isScrapped ?? this.isScrapped,
     );
   }
 
@@ -430,6 +430,6 @@ class Post extends Equatable {
     topComment,
     previewComments,
     isLiked,
-    isBookmarked,
+    isScrapped,
   ];
 }

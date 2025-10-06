@@ -65,7 +65,7 @@ class PostContent extends StatelessWidget {
 
         // Media preview
         if (post.media.isNotEmpty) ...[
-          const Gap(12),
+          const Gap(8),
           RepaintBoundary(
             child: PostMediaPreview(mediaList: post.media),
           ),
@@ -112,21 +112,24 @@ class PostMediaPreview extends StatelessWidget {
 
     if (mediaList.length == 1) {
       final PostMedia media = mediaList.first;
-      return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: RepaintBoundary(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
-            imageUrl: media.thumbnailUrl ?? media.url,
-            placeholder: (context, url) => Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      return GestureDetector(
+        onTap: () => _showImageViewer(context, mediaList, 0),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: RepaintBoundary(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+              imageUrl: media.thumbnailUrl ?? media.url,
+              placeholder: (context, url) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+              errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
+              fit: BoxFit.cover,
             ),
-            errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, size: 48),
-            fit: BoxFit.cover,
           ),
-        ),
+          ),
         ),
       );
     }
@@ -135,51 +138,188 @@ class PostMediaPreview extends StatelessWidget {
     final int displayCount = mediaList.length > 3 ? 3 : mediaList.length;
     final int remainingCount = mediaList.length - 3;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: displayCount,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          childAspectRatio: 1.0,  // Square grid items
-        ),
-        itemBuilder: (context, index) {
-          final PostMedia media = mediaList[index];
-          final bool showBadge = index == 2 && remainingCount > 0;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      itemCount: displayCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childAspectRatio: 1.0,  // Square grid items
+      ),
+      itemBuilder: (context, index) {
+        final PostMedia media = mediaList[index];
+        final bool showBadge = index == 2 && remainingCount > 0;
 
-          return RepaintBoundary(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CachedNetworkImage(
-                  imageUrl: media.thumbnailUrl ?? media.url,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        return GestureDetector(
+          onTap: () => _showImageViewer(context, mediaList, index),
+          child: RepaintBoundary(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: media.thumbnailUrl ?? media.url,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
                   ),
-                  errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined),
-                ),
-                if (showBadge)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '+$remainingCount',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                  if (showBadge)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '+$remainingCount',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Show full-screen image viewer
+void _showImageViewer(
+  BuildContext context,
+  List<PostMedia> mediaList,
+  int initialIndex,
+) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (context) => _ImageViewerPage(
+        mediaList: mediaList,
+        initialIndex: initialIndex,
+      ),
+    ),
+  );
+}
+
+/// Full-screen image viewer with zoom and swipe
+class _ImageViewerPage extends StatefulWidget {
+  const _ImageViewerPage({
+    required this.mediaList,
+    required this.initialIndex,
+  });
+
+  final List<PostMedia> mediaList;
+  final int initialIndex;
+
+  @override
+  State<_ImageViewerPage> createState() => _ImageViewerPageState();
+}
+
+class _ImageViewerPageState extends State<_ImageViewerPage> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Image viewer with swipe
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.mediaList.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final media = widget.mediaList[index];
+              return InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 4.0,
+                child: Center(
+                  child: CachedNetworkImage(
+                    imageUrl: media.url,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        size: 64,
+                        color: Colors.white54,
                       ),
                     ),
                   ),
-              ],
+                ),
+              );
+            },
+          ),
+
+          // Top bar with close button and counter
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Close button
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    ),
+                  ),
+
+                  // Image counter
+                  if (widget.mediaList.length > 1)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1} / ${widget.mediaList.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

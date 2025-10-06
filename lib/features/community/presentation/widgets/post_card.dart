@@ -4,7 +4,7 @@
 /// - PostHeader: Author info and menu
 /// - PostContent: Text, tags, and media
 /// - PostActionsBar: Like, comment, view buttons
-/// - PostTrailingActions: Bookmark and share
+/// - PostTrailingActions: Scrap and share
 /// - CommentComposer: Comment input and image upload
 /// - PostCommentsSection: Comments display
 /// - AuthorMenuOverlay: Author action menu
@@ -13,7 +13,7 @@
 /// Responsibilities:
 /// - Main post card layout and state management
 /// - Coordinate between child widgets
-/// - Handle user interactions (like, bookmark, share)
+/// - Handle user interactions (like, scrap, share)
 /// - Manage comments state (loading, display, submission)
 /// - Track view interactions
 /// - Handle image uploads for comments
@@ -60,20 +60,20 @@ class PostCard extends StatefulWidget {
     super.key,
     required this.post,
     required this.onToggleLike,
-    required this.onToggleBookmark,
+    required this.onToggleScrap,
     this.displayScope = LoungeScope.all,
     this.trailing,
     this.showShare = true,
-    this.showBookmark = true,
+    this.showScrap = true,
   });
 
   final Post post;
   final VoidCallback onToggleLike;
-  final VoidCallback onToggleBookmark;
+  final VoidCallback onToggleScrap;
   final LoungeScope displayScope;
   final Widget? trailing;
   final bool showShare;
-  final bool showBookmark;
+  final bool showScrap;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -120,14 +120,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     super.initState();
     _repository = context.read<CommunityRepository>();
     _authCubit = context.read<AuthCubit>();
-    
+
     // Initialize PostCardCubit
     _postCardCubit = PostCardCubit(
       repository: _repository,
       postId: widget.post.id,
       initialCommentCount: widget.post.commentCount,
     );
-    
+
     _commentCount = widget.post.commentCount;
     _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
@@ -215,126 +215,125 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         }
       },
       child: Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0.5,
-      color: theme.colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Post header, content, and actions
-          Padding(
-            padding: UiHelpers.standardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PostHeader(
-                  post: post,
-                  timestamp: timestamp,
-                  authorButtonKey: _authorButtonKey,
-                  onAuthorMenuTap: _handleAuthorMenuTap,
-                ),
-                const Gap(12),
-                RepaintBoundary(
-                  child: ValueListenableBuilder<bool>(
-                    valueListenable: _isExpandedNotifier,
-                    builder: (context, isExpanded, _) {
-                      final bool showMoreButton = !isExpanded && content.shouldShowMore(post.text, context);
-                      return content.PostContent(
-                      post: post,
-                      isExpanded: isExpanded,
-                      showMoreButton: showMoreButton,
-                      onExpand: _handleExpand,
-                    );
-                  },
-                ),
-                ),
-                const Gap(16),
-                PostActionsBar(
-                  post: post,
-                  onLikeTap: _handleLikeTap,
-                  onCommentTap: _handleCommentButton,
-                  trailingActions: PostTrailingActions(
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 0.5,
+        color: theme.colorScheme.surfaceContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Post header, content, and actions
+            Padding(
+              padding: UiHelpers.standardPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PostHeader(
                     post: post,
-                    onBookmarkTap: _handleBookmarkTap,
-                    onShareTap: () => _handleShare(post),
-                    showShare: widget.showShare,
-                    showBookmark: widget.showBookmark,
-                    customTrailing: widget.trailing,
-                    onReportTap: _handleReport,
+                    timestamp: timestamp,
+                    authorButtonKey: _authorButtonKey,
+                    onAuthorMenuTap: _handleAuthorMenuTap,
                   ),
-                ),
-              ],
+                  const Gap(12),
+                  RepaintBoundary(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _isExpandedNotifier,
+                      builder: (context, isExpanded, _) {
+                        final bool showMoreButton =
+                            !isExpanded && content.shouldShowMore(post.text, context);
+                        return content.PostContent(
+                          post: post,
+                          isExpanded: isExpanded,
+                          showMoreButton: showMoreButton,
+                          onExpand: _handleExpand,
+                        );
+                      },
+                    ),
+                  ),
+                  const Gap(16),
+                  PostActionsBar(
+                    post: post,
+                    onLikeTap: _handleLikeTap,
+                    onCommentTap: _handleCommentButton,
+                    trailingActions: PostTrailingActions(
+                      post: post,
+                      onScrapTap: _handleScrapTap,
+                      onShareTap: () => _handleShare(post),
+                      showShare: widget.showShare,
+                      showScrap: widget.showScrap,
+                      customTrailing: widget.trailing,
+                      onReportTap: _handleReport,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Comment composer (shown when comments are visible)
-          ValueListenableBuilder<bool>(
-            valueListenable: _showCommentsNotifier,
-            builder: (context, showComments, _) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: !showComments
-                    ? const SizedBox.shrink()
-                    : Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CommentComposer(
-                          controller: _commentController,
-                          focusNode: _commentFocusNode,
-                          selectedImages: _selectedImages,
-                          isSubmitting: _isSubmittingComment,
-                          isUploadingImages: _isUploadingImages,
-                          uploadProgress: _uploadProgress,
-                          canSubmit: _canSubmitComment,
-                          onPickImages: _pickImages,
-                          onRemoveImage: _removeImage,
-                          onSubmit: _submitComment,
+            // Comment composer (shown when comments are visible)
+            ValueListenableBuilder<bool>(
+              valueListenable: _showCommentsNotifier,
+              builder: (context, showComments, _) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: !showComments
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CommentComposer(
+                                controller: _commentController,
+                                focusNode: _commentFocusNode,
+                                selectedImages: _selectedImages,
+                                isSubmitting: _isSubmittingComment,
+                                isUploadingImages: _isUploadingImages,
+                                uploadProgress: _uploadProgress,
+                                canSubmit: _canSubmitComment,
+                                onPickImages: _pickImages,
+                                onRemoveImage: _removeImage,
+                                onSubmit: _submitComment,
+                              ),
+                              const Gap(16),
+                            ],
+                          ),
                         ),
-                        const Gap(16),
-                      ],
-                    ),
-                  ),
-              );
-            },
-          ),
+                );
+              },
+            ),
 
-          // Comments section
-          ValueListenableBuilder<bool>(
-            valueListenable: _showCommentsNotifier,
-            builder: (context, showComments, _) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: !showComments
-                ? const SizedBox.shrink()
-                : AnimatedSize(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.topCenter,
-                    child: RepaintBoundary(
-                      child: PostCommentsSection(
-                      isLoading: _isLoadingComments,
-                      timelineComments: _timelineComments,
-                      featuredComments: _featuredComments,
-                      onToggleCommentLike: _handleCommentLike,
-                      onReplyTap: _handleReplyTap,
-                      onOpenCommentAuthorProfile: _showCommentAuthorMenu,
-                      ),
-                    ),
-                  ),
-              );
-            },
-          ),
-        ],
-      ),
+            // Comments section
+            ValueListenableBuilder<bool>(
+              valueListenable: _showCommentsNotifier,
+              builder: (context, showComments, _) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: !showComments
+                      ? const SizedBox.shrink()
+                      : AnimatedSize(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          alignment: Alignment.topCenter,
+                          child: RepaintBoundary(
+                            child: PostCommentsSection(
+                              isLoading: _isLoadingComments,
+                              timelineComments: _timelineComments,
+                              featuredComments: _featuredComments,
+                              onToggleCommentLike: _handleCommentLike,
+                              onReplyTap: _handleReplyTap,
+                              onOpenCommentAuthorProfile: _showCommentAuthorMenu,
+                            ),
+                          ),
+                        ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -360,17 +359,17 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     unawaited(_toggleComments());
   }
 
-  void _handleBookmarkTap() {
+  void _handleScrapTap() {
     _registerInteraction();
-    final bool isCurrentlyBookmarked = widget.post.isBookmarked;
-    widget.onToggleBookmark();
+    final bool isCurrentlyScrapped = widget.post.isScrapped;
+    widget.onToggleScrap();
 
     if (mounted) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text(isCurrentlyBookmarked ? '북마크가 해제되었습니다' : '북마크에 추가되었습니다'),
+            content: Text(isCurrentlyScrapped ? '스크랩가 해제되었습니다' : '스크랩에 추가되었습니다'),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
@@ -396,7 +395,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     // Use Cubit for reporting
     await _postCardCubit.reportPost(reason);
-    
+
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
@@ -448,8 +447,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _handleAuthorAction(AuthorMenuAction.viewProfile, isFollowing: isFollowing),
       onToggleFollow: () =>
           _handleAuthorAction(AuthorMenuAction.toggleFollow, isFollowing: isFollowing),
-      onBlockUser: () =>
-          _handleAuthorAction(AuthorMenuAction.blockUser, isFollowing: isFollowing),
+      onBlockUser: () => _handleAuthorAction(AuthorMenuAction.blockUser, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -497,11 +495,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         AuthorMenuAction.toggleFollow,
         isFollowing: isFollowing,
       ),
-      onBlockUser: () => _handleCommentAuthorAction(
-        comment,
-        AuthorMenuAction.blockUser,
-        isFollowing: isFollowing,
-      ),
+      onBlockUser: () =>
+          _handleCommentAuthorAction(comment, AuthorMenuAction.blockUser, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -579,10 +574,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
         break;
       case AuthorMenuAction.blockUser:
-        await _handleBlockUser(
-          targetUid: comment.authorUid,
-          nickname: comment.authorNickname,
-        );
+        await _handleBlockUser(targetUid: comment.authorUid, nickname: comment.authorNickname);
         break;
     }
   }
@@ -614,7 +606,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
 
     final Post post = widget.post;
-    
+
     // Handle synthetic (preview) posts locally
     if (_isSynthetic(post)) {
       final List<Comment> syntheticTimeline = _applyRandomLikes(
@@ -628,12 +620,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         ..sort((a, b) => b.likeCount.compareTo(a.likeCount));
 
       // 베스트 댓글 조건: 최소 좋아요 3개 이상, 전체 댓글 3개 이상
-      final bool canSelectFeatured = syntheticTimeline.length >= 3 && 
-                                       sortedByLikes.isNotEmpty && 
-                                       sortedByLikes.first.likeCount >= 3;
+      final bool canSelectFeatured =
+          syntheticTimeline.length >= 3 &&
+          sortedByLikes.isNotEmpty &&
+          sortedByLikes.first.likeCount >= 3;
 
       setState(() {
-        _featuredComments = canSelectFeatured 
+        _featuredComments = canSelectFeatured
             ? sortedByLikes.take(1).toList(growable: false)
             : <Comment>[];
         _timelineComments = syntheticTimeline;
@@ -645,7 +638,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     // For real posts, use Cubit
     await _postCardCubit.loadComments(force: force);
-    
+
     // Mark as loaded locally (for synthetic check)
     if (mounted) {
       setState(() {
@@ -715,7 +708,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Future<void> _handleCommentLike(Comment comment) async {
     _registerInteraction();
-    
+
     // Skip for synthetic posts
     if (_isSynthetic(widget.post)) return;
 
@@ -822,17 +815,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _showSnack('팔로우 기능은 곧 제공될 예정입니다.');
   }
 
-  Future<void> _handleBlockUser({
-    required String targetUid,
-    required String nickname,
-  }) async {
+  Future<void> _handleBlockUser({required String targetUid, required String nickname}) async {
     if (!mounted) return;
 
     // Show confirmation dialog
-    final bool? confirmed = await BlockUserDialog.show(
-      context,
-      nickname: nickname,
-    );
+    final bool? confirmed = await BlockUserDialog.show(context, nickname: nickname);
 
     if (confirmed != true || !mounted) return;
 
@@ -856,10 +843,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     if (uid.isEmpty || uid == 'dummy_user') {
       return;
     }
-    context.pushNamed(
-      MemberProfileRoute.name,
-      pathParameters: <String, String>{'uid': uid},
-    );
+    context.pushNamed(MemberProfileRoute.name, pathParameters: <String, String>{'uid': uid});
   }
 
   // ==================== Helper Methods ====================
@@ -869,7 +853,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
     _hasTrackedInteraction = true;
-    
+
     // Use Cubit for view tracking
     _postCardCubit.trackView();
   }

@@ -44,7 +44,7 @@ Need to implement data/business logic?
 │  └─ USE SERVICE (EnrichmentService pattern)
 │     └─ Example: PostEnrichmentService coordinates:
 │        - PostRepository (fetch posts)
-│        - InteractionRepository (fetch likes/bookmarks)
+│        - InteractionRepository (fetch likes/scraps)
 │        - CommentRepository (fetch top comments)
 │        - CacheManager (check cache)
 │
@@ -491,12 +491,12 @@ Priority read order:
 **When to Cache**:
 - Frequently accessed, rarely changed data
 - Expensive Firestore queries (multiple document reads)
-- User-specific interactions (likes, bookmarks, view history)
+- User-specific interactions (likes, scraps, view history)
 - Computed/aggregated data
 
 **Cache TTL Guidelines**:
 - Real-time data (chat): No cache or 30 seconds
-- User interactions (likes, bookmarks): 5-10 minutes
+- User interactions (likes, scraps): 5-10 minutes
 - User profiles: 15-30 minutes
 - Static content (app settings): 1-24 hours
 

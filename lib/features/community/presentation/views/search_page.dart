@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/performance_optimizations.dart';
+import '../../../../routing/app_router.dart';
+import '../../../profile/domain/user_profile.dart';
+import '../../../profile/domain/career_track.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_suggestion.dart';
 import '../../domain/models/search_result.dart';
@@ -48,8 +52,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       context.read<SearchCubit>().loadMore();
     }
   }
@@ -85,8 +88,7 @@ class _SearchPageState extends State<SearchPage> {
               ),
               textInputAction: TextInputAction.search,
               onSubmitted: (query) => _performSearch(query.trim()),
-              onChanged: (value) =>
-                  context.read<SearchCubit>().onQueryChanged(value),
+              onChanged: (value) => context.read<SearchCubit>().onQueryChanged(value),
               autofocus: widget.initialQuery?.isEmpty ?? true,
             );
           },
@@ -103,10 +105,7 @@ class _SearchPageState extends State<SearchPage> {
           child: BlocBuilder<SearchCubit, SearchState>(
             builder: (context, state) {
               return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: SegmentedButton<SearchScope>(
                   segments: const <ButtonSegment<SearchScope>>[
                     ButtonSegment<SearchScope>(
@@ -154,13 +153,14 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildBody(SearchState state) {
-    final bool showPosts = state.scope != SearchScope.comments;
-    final bool showComments =
-        state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showPosts = state.scope != SearchScope.comments && state.scope != SearchScope.author;
+    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showUsers = state.scope == SearchScope.author;
 
     if (state.isLoading &&
         state.postResults.isEmpty &&
-        state.commentResults.isEmpty) {
+        state.commentResults.isEmpty &&
+        state.userResults.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -170,7 +170,8 @@ class _SearchPageState extends State<SearchPage> {
 
     final bool noPosts = !showPosts || state.postResults.isEmpty;
     final bool noComments = !showComments || state.commentResults.isEmpty;
-    if (noPosts && noComments && !state.isLoading) {
+    final bool noUsers = !showUsers || state.userResults.isEmpty;
+    if (noPosts && noComments && noUsers && !state.isLoading) {
       return _buildEmptyResults(state);
     }
 
@@ -184,38 +185,49 @@ class _SearchPageState extends State<SearchPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          _buildResultsHeader(state),
-          if (showPosts) ...[
-            _buildSectionHeader('글 결과', state.postResults.length),
-            if (state.postResults.isEmpty && !state.isLoading)
-              _buildNoSectionResults('글')
-            else
-              ...state.postResults.map(
-                (Post post) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: PostCard(
-                    post: post,
-                    onToggleLike: () =>
-                        context.read<SearchCubit>().toggleLike(post),
-                    onToggleBookmark: () =>
-                        context.read<SearchCubit>().toggleBookmark(post),
+              _buildResultsHeader(state),
+              if (showUsers) ...[
+                _buildSectionHeader('사용자', state.userResults.length),
+                if (state.userResults.isEmpty && !state.isLoading)
+                  _buildNoSectionResults('사용자')
+                else
+                  ...state.userResults.map(
+                    (UserProfile user) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildUserResultCard(user),
+                    ),
                   ),
-                ),
-              ),
-            const Gap(8),
-          ],
-          if (showComments) ...[
-            _buildSectionHeader('댓글 결과', state.commentResults.length),
-            if (state.commentResults.isEmpty && !state.isLoading)
-              _buildNoSectionResults('댓글')
-            else
-              ...state.commentResults.map(
-                (CommentSearchResult result) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: CommentSearchResultCard(result: result),
-                ),
-              ),
-          ],
+                const Gap(8),
+              ],
+              if (showPosts) ...[
+                _buildSectionHeader('글 결과', state.postResults.length),
+                if (state.postResults.isEmpty && !state.isLoading)
+                  _buildNoSectionResults('글')
+                else
+                  ...state.postResults.map(
+                    (Post post) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: PostCard(
+                        post: post,
+                        onToggleLike: () => context.read<SearchCubit>().toggleLike(post),
+                        onToggleScrap: () => context.read<SearchCubit>().toggleScrap(post),
+                      ),
+                    ),
+                  ),
+                const Gap(8),
+              ],
+              if (showComments) ...[
+                _buildSectionHeader('댓글 결과', state.commentResults.length),
+                if (state.commentResults.isEmpty && !state.isLoading)
+                  _buildNoSectionResults('댓글')
+                else
+                  ...state.commentResults.map(
+                    (CommentSearchResult result) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: CommentSearchResultCard(result: result),
+                    ),
+                  ),
+              ],
               if (state.isLoading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -233,11 +245,7 @@ class _SearchPageState extends State<SearchPage> {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_outlined, size: 64),
-            Gap(16),
-            Text('검색어를 입력하세요'),
-          ],
+          children: [Icon(Icons.search_outlined, size: 64), Gap(16), Text('검색어를 입력하세요')],
         ),
       );
     }
@@ -350,9 +358,7 @@ class _SearchPageState extends State<SearchPage> {
                 onTap: () {
                   _searchController
                     ..text = token
-                    ..selection = TextSelection.fromPosition(
-                      TextPosition(offset: token.length),
-                    );
+                    ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
                   context.read<SearchCubit>().onQueryChanged(token);
                   _performSearch(token);
                 },
@@ -367,8 +373,7 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildResultsHeader(SearchState state) {
     final ThemeData theme = Theme.of(context);
     final bool showPosts = state.scope != SearchScope.comments;
-    final bool showComments =
-        state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -429,18 +434,11 @@ class _SearchPageState extends State<SearchPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
           const Gap(6),
           Text(
             '$count개',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -451,9 +449,65 @@ class _SearchPageState extends State<SearchPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32),
       alignment: Alignment.center,
-      child: Text(
-        '$label 검색 결과가 없습니다.',
-        style: Theme.of(context).textTheme.bodyMedium,
+      child: Text('$label 검색 결과가 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
+    );
+  }
+
+  Widget _buildUserResultCard(UserProfile user) {
+    final ThemeData theme = Theme.of(context);
+    
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: () {
+          context.push('${ProfileRoute.path}/user/${user.uid}');
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Career Emoji (large)
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Center(
+                  child: Text(
+                    user.careerTrack.emoji,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                ),
+              ),
+              const Gap(16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.nickname,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Gap(4),
+                    Text(
+                      '팔로워 ${user.followerCount}명',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

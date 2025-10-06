@@ -10,6 +10,7 @@ import {
   Timestamp,
   getFirestore,
 } from "firebase-admin/firestore";
+import {getMessaging} from "firebase-admin/messaging";
 
 initializeApp();
 setGlobalOptions({region: "us-central1"});
@@ -19,11 +20,7 @@ export {
   sendGovernmentEmailVerification,
   verifyEmailToken,
 } from "./emailVerification";
-export {migrateMyData, migrateAllUsers} from "./migrateSensitiveInfo";
-export {
-  migrateFollowsData,
-  cleanupOldFollowsCollection,
-} from "./migrateFollowsData";
+export {generateThumbnail} from "./thumbnailGeneration";
 
 const db = getFirestore();
 const COUNTER_SHARD_COUNT = 20;
@@ -326,5 +323,118 @@ export const processReports = onDocumentCreated(
       `Processed report for ${targetType}:${targetId}, total reports:` +
       ` ${reportCount}`;
     console.log(message);
+  }
+);
+
+/**
+ * Send push notification when someone replies to a comment.
+ * Triggers when a new comment is created with a parentCommentId.
+ */
+export const onReplyNotification = onDocumentCreated(
+  {
+    document: "posts/{postId}/comments/{commentId}",
+    region: "us-central1",
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      return;
+    }
+
+    const commentData = snapshot.data();
+    if (!commentData) {
+      return;
+    }
+
+    const {postId} = event.params;
+    const parentCommentId = commentData.parentCommentId as string | undefined;
+
+    // Only proceed if this is a reply (has parentCommentId)
+    if (!parentCommentId) {
+      return;
+    }
+
+    try {
+      // Get parent comment to find the original author
+      const parentCommentRef = db.doc(
+        `posts/${postId}/comments/${parentCommentId}`
+      );
+      const parentCommentSnap = await parentCommentRef.get();
+
+      if (!parentCommentSnap.exists) {
+        console.log(`Parent comment ${parentCommentId} not found`);
+        return;
+      }
+
+      const parentCommentData = parentCommentSnap.data();
+      if (!parentCommentData) {
+        return;
+      }
+
+      const parentAuthorUid = parentCommentData.authorUid as string;
+      const replyAuthorNickname = commentData.authorNickname as string;
+      const replyText = commentData.text as string;
+
+      // Don't send notification if user replies to their own comment
+      if (parentAuthorUid === commentData.authorUid) {
+        return;
+      }
+
+      // Get FCM token for the parent comment author
+      const userRef = db.doc(`users/${parentAuthorUid}`);
+      const userSnap = await userRef.get();
+
+      if (!userSnap.exists) {
+        console.log(`User ${parentAuthorUid} not found`);
+        return;
+      }
+
+      const userData = userSnap.data();
+      const fcmToken = userData?.fcmToken as string | undefined;
+
+      if (!fcmToken) {
+        console.log(`No FCM token for user ${parentAuthorUid}`);
+        return;
+      }
+
+      // Truncate reply text for notification
+      const truncatedText = replyText.length > 100 ?
+        `${replyText.substring(0, 100)}...` :
+        replyText;
+
+      // Send FCM notification
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: `${replyAuthorNickname}님이 답글을 남겼습니다`,
+          body: truncatedText,
+        },
+        data: {
+          type: "reply",
+          postId: postId,
+          commentId: snapshot.id,
+          parentCommentId: parentCommentId,
+        },
+        android: {
+          priority: "high" as const,
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+            },
+          },
+        },
+      };
+
+      await getMessaging().send(message);
+      console.log(
+        `Reply notification sent to ${parentAuthorUid} for comment ` +
+        `${snapshot.id}`
+      );
+    } catch (error) {
+      console.error("Error sending reply notification:", error);
+    }
   }
 );

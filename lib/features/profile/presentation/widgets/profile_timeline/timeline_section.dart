@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../community/domain/models/post.dart';
+import '../../../../community/presentation/widgets/post_card.dart';
 import '../../cubit/profile_timeline_cubit.dart';
-import 'timeline_post_tile.dart';
 
 /// The main timeline section showing user's posts.
 ///
@@ -41,89 +40,35 @@ class TimelineSection extends StatelessWidget {
           case ProfileTimelineStatus.loaded:
             if (state.posts.isEmpty) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.forum_outlined,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const Gap(16),
-                      Text(
-                        '아직 작성한 글이 없습니다',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        '라운지에서 첫 글을 작성해보세요!',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const Gap(20),
-                      FilledButton.icon(
-                        onPressed: () {
-                          // 라운지로 이동
-                          context.go('/community');
-                        },
-                        icon: const Icon(Icons.explore, size: 18),
-                        label: const Text('라운지 구경하기'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                      ),
-                    ],
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    const Icon(Icons.forum_outlined, size: 40),
+                    const Gap(8),
+                    Text('아직 작성한 글이 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
+                  ],
                 ),
               );
             }
             return Column(
               children: [
                 ...state.posts.map(
-                  (Post post) => Column(
-                    children: [
-                      TimelinePostTile(post: post),
-                      Divider(
-                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
-                      ),
-                    ],
+                  (Post post) => PostCard(
+                    post: post,
+                    onToggleLike: () => context.read<ProfileTimelineCubit>().toggleLike(post),
+                    onToggleScrap: () => context.read<ProfileTimelineCubit>().toggleScrap(post),
                   ),
                 ),
-                if (state.hasMore) ...[
-                  const Gap(8),
-                  OutlinedButton(
-                    onPressed: () => context.read<ProfileTimelineCubit>().loadMore(),
-                    child: state.isLoadingMore
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('더 보기'),
+                if (state.isLoadingMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: CircularProgressIndicator(),
                   ),
-                ],
+                if (state.hasMore && !state.isLoadingMore)
+                  TextButton(
+                    onPressed: () => context.read<ProfileTimelineCubit>().loadMore(),
+                    child: const Text('더 보기'),
+                  ),
               ],
             );
         }

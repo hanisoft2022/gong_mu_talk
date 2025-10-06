@@ -92,7 +92,7 @@ class NotificationRepository {
     );
   }
 
-  Future<void> notifyBookmarkedPostComment({
+  Future<void> notifyScrappedPostComment({
     required String targetUid,
     required String postId,
     required String commenterNickname,
@@ -103,13 +103,13 @@ class NotificationRepository {
     }
 
     final JsonMap payload = <String, Object?>{
-      'type': NotificationKind.bookmarkedPostComment.id,
+      'type': NotificationKind.scrappedPostComment.id,
       'postId': postId,
     };
 
     await _storeNotification(
       targetUid: targetUid,
-      kind: NotificationKind.bookmarkedPostComment,
+      kind: NotificationKind.scrappedPostComment,
       title: '스크랩한 글에 새 댓글이 도착했어요',
       body: '$commenterNickname: $excerpt',
       payload: payload,

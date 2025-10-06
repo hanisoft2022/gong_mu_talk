@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../profile/domain/user_profile.dart';
 import 'comment.dart';
 import 'post.dart';
 
@@ -34,21 +35,25 @@ class CommunitySearchResults extends Equatable {
   const CommunitySearchResults({
     this.posts = const <Post>[],
     this.comments = const <CommentSearchResult>[],
+    this.users = const <UserProfile>[],
   });
 
   final List<Post> posts;
   final List<CommentSearchResult> comments;
+  final List<UserProfile> users;
 
   CommunitySearchResults copyWith({
     List<Post>? posts,
     List<CommentSearchResult>? comments,
+    List<UserProfile>? users,
   }) {
     return CommunitySearchResults(
       posts: posts ?? this.posts,
       comments: comments ?? this.comments,
+      users: users ?? this.users,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[posts, comments];
+  List<Object?> get props => <Object?>[posts, comments, users];
 }

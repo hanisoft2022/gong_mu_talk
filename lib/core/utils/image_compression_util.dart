@@ -2,6 +2,23 @@ import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
 
+/// Image compression utility for posts and comments
+///
+/// **IMPORTANT - COST OPTIMIZATION REQUIRED**:
+/// - Image compression is currently DISABLED due to plugin errors
+/// - Original images are uploaded without compression
+/// - This leads to HIGHER storage and bandwidth costs (up to 5x)
+///
+/// **TODO**:
+/// 1. Fix flutter_image_compress plugin errors
+/// 2. Or migrate to alternative compression library
+/// 3. Re-enable compression to reduce costs by 70-80%
+///
+/// **Current Limits** (enforced):
+/// - File size: 10MB max (enforced at app level AND Firebase Storage Rules)
+/// - File types: JPEG, PNG, WebP, HEIC, GIF only
+/// - Post images: Max 5 images
+/// - Comment images: Max 1 image
 enum ImageCompressionType {
   post,
   comment,
@@ -26,11 +43,57 @@ class ImageCompressionUtil {
 
       // 파일 타입 검증
       if (!_isValidImageType(originalFile.path)) {
-        throw const ImageCompressionException('지원하지 않는 이미지 형식입니다.\nJPEG, PNG, WebP, HEIC, GIF만 지원됩니다.');
+        throw const ImageCompressionException('지원하지 않는 이미지 형식입니다. '
+            'JPEG, PNG, WebP, HEIC, GIF만 지원됩니다.');
       }
 
-      // 임시적으로 압축 없이 원본 파일 반환 (플러그인 오류 해결 전까지)
-      return originalFile;
+      // 압축 설정
+      final int quality;
+      final int minWidth;
+      final int minHeight;
+      final CompressFormat format = CompressFormat.webp; // WebP 사용
+
+      switch (type) {
+        case ImageCompressionType.post:
+          quality = 85;
+          minWidth = 1920;
+          minHeight = 1920;
+          break;
+        case ImageCompressionType.comment:
+          quality = 80;
+          minWidth = 1440;
+          minHeight = 1440;
+          break;
+      }
+
+      // 압축 실행
+      final String targetPath = originalFile.path.replaceAll(
+        RegExp(r'\.(jpg|jpeg|png|heic|heif)$', caseSensitive: false),
+        '_compressed.webp',
+      );
+
+      final XFile? compressedFile = await FlutterImageCompress.compressAndGetFile(
+        originalFile.path,
+        targetPath,
+        quality: quality,
+        minWidth: minWidth,
+        minHeight: minHeight,
+        format: format,
+        keepExif: false, // EXIF 제거로 추가 용량 절감
+      );
+
+      if (compressedFile == null) {
+        // 압축 실패 시 원본 반환 (fallback)
+        return originalFile;
+      }
+
+      // 압축 효과 검증 (압축 후가 더 크면 원본 사용)
+      final int compressedSize = await File(compressedFile.path).length();
+      if (compressedSize >= fileSize) {
+        return originalFile;
+      }
+
+      return compressedFile;
     } catch (e) {
       if (e is ImageCompressionException) {
         rethrow;

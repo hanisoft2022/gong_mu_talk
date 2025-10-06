@@ -1,5 +1,14 @@
 rules_version = '2';
 
+// CDN Caching Configuration:
+// - Profile images: 30 days (rarely change)
+// - Post images: 7 days (moderate change)
+// - Comment images: 7 days (moderate change)
+// - Paystub uploads: No cache (sensitive)
+//
+// Cache-Control headers are set at upload time in the app
+// This configuration validates the security rules
+
 service firebase.storage {
   match /b/{bucket}/o {
     function isSignedIn() {
@@ -10,25 +19,44 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // File size limit: 10MB
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Content type validation: images only
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
     match /paystub_uploads/{userId}/{fileName} {
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) 
+                   && isValidSize();
       allow read: if false;  // Admin SDK only (paystub verification functions)
     }
 
     match /profile_images/{userId}/{fileName} {
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && isValidSize()
+                   && isImageFile();
       allow read: if isSignedIn();  // All signed-in users can view profile images
     }
 
     // Post images (게시글 이미지)
+    // Note: Max 5 images per post (enforced at app level)
     match /post_images/{userId}/{postId}/{fileName} {
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && isValidSize()
+                   && isImageFile();
       allow read: if isSignedIn();  // All signed-in users can view post images
     }
 
     // Comment images (댓글 이미지)
-    match /comments/{year}/{month}/{postId}/{fileName} {
-      allow write: if isSignedIn();  // Any signed-in user can upload comment images
+    // Note: Max 1 image per comment (enforced at app level)
+    match /comment_images/{userId}/{commentId}/{fileName} {
+      allow write: if isOwner(userId)
+                   && isValidSize()
+                   && isImageFile();
       allow read: if isSignedIn();   // All signed-in users can view comment images
     }
 

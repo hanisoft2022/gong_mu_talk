@@ -57,7 +57,13 @@ class PostRepository {
     return _postCounterShard(postId).doc('shard_$shardIndex');
   }
 
+  /// Generate a new post ID without creating the document
+  String generatePostId() {
+    return _postsRef.doc().id;
+  }
+
   Future<Post> createPost({
+    String? postId,
     required PostType type,
     required String authorUid,
     required String authorNickname,
@@ -74,7 +80,7 @@ class PostRepository {
     String? boardId,
     bool awardPoints = true,
   }) async {
-    final DocumentReference<JsonMap> ref = _postsRef.doc();
+    final DocumentReference<JsonMap> ref = postId != null ? _postsRef.doc(postId) : _postsRef.doc();
     final DateTime now = DateTime.now();
     final List<String> keywords = _tokenizer.buildPrefixes(
       title: authorNickname,
@@ -316,27 +322,42 @@ class PostRepository {
     required String fileName,
     required Uint8List bytes,
     String contentType = 'image/jpeg',
-    Uint8List? thumbnailBytes,
-    String? thumbnailContentType,
     int? width,
     int? height,
   }) async {
     final Reference fileRef = _storage.ref(
       'post_images/$uid/$postId/$fileName',
     );
-    await fileRef.putData(bytes, SettableMetadata(contentType: contentType));
+    
+    // CDN 캐싱 설정: 7일 (604800초)
+    await fileRef.putData(
+      bytes,
+      SettableMetadata(
+        contentType: contentType,
+        cacheControl: 'public, max-age=604800', // 7 days
+      ),
+    );
     final String url = await fileRef.getDownloadURL();
 
+    // Firebase Function이 자동으로 썸네일을 생성합니다 (thumb_ prefix + .webp)
+    // 원본 파일명에서 확장자를 제거하고 .webp로 변경
+    final String baseFileName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+    final String thumbnailFileName = 'thumb_$baseFileName.webp';
+    
+    // 썸네일 URL 생성 (Function이 생성할 경로)
+    final Reference thumbRef = _storage.ref(
+      'post_images/$uid/$postId/$thumbnailFileName',
+    );
+    
+    // 썸네일 URL은 Firebase Function이 생성한 후에 사용 가능
+    // 일단 경로만 저장하고, 나중에 URL을 가져올 수 있도록 준비
     String? thumbnailUrl;
-    if (thumbnailBytes != null) {
-      final Reference thumbRef = _storage.ref(
-        'post_images/$uid/$postId/thumb_$fileName',
-      );
-      await thumbRef.putData(
-        thumbnailBytes,
-        SettableMetadata(contentType: thumbnailContentType ?? contentType),
-      );
+    try {
       thumbnailUrl = await thumbRef.getDownloadURL();
+    } catch (e) {
+      // 썸네일이 아직 생성되지 않은 경우 null 유지
+      // Function이 생성하면 나중에 사용 가능
+      thumbnailUrl = null;
     }
 
     return PostMedia(

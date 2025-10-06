@@ -109,7 +109,7 @@ class _OptimizedPostListState extends State<OptimizedPostList>
               post.id,
               post.isLiked,
               post.likeCount,
-              post.isBookmarked,
+              post.isScrapped,
               post.commentCount,
               widget.displayScope,
             ],
@@ -150,10 +150,10 @@ class OptimizedPostCard extends StatelessWidget {
             context.read<CommunityFeedCubit>().toggleLike(post);
             PerformanceProfiler.end('toggle_like');
           },
-          onToggleBookmark: () {
-            PerformanceProfiler.start('toggle_bookmark');
-            context.read<CommunityFeedCubit>().toggleBookmark(post);
-            PerformanceProfiler.end('toggle_bookmark');
+          onToggleScrap: () {
+            PerformanceProfiler.start('toggle_scrap');
+            context.read<CommunityFeedCubit>().toggleScrap(post);
+            PerformanceProfiler.end('toggle_scrap');
           },
         );
       },

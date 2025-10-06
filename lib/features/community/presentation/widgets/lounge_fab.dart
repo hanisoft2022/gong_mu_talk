@@ -131,15 +131,15 @@ class _LoungeFABState extends State<LoungeFAB>
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.surfaceContainerHighest,
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -178,7 +178,7 @@ class _LoungeFABState extends State<LoungeFAB>
                                 : Icon(
                                     Icons.forum,
                                     key: const ValueKey('default'),
-                                    color: theme.colorScheme.onPrimary,
+                                    color: theme.colorScheme.onSurface,
                                     size: 24,
                                   ),
                           ),

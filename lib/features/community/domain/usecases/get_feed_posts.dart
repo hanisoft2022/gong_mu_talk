@@ -11,7 +11,7 @@ enum FeedType {
   serial,
   hot,
   author,
-  bookmarks,
+  scraps,
 }
 
 class GetFeedPosts {
@@ -67,11 +67,11 @@ class GetFeedPosts {
           startAfter: startAfter,
           currentUid: currentUid,
         );
-      case FeedType.bookmarks:
+      case FeedType.scraps:
         if (currentUid == null) {
           return AppResultHelpers.failure(const ValidationError('로그인이 필요합니다.'));
         }
-        return _repository.fetchBookmarkedPosts(
+        return _repository.fetchScrappedPosts(
           uid: currentUid,
           limit: limit,
           startAfter: startAfter,

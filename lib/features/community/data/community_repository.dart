@@ -9,6 +9,7 @@ import '../../../core/utils/result.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../profile/domain/career_track.dart';
 import '../domain/models/comment.dart';
+import '../domain/models/comment_with_post.dart';
 import '../domain/models/feed_filters.dart';
 import '../domain/models/post.dart';
 import '../domain/models/report.dart';
@@ -36,12 +37,12 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 /// - Coordinate between specialized repositories
 /// - Provide unified API for community operations
 /// - Handle reports and moderation
-/// - Enrich data with user-specific information (likes, bookmarks, top comments)
+/// - Enrich data with user-specific information (likes, scraps, top comments)
 ///
 /// This repository acts as a facade pattern, delegating to:
 /// - PostRepository: Post CRUD and feeds
 /// - CommentRepository: Comment operations
-/// - InteractionRepository: Likes and bookmarks
+/// - InteractionRepository: Likes and scraps
 /// - SearchRepository: Search and suggestions
 /// - LoungeRepository: Lounge feeds and boards
 ///
@@ -132,7 +133,7 @@ class CommunityRepository {
   
   // Legacy cache variables (TODO: migrate to services)
   final Map<String, Set<String>> _likedPostsCache = {};
-  final Map<String, Set<String>> _bookmarkedPostsCache = {};
+  final Map<String, Set<String>> _scrappedPostsCache = {};
   final Map<String, Map<String, Set<String>>> _likedCommentsCache = {};
   final Map<String, List<Comment>> _topCommentsCache = {};
 
@@ -150,6 +151,7 @@ class CommunityRepository {
   // ============================================================================
 
   Future<Post> createPost({
+    String? postId,
     required PostType type,
     required String authorUid,
     required String authorNickname,
@@ -166,6 +168,7 @@ class CommunityRepository {
     bool awardPoints = true,
   }) {
     return _postRepository.createPost(
+      postId: postId,
       type: type,
       authorUid: authorUid,
       authorNickname: authorNickname,
@@ -265,8 +268,6 @@ class CommunityRepository {
     required String fileName,
     required Uint8List bytes,
     String contentType = 'image/jpeg',
-    Uint8List? thumbnailBytes,
-    String? thumbnailContentType,
     int? width,
     int? height,
   }) {
@@ -276,11 +277,14 @@ class CommunityRepository {
       fileName: fileName,
       bytes: bytes,
       contentType: contentType,
-      thumbnailBytes: thumbnailBytes,
-      thumbnailContentType: thumbnailContentType,
       width: width,
       height: height,
     );
+  }
+
+  /// Generate a new post ID without creating the document
+  String generatePostId() {
+    return _postRepository.generatePostId();
   }
 
 
@@ -541,52 +545,52 @@ class CommunityRepository {
     return liked;
   }
 
-  Future<void> toggleBookmark({
+  Future<void> toggleScrap({
     required String uid,
     required String postId,
   }) async {
-    await _interactionRepository.toggleBookmark(uid: uid, postId: postId);
+    await _interactionRepository.toggleScrap(uid: uid, postId: postId);
     
     // 캐시 즉시 업데이트 (토글이므로 존재 여부 확인)
-    if (_bookmarkedPostsCache.containsKey(uid)) {
-      if (_bookmarkedPostsCache[uid]!.contains(postId)) {
-        _bookmarkedPostsCache[uid]!.remove(postId);
-        debugPrint('💾 Bookmark 캐시 업데이트 - postId: $postId, bookmarked: false');
+    if (_scrappedPostsCache.containsKey(uid)) {
+      if (_scrappedPostsCache[uid]!.contains(postId)) {
+        _scrappedPostsCache[uid]!.remove(postId);
+        debugPrint('💾 Scrap 캐시 업데이트 - postId: $postId, scrapped: false');
       } else {
-        _bookmarkedPostsCache[uid]!.add(postId);
-        debugPrint('💾 Bookmark 캐시 업데이트 - postId: $postId, bookmarked: true');
+        _scrappedPostsCache[uid]!.add(postId);
+        debugPrint('💾 Scrap 캐시 업데이트 - postId: $postId, scrapped: true');
       }
     }
   }
 
-  Future<Set<String>> fetchBookmarkedPostIds(String uid) {
-    return _interactionRepository.fetchBookmarkedPostIds(uid);
+  Future<Set<String>> fetchScrappedPostIds(String uid) {
+    return _interactionRepository.fetchScrappedPostIds(uid);
   }
 
-  Future<PaginatedQueryResult<Post>> fetchBookmarkedPosts({
+  Future<PaginatedQueryResult<Post>> fetchScrappedPosts({
     required String uid,
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    final bookmarkPage =
-        await _interactionRepository.fetchBookmarkedPostIdsPage(
+    final scrapPage =
+        await _interactionRepository.fetchScrappedPostIdsPage(
       uid: uid,
       limit: limit,
       startAfter: startAfter,
     );
 
-    if (bookmarkPage.items.isEmpty) {
+    if (scrapPage.items.isEmpty) {
       return PaginatedQueryResult<Post>(
         items: const <Post>[],
-        hasMore: bookmarkPage.hasMore,
-        lastDocument: bookmarkPage.lastDocument,
+        hasMore: scrapPage.hasMore,
+        lastDocument: scrapPage.lastDocument,
       );
     }
 
     final Map<String, Post> postMap =
-        await _postRepository.fetchPostsByIds(bookmarkPage.items);
+        await _postRepository.fetchPostsByIds(scrapPage.items);
 
-    final List<Post> posts = bookmarkPage.items
+    final List<Post> posts = scrapPage.items
         .map((id) => postMap[id])
         .whereType<Post>()
         .toList();
@@ -595,8 +599,99 @@ class CommunityRepository {
 
     return PaginatedQueryResult<Post>(
       items: enrichedPosts,
-      hasMore: bookmarkPage.hasMore,
-      lastDocument: bookmarkPage.lastDocument,
+      hasMore: scrapPage.hasMore,
+      lastDocument: scrapPage.lastDocument,
+    );
+  }
+
+  Future<PaginatedQueryResult<Post>> fetchLikedPosts({
+    required String uid,
+    int limit = 20,
+    QueryDocumentSnapshotJson? startAfter,
+  }) async {
+    final likePage =
+        await _interactionRepository.fetchLikedPostIdsPage(
+      uid: uid,
+      limit: limit,
+      startAfter: startAfter,
+    );
+
+    if (likePage.items.isEmpty) {
+      return PaginatedQueryResult<Post>(
+        items: const <Post>[],
+        hasMore: likePage.hasMore,
+        lastDocument: likePage.lastDocument,
+      );
+    }
+
+    final Map<String, Post> postMap =
+        await _postRepository.fetchPostsByIds(likePage.items);
+
+    final List<Post> posts = likePage.items
+        .map((id) => postMap[id])
+        .whereType<Post>()
+        .toList();
+
+    final enrichedPosts = await _enrichmentService.enrichPosts(posts, currentUid: uid);
+
+    return PaginatedQueryResult<Post>(
+      items: enrichedPosts,
+      hasMore: likePage.hasMore,
+      lastDocument: likePage.lastDocument,
+    );
+  }
+
+  Future<PaginatedQueryResult<CommentWithPost>> fetchUserComments({
+    required String authorUid,
+    int limit = 20,
+    QueryDocumentSnapshot<JsonMap>? startAfter,
+  }) async {
+    final commentPage = await _commentRepository.fetchCommentsByAuthor(
+      authorUid: authorUid,
+      limit: limit,
+      startAfter: startAfter,
+    );
+
+    if (commentPage.items.isEmpty) {
+      return PaginatedQueryResult<CommentWithPost>(
+        items: const <CommentWithPost>[],
+        hasMore: commentPage.hasMore,
+        lastDocument: commentPage.lastDocument,
+      );
+    }
+
+    // Extract unique postIds from comments
+    final Set<String> postIds = commentPage.items
+        .map((comment) => comment.postId)
+        .toSet();
+
+    // Fetch posts by IDs
+    final Map<String, Post> postMap =
+        await _postRepository.fetchPostsByIds(postIds.toList());
+
+    // Map comments to CommentWithPost objects
+    final List<CommentWithPost> commentsWithPosts = commentPage.items
+        .map((comment) {
+          final post = postMap[comment.postId];
+          if (post == null) {
+            // Post might be deleted, skip this comment
+            return null;
+          }
+
+          return CommentWithPost(
+            comment: comment,
+            postId: post.id,
+            postText: post.text,
+            postAuthorNickname: post.authorNickname,
+          );
+        })
+        .whereType<CommentWithPost>()
+        .toList();
+
+    return PaginatedQueryResult<CommentWithPost>(
+      items: commentsWithPosts,
+      hasMore: commentPage.hasMore,
+      lastDocument: commentPage.lastDocument,
     );
   }
 
@@ -604,8 +699,8 @@ class CommunityRepository {
     await togglePostLike(postId: postId, uid: currentUserId);
   }
 
-  Future<void> togglePostBookmark(String postId) async {
-    await toggleBookmark(uid: currentUserId, postId: postId);
+  Future<void> togglePostScrap(String postId) async {
+    await toggleScrap(uid: currentUserId, postId: postId);
   }
 
   Future<void> toggleCommentLikeById(String postId, String commentId) async {
@@ -625,6 +720,7 @@ class CommunityRepository {
     required SearchScope scope,
     int postLimit = 20,
     int commentLimit = 20,
+    int userLimit = 20,
     String? currentUid,
   }) async {
     // Rate Limiting: 2초 이내 재검색 방지
@@ -639,6 +735,7 @@ class CommunityRepository {
       scope: scope,
       postLimit: postLimit,
       commentLimit: commentLimit,
+      userLimit: userLimit,
     );
 
     // Enrich posts with user data
@@ -705,6 +802,17 @@ class CommunityRepository {
       userId: userId,
       blockerUid: currentUserId,
     );
+  }
+
+  Future<void> unblockUser(String userId) {
+    return _reportRepository.unblockUser(
+      userId: userId,
+      blockerUid: currentUserId,
+    );
+  }
+
+  Future<Set<String>> getBlockedUserIds(String uid) {
+    return _reportRepository.getBlockedUserIds(uid);
   }
 
   // ============================================================================

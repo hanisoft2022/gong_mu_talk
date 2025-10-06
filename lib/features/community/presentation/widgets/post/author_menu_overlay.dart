@@ -12,7 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
-enum AuthorMenuAction { viewProfile, toggleFollow }
+enum AuthorMenuAction { viewProfile, toggleFollow, blockUser }
 
 class AuthorMenuOverlay {
   /// Show author menu overlay at position
@@ -23,6 +23,7 @@ class AuthorMenuOverlay {
     required bool isFollowing,
     required VoidCallback onViewProfile,
     required VoidCallback onToggleFollow,
+    required VoidCallback onBlockUser,
     required VoidCallback onClose,
   }) {
     final RenderBox? renderBox = authorButtonKey.currentContext?.findRenderObject() as RenderBox?;
@@ -82,6 +83,18 @@ class AuthorMenuOverlay {
                             text: isFollowing ? '팔로우 취소하기' : '팔로우하기',
                             onTap: onToggleFollow,
                           ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        ),
+                        _buildMenuOption(
+                          context: context,
+                          icon: Icons.block_outlined,
+                          text: '차단하기',
+                          onTap: onBlockUser,
+                          isDestructive: true,
+                        ),
                       ],
                     ),
                   ),
@@ -101,7 +114,11 @@ class AuthorMenuOverlay {
     required IconData icon,
     required String text,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = isDestructive ? colorScheme.error : colorScheme.onSurface;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -109,9 +126,14 @@ class AuthorMenuOverlay {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 18),
+            Icon(icon, size: 18, color: color),
             const Gap(8),
-            Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+              ),
+            ),
           ],
         ),
       ),

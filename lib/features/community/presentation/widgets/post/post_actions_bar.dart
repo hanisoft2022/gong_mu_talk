@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../../core/utils/number_formatter.dart';
 import '../../../domain/models/post.dart';
 
 class PostActionsBar extends StatelessWidget {
@@ -34,31 +35,32 @@ class PostActionsBar extends StatelessWidget {
         // Like button
         PostActionButton(
           icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-          label: '${post.likeCount}',
+          label: formatCompactNumber(post.likeCount),
           isHighlighted: post.isLiked,
           onPressed: onLikeTap,
           highlightColor: Colors.pink[400],
         ),
-        const Gap(16),
+        const Gap(12),
 
         // Comment button
         PostActionButton(
           icon: Icons.mode_comment_outlined,
-          label: '${post.commentCount}',
+          label: formatCompactNumber(post.commentCount),
           onPressed: onCommentTap,
         ),
-        const Gap(16),
+        const Gap(12),
 
         // View count (read-only)
         PostActionButton(
           icon: Icons.visibility_outlined,
-          label: '${post.viewCount}',
+          label: formatCompactNumber(post.viewCount),
           onPressed: null,
+          alwaysGray: true,
         ),
 
         const Spacer(),
 
-        // Trailing actions (bookmark, share, etc.)
+        // Trailing actions (scrap, share, etc.)
         if (trailingActions != null) trailingActions!,
       ],
     );
@@ -74,6 +76,7 @@ class PostActionButton extends StatelessWidget {
     this.onPressed,
     this.isHighlighted = false,
     this.highlightColor,
+    this.alwaysGray = false,
   });
 
   final IconData icon;
@@ -81,6 +84,7 @@ class PostActionButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isHighlighted;
   final Color? highlightColor;
+  final bool alwaysGray;
 
   @override
   Widget build(BuildContext context) {
@@ -88,12 +92,14 @@ class PostActionButton extends StatelessWidget {
 
     // Determine color based on state and value
     final Color iconColor;
-    if (isHighlighted) {
+    if (alwaysGray) {
+      iconColor = colorScheme.onSurfaceVariant;
+    } else if (isHighlighted) {
       iconColor = highlightColor ?? colorScheme.primary;
     } else if (label == '0') {
       iconColor = colorScheme.onSurfaceVariant;
     } else {
-      iconColor = colorScheme.primary;
+      iconColor = colorScheme.onSurface;
     }
 
     final Widget iconWidget = AnimatedScale(

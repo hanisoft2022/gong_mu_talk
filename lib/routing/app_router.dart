@@ -7,10 +7,14 @@ import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/auth/presentation/views/auth_page.dart';
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
-import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
+import '../features/community/presentation/cubit/scrap_cubit.dart';
+import '../features/community/presentation/cubit/liked_posts_cubit.dart';
+import '../features/community/presentation/cubit/user_comments_cubit.dart';
 import '../features/community/presentation/views/community_feed_page.dart';
-import '../features/community/presentation/views/post_detail_page.dart';
+import '../features/community/presentation/views/scrap_page.dart';
+import '../features/community/presentation/views/liked_posts_page.dart';
+import '../features/community/presentation/views/user_comments_page.dart';
 
 // TEMPORARILY DISABLED DUE TO IOS BUILD ISSUE
 // import '../features/pension/presentation/views/pension_calculator_gate_page.dart';
@@ -22,10 +26,12 @@ import '../features/community/presentation/views/post_detail_page.dart';
 // import '../features/pension/domain/entities/calculation_result.dart';
 import '../features/community/domain/models/post.dart';
 import '../features/community/presentation/views/post_create_page.dart';
+import '../features/community/presentation/views/post_detail_view.dart';
 import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
+import '../features/profile/presentation/views/blocked_users_page.dart';
 import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
@@ -112,6 +118,42 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/blocked-users',
+        name: BlockedUsersRoute.name,
+        builder: (context, state) => const BlockedUsersPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/scraps',
+        name: ScrapRoute.name,
+        builder: (context, state) => BlocProvider<ScrapCubit>(
+          create: (_) => getIt<ScrapCubit>(),
+          child: const ScrapPage(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/liked-posts',
+        name: LikedPostsRoute.name,
+        builder: (context, state) => BlocProvider<LikedPostsCubit>(
+          create: (_) => getIt<LikedPostsCubit>(),
+          child: const LikedPostsPage(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/user/:uid/comments',
+        name: UserCommentsRoute.name,
+        builder: (context, state) {
+          final String uid = state.pathParameters['uid']!;
+          return BlocProvider<UserCommentsCubit>(
+            create: (_) => getIt<UserCommentsCubit>(),
+            child: UserCommentsPage(authorUid: uid),
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '${ProfileRoute.path}/user/:uid',
         name: MemberProfileRoute.name,
         builder: (context, state) {
@@ -132,26 +174,6 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '${CommunityRoute.postDetailPath}/:postId',
-        name: CommunityPostDetailRoute.name,
-        builder: (context, state) {
-          final String postId = state.pathParameters['postId']!;
-          final Post? initialPost = state.extra is Post
-              ? state.extra as Post
-              : null;
-          final String? replyCommentId = state.uri.queryParameters['reply'];
-          return BlocProvider<PostDetailCubit>(
-            create: (_) => getIt<PostDetailCubit>(),
-            child: PostDetailPage(
-              postId: postId,
-              initialPost: initialPost,
-              replyCommentId: replyCommentId,
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: CommunityRoute.searchPath,
         name: CommunitySearchRoute.name,
         builder: (context, state) => BlocProvider<SearchCubit>(
@@ -166,6 +188,15 @@ GoRouter createRouter() {
         builder: (context, state) {
           final postId = state.pathParameters['postId']!;
           return PostCreatePage(postType: PostType.chirp, postId: postId);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${CommunityRoute.path}/posts/:postId',
+        name: PostDetailRoute.name,
+        builder: (context, state) {
+          final postId = state.pathParameters['postId']!;
+          return PostDetailView(postId: postId);
         },
       ),
       GoRoute(
@@ -285,6 +316,32 @@ class PaystubVerificationRoute {
   static const String path = '${ProfileRoute.path}/verify-paystub';
 }
 
+class BlockedUsersRoute {
+  const BlockedUsersRoute._();
+
+  static const String name = 'blocked-users';
+  static const String path = '${ProfileRoute.path}/blocked-users';
+}
+
+class ScrapRoute {
+  const ScrapRoute._();
+
+  static const String name = 'scraps';
+  static const String path = '${ProfileRoute.path}/scraps';
+}
+
+class LikedPostsRoute {
+  const LikedPostsRoute._();
+
+  static const String name = 'liked-posts';
+  static const String path = '${ProfileRoute.path}/liked-posts';
+}
+
+class UserCommentsRoute {
+  const UserCommentsRoute._();
+
+  static const String name = 'user-comments';
+}
 
 class CommunityRoute {
   const CommunityRoute._();
@@ -292,23 +349,20 @@ class CommunityRoute {
   static const String name = 'community';
   static const String path = '/community';
   static const String editPath = '$path/post/edit';
-  static const String postDetailPath = '$path/post';
   static const String searchPath = '$path/search';
-
-  static String postDetailPathWithId(String postId) =>
-      '$postDetailPath/$postId';
-}
-
-class CommunityPostDetailRoute {
-  const CommunityPostDetailRoute._();
-
-  static const String name = 'community-post-detail';
 }
 
 class CommunitySearchRoute {
   const CommunitySearchRoute._();
 
   static const String name = 'community-search';
+}
+
+class PostDetailRoute {
+  const PostDetailRoute._();
+
+  static const String name = 'post-detail';
+  static const String path = '${CommunityRoute.path}/posts';
 }
 
 class LoginRoute {

@@ -19,16 +19,11 @@ class CalculatorHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('급여/연금 계산기'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('급여/연금 계산기'), centerTitle: true),
       body: BlocBuilder<CalculatorCubit, CalculatorState>(
         builder: (context, state) {
           if (state.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state.errorMessage != null) {
@@ -36,11 +31,7 @@ class CalculatorHomePage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     state.errorMessage!,
@@ -65,12 +56,13 @@ class CalculatorHomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 급여 정보 입력 카드
-                SalaryInfoInputCard(
-                  isDataEntered: state.isDataEntered,
-                  profile: state.profile,
-                ),
+                SalaryInfoInputCard(isDataEntered: state.isDataEntered, profile: state.profile),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
+
+                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+
+                const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
                 // Section 1: 💼 재직 중 급여 분석
@@ -87,9 +79,14 @@ class CalculatorHomePage extends StatelessWidget {
                   isLocked: !state.isDataEntered,
                   monthlyBreakdown: state.monthlyBreakdown,
                   lifetimeSalary: state.lifetimeSalary,
+                  profile: state.profile,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
+
+                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+
+                const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
                 // Section 2: 🎁 퇴직 시 일시금
@@ -106,9 +103,14 @@ class CalculatorHomePage extends StatelessWidget {
                   isLocked: !state.isDataEntered,
                   retirementBenefit: state.retirementBenefit,
                   earlyRetirementBonus: state.earlyRetirementBonus,
+                  profile: state.profile,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
+
+                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+
+                const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
                 // Section 3: 🏦 퇴직 후 연금
@@ -125,6 +127,7 @@ class CalculatorHomePage extends StatelessWidget {
                   isLocked: !state.isDataEntered,
                   pensionEstimate: state.pensionEstimate,
                   afterTaxPension: state.afterTaxPension,
+                  profile: state.profile,
                 ),
 
                 const SizedBox(height: 32),
@@ -143,58 +146,38 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionHeader({required this.icon, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 20, color: Theme.of(context).primaryColor),
         ),
-        const SizedBox(height: 8),
-        Divider(
-          color: Colors.grey.withValues(alpha: 0.3),
-          thickness: 1,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
       ],
     );

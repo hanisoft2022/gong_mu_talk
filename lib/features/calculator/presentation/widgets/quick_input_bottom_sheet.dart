@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
@@ -122,19 +125,114 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        DateTime tempDate = _birthDate ?? DateTime(1990, 1, 1);
+                        
+                        await showCupertinoModalPopup(
                           context: context,
-                          initialDate: _birthDate ?? DateTime(1990, 1, 1),
-                          firstDate: DateTime(1960),
-                          lastDate: DateTime.now(),
-                          locale: const Locale('ko', 'KR'),
+                          builder: (BuildContext context) {
+                            return DefaultTextStyle(
+                              style: GoogleFonts.notoSansKr(color: Colors.black87),
+                              child: Container(
+                                height: 300,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Column(
+                                children: [
+                                  // Header
+                                  Container(
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Colors.grey.shade300,
+                                          width: 0.5,
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        CupertinoButton(
+                                          minSize: 0,
+                                          padding: EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            '취소',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          onPressed: () => Navigator.pop(context),
+                                        ),
+                                        Text(
+                                          '출생 연월 선택',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        CupertinoButton(
+                                          minSize: 0,
+                                          padding: EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            '완료',
+                                            style: TextStyle(
+                                              color: Theme.of(context).primaryColor,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
+                                            setState(() {
+                                              // 일자는 항상 1일로 설정
+                                              _birthDate = DateTime(tempDate.year, tempDate.month, 1);
+                                            });
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Date Picker
+                                  Expanded(
+                                    child: CupertinoTheme(
+                                      data: CupertinoThemeData(
+                                        textTheme: CupertinoTextThemeData(
+                                          dateTimePickerTextStyle: GoogleFonts.notoSansKr(
+                                            color: Colors.black87,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                      child: CupertinoDatePicker(
+                                        mode: CupertinoDatePickerMode.date,
+                                        backgroundColor: Colors.white,
+                                        initialDateTime: _birthDate ?? DateTime(1990, 1, 1),
+                                        minimumYear: 1960,
+                                        maximumDate: DateTime.now(),
+                                        onDateTimeChanged: (DateTime picked) {
+                                          HapticFeedback.selectionClick(); // 날짜 변경 시 햅틱
+                                          tempDate = picked;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            );
+                          },
                         );
-                        if (picked != null) {
-                          setState(() {
-                            // 일자는 항상 1일로 설정
-                            _birthDate = DateTime(picked.year, picked.month, 1);
-                          });
-                        }
                       },
                       child: InputDecorator(
                         decoration: const InputDecoration(
@@ -158,28 +256,23 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     // 현재 호봉
                     _buildSectionTitle('📍 현재 호봉'),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: _currentGrade,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: '호봉 선택 (필수)',
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                    InkWell(
+                      onTap: _showGradePicker,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: '호봉 선택 (필수)',
+                          suffixIcon: Icon(Icons.school),
+                        ),
+                        child: Text(
+                          _currentGrade != null
+                              ? '$_currentGrade호봉'
+                              : '호봉을 선택해주세요',
+                          style: TextStyle(
+                            color: _currentGrade != null ? null : Colors.grey,
+                          ),
                         ),
                       ),
-                      hint: const Text('호봉을 선택해주세요'),
-                      items: List.generate(35, (index) => index + 6)
-                          .map((grade) => DropdownMenuItem(
-                                value: grade,
-                                child: Text('$grade호봉'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _currentGrade = value);
-                        }
-                      },
                     ),
 
                     const SizedBox(height: 24),
@@ -189,15 +282,113 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        DateTime tempDate = _employmentStartDate;
+                        
+                        await showCupertinoModalPopup(
                           context: context,
-                          initialDate: _employmentStartDate,
-                          firstDate: DateTime(1980),
-                          lastDate: DateTime.now(),
+                          builder: (BuildContext context) {
+                            return DefaultTextStyle(
+                              style: GoogleFonts.notoSansKr(color: Colors.black87),
+                              child: Container(
+                                height: 300,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                ),
+                                child: Column(
+                                children: [
+                                  // Header
+                                  Container(
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Colors.grey.shade300,
+                                          width: 0.5,
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        CupertinoButton(
+                                          minSize: 0,
+                                          padding: EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            '취소',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          onPressed: () => Navigator.pop(context),
+                                        ),
+                                        Text(
+                                          '임용일 선택',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        CupertinoButton(
+                                          minSize: 0,
+                                          padding: EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            '완료',
+                                            style: TextStyle(
+                                              color: Theme.of(context).primaryColor,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
+                                            setState(() {
+                                              _employmentStartDate = tempDate;
+                                            });
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Date Picker
+                                  Expanded(
+                                    child: CupertinoTheme(
+                                      data: CupertinoThemeData(
+                                        textTheme: CupertinoTextThemeData(
+                                          dateTimePickerTextStyle: GoogleFonts.notoSansKr(
+                                            color: Colors.black87,
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                      child: CupertinoDatePicker(
+                                        mode: CupertinoDatePickerMode.date,
+                                        backgroundColor: Colors.white,
+                                        initialDateTime: _employmentStartDate,
+                                        minimumYear: 1980,
+                                        maximumDate: DateTime.now(),
+                                        onDateTimeChanged: (DateTime picked) {
+                                          HapticFeedback.selectionClick(); // 날짜 변경 시 햅틱
+                                          tempDate = picked;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            );
+                          },
                         );
-                        if (picked != null) {
-                          setState(() => _employmentStartDate = picked);
-                        }
                       },
                       child: InputDecorator(
                         decoration: const InputDecoration(
@@ -228,26 +419,15 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: _retirementAge,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                    InkWell(
+                      onTap: _showRetirementAgePicker,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.cake),
                         ),
+                        child: Text('$_retirementAge세'),
                       ),
-                      items: List.generate(11, (index) => 60 + index)
-                          .map((age) => DropdownMenuItem(
-                                value: age,
-                                child: Text('$age세'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _retirementAge = value);
-                        }
-                      },
                     ),
 
                     const SizedBox(height: 32),
@@ -457,6 +637,268 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
+    );
+  }
+
+  Future<void> _showGradePicker() async {
+    int tempGrade = _currentGrade ?? 15; // 기본값 15호봉
+    
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return DefaultTextStyle(
+          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          child: Container(
+            height: 300,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        minSize: 0,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      Text(
+                        '호봉 선택',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        minSize: 0,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
+                          setState(() {
+                            _currentGrade = tempGrade;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Picker
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      textTheme: CupertinoTextThemeData(
+                        pickerTextStyle: GoogleFonts.notoSansKr(
+                          color: Colors.black87,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempGrade - 6, // 6호봉부터 시작
+                      ),
+                      itemExtent: 40,
+                      backgroundColor: Colors.white,
+                      diameterRatio: 1.5, // 곡률 조정 (더 평평하게)
+                      squeeze: 1.2, // 항목 간격 조정
+                      magnification: 1.1, // 선택된 항목 확대
+                      useMagnifier: true, // 확대 효과 사용
+                      selectionOverlay: Container(
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Theme.of(context).primaryColor.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          color: Theme.of(context).primaryColor.withOpacity(0.05),
+                        ),
+                      ),
+                      onSelectedItemChanged: (int index) {
+                        HapticFeedback.selectionClick(); // 햅틱 피드백
+                        tempGrade = index + 6; // 6호봉부터 시작
+                      },
+                      children: List.generate(35, (index) {
+                        final grade = index + 6;
+                        return Center(
+                          child: Text('$grade호봉'),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showRetirementAgePicker() async {
+    int tempAge = _retirementAge;
+    
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return DefaultTextStyle(
+          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          child: Container(
+            height: 300,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        minSize: 0,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      Text(
+                        '퇴직 예정 연령',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        minSize: 0,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
+                          setState(() {
+                            _retirementAge = tempAge;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Picker
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      textTheme: CupertinoTextThemeData(
+                        pickerTextStyle: GoogleFonts.notoSansKr(
+                          color: Colors.black87,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempAge - 60, // 60세부터 시작
+                      ),
+                      itemExtent: 40,
+                      backgroundColor: Colors.white,
+                      diameterRatio: 1.5, // 곡률 조정 (더 평평하게)
+                      squeeze: 1.2, // 항목 간격 조정
+                      magnification: 1.1, // 선택된 항목 확대
+                      useMagnifier: true, // 확대 효과 사용
+                      selectionOverlay: Container(
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Theme.of(context).primaryColor.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          color: Theme.of(context).primaryColor.withOpacity(0.05),
+                        ),
+                      ),
+                      onSelectedItemChanged: (int index) {
+                        HapticFeedback.selectionClick(); // 햅틱 피드백
+                        tempAge = index + 60; // 60세부터 시작
+                      },
+                      children: List.generate(11, (index) {
+                        final age = index + 60;
+                        return Center(
+                          child: Text('$age세'),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

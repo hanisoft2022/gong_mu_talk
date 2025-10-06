@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Interaction Cache Manager
 ///
 /// Responsibilities:
-/// - Cache like/bookmark states for posts
+/// - Cache like/scrap states for posts
 /// - Cache liked comments
 /// - Cache top comments
 /// - Track cache hit/miss statistics
@@ -12,9 +12,9 @@ import 'package:flutter/foundation.dart';
 /// Cache TTL: 10 minutes
 /// Cache statistics logged every 100 requests
 class InteractionCacheManager {
-  // Like/Bookmark 캐시 (비용 최적화)
+  // Like/Scrap 캐시 (비용 최적화)
   final Map<String, Set<String>> _likedPostsCache = {};
-  final Map<String, Set<String>> _bookmarkedPostsCache = {};
+  final Map<String, Set<String>> _scrappedPostsCache = {};
   DateTime? _lastCacheUpdate;
 
   // Comment Like 캐시 (추가 최적화)
@@ -35,26 +35,26 @@ class InteractionCacheManager {
     return DateTime.now().difference(_lastCacheUpdate!) > _cacheTTL;
   }
 
-  /// Update like/bookmark cache
+  /// Update like/scrap cache
   void updateCache({
     required String uid,
     required Set<String> likedIds,
-    required Set<String> bookmarkedIds,
+    required Set<String> scrappedIds,
   }) {
     // 캐시 업데이트 (병합 방식)
     _likedPostsCache[uid] = {
       ...(_likedPostsCache[uid] ?? {}),
       ...likedIds,
     };
-    _bookmarkedPostsCache[uid] = {
-      ...(_bookmarkedPostsCache[uid] ?? {}),
-      ...bookmarkedIds,
+    _scrappedPostsCache[uid] = {
+      ...(_scrappedPostsCache[uid] ?? {}),
+      ...scrappedIds,
     };
     _lastCacheUpdate = DateTime.now();
 
     // 캐시 미스 기록
     _cacheMissCount++;
-    debugPrint('🔄 Like/Bookmark 캐시 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
+    debugPrint('🔄 Like/Scrap 캐시 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps');
     _logCacheStats();
   }
 
@@ -68,17 +68,17 @@ class InteractionCacheManager {
     
     // 캐시 히트 기록
     _cacheHitCount++;
-    debugPrint('✅ Like/Bookmark 캐시 사용 - Firestore 호출 없음');
+    debugPrint('✅ Like/Scrap 캐시 사용 - Firestore 호출 없음');
     _logCacheStats();
     
     return cached;
   }
 
-  /// Get bookmarked post IDs from cache
-  Set<String>? getBookmarkedPostIds(String uid, List<String> postIds) {
-    if (!_bookmarkedPostsCache.containsKey(uid)) return null;
+  /// Get scrapped post IDs from cache
+  Set<String>? getScrappedPostIds(String uid, List<String> postIds) {
+    if (!_scrappedPostsCache.containsKey(uid)) return null;
     
-    return _bookmarkedPostsCache[uid]!
+    return _scrappedPostsCache[uid]!
         .where((id) => postIds.contains(id))
         .toSet();
   }
@@ -101,20 +101,20 @@ class InteractionCacheManager {
     return null;
   }
 
-  /// Like/Bookmark 캐시 초기화 (로그아웃 시 호출)
+  /// Like/Scrap 캐시 초기화 (로그아웃 시 호출)
   void clearInteractionCache({String? uid}) {
     if (uid != null) {
       _likedPostsCache.remove(uid);
-      _bookmarkedPostsCache.remove(uid);
+      _scrappedPostsCache.remove(uid);
       _likedCommentsCache.remove(uid);
-      debugPrint('🗑️  Like/Bookmark/Comment 캐시 삭제 - uid: $uid');
+      debugPrint('🗑️  Like/Scrap/Comment 캐시 삭제 - uid: $uid');
     } else {
       _likedPostsCache.clear();
-      _bookmarkedPostsCache.clear();
+      _scrappedPostsCache.clear();
       _likedCommentsCache.clear();
       _topCommentsCache.clear();
       _lastCacheUpdate = null;
-      debugPrint('🗑️  모든 캐시 삭제 (Like/Bookmark/Comment/TopComment)');
+      debugPrint('🗑️  모든 캐시 삭제 (Like/Scrap/Comment/TopComment)');
     }
   }
 
@@ -122,13 +122,13 @@ class InteractionCacheManager {
   void forceUpdateCache({
     required String uid,
     required Set<String> likedIds,
-    required Set<String> bookmarkedIds,
+    required Set<String> scrappedIds,
   }) {
     _likedPostsCache[uid] = likedIds;
-    _bookmarkedPostsCache[uid] = bookmarkedIds;
+    _scrappedPostsCache[uid] = scrappedIds;
     _lastCacheUpdate = DateTime.now();
 
-    debugPrint('🔄 Like/Bookmark 캐시 강제 갱신 - ${likedIds.length} likes, ${bookmarkedIds.length} bookmarks');
+    debugPrint('🔄 Like/Scrap 캐시 강제 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps');
   }
 
   /// 캐시 히트율 통계 로깅
@@ -150,7 +150,7 @@ class InteractionCacheManager {
 
   /// 캐시로 절감한 Firestore read 횟수 계산
   int calculateSavedCost() {
-    // 각 캐시 히트는 2번의 Firestore read를 절약 (likes + bookmarks)
+    // 각 캐시 히트는 2번의 Firestore read를 절약 (likes + scraps)
     return _cacheHitCount * 2;
   }
 

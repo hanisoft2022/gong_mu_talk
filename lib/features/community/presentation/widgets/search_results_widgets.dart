@@ -302,7 +302,7 @@ class SearchResultsSection extends StatelessWidget {
                   post.id,
                   post.isLiked,
                   post.likeCount,
-                  post.isBookmarked,
+                  post.isScrapped,
                   post.commentCount,
                 ],
                 child: PostCard(
@@ -312,10 +312,10 @@ class SearchResultsSection extends StatelessWidget {
                     searchCubit.toggleLike(post);
                     PerformanceProfiler.end('toggle_like_search');
                   },
-                  onToggleBookmark: () {
-                    PerformanceProfiler.start('toggle_bookmark_search');
-                    searchCubit.toggleBookmark(post);
-                    PerformanceProfiler.end('toggle_bookmark_search');
+                  onToggleScrap: () {
+                    PerformanceProfiler.start('toggle_scrap_search');
+                    searchCubit.toggleScrap(post);
+                    PerformanceProfiler.end('toggle_scrap_search');
                   },
                 ),
               ),

@@ -60,7 +60,7 @@ class PostShareHandler {
   /// Copy post link to clipboard
   static void copyLinkToClipboard(BuildContext context, Post post) {
     final Uri shareUri = Uri.parse(
-      'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
+      'gongmutalk://community/posts/${post.id}',
     );
 
     Clipboard.setData(ClipboardData(text: shareUri.toString()));
@@ -84,7 +84,7 @@ class PostShareHandler {
     final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
     final String snippet = truncated.replaceAll(RegExp(r'\s+'), ' ').trim();
     final Uri shareUri = Uri.parse(
-      'https://gongmutalk.app${CommunityRoute.postDetailPathWithId(post.id)}',
+      'gongmutalk://community/posts/${post.id}',
     );
 
     final String message = snippet.isEmpty ? shareUri.toString() : '$snippet\n\n${shareUri.toString()}';

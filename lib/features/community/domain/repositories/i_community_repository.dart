@@ -67,7 +67,7 @@ abstract class ICommunityRepository {
     String? currentUid,
   });
 
-  Future<AppResult<PaginatedQueryResult<Post>>> fetchBookmarkedPosts({
+  Future<AppResult<PaginatedQueryResult<Post>>> fetchScrappedPosts({
     required String uid,
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -105,7 +105,7 @@ abstract class ICommunityRepository {
     required String currentUid,
   });
 
-  Future<AppResult<void>> togglePostBookmark(String postId);
+  Future<AppResult<void>> togglePostScrap(String postId);
 
   Future<AppResult<void>> incrementViewCount(String postId);
 
@@ -115,6 +115,7 @@ abstract class ICommunityRepository {
     required SearchScope scope,
     int postLimit = 20,
     int commentLimit = 20,
+    int userLimit = 20,
     String? currentUid,
   });
 

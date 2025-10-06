@@ -306,7 +306,7 @@ class CommentRepository {
           ? '${commentText.substring(0, 50)}...'
           : commentText;
 
-      await _notificationRepository.notifyBookmarkedPostComment(
+      await _notificationRepository.notifyScrappedPostComment(
         targetUid: authorUid,
         postId: postId,
         commenterNickname: commenterNickname,
@@ -315,6 +315,46 @@ class CommentRepository {
     } catch (e) {
       debugPrint('Error dispatching comment notifications: $e');
     }
+  }
+
+  /// Fetch comments by author with pagination
+  Future<PaginatedQueryResult<Comment>> fetchCommentsByAuthor({
+    required String authorUid,
+    int limit = 20,
+    QueryDocumentSnapshot<JsonMap>? startAfter,
+  }) async {
+    Query<JsonMap> query = _firestore
+        .collectionGroup('comments')
+        .where('authorUid', isEqualTo: authorUid)
+        .where('deleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    final QuerySnapshot<JsonMap> snapshot = await query.get();
+    final List<Comment> comments = snapshot.docs
+        .map((QueryDocumentSnapshot<JsonMap> doc) {
+          // Extract postId from document path: posts/{postId}/comments/{commentId}
+          final String path = doc.reference.path;
+          final List<String> parts = path.split('/');
+          final String postId = parts.length >= 2 ? parts[1] : '';
+
+          return Comment.fromSnapshot(doc, postId: postId);
+        })
+        .toList(growable: false);
+
+    final bool hasMore = snapshot.docs.length == limit;
+    final QueryDocumentSnapshot<JsonMap>? last =
+        snapshot.docs.isEmpty ? null : snapshot.docs.last;
+
+    return PaginatedQueryResult<Comment>(
+      items: comments,
+      lastDocument: last,
+      hasMore: hasMore,
+    );
   }
 
   CareerTrack _careerTrackFromRaw(Object? raw) {

@@ -120,12 +120,22 @@ Future<void> configureDependencies() async {
 @injectable  // NO!
 ```
 
-#### 4. Equatable for Entities (Not Freezed)
+#### 4. Equatable & No Code Generation
+
+**Use Equatable for entities** - NO code generation tools:
 - ✅ Manual copyWith implementation
 - ✅ Manual props override
 - ✅ Explicit and debuggable
-- ❌ NO Freezed
-- ❌ NO json_serializable (unless absolutely necessary)
+- ❌ NO Freezed, json_serializable, injectable, retrofit_generator, build_runner
+
+**Historical Context**:
+- Freezed caused build failures in calculator feature
+- Generated code harder to debug
+- build_runner added complexity and slow compile times
+
+**AI Agent Instruction**: 
+Even if the user asks "Should we use Freezed?", the answer is **NO**. 
+Politely explain we use Equatable instead due to past issues.
 
 ```dart
 // ✅ Good: Use Equatable
@@ -136,7 +146,7 @@ class Post extends Equatable {
   final String title;
   
   @override
-  List<Object?> get props => [id, title];
+  List&lt;Object?&gt; get props => [id, title];
   
   Post copyWith({String? id, String? title}) {
     return Post(
@@ -146,43 +156,9 @@ class Post extends Equatable {
   }
 }
 
-// ❌ Bad: Don't suggest Freezed
+// ❌ Bad: Don't suggest Freezed or code generation
 @freezed  // NO!
 class Post with _$Post {  // NO!
-```
-
-#### 5. Firebase as Backend
-- ✅ Firestore, Functions, Auth, Storage, Messaging
-- ✅ Firebase Crashlytics
-- ❌ NO Supabase
-- ❌ NO AWS Amplify
-- ❌ NO other backend services
-
-#### 6. 🚫 Code Generation is STRICTLY PROHIBITED
-
-**절대 사용 금지**:
-- ❌ **freezed** (과거 calculator feature에서 빌드 에러 다수 발생)
-- ❌ **build_runner** (일체 사용 금지)
-- ❌ json_serializable
-- ❌ injectable
-- ❌ retrofit_generator
-- ❌ Any package requiring code generation
-
-**Historical Context**:
-- Freezed caused build failures in calculator feature
-- Generated code was harder to debug
-- build_runner added complexity and slow compile times
-
-**AI Agent Instruction**: 
-Even if the user asks "Should we use Freezed?", the answer is **NO**. 
-Politely explain we use Equatable instead due to past issues.
-
-```dart
-// ❌ NEVER suggest these
-import 'package:freezed_annotation/freezed_annotation.dart';  // NO!
-part 'post.freezed.dart';  // NO!
-
-flutter pub run build_runner build  // NO!
 ```
 
 ---
@@ -239,22 +215,7 @@ class MenuAnimationCubit extends Cubit<MenuAnimationState> {
 - 300 lines needs refactoring if multiple responsibilities
 - Focus on "What does this file do?" not "How long is it?"
 
-```dart
-// ✅ Good: 592 lines, single responsibility (Staggered Animation)
-// lib/features/community/presentation/widgets/lounge_floating_menu.dart
-class _LoungeFloatingMenuState extends State {
-  // All animation-related logic
-}
-
-// ❌ Bad: 860 lines, multiple responsibilities
-// lib/features/community/presentation/widgets/post_card.dart
-class _PostCardState extends State {
-  Future<void> _loadComments() { }  // Responsibility 1
-  Future<void> _uploadImage() { }   // Responsibility 2
-  Future<void> _sharePost() { }     // Responsibility 3
-  void _showMenu() { }              // Responsibility 4
-}
-```
+📚 **상세 가이드**: "Code Quality & Standards" 섹션 참조
 
 #### 4️⃣ 명시적 > 암시적
 
@@ -287,24 +248,7 @@ class CommunityRepository { }  // Magic - hard to debug
 - Overall 40% is less important than critical path 90%
 - Don't test for the sake of coverage percentage
 
-```dart
-// ❌ Bad: Meaningless test
-test('Post has id field', () {
-  expect(post.id, isNotNull); // Useless
-});
-
-// ✅ Good: Meaningful test
-test('should calculate net salary correctly for grade 15', () {
-  final result = service.calculateNetSalary(
-    grade: 15,
-    allowances: Allowance(family: 100000),
-  );
-  
-  expect(result.gross, 3500000);
-  expect(result.tax, 350000);
-  expect(result.net, 3150000);
-});
-```
+📚 **상세 가이드**: CLAUDE-TESTING.md 참조
 
 #### 6️⃣ 비용 최적화 > 개발 편의
 
@@ -325,6 +269,8 @@ final posts = await repository.fetchPosts(
 final posts = await postsRef.get(); // $$$!
 ```
 
+📚 **상세 가이드**: "Performance & Cost Optimization" 섹션 참조
+
 ---
 
 ### Common Trade-Off Decisions
@@ -344,6 +290,8 @@ Complex state (loading/data/error)? → Cubit 필수
 Pure UI animation? → StatefulWidget OK
 Simple form (local state only)? → StatefulWidget OK
 ```
+
+📚 **상세 가이드**: 아래 "State Management: BLoC/Cubit First" 섹션 참조
 
 #### 파일 분리 vs 유지 (Split vs Keep)
 ```
@@ -980,25 +928,6 @@ class CommentFormCubit extends Cubit<CommentFormState> {
 - **GetIt**: Dependency injection (manual registration)
 - **GoRouter**: Navigation with authentication guards
 - **StatefulWidget**: 순수 UI/Animation (제한적 사용)
-
-### No Code Generation Policy
-
-**⚠️ This project does NOT use code generation.**
-
-**What We Use Instead**:
-1. **Equatable** (instead of Freezed) for immutable entities
-2. **Manual GetIt registration** (instead of Injectable) in `lib/di/di.dart`
-3. **Manual serialization** (instead of json_serializable)
-4. **Dio directly** (instead of Retrofit)
-
-**Why**:
-- Freezed caused build failures in calculator feature
-- Generated code harder to debug
-- build_runner added complexity and slow compile times
-
-**Policy**:
-- ❌ DO NOT add: freezed, json_serializable, injectable, retrofit_generator, build_runner
-- ✅ Use: Equatable, manual GetIt registration, manual serialization
 
 ### Key Dependencies
 

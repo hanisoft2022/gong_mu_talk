@@ -88,8 +88,14 @@ class MonthlyBreakdownService {
         month: month,
       );
 
+      // 명절상여금 (2월 설날, 9월 추석)
+      final holidayBonus = _calculateHolidayBonus(
+        baseSalary: baseSalary,
+        month: month,
+      );
+
       // 총 지급액 (세전)
-      final grossSalary = baseSalary + totalAllowances + longevityBonus;
+      final grossSalary = baseSalary + totalAllowances + longevityBonus + holidayBonus;
 
       // 소득세
       final incomeTax = _taxService.calculateIncomeTax(grossSalary);
@@ -126,6 +132,7 @@ class MonthlyBreakdownService {
           baseSalary: baseSalary,
           totalAllowances: totalAllowances,
           longevityBonus: longevityBonus,
+          holidayBonus: holidayBonus,
           grossSalary: grossSalary,
           incomeTax: incomeTax,
           localTax: localTax,
@@ -248,6 +255,23 @@ class MonthlyBreakdownService {
   /// Returns: 연구비
   int _calculateResearchAllowance(int serviceYears) {
     return serviceYears < 5 ? 70000 : 60000;
+  }
+
+  /// 명절상여금 계산 (설날/추석)
+  ///
+  /// [baseSalary] 본봉
+  /// [month] 월
+  ///
+  /// Returns: 명절상여금 (2월 설날, 9월 추석에 본봉의 60%)
+  int _calculateHolidayBonus({
+    required int baseSalary,
+    required int month,
+  }) {
+    // 2월 (설날), 9월 (추석)에만 지급
+    if (month == 2 || month == 9) {
+      return (baseSalary * 0.6).round();
+    }
+    return 0;
   }
 
   /// 연간 총 실수령액 계산

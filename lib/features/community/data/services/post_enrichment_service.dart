@@ -10,13 +10,13 @@ import 'interaction_cache_manager.dart';
 /// Post Enrichment Service
 ///
 /// Responsibilities:
-/// - Enrich posts with user-specific data (likes, bookmarks)
+/// - Enrich posts with user-specific data (likes, scraps)
 /// - Add top comments to posts
 /// - Enrich comment search results
 /// - Coordinate with cache manager for performance
 ///
 /// Dependencies:
-/// - InteractionRepository: Fetch likes/bookmarks
+/// - InteractionRepository: Fetch likes/scraps
 /// - CommentRepository: Fetch top comments
 /// - InteractionCacheManager: Cache management
 class PostEnrichmentService {
@@ -46,14 +46,14 @@ class PostEnrichmentService {
       uid: currentUid,
       postIds: [post.id],
     );
-    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
+    final scrappedIds = await _interactionRepository.fetchScrappedIds(
       uid: currentUid,
       postIds: [post.id],
     );
 
     Post enriched = post.copyWith(
       isLiked: likedIds.contains(post.id),
-      isBookmarked: bookmarkedIds.contains(post.id),
+      isScrapped: scrappedIds.contains(post.id),
     );
 
     if (enriched.topComment == null && enriched.commentCount > 0) {
@@ -84,7 +84,7 @@ class PostEnrichmentService {
     final postIds = posts.map((p) => p.id).toList();
 
     Set<String> likedIds;
-    Set<String> bookmarkedIds;
+    Set<String> scrappedIds;
 
     // 캐시 사용 (10분 유효 - 비용 최적화)
     if (_cacheManager.shouldRefreshCache() || 
@@ -94,7 +94,7 @@ class PostEnrichmentService {
         uid: currentUid,
         postIds: postIds,
       );
-      bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
+      scrappedIds = await _interactionRepository.fetchScrappedIds(
         uid: currentUid,
         postIds: postIds,
       );
@@ -102,19 +102,19 @@ class PostEnrichmentService {
       _cacheManager.updateCache(
         uid: currentUid,
         likedIds: likedIds,
-        bookmarkedIds: bookmarkedIds,
+        scrappedIds: scrappedIds,
       );
     } else {
       // 캐시에서 가져오기
       likedIds = _cacheManager.getLikedPostIds(currentUid, postIds) ?? {};
-      bookmarkedIds = _cacheManager.getBookmarkedPostIds(currentUid, postIds) ?? {};
+      scrappedIds = _cacheManager.getScrappedPostIds(currentUid, postIds) ?? {};
     }
 
     final enriched = <Post>[];
     for (final post in posts) {
       Post p = post.copyWith(
         isLiked: likedIds.contains(post.id),
-        isBookmarked: bookmarkedIds.contains(post.id),
+        isScrapped: scrappedIds.contains(post.id),
       );
 
       if (p.topComment == null && p.commentCount > 0) {
@@ -199,7 +199,7 @@ class PostEnrichmentService {
       uid: uid,
       postIds: postIds,
     );
-    final bookmarkedIds = await _interactionRepository.fetchBookmarkedIds(
+    final scrappedIds = await _interactionRepository.fetchScrappedIds(
       uid: uid,
       postIds: postIds,
     );
@@ -207,7 +207,7 @@ class PostEnrichmentService {
     _cacheManager.forceUpdateCache(
       uid: uid,
       likedIds: likedIds,
-      bookmarkedIds: bookmarkedIds,
+      scrappedIds: scrappedIds,
     );
   }
 }

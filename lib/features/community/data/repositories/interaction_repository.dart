@@ -16,9 +16,9 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 ///
 /// Responsibilities:
 /// - Toggle likes on posts and comments
-/// - Toggle bookmarks on posts
-/// - Fetch liked and bookmarked post IDs
-/// - Fetch bookmarked posts with pagination
+/// - Toggle scraps on posts
+/// - Fetch liked and scrapped post IDs
+/// - Fetch scrapped posts with pagination
 /// - Award engagement points for interactions
 ///
 /// Dependencies: UserProfileRepository, FirebaseFirestore
@@ -48,8 +48,8 @@ class InteractionRepository {
   CollectionReference<JsonMap> _postCounterShard(String postId) =>
       _firestore.collection(Fs.postCounters).doc(postId).collection(Fs.shards);
 
-  CollectionReference<JsonMap> _bookmarksRef(String uid) =>
-      _userDoc(uid).collection('bookmarks');
+  CollectionReference<JsonMap> _scrapsRef(String uid) =>
+      _userDoc(uid).collection('scraps');
 
   DocumentReference<JsonMap> _userDoc(String uid) =>
       _firestore.collection(Fs.users).doc(uid);
@@ -186,50 +186,50 @@ class InteractionRepository {
     return liked;
   }
 
-  Future<void> toggleBookmark({
+  Future<void> toggleScrap({
     required String uid,
     required String postId,
   }) async {
-    final DocumentReference<JsonMap> bookmarkDoc =
-        _bookmarksRef(uid).doc(postId);
-    final DocSnapshotJson snapshot = await bookmarkDoc.get();
+    final DocumentReference<JsonMap> scrapDoc =
+        _scrapsRef(uid).doc(postId);
+    final DocSnapshotJson snapshot = await scrapDoc.get();
     if (snapshot.exists) {
-      await bookmarkDoc.delete();
+      await scrapDoc.delete();
     } else {
-      await bookmarkDoc.set(<String, Object?>{
+      await scrapDoc.set(<String, Object?>{
         'createdAt': Timestamp.now(),
         'postId': postId,
       });
     }
   }
 
-  Future<Set<String>> fetchBookmarkedPostIds(String uid) async {
-    final QuerySnapshot<JsonMap> snapshot = await _bookmarksRef(uid).get();
+  Future<Set<String>> fetchScrappedPostIds(String uid) async {
+    final QuerySnapshot<JsonMap> snapshot = await _scrapsRef(uid).get();
     return snapshot.docs
         .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
         .toSet();
   }
 
-  Future<PaginatedQueryResult<String>> fetchBookmarkedPostIdsPage({
+  Future<PaginatedQueryResult<String>> fetchScrappedPostIdsPage({
     required String uid,
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    Query<JsonMap> bookmarkQuery =
-        _bookmarksRef(uid).orderBy('createdAt', descending: true).limit(limit);
+    Query<JsonMap> scrapQuery =
+        _scrapsRef(uid).orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {
-      bookmarkQuery = bookmarkQuery.startAfterDocument(startAfter);
+      scrapQuery = scrapQuery.startAfterDocument(startAfter);
     }
 
-    final QuerySnapshot<JsonMap> bookmarkSnapshot = await bookmarkQuery.get();
-    final List<String> postIds = bookmarkSnapshot.docs
+    final QuerySnapshot<JsonMap> scrapSnapshot = await scrapQuery.get();
+    final List<String> postIds = scrapSnapshot.docs
         .map((QueryDocumentSnapshot<JsonMap> doc) => doc.id)
         .toList(growable: false);
 
-    final bool hasMore = bookmarkSnapshot.docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last = bookmarkSnapshot.docs.isEmpty
+    final bool hasMore = scrapSnapshot.docs.length == limit;
+    final QueryDocumentSnapshot<JsonMap>? last = scrapSnapshot.docs.isEmpty
         ? null
-        : bookmarkSnapshot.docs.last;
+        : scrapSnapshot.docs.last;
 
     return PaginatedQueryResult<String>(
       items: postIds,
@@ -262,7 +262,7 @@ class InteractionRepository {
     return likedIds;
   }
 
-  Future<Set<String>> fetchBookmarkedIds({
+  Future<Set<String>> fetchScrappedIds({
     required String uid,
     required List<String> postIds,
   }) async {
@@ -270,22 +270,54 @@ class InteractionRepository {
       return const <String>{};
     }
 
-    final Set<String> bookmarked = <String>{};
+    final Set<String> scrapped = <String>{};
     final Iterable<List<String>> chunks = _chunk(postIds, size: 10);
     for (final List<String> chunk in chunks) {
       final List<Future<DocumentSnapshot<JsonMap>>> futures = chunk
-          .map((String postId) => _bookmarksRef(uid).doc(postId).get())
+          .map((String postId) => _scrapsRef(uid).doc(postId).get())
           .toList(growable: false);
       final List<DocumentSnapshot<JsonMap>> results =
           await Future.wait(futures);
       for (int index = 0; index < results.length; index += 1) {
         if (results[index].exists) {
-          bookmarked.add(chunk[index]);
+          scrapped.add(chunk[index]);
         }
       }
     }
 
-    return bookmarked;
+    return scrapped;
+  }
+
+  /// Fetch liked post IDs for a user with pagination
+  Future<PaginatedQueryResult<String>> fetchLikedPostIdsPage({
+    required String uid,
+    int limit = 20,
+    QueryDocumentSnapshotJson? startAfter,
+  }) async {
+    Query<JsonMap> likeQuery = _likesRef
+        .where('uid', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    if (startAfter != null) {
+      likeQuery = likeQuery.startAfterDocument(startAfter);
+    }
+
+    final QuerySnapshot<JsonMap> likeSnapshot = await likeQuery.get();
+    final List<String> postIds = likeSnapshot.docs
+        .map((QueryDocumentSnapshot<JsonMap> doc) => doc['postId'] as String)
+        .toList(growable: false);
+
+    final bool hasMore = likeSnapshot.docs.length == limit;
+    final QueryDocumentSnapshot<JsonMap>? last = likeSnapshot.docs.isEmpty
+        ? null
+        : likeSnapshot.docs.last;
+
+    return PaginatedQueryResult<String>(
+      items: postIds,
+      hasMore: hasMore,
+      lastDocument: last,
+    );
   }
 
   Future<Set<String>> fetchLikedCommentIds({

@@ -18,7 +18,7 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1', 'post2'},
-          bookmarkedIds: {'post3'},
+          scrappedIds: {'post3'},
         );
 
         expect(cacheManager.shouldRefreshCache(), isFalse);
@@ -28,7 +28,7 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1', 'post2'},
-          bookmarkedIds: {'post3'},
+          scrappedIds: {'post3'},
         );
 
         expect(cacheManager.hasLikedCache('user1'), isTrue);
@@ -46,7 +46,7 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1', 'post2', 'post3'},
-          bookmarkedIds: {},
+          scrappedIds: {},
         );
 
         final result = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post4']);
@@ -57,13 +57,13 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1', 'post2'},
-          bookmarkedIds: {},
+          scrappedIds: {},
         );
 
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post3', 'post4'},
-          bookmarkedIds: {},
+          scrappedIds: {},
         );
 
         final result = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post3', 'post4']);
@@ -71,20 +71,20 @@ void main() {
       });
     });
 
-    group('Bookmarked Posts Cache', () {
+    group('Scrapped Posts Cache', () {
       test('should return null when no cache exists', () {
-        final result = cacheManager.getBookmarkedPostIds('user1', ['post1']);
+        final result = cacheManager.getScrappedPostIds('user1', ['post1']);
         expect(result, isNull);
       });
 
-      test('should return cached bookmarked post IDs', () {
+      test('should return cached scrapped post IDs', () {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {},
-          bookmarkedIds: {'post1', 'post3'},
+          scrappedIds: {'post1', 'post3'},
         );
 
-        final result = cacheManager.getBookmarkedPostIds('user1', ['post1', 'post2', 'post3']);
+        final result = cacheManager.getScrappedPostIds('user1', ['post1', 'post2', 'post3']);
         expect(result, {'post1', 'post3'});
       });
     });
@@ -118,7 +118,7 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1'},
-          bookmarkedIds: {},
+          scrappedIds: {},
         );
 
         // Second access - cache hit
@@ -131,7 +131,7 @@ void main() {
 
       test('should calculate saved cost correctly', () {
         // 1 cache hit = 2 Firestore reads saved
-        cacheManager.updateCache(uid: 'user1', likedIds: {}, bookmarkedIds: {});
+        cacheManager.updateCache(uid: 'user1', likedIds: {}, scrappedIds: {});
         cacheManager.getLikedPostIds('user1', []);
         cacheManager.getLikedPostIds('user1', []);
 
@@ -140,7 +140,7 @@ void main() {
       });
 
       test('should reset statistics', () {
-        cacheManager.updateCache(uid: 'user1', likedIds: {}, bookmarkedIds: {});
+        cacheManager.updateCache(uid: 'user1', likedIds: {}, scrappedIds: {});
         cacheManager.getLikedPostIds('user1', []);
 
         cacheManager.resetCacheStats();
@@ -157,12 +157,12 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1'},
-          bookmarkedIds: {'post2'},
+          scrappedIds: {'post2'},
         );
         cacheManager.updateCache(
           uid: 'user2',
           likedIds: {'post3'},
-          bookmarkedIds: {'post4'},
+          scrappedIds: {'post4'},
         );
 
         cacheManager.clearInteractionCache(uid: 'user1');
@@ -175,7 +175,7 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1'},
-          bookmarkedIds: {},
+          scrappedIds: {},
         );
         cacheManager.updateTopCommentCache('post1', {'id': 'comment1'});
 
@@ -191,20 +191,20 @@ void main() {
         cacheManager.updateCache(
           uid: 'user1',
           likedIds: {'post1', 'post2'},
-          bookmarkedIds: {'post3'},
+          scrappedIds: {'post3'},
         );
 
         cacheManager.forceUpdateCache(
           uid: 'user1',
           likedIds: {'post4'},
-          bookmarkedIds: {'post5'},
+          scrappedIds: {'post5'},
         );
 
         final liked = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post4']);
-        final bookmarked = cacheManager.getBookmarkedPostIds('user1', ['post3', 'post5']);
+        final scrapped = cacheManager.getScrappedPostIds('user1', ['post3', 'post5']);
 
         expect(liked, {'post4'});
-        expect(bookmarked, {'post5'});
+        expect(scrapped, {'post5'});
       });
     });
   });

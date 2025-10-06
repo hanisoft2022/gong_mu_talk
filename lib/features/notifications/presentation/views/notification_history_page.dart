@@ -164,7 +164,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     switch (kind) {
       case NotificationKind.commentReply:
         return Icons.comment_outlined;
-      case NotificationKind.bookmarkedPostComment:
+      case NotificationKind.scrappedPostComment:
         return Icons.bookmark_outlined;
       case NotificationKind.weeklySerialDigest:
         return Icons.summarize_outlined;
@@ -176,7 +176,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     switch (kind) {
       case NotificationKind.commentReply:
         return theme.colorScheme.primary;
-      case NotificationKind.bookmarkedPostComment:
+      case NotificationKind.scrappedPostComment:
         return theme.colorScheme.tertiary;
       case NotificationKind.weeklySerialDigest:
         return theme.colorScheme.secondary;

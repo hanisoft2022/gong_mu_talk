@@ -38,9 +38,12 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
   final Map<String, QueryDocumentSnapshotJson?> _cursors = <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
-  
+
   // 동기적 pending 상태 관리 (race condition 방지)
   final Set<String> _pendingLikePostIds = <String>{};
+
+  // 차단된 사용자 목록 캐시
+  Set<String> _blockedUserIds = <String>{};
 
   static const int _pageSize = 20;
 
@@ -98,8 +101,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           .where((Post post) => post.isLiked)
           .map((Post post) => post.id)
           .toSet();
-      final Set<String> bookmarked = result.items
-          .where((Post post) => post.isBookmarked)
+      final Set<String> scrapped = result.items
+          .where((Post post) => post.isScrapped)
           .map((Post post) => post.id)
           .toSet();
 
@@ -112,7 +115,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           hasMore: result.hasMore,
           isLoadingMore: false,
           likedPostIds: liked,
-          bookmarkedPostIds: bookmarked,
+          scrappedPostIds: scrapped,
           errorMessage: null,
           careerTrack: _authCubit.state.careerTrack,
           serial: _authCubit.state.serial,
@@ -158,8 +161,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           .where((Post post) => post.isLiked)
           .map((Post post) => post.id)
           .toSet();
-      final Set<String> bookmarked = result.items
-          .where((Post post) => post.isBookmarked)
+      final Set<String> scrapped = result.items
+          .where((Post post) => post.isScrapped)
           .map((Post post) => post.id)
           .toSet();
       emit(
@@ -169,7 +172,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           hasMore: result.hasMore,
           isLoadingMore: false,
           likedPostIds: liked,
-          bookmarkedPostIds: bookmarked,
+          scrappedPostIds: scrapped,
           errorMessage: null,
           showAds: _shouldShowAds,
         ),
@@ -205,8 +208,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       final List<Post> combined = List<Post>.from(state.posts)..addAll(result.items);
       final Set<String> liked = Set<String>.from(state.likedPostIds)
         ..addAll(result.items.where((Post post) => post.isLiked).map((Post post) => post.id));
-      final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds)
-        ..addAll(result.items.where((Post post) => post.isBookmarked).map((Post post) => post.id));
+      final Set<String> scrapped = Set<String>.from(state.scrappedPostIds)
+        ..addAll(result.items.where((Post post) => post.isScrapped).map((Post post) => post.id));
 
       emit(
         state.copyWith(
@@ -214,7 +217,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           hasMore: result.hasMore,
           isLoadingMore: false,
           likedPostIds: liked,
-          bookmarkedPostIds: bookmarked,
+          scrappedPostIds: scrapped,
           errorMessage: null,
         ),
       );
@@ -366,32 +369,32 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
   }
 
-  Future<void> toggleBookmark(Post post) async {
+  Future<void> toggleScrap(Post post) async {
     final String? uid = _authCubit.state.userId;
     if (uid == null) {
       return;
     }
 
     try {
-      await _repository.toggleBookmark(uid: uid, postId: post.id);
-      final bool nowBookmarked = !state.bookmarkedPostIds.contains(post.id);
+      await _repository.toggleScrap(uid: uid, postId: post.id);
+      final bool nowScrapped = !state.scrappedPostIds.contains(post.id);
       final List<Post> updatedPosts = state.posts
           .map((Post existing) {
             if (existing.id != post.id) {
               return existing;
             }
-            return existing.copyWith(isBookmarked: nowBookmarked);
+            return existing.copyWith(isScrapped: nowScrapped);
           })
           .toList(growable: false);
 
-      final Set<String> bookmarked = Set<String>.from(state.bookmarkedPostIds);
-      if (nowBookmarked) {
-        bookmarked.add(post.id);
+      final Set<String> scrapped = Set<String>.from(state.scrappedPostIds);
+      if (nowScrapped) {
+        scrapped.add(post.id);
       } else {
-        bookmarked.remove(post.id);
+        scrapped.remove(post.id);
       }
 
-      emit(state.copyWith(posts: updatedPosts, bookmarkedPostIds: bookmarked));
+      emit(state.copyWith(posts: updatedPosts, scrappedPostIds: scrapped));
     } catch (_) {
       emit(state.copyWith(errorMessage: '스크랩 처리 중 오류가 발생했습니다.'));
     }
@@ -488,7 +491,10 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       }
     }
 
-    return _repository.fetchLoungeFeed(
+    // 차단 목록 로드 (캐시 갱신)
+    await _loadBlockedUsers();
+
+    final result = await _repository.fetchLoungeFeed(
       scope: scope,
       sort: sort,
       limit: _pageSize,
@@ -496,6 +502,40 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       serial: scope.loungeId != 'all' ? scope.loungeId : null,
       currentUid: uid,
     );
+
+    // 차단된 사용자 필터링
+    final filteredPosts = result.items
+        .where((post) => !_blockedUserIds.contains(post.authorUid))
+        .toList();
+
+    return PaginatedQueryResult<Post>(
+      items: filteredPosts,
+      hasMore: result.hasMore,
+      lastDocument: result.lastDocument,
+    );
+  }
+
+  /// 차단된 사용자 목록 로드
+  Future<void> _loadBlockedUsers() async {
+    final String? uid = _authCubit.state.userId;
+    if (uid == null) {
+      _blockedUserIds = <String>{};
+      return;
+    }
+
+    try {
+      _blockedUserIds = await _repository.getBlockedUserIds(uid);
+    } catch (e) {
+      debugPrint('Failed to load blocked users: $e');
+      // 실패해도 계속 진행 (차단 필터링 없이)
+      _blockedUserIds = <String>{};
+    }
+  }
+
+  /// 사용자 차단 후 피드 새로고침
+  Future<void> refreshAfterBlock() async {
+    await _loadBlockedUsers();
+    await refresh();
   }
 
 }

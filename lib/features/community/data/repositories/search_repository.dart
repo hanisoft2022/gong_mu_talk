@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/utils/result.dart';
 import '../../../../core/firebase/firestore_refs.dart';
+import '../../../profile/data/user_profile_repository.dart';
+import '../../../profile/domain/user_profile.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_result.dart';
@@ -20,13 +22,16 @@ typedef QueryJson = Query<JsonMap>;
 /// - Track popular search terms
 /// - Record search token usage
 ///
-/// Dependencies: FirebaseFirestore
+/// Dependencies: FirebaseFirestore, UserProfileRepository
 class SearchRepository {
   SearchRepository({
     FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+    UserProfileRepository? userProfileRepository,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _userProfileRepository = userProfileRepository ?? UserProfileRepository();
 
   final FirebaseFirestore _firestore;
+  final UserProfileRepository _userProfileRepository;
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
   CollectionReference<JsonMap> get _searchSuggestionRef =>
@@ -84,25 +89,33 @@ class SearchRepository {
     required SearchScope scope,
     int postLimit = 20,
     int commentLimit = 20,
+    int userLimit = 20,
   }) async {
     final String token = query.trim().toLowerCase();
     if (token.isEmpty) {
       return const CommunitySearchResults();
     }
 
-    final bool includePosts = scope != SearchScope.comments;
+    final bool includePosts = scope != SearchScope.comments && scope != SearchScope.author;
     final bool authorOnly = scope == SearchScope.author;
     final bool includeComments =
         scope == SearchScope.comments || scope == SearchScope.all;
 
     List<Post> posts = const <Post>[];
     List<Comment> comments = const <Comment>[];
+    List<UserProfile> users = const <UserProfile>[];
 
-    if (includePosts && postLimit > 0) {
+    // Search users by nickname when in author scope
+    if (authorOnly && userLimit > 0) {
+      users = await _userProfileRepository.searchUsersByNickname(
+        query: token,
+        limit: userLimit,
+      );
+    } else if (includePosts && postLimit > 0) {
       posts = await searchPosts(
         token: token,
         limit: postLimit,
-        authorOnly: authorOnly,
+        authorOnly: false,
       );
     }
 
@@ -118,6 +131,7 @@ class SearchRepository {
     return CommunitySearchResults(
       posts: posts,
       comments: comments.map((c) => CommentSearchResult(comment: c)).toList(),
+      users: users,
     );
   }
 

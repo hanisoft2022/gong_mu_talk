@@ -129,12 +129,12 @@ class StatCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.count,
-    required this.onTap,
+    this.onTap,
   });
 
   final String title;
   final int count;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

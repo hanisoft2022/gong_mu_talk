@@ -40,6 +40,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../../core/utils/performance_optimizations.dart';
 import 'notification_settings_section.dart';
+import 'blocked_users_section.dart';
 import 'password_change_section.dart';
 import 'customer_support_section.dart';
 import 'privacy_terms_section.dart';
@@ -66,7 +67,7 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
   @override
   Widget build(BuildContext context) {
     return OptimizedListView(
-      itemCount: 12,
+      itemCount: 14,
       itemBuilder: (context, index) {
         if (index == 0) {
           return const Padding(
@@ -79,9 +80,9 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
             child: Gap(16),
           );
         } else if (index == 2) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PasswordChangeSection(showMessage: _showMessage),
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: BlockedUsersSection(),
           );
         } else if (index == 3) {
           return const Padding(
@@ -91,7 +92,7 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
         } else if (index == 4) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: CustomerSupportSection(showMessage: _showMessage),
+            child: PasswordChangeSection(showMessage: _showMessage),
           );
         } else if (index == 5) {
           return const Padding(
@@ -101,7 +102,7 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
         } else if (index == 6) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PrivacyTermsSection(showMessage: _showMessage),
+            child: CustomerSupportSection(showMessage: _showMessage),
           );
         } else if (index == 7) {
           return const Padding(
@@ -109,9 +110,9 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
             child: Gap(16),
           );
         } else if (index == 8) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: AppInfoSection(),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PrivacyTermsSection(showMessage: _showMessage),
           );
         } else if (index == 9) {
           return const Padding(
@@ -119,6 +120,16 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
             child: Gap(16),
           );
         } else if (index == 10) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: AppInfoSection(),
+          );
+        } else if (index == 11) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Gap(16),
+          );
+        } else if (index == 12) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: AccountManagementSection(),

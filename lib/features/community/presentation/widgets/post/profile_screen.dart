@@ -73,11 +73,6 @@ class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  child: Text(widget.profile.nickname.substring(0, 1)),
-                ),
-                const Gap(20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

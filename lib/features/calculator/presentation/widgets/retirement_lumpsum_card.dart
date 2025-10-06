@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/retirement_benefit.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/early_retirement_bonus.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/retirement_lumpsum_detail_page.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_source_badge.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
 
 /// 퇴직 시 일시금 총액 카드 (퇴직급여 + 명예퇴직금 통합)
 class RetirementLumpsumCard extends StatelessWidget {
   final bool isLocked;
   final RetirementBenefit? retirementBenefit;
   final EarlyRetirementBonus? earlyRetirementBonus;
+  final TeacherProfile? profile;
 
   const RetirementLumpsumCard({
     super.key,
     required this.isLocked,
     this.retirementBenefit,
     this.earlyRetirementBonus,
+    this.profile,
   });
 
   @override
@@ -64,6 +69,15 @@ class RetirementLumpsumCard extends StatelessWidget {
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
                 ],
               ),
+
+              const SizedBox(height: 12),
+
+              // 신뢰 배지
+              if (!isLocked)
+                const CalculationSourceBadge(
+                  source: '공무원 보수규정 퇴직급여',
+                  year: '2025',
+                ),
 
               const SizedBox(height: 20),
 
@@ -258,6 +272,12 @@ class RetirementLumpsumCard extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
+                    // 계산 근거 섹션
+                    if (retirementBenefit != null)
+                      _buildCalculationBreakdown(context),
+
+                    const SizedBox(height: 16),
+
                     // 안내 메시지
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -320,6 +340,70 @@ class RetirementLumpsumCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCalculationBreakdown(BuildContext context) {
+    if (retirementBenefit == null) return const SizedBox.shrink();
+
+    final items = <BreakdownItem>[
+      BreakdownItem(
+        label: '퇴직급여',
+        amount: retirementBenefit!.totalBenefit,
+        description: '평균보수 × 재직월수 ÷ 12',
+      ),
+    ];
+
+    // 기간별 상세
+    if (retirementBenefit!.period1Years > 0) {
+      items.add(BreakdownItem(
+        label: '  └ 1기간 (${retirementBenefit!.period1Years}년)',
+        amount: retirementBenefit!.period1Benefit,
+        description: '2009.12.31 이전',
+      ));
+    }
+    if (retirementBenefit!.period2Years > 0) {
+      items.add(BreakdownItem(
+        label: '  └ 2기간 (${retirementBenefit!.period2Years}년)',
+        amount: retirementBenefit!.period2Benefit,
+        description: '2010.1.1 ~ 2015.12.31',
+      ));
+    }
+    if (retirementBenefit!.period3Years > 0) {
+      items.add(BreakdownItem(
+        label: '  └ 3기간 (${retirementBenefit!.period3Years}년)',
+        amount: retirementBenefit!.period3Benefit,
+        description: '2016.1.1 이후',
+      ));
+    }
+
+    // 퇴직수당
+    if (retirementBenefit!.retirementAllowance > 0) {
+      items.add(BreakdownItem(
+        label: '퇴직수당',
+        amount: retirementBenefit!.retirementAllowance,
+        description: '재직기간별 가산금',
+      ));
+    }
+
+    // 명예퇴직금
+    if (earlyRetirementBonus != null && earlyRetirementBonus!.totalAmount > 0) {
+      items.add(BreakdownItem(
+        label: '명예퇴직금',
+        amount: earlyRetirementBonus!.totalAmount,
+        description: '정년 ${earlyRetirementBonus!.remainingYears}년 전 퇴직',
+        icon: Icons.card_giftcard,
+        isHighlight: true,
+      ));
+    }
+
+    final totalLumpsum = (retirementBenefit?.totalBenefit ?? 0) +
+        (earlyRetirementBonus?.totalAmount ?? 0);
+
+    return CalculationBreakdownSection(
+      items: items,
+      totalAmount: totalLumpsum,
+      totalLabel: '퇴직 시 일시금 총액',
     );
   }
 

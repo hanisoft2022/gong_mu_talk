@@ -44,13 +44,7 @@ class ProfileTimelineState extends Equatable {
   }
 
   @override
-  List<Object?> get props => <Object?>[
-    status,
-    posts,
-    hasMore,
-    isLoadingMore,
-    errorMessage,
-  ];
+  List<Object?> get props => <Object?>[status, posts, hasMore, isLoadingMore, errorMessage];
 }
 
 class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
@@ -103,12 +97,11 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     );
 
     try {
-      final PaginatedQueryResult<Post> result = await _repository
-          .fetchPostsByAuthor(
-            authorUid: authorUid,
-            currentUid: _authCubit.state.userId,
-            limit: _pageSize,
-          );
+      final PaginatedQueryResult<Post> result = await _repository.fetchPostsByAuthor(
+        authorUid: authorUid,
+        currentUid: _authCubit.state.userId,
+        limit: _pageSize,
+      );
       _cursor = result.lastDocument;
       emit(
         state.copyWith(
@@ -156,12 +149,11 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     _isFetching = true;
     emit(state.copyWith(status: ProfileTimelineStatus.refreshing));
     try {
-      final PaginatedQueryResult<Post> result = await _repository
-          .fetchPostsByAuthor(
-            authorUid: authorUid,
-            currentUid: _authCubit.state.userId,
-            limit: _pageSize,
-          );
+      final PaginatedQueryResult<Post> result = await _repository.fetchPostsByAuthor(
+        authorUid: authorUid,
+        currentUid: _authCubit.state.userId,
+        limit: _pageSize,
+      );
       _cursor = result.lastDocument;
       emit(
         state.copyWith(
@@ -173,12 +165,7 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
         ),
       );
     } catch (_) {
-      emit(
-        state.copyWith(
-          status: ProfileTimelineStatus.error,
-          errorMessage: '타임라인 새로고침에 실패했습니다.',
-        ),
-      );
+      emit(state.copyWith(status: ProfileTimelineStatus.error, errorMessage: '타임라인 새로고침에 실패했습니다.'));
     } finally {
       _isFetching = false;
     }
@@ -198,13 +185,12 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final PaginatedQueryResult<Post> result = await _repository
-          .fetchPostsByAuthor(
-            authorUid: authorUid,
-            currentUid: _authCubit.state.userId,
-            limit: _pageSize,
-            startAfter: _cursor,
-          );
+      final PaginatedQueryResult<Post> result = await _repository.fetchPostsByAuthor(
+        authorUid: authorUid,
+        currentUid: _authCubit.state.userId,
+        limit: _pageSize,
+        startAfter: _cursor,
+      );
       _cursor = result.lastDocument;
       emit(
         state.copyWith(
@@ -241,18 +227,13 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     }
 
     try {
-      final bool nowLiked = await _repository.togglePostLike(
-        postId: post.id,
-        uid: currentUid,
-      );
+      final bool nowLiked = await _repository.togglePostLike(postId: post.id, uid: currentUid);
       final int delta = nowLiked ? 1 : -1;
       final List<Post> updated = state.posts
           .map(
             (Post existing) => existing.id == post.id
                 ? existing.copyWith(
-                    likeCount: (existing.likeCount + delta)
-                        .clamp(0, 1 << 31)
-                        .toInt(),
+                    likeCount: (existing.likeCount + delta).clamp(0, 1 << 31).toInt(),
                     isLiked: nowLiked,
                   )
                 : existing,
@@ -264,20 +245,19 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
     }
   }
 
-  Future<void> toggleBookmark(Post post) async {
+  Future<void> toggleScrap(Post post) async {
     final String? currentUid = _authCubit.state.userId;
     if (currentUid == null) {
       return;
     }
 
     try {
-      await _repository.toggleBookmark(uid: currentUid, postId: post.id);
-      final bool nowBookmarked = !post.isBookmarked;
+      await _repository.toggleScrap(uid: currentUid, postId: post.id);
+      final bool nowScrapped = !post.isScrapped;
       final List<Post> updated = state.posts
           .map(
-            (Post existing) => existing.id == post.id
-                ? existing.copyWith(isBookmarked: nowBookmarked)
-                : existing,
+            (Post existing) =>
+                existing.id == post.id ? existing.copyWith(isScrapped: nowScrapped) : existing,
           )
           .toList(growable: false);
       emit(state.copyWith(posts: updated));

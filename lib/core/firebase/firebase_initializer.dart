@@ -1,4 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:gong_mu_talk/firebase_options.dart';
@@ -17,6 +19,14 @@ class FirebaseInitializer {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      // Analytics 활성화 (자동 데이터 수집 시작)
+      await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+
+      // Performance Monitoring 활성화 (자동 성능 측정 시작)
+      final performance = FirebasePerformance.instance;
+      await performance.setPerformanceCollectionEnabled(true);
+
       _initialized = true;
     } on UnimplementedError catch (error, stackTrace) {
       debugPrint(

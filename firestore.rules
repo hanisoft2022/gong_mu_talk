@@ -110,22 +110,7 @@ service cloud.firestore {
         allow create, update, delete: if isOwner(userId);
       }
 
-      match /matching_likes/{targetUid} {
-        allow read: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId);
-      }
-
-      match /matching_inbox/{senderUid} {
-        allow read: if isOwner(userId);
-        allow create, update, delete: if isSignedIn() && request.auth.uid == senderUid;
-      }
-
-      match /matching_meta/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId);
-      }
-
-      match /notifications/{notificationId} {
+match /notifications/{notificationId} {
         allow read: if isOwner(userId);
         allow create: if isSignedIn() &&
           isValidNotificationCreate(request.resource.data);
@@ -142,7 +127,7 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      match /bookmarks/{postId} {
+      match /scraps/{postId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if isOwner(userId);
       }
@@ -177,22 +162,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Top-level follows collection (레거시 - 향후 subcollection으로 마이그레이션 예정)
-    match /follows/{followId} {
-      allow read: if isSignedIn();
-      allow create, delete: if isSignedIn();
-    }
-
-    match /matches/{matchId} {
-      allow read: if isSignedIn() &&
-        (resource.data.userA == request.auth.uid || resource.data.userB == request.auth.uid);
-      allow create, update: if isSignedIn() &&
-        (request.resource.data.userA == request.auth.uid || request.resource.data.userB == request.auth.uid);
-      allow delete: if isSignedIn() &&
-        (resource.data.userA == request.auth.uid || resource.data.userB == request.auth.uid);
-    }
-
-    match /government_email_index/{docId} {
+match /government_email_index/{docId} {
       allow get: if isSignedIn();
       allow list: if false;  // 🔒 대량 조회 차단
       allow create, update: if isSignedIn() &&

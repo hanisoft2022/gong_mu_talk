@@ -4,10 +4,10 @@ import 'package:equatable/equatable.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/post.dart';
 
-part 'bookmarks_state.dart';
+part 'scrap_state.dart';
 
-class BookmarksCubit extends Cubit<BookmarksState> {
-  BookmarksCubit(this._repository) : super(const BookmarksState());
+class ScrapCubit extends Cubit<ScrapState> {
+  ScrapCubit(this._repository) : super(const ScrapState());
 
   final CommunityRepository _repository;
   static const int _pageSize = 20;
@@ -16,7 +16,7 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     emit(state.copyWith(isLoading: true));
 
     try {
-      final result = await _repository.fetchBookmarkedPosts(
+      final result = await _repository.fetchScrappedPosts(
         uid: _repository.currentUserId,
         limit: _pageSize,
       );
@@ -24,12 +24,12 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       emit(
         state.copyWith(
           isLoading: false,
-          bookmarks: result.items,
+          scraps: result.items,
           hasMore: result.hasMore,
         ),
       );
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: '북마크를 불러오는 중 오류가 발생했습니다.'));
+      emit(state.copyWith(isLoading: false, error: '스크랩을 불러오는 중 오류가 발생했습니다.'));
     }
   }
 
@@ -41,18 +41,18 @@ class BookmarksCubit extends Cubit<BookmarksState> {
     try {
       // In a real implementation, you'd use pagination with startAfter
       // For now, we'll just return empty to indicate no more results
-      final moreBookmarks = <Post>[];
+      final moreScraps = <Post>[];
 
       emit(
         state.copyWith(
           isLoading: false,
-          bookmarks: [...state.bookmarks, ...moreBookmarks],
-          hasMore: moreBookmarks.length == _pageSize,
+          scraps: [...state.scraps, ...moreScraps],
+          hasMore: moreScraps.length == _pageSize,
         ),
       );
     } catch (e) {
       emit(
-        state.copyWith(isLoading: false, error: '추가 북마크를 불러오는 중 오류가 발생했습니다.'),
+        state.copyWith(isLoading: false, error: '추가 스크랩을 불러오는 중 오류가 발생했습니다.'),
       );
     }
   }
@@ -62,8 +62,8 @@ class BookmarksCubit extends Cubit<BookmarksState> {
   }
 
   Future<void> toggleLike(Post post) async {
-    final bookmarks = List<Post>.from(state.bookmarks);
-    final index = bookmarks.indexWhere((p) => p.id == post.id);
+    final scraps = List<Post>.from(state.scraps);
+    final index = scraps.indexWhere((p) => p.id == post.id);
 
     if (index == -1) return;
 
@@ -72,48 +72,48 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1,
     );
 
-    bookmarks[index] = updatedPost;
-    emit(state.copyWith(bookmarks: bookmarks));
+    scraps[index] = updatedPost;
+    emit(state.copyWith(scraps: scraps));
 
     try {
       await _repository.toggleLike(post.id);
     } catch (e) {
       // Revert on error
-      bookmarks[index] = post;
-      emit(state.copyWith(bookmarks: bookmarks));
+      scraps[index] = post;
+      emit(state.copyWith(scraps: scraps));
     }
   }
 
-  Future<void> removeBookmark(Post post) async {
-    final bookmarks = List<Post>.from(state.bookmarks);
-    final index = bookmarks.indexWhere((p) => p.id == post.id);
+  Future<void> removeScrap(Post post) async {
+    final scraps = List<Post>.from(state.scraps);
+    final index = scraps.indexWhere((p) => p.id == post.id);
 
     if (index == -1) return;
 
     // Optimistically remove from UI
-    bookmarks.removeAt(index);
-    emit(state.copyWith(bookmarks: bookmarks));
+    scraps.removeAt(index);
+    emit(state.copyWith(scraps: scraps));
 
     try {
-      await _repository.togglePostBookmark(post.id);
+      await _repository.togglePostScrap(post.id);
     } catch (e) {
       // Revert on error
-      bookmarks.insert(index, post);
-      emit(state.copyWith(bookmarks: bookmarks));
+      scraps.insert(index, post);
+      emit(state.copyWith(scraps: scraps));
     }
   }
 
   Future<void> clearAll() async {
-    final originalBookmarks = List<Post>.from(state.bookmarks);
+    final originalScraps = List<Post>.from(state.scraps);
 
     // Optimistically clear
-    emit(state.copyWith(bookmarks: []));
+    emit(state.copyWith(scraps: []));
 
     try {
-      // Clear all bookmarks for current user
+      // Clear all scraps for current user
       await Future.wait(
-        originalBookmarks.map(
-          (Post post) => _repository.toggleBookmark(
+        originalScraps.map(
+          (Post post) => _repository.toggleScrap(
             uid: _repository.currentUserId,
             postId: post.id,
           ),
@@ -123,8 +123,8 @@ class BookmarksCubit extends Cubit<BookmarksState> {
       // Revert on error
       emit(
         state.copyWith(
-          bookmarks: originalBookmarks,
-          error: '북마크 삭제 중 오류가 발생했습니다.',
+          scraps: originalScraps,
+          error: '스크랩 삭제 중 오류가 발생했습니다.',
         ),
       );
     }

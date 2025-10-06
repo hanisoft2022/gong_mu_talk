@@ -26,13 +26,10 @@ class CommentSearchResultCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.12,
-                  ),
-                  foregroundColor: theme.colorScheme.primary,
-                  child: Text(_getFirstChar(comment.authorNickname)),
+                Icon(
+                  Icons.person_outline,
+                  color: theme.colorScheme.primary,
+                  size: 32,
                 ),
                 const Gap(12),
                 Expanded(

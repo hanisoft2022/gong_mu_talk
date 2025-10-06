@@ -12,6 +12,7 @@ class SearchCommunity {
     required SearchScope scope,
     int postLimit = 20,
     int commentLimit = 20,
+    int userLimit = 20,
     String? currentUid,
   }) async {
     if (query.trim().isEmpty) {
@@ -27,6 +28,7 @@ class SearchCommunity {
       scope: scope,
       postLimit: postLimit,
       commentLimit: commentLimit,
+      userLimit: userLimit,
       currentUid: currentUid,
     );
   }

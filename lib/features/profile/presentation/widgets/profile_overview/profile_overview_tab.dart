@@ -3,7 +3,6 @@
 /// Main overview tab displaying:
 /// - Profile header
 /// - Paystub verification card
-/// - Sponsorship banner
 /// - Timeline section
 /// - HANISOFT footer
 ///
@@ -20,7 +19,6 @@ import '../../cubit/profile_timeline_cubit.dart';
 import '../profile_verification/paystub_verification_card.dart';
 import '../profile_timeline/timeline_section.dart';
 import 'profile_header.dart';
-import 'sponsorship_banner.dart';
 
 class ProfileOverviewTab extends StatelessWidget {
   const ProfileOverviewTab({super.key});
@@ -34,16 +32,23 @@ class ProfileOverviewTab extends StatelessWidget {
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (BuildContext context, AuthState state) {
           final bool hasUserId = state.userId != null;
-          final int itemCount = hasUserId ? 11 : 9;
+          final int itemCount = hasUserId ? 9 : 7;
 
           return OptimizedListView(
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: itemCount,
             itemBuilder: (context, index) {
               if (index == 0) {
+                if (state.userProfile == null) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: ProfileHeader(state: state, isOwnProfile: true),
+                  child: ProfileHeader(
+                    profile: state.userProfile!,
+                    isOwnProfile: true,
+                    currentUserId: state.userId,
+                  ),
                 );
               } else if (index == 1) {
                 return const Padding(
@@ -67,39 +72,29 @@ class ProfileOverviewTab extends StatelessWidget {
               if (baseIndex == 0) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SponsorshipBanner(state: state),
-                );
-              } else if (baseIndex == 1) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Gap(20),
-                );
-              } else if (baseIndex == 2) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    '라운지 타임라인',
+                    '작성한 글',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 );
-              } else if (baseIndex == 3) {
+              } else if (baseIndex == 1) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Gap(12),
                 );
-              } else if (baseIndex == 4) {
+              } else if (baseIndex == 2) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: TimelineSection(),
                 );
-              } else if (baseIndex == 5) {
+              } else if (baseIndex == 3) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Gap(24),
                 );
-              } else if (baseIndex == 6) {
+              } else if (baseIndex == 4) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Center(

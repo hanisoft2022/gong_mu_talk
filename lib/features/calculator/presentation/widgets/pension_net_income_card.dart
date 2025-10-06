@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/pension_detail_page.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_source_badge.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
 
 /// 퇴직 후 연금 실수령액 카드 (세전 + 세후 통합)
 class PensionNetIncomeCard extends StatelessWidget {
   final bool isLocked;
   final PensionEstimate? pensionEstimate;
   final AfterTaxPension? afterTaxPension;
+  final TeacherProfile? profile;
 
   const PensionNetIncomeCard({
     super.key,
     required this.isLocked,
     this.pensionEstimate,
     this.afterTaxPension,
+    this.profile,
   });
 
   @override
@@ -75,6 +80,15 @@ class PensionNetIncomeCard extends StatelessWidget {
                       const Icon(Icons.arrow_forward_ios, size: 16),
                   ],
                 ),
+
+                const SizedBox(height: 12),
+
+                // 신뢰 배지
+                if (!isLocked)
+                  const CalculationSourceBadge(
+                    source: '공무원연금법',
+                    year: '2025',
+                  ),
 
                 const SizedBox(height: 20),
 
@@ -181,6 +195,12 @@ class PensionNetIncomeCard extends StatelessWidget {
                         ),
                         isHighlight: true,
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // 계산 근거 섹션
+                      if (pensionEstimate != null && afterTaxPension != null)
+                        _buildCalculationBreakdown(context),
 
                       const SizedBox(height: 20),
 
@@ -348,6 +368,71 @@ class PensionNetIncomeCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCalculationBreakdown(BuildContext context) {
+    if (pensionEstimate == null || afterTaxPension == null) {
+      return const SizedBox.shrink();
+    }
+
+    final items = <BreakdownItem>[
+      BreakdownItem(
+        label: '📅 재직기간: ${pensionEstimate!.serviceYears}년',
+        amount: 0,
+        description: '연금 지급률 산정 기준',
+      ),
+      BreakdownItem(
+        label: '📊 평균 기준소득',
+        amount: pensionEstimate!.avgBaseIncome,
+        description: '재직 기간 평균',
+      ),
+      BreakdownItem(
+        label: '📈 연금 지급률: ${(pensionEstimate!.pensionRate * 100).toStringAsFixed(1)}%',
+        amount: 0,
+        description: '1.9% × ${pensionEstimate!.serviceYears}년',
+      ),
+      const BreakdownItem(
+        label: '',
+        amount: 0,
+      ), // Divider
+      BreakdownItem(
+        label: '세전 월 연금액',
+        amount: afterTaxPension!.monthlyPensionBeforeTax,
+        description: '기준소득 × 지급률',
+      ),
+    ];
+
+    final deductions = <BreakdownItem>[
+      BreakdownItem(
+        label: '소득세',
+        amount: afterTaxPension!.incomeTax,
+        isDeduction: true,
+      ),
+      BreakdownItem(
+        label: '지방세',
+        amount: afterTaxPension!.localTax,
+        isDeduction: true,
+      ),
+      BreakdownItem(
+        label: '건강보험',
+        amount: afterTaxPension!.healthInsurance,
+        isDeduction: true,
+      ),
+      BreakdownItem(
+        label: '장기요양보험',
+        amount: afterTaxPension!.longTermCareInsurance,
+        isDeduction: true,
+      ),
+    ];
+
+    return CalculationBreakdownSection(
+      items: [
+        ...items,
+        ...deductions,
+      ],
+      totalAmount: afterTaxPension!.monthlyPensionAfterTax,
+      totalLabel: '월 실수령액 (세후)',
     );
   }
 

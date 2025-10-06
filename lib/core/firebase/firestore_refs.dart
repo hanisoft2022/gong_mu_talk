@@ -21,8 +21,8 @@ class Fs {
   // Collections
   static CollectionReference<JsonMap> usersCol() => db.collection(users);
   static DocumentReference<JsonMap> userDoc(String uid) => usersCol().doc(uid);
-  static CollectionReference<JsonMap> userBookmarksCol(String uid) =>
-      userDoc(uid).collection('bookmarks');
+  static CollectionReference<JsonMap> userScrapsCol(String uid) =>
+      userDoc(uid).collection('scraps');
 
   static CollectionReference<JsonMap> handlesCol() => db.collection(handles);
   static DocumentReference<JsonMap> handleDoc(String handle) =>

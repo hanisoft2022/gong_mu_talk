@@ -125,7 +125,11 @@
       "Bash(npm i:*)",
       "Bash(npm uninstall:*)",
       "Bash(while read file)",
-      "WebFetch(domain:gist.github.com)"
+      "WebFetch(domain:gist.github.com)",
+      "Bash(bash -c:*)",
+      "mcp__serena__read_memory",
+      "WebFetch(domain:www.ilsok.com)",
+      "WebFetch(domain:info.smartjj.co.kr)"
     ],
     "deny": [],
     "ask": []

@@ -162,13 +162,13 @@ class CommunityRepositoryImpl implements ICommunityRepository {
   }
 
   @override
-  Future<AppResult<PaginatedQueryResult<Post>>> fetchBookmarkedPosts({
+  Future<AppResult<PaginatedQueryResult<Post>>> fetchScrappedPosts({
     required String uid,
     int limit = 20,
     DocumentSnapshot? startAfter,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {
-      return _repository.fetchBookmarkedPosts(
+      return _repository.fetchScrappedPosts(
         uid: uid,
         limit: limit,
         startAfter: startAfter as QueryDocumentSnapshot<Map<String, Object?>>?,
@@ -254,9 +254,9 @@ class CommunityRepositoryImpl implements ICommunityRepository {
   }
 
   @override
-  Future<AppResult<void>> togglePostBookmark(String postId) async {
+  Future<AppResult<void>> togglePostScrap(String postId) async {
     return AppResultHelpers.tryCallAsync(() async {
-      return _repository.togglePostBookmark(postId);
+      return _repository.togglePostScrap(postId);
     });
   }
 
@@ -275,6 +275,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required SearchScope scope,
     int postLimit = 20,
     int commentLimit = 20,
+    int userLimit = 20,
     String? currentUid,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {

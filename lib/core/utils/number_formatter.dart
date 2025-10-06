@@ -1,48 +1,77 @@
-import 'package:intl/intl.dart';
+// Number formatting utilities
+//
+// Provides compact number formatting for UI display to prevent overflow
 
-/// 숫자 포맷팅 유틸리티
+/// Format large numbers into compact form (1K, 1M, etc.)
+///
+/// Examples:
+/// - 0-999: "0", "42", "999"
+/// - 1,000-9,999: "1.2K", "9.9K"
+/// - 10,000-99,999: "12K", "99K"
+/// - 100,000-999,999: "123K", "999K"
+/// - 1,000,000+: "1.2M", "12M", etc.
+String formatCompactNumber(int number) {
+  if (number < 1000) {
+    return number.toString();
+  } else if (number < 10000) {
+    // 1.0K ~ 9.9K
+    final double thousands = number / 1000.0;
+    return '${thousands.toStringAsFixed(1)}K';
+  } else if (number < 1000000) {
+    // 10K ~ 999K
+    final int thousands = (number / 1000).round();
+    return '${thousands}K';
+  } else if (number < 10000000) {
+    // 1.0M ~ 9.9M
+    final double millions = number / 1000000.0;
+    return '${millions.toStringAsFixed(1)}M';
+  } else {
+    // 10M+
+    final int millions = (number / 1000000).round();
+    return '${millions}M';
+  }
+}
+
+/// NumberFormatter class providing static formatting methods
 class NumberFormatter {
-  /// 통화 형식으로 변환 (예: 1,234,567원)
-  static String formatCurrency(int amount) {
-    final formatter = NumberFormat('#,###', 'ko_KR');
-    return '${formatter.format(amount)}원';
-  }
+  /// Format number with thousands separators (e.g., 1,234,567)
+  static String format(int? number) {
+    if (number == null) return '-';
 
-  /// 통화 형식으로 변환 (만원 단위, 예: 123만원)
-  static String formatCurrencyCompact(int amount) {
-    if (amount >= 100000000) {
-      // 1억 이상
-      final eok = amount ~/ 100000000;
-      final man = (amount % 100000000) ~/ 10000;
-      if (man > 0) {
-        return '$eok억 $man만원';
+    final String numStr = number.toString();
+    final StringBuffer result = StringBuffer();
+    final int length = numStr.length;
+
+    for (int i = 0; i < length; i++) {
+      if (i > 0 && (length - i) % 3 == 0) {
+        result.write(',');
       }
-      return '$eok억원';
-    } else if (amount >= 10000) {
-      // 1만 이상
-      final man = amount ~/ 10000;
-      final remainder = amount % 10000;
-      if (remainder > 0) {
-        return '${formatNumber(man)}만 ${formatNumber(remainder)}원';
-      }
-      return '${formatNumber(man)}만원';
+      result.write(numStr[i]);
     }
-    return '${formatNumber(amount)}원';
+
+    return result.toString();
   }
 
-  /// 숫자에 천 단위 콤마 추가
-  static String formatNumber(int number) {
-    final formatter = NumberFormat('#,###', 'ko_KR');
-    return formatter.format(number);
+  /// Format number as currency with won symbol (e.g., ₩1,234,567원)
+  static String formatCurrency(int? number) {
+    if (number == null) return '-';
+    return '${format(number)}원';
   }
 
-  /// 퍼센트 형식으로 변환
-  static String formatPercent(double value, {int decimalPlaces = 1}) {
-    return '${(value * 100).toStringAsFixed(decimalPlaces)}%';
+  /// Format number with won currency symbol (e.g., ₩1,234,567)
+  static String formatWon(int? number) {
+    if (number == null) return '-';
+    return '₩${format(number)}';
   }
 
-  /// 소수점 형식으로 변환
-  static String formatDecimal(double value, {int decimalPlaces = 2}) {
-    return value.toStringAsFixed(decimalPlaces);
+  /// Format number as percentage (e.g., 15.5%)
+  static String formatPercent(double? number, {int decimals = 1}) {
+    if (number == null) return '-';
+    return '${number.toStringAsFixed(decimals)}%';
+  }
+
+  /// Format compact number (delegates to formatCompactNumber)
+  static String formatCompact(int number) {
+    return formatCompactNumber(number);
   }
 }

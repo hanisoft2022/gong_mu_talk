@@ -7,6 +7,7 @@ class MonthlyNetIncome extends Equatable {
     required this.baseSalary,
     required this.totalAllowances,
     required this.longevityBonus,
+    required this.holidayBonus,
     required this.grossSalary,
     required this.incomeTax,
     required this.localTax,
@@ -29,6 +30,9 @@ class MonthlyNetIncome extends Equatable {
 
   /// 정근수당 (1월/7월만)
   final int longevityBonus;
+
+  /// 명절상여금 (2월 설날, 9월 추석)
+  final int holidayBonus;
 
   /// 총 지급액 (세전)
   final int grossSalary;
@@ -60,6 +64,9 @@ class MonthlyNetIncome extends Equatable {
   /// 정근수당 지급 여부
   bool get hasLongevityBonus => longevityBonus > 0;
 
+  /// 명절상여금 지급 여부
+  bool get hasHolidayBonus => holidayBonus > 0;
+
   /// 공제율 (%)
   double get deductionRate {
     if (grossSalary == 0) return 0.0;
@@ -72,6 +79,7 @@ class MonthlyNetIncome extends Equatable {
         baseSalary,
         totalAllowances,
         longevityBonus,
+        holidayBonus,
         grossSalary,
         incomeTax,
         localTax,
@@ -88,6 +96,7 @@ class MonthlyNetIncome extends Equatable {
     int? baseSalary,
     int? totalAllowances,
     int? longevityBonus,
+    int? holidayBonus,
     int? grossSalary,
     int? incomeTax,
     int? localTax,
@@ -103,6 +112,7 @@ class MonthlyNetIncome extends Equatable {
       baseSalary: baseSalary ?? this.baseSalary,
       totalAllowances: totalAllowances ?? this.totalAllowances,
       longevityBonus: longevityBonus ?? this.longevityBonus,
+      holidayBonus: holidayBonus ?? this.holidayBonus,
       grossSalary: grossSalary ?? this.grossSalary,
       incomeTax: incomeTax ?? this.incomeTax,
       localTax: localTax ?? this.localTax,

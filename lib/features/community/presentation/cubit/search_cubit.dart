@@ -9,6 +9,7 @@ import '../../domain/repositories/i_community_repository.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_suggestion.dart';
 import '../../domain/models/search_result.dart';
+import '../../../profile/domain/user_profile.dart';
 
 part 'search_state.dart';
 
@@ -88,6 +89,7 @@ class SearchCubit extends Cubit<SearchState> {
         draftQuery: trimmedQuery,
         postResults: const <Post>[],
         commentResults: const <CommentSearchResult>[],
+        userResults: const <UserProfile>[],
         hasMore: false,
         autocomplete: const <String>[],
         error: null,
@@ -98,12 +100,13 @@ class SearchCubit extends Cubit<SearchState> {
     final result = await _searchCommunity(
       query: trimmedQuery,
       scope: state.scope,
-      postLimit: state.scope == SearchScope.comments ? 0 : 20,
+      postLimit: state.scope == SearchScope.comments || state.scope == SearchScope.author ? 0 : 20,
       commentLimit:
           state.scope == SearchScope.posts ||
               state.scope == SearchScope.author
           ? 0
           : 20,
+      userLimit: state.scope == SearchScope.author ? 20 : 0,
       currentUid: _repository.currentUserId,
     );
 
@@ -114,6 +117,7 @@ class SearchCubit extends Cubit<SearchState> {
           isLoading: false,
           postResults: results.posts,
           commentResults: results.comments,
+          userResults: results.users,
           hasMore: false,
           error: null,
         ),
@@ -182,18 +186,18 @@ class SearchCubit extends Cubit<SearchState> {
     }
   }
 
-  Future<void> toggleBookmark(Post post) async {
+  Future<void> toggleScrap(Post post) async {
     final List<Post> results = List<Post>.from(state.postResults);
     final index = results.indexWhere((p) => p.id == post.id);
 
     if (index == -1) return;
 
-    final updatedPost = post.copyWith(isBookmarked: !post.isBookmarked);
+    final updatedPost = post.copyWith(isScrapped: !post.isScrapped);
     results[index] = updatedPost;
     emit(state.copyWith(postResults: results));
 
     try {
-      await _repository.togglePostBookmark(post.id);
+      await _repository.togglePostScrap(post.id);
     } catch (e) {
       // Revert on error
       results[index] = post;

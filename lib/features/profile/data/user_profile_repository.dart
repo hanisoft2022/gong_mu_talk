@@ -472,4 +472,39 @@ class UserProfileRepository {
     }
     return CareerTrack.none;
   }
+
+  /// Search users by nickname
+  ///
+  /// Returns list of UserProfiles matching the search query
+  Future<List<UserProfile>> searchUsersByNickname({
+    required String query,
+    int limit = 20,
+  }) async {
+    final String token = query.trim().toLowerCase();
+    if (token.isEmpty) {
+      return const <UserProfile>[];
+    }
+
+    try {
+      final QuerySnapshot<JsonMap> snapshot = await _usersRef
+          .where('keywords', arrayContains: token)
+          .orderBy('followerCount', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => UserProfile.fromSnapshot(doc))
+          .toList(growable: false);
+    } catch (e) {
+      // If orderBy fails (no index), try without ordering
+      final QuerySnapshot<JsonMap> snapshot = await _usersRef
+          .where('keywords', arrayContains: token)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => UserProfile.fromSnapshot(doc))
+          .toList(growable: false);
+    }
+  }
 }

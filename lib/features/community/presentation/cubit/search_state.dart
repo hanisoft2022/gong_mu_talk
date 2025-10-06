@@ -6,6 +6,7 @@ class SearchState extends Equatable {
     this.draftQuery = '',
     this.postResults = const [],
     this.commentResults = const [],
+    this.userResults = const [],
     this.suggestions = const [],
     this.autocomplete = const [],
     this.recentSearches = const [],
@@ -19,6 +20,7 @@ class SearchState extends Equatable {
   final String draftQuery;
   final List<Post> postResults;
   final List<CommentSearchResult> commentResults;
+  final List<UserProfile> userResults;
   final List<SearchSuggestion> suggestions;
   final List<String> autocomplete;
   final List<String> recentSearches;
@@ -32,6 +34,7 @@ class SearchState extends Equatable {
     String? draftQuery,
     List<Post>? postResults,
     List<CommentSearchResult>? commentResults,
+    List<UserProfile>? userResults,
     List<SearchSuggestion>? suggestions,
     List<String>? autocomplete,
     List<String>? recentSearches,
@@ -45,6 +48,7 @@ class SearchState extends Equatable {
       draftQuery: draftQuery ?? this.draftQuery,
       postResults: postResults ?? this.postResults,
       commentResults: commentResults ?? this.commentResults,
+      userResults: userResults ?? this.userResults,
       suggestions: suggestions ?? this.suggestions,
       autocomplete: autocomplete ?? this.autocomplete,
       recentSearches: recentSearches ?? this.recentSearches,
@@ -61,6 +65,7 @@ class SearchState extends Equatable {
     draftQuery,
     postResults,
     commentResults,
+    userResults,
     suggestions,
     autocomplete,
     recentSearches,

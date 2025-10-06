@@ -157,16 +157,9 @@ Widget _buildContent(
         final UserProfile profile = state.users[index];
         return ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(
-            radius: 22,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Text(
-              profile.nickname.characters.firstOrNull ?? '공',
-              style: TextStyle(
-                color: theme.colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          leading: Icon(
+            Icons.person_outline,
+            color: theme.colorScheme.primary,
           ),
           title: Text(profile.nickname),
           subtitle: profile.bio != null && profile.bio!.isNotEmpty

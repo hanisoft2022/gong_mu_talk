@@ -14,7 +14,7 @@ class CommunityFeedState extends Equatable {
     this.careerTrack = CareerTrack.none,
     this.serial = 'unknown',
     this.likedPostIds = const <String>{},
-    this.bookmarkedPostIds = const <String>{},
+    this.scrappedPostIds = const <String>{},
     this.pendingLikePostIds = const <String>{},
     this.showAds = true,
     this.accessibleLounges = const <LoungeInfo>[],
@@ -32,7 +32,7 @@ class CommunityFeedState extends Equatable {
   final CareerTrack careerTrack;
   final String serial;
   final Set<String> likedPostIds;
-  final Set<String> bookmarkedPostIds;
+  final Set<String> scrappedPostIds;
   final Set<String> pendingLikePostIds;
   final bool showAds;
   final List<LoungeInfo> accessibleLounges;
@@ -50,7 +50,7 @@ class CommunityFeedState extends Equatable {
     CareerTrack? careerTrack,
     String? serial,
     Set<String>? likedPostIds,
-    Set<String>? bookmarkedPostIds,
+    Set<String>? scrappedPostIds,
     Set<String>? pendingLikePostIds,
     bool? showAds,
     List<LoungeInfo>? accessibleLounges,
@@ -68,7 +68,7 @@ class CommunityFeedState extends Equatable {
       careerTrack: careerTrack ?? this.careerTrack,
       serial: serial ?? this.serial,
       likedPostIds: likedPostIds ?? this.likedPostIds,
-      bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
+      scrappedPostIds: scrappedPostIds ?? this.scrappedPostIds,
       pendingLikePostIds: pendingLikePostIds ?? this.pendingLikePostIds,
       showAds: showAds ?? this.showAds,
       accessibleLounges: accessibleLounges ?? this.accessibleLounges,
@@ -89,7 +89,7 @@ class CommunityFeedState extends Equatable {
     careerTrack,
     serial,
     likedPostIds,
-    bookmarkedPostIds,
+    scrappedPostIds,
     pendingLikePostIds,
     showAds,
     accessibleLounges,

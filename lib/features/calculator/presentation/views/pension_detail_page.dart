@@ -318,7 +318,7 @@ class PensionDetailPage extends StatelessWidget {
                           '투자 수익률',
                           NumberFormatter.formatPercent(
                             pensionEstimate.returnRate,
-                            decimalPlaces: 0,
+                            decimals: 0,
                           ),
                           isHighlight: true,
                         ),

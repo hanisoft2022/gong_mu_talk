@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_detail.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/salary_analysis_page.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_source_badge.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
 
 /// 현재 급여 실수령액 카드 (재직 중)
 ///
@@ -12,12 +16,14 @@ class CurrentSalaryCard extends StatelessWidget {
   final bool isLocked;
   final List<MonthlyNetIncome>? monthlyBreakdown;
   final LifetimeSalary? lifetimeSalary;
+  final TeacherProfile? profile;
 
   const CurrentSalaryCard({
     super.key,
     required this.isLocked,
     this.monthlyBreakdown,
     this.lifetimeSalary,
+    this.profile,
   });
 
   @override
@@ -71,6 +77,15 @@ class CurrentSalaryCard extends StatelessWidget {
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
                 ],
               ),
+
+              const SizedBox(height: 12),
+
+              // 신뢰 배지
+              if (!isLocked)
+                const CalculationSourceBadge(
+                  source: '공무원 보수규정',
+                  year: '2025',
+                ),
 
               const SizedBox(height: 20),
 
@@ -153,13 +168,19 @@ class CurrentSalaryCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '정기상여금 포함, 세후 기준',
+                          '정근수당·명절상여금 포함, 세후 기준',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey[600],
                               ),
                         ),
                       ],
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // 계산 근거 섹션
+                    if (profile != null)
+                      _buildCalculationBreakdown(context, monthlyBreakdown!.first),
 
                     const SizedBox(height: 20),
 
@@ -193,6 +214,91 @@ class CurrentSalaryCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCalculationBreakdown(BuildContext context, MonthlyNetIncome monthly) {
+    final basePay = profile != null 
+        ? SalaryTable.getBasePay(profile!.currentGrade)
+        : monthly.baseSalary;
+
+    final items = <BreakdownItem>[
+      BreakdownItem(
+        label: '본봉 (${profile?.currentGrade ?? 0}호봉)',
+        amount: basePay,
+        description: '공무원 보수규정 별표 1',
+      ),
+      BreakdownItem(
+        label: '교직수당',
+        amount: AllowanceTable.teachingAllowance,
+        description: '전 교사 동일',
+      ),
+      if (profile?.isHomeroom ?? false)
+        BreakdownItem(
+          label: '담임수당',
+          amount: AllowanceTable.homeroomAllowance,
+        ),
+      if (profile?.hasPosition ?? false)
+        BreakdownItem(
+          label: '보직교사수당',
+          amount: AllowanceTable.headTeacherAllowance,
+        ),
+      BreakdownItem(
+        label: '시간외수당',
+        amount: profile != null 
+            ? AllowanceTable.getOvertimeAllowance(profile!.currentGrade)
+            : 0,
+        description: '${profile?.currentGrade ?? 0}호봉 기준',
+      ),
+      if (monthly.longevityBonus > 0)
+        BreakdownItem(
+          label: '정근수당 (${monthly.month}월)',
+          amount: monthly.longevityBonus,
+          icon: Icons.celebration,
+          isHighlight: true,
+        ),
+      if (monthly.holidayBonus > 0)
+        BreakdownItem(
+          label: '명절상여금 (${monthly.month}월)',
+          amount: monthly.holidayBonus,
+          icon: Icons.card_giftcard,
+          isHighlight: true,
+        ),
+    ];
+
+    final deductions = <BreakdownItem>[
+      BreakdownItem(
+        label: '소득세',
+        amount: monthly.incomeTax,
+        isDeduction: true,
+      ),
+      BreakdownItem(
+        label: '지방세',
+        amount: monthly.localTax,
+        isDeduction: true,
+      ),
+      BreakdownItem(
+        label: '4대보험',
+        amount: monthly.nationalPension +
+            monthly.healthInsurance +
+            monthly.longTermCareInsurance +
+            monthly.employmentInsurance,
+        description: '국민연금 + 건강 + 장기요양 + 고용',
+        isDeduction: true,
+      ),
+    ];
+
+    return CalculationBreakdownSection(
+      items: [
+        ...items,
+        const BreakdownItem(
+          label: '',
+          amount: 0,
+        ), // Spacer
+        ...deductions,
+      ],
+      totalAmount: monthly.netIncome,
+      totalLabel: '실수령액',
     );
   }
 

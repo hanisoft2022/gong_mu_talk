@@ -59,6 +59,33 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
     super.dispose();
   }
 
+  /// Handle logout action
+  Future<void> _handleLogout(BuildContext context) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('로그아웃'),
+          content: const Text('로그아웃하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('로그아웃'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<AuthCubit>().logOut();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
@@ -68,13 +95,26 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
         return SettingsSection(
           title: '계정 관리',
           children: [
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                foregroundColor: Theme.of(context).colorScheme.error,
+            // Logout button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: isProcessing ? null : () => _handleLogout(context),
+                child: const Text('로그아웃'),
               ),
-              onPressed: isProcessing ? null : () => _confirmDeleteAccount(context),
-              child: const Text('회원 탈퇴'),
+            ),
+            const Gap(12),
+            // Delete account button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonal(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: isProcessing ? null : () => _confirmDeleteAccount(context),
+                child: const Text('회원 탈퇴'),
+              ),
             ),
           ],
         );

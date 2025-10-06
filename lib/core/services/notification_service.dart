@@ -59,6 +59,14 @@ class NotificationService {
           importance: Importance.defaultImportance,
         );
 
+    const AndroidNotificationChannel repliesChannel =
+        AndroidNotificationChannel(
+          'replies_channel',
+          '답글 알림',
+          description: '내 댓글에 답글이 달렸을 때 알림',
+          importance: Importance.defaultImportance,
+        );
+
     const AndroidNotificationChannel generalChannel =
         AndroidNotificationChannel(
           'general_channel',
@@ -75,6 +83,7 @@ class NotificationService {
 
     await androidPlugin?.createNotificationChannel(likesChannel);
     await androidPlugin?.createNotificationChannel(commentsChannel);
+    await androidPlugin?.createNotificationChannel(repliesChannel);
     await androidPlugin?.createNotificationChannel(generalChannel);
   }
 
@@ -163,13 +172,20 @@ class NotificationService {
   void _navigateBasedOnNotification(Map<String, dynamic> data) {
     final String? type = data['type'];
     final String? targetId = data['targetId'];
+    final String? postId = data['postId'];
 
     switch (type) {
       case 'like':
       case 'comment':
         if (targetId != null) {
-          // Navigate to post detail
-          _logger.d('Navigate to post: $targetId');
+          // Navigate to community feed (PostDetailPage removed)
+          _logger.d('Navigate to community feed for post: $targetId');
+        }
+        break;
+      case 'reply':
+        if (postId != null) {
+          // Navigate to community feed where the replied post is
+          _logger.d('Navigate to community feed for reply in post: $postId');
         }
         break;
       case 'badge':
@@ -193,6 +209,8 @@ class NotificationService {
         return 'likes_channel';
       case 'comment':
         return 'comments_channel';
+      case 'reply':
+        return 'replies_channel';
       default:
         return 'general_channel';
     }

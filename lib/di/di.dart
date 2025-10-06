@@ -34,7 +34,9 @@ import '../features/community/domain/usecases/search_community.dart';
 
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
-import '../features/community/presentation/cubit/bookmarks_cubit.dart';
+import '../features/community/presentation/cubit/scrap_cubit.dart';
+import '../features/community/presentation/cubit/liked_posts_cubit.dart';
+import '../features/community/presentation/cubit/user_comments_cubit.dart';
 import '../features/notifications/data/notification_repository.dart';
 
 import '../routing/app_router.dart';
@@ -124,7 +126,9 @@ Future<void> configureDependencies() async {
           ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
-    ..registerFactory<BookmarksCubit>(() => BookmarksCubit(getIt()))
+    ..registerFactory<ScrapCubit>(() => ScrapCubit(getIt()))
+    ..registerFactory<LikedPostsCubit>(() => LikedPostsCubit(getIt()))
+    ..registerFactory<UserCommentsCubit>(() => UserCommentsCubit(getIt()))
     // Calculator services
     ..registerLazySingleton<TaxCalculationService>(TaxCalculationService.new)
     ..registerLazySingleton<SalaryCalculationService>(

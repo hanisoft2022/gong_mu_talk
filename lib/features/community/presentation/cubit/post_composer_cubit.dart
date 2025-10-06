@@ -200,7 +200,7 @@ Future<void> _submitPost({required PostType type}) async {
       return;
     }
 
-emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
+    emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
 
     try {
       final int supporterLevel = 0;
@@ -211,7 +211,31 @@ emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: f
       debugPrint('   authState.serial: ${authState.serial}');
       debugPrint('   final serial: $serialValue');
 
+      // 이미지를 먼저 업로드 (Post 생성 이전)
+      List<PostMedia> uploadedMedia = <PostMedia>[];
+      String? preGeneratedPostId;
+      
+      if (state.attachments.isNotEmpty) {
+        // Repository에서 Post ID를 먼저 생성
+        preGeneratedPostId = await _repository.generatePostId();
+        
+        for (final PostMediaDraft draft in state.attachments) {
+          final PostMedia media = await _repository.uploadPostImage(
+            uid: uid,
+            postId: preGeneratedPostId,
+            fileName: draft.fileName,
+            bytes: draft.bytes,
+            contentType: draft.contentType,
+            width: draft.width,
+            height: draft.height,
+          );
+          uploadedMedia.add(media);
+        }
+      }
+
+      // Post 생성 (이미 업로드된 media 포함)
       final Post post = await _repository.createPost(
+        postId: preGeneratedPostId,
         type: type,
         authorUid: uid,
         authorNickname: authState.nickname,
@@ -223,27 +247,9 @@ emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: f
         text: text,
         audience: type == PostType.chirp ? state.audience : PostAudience.all,
         serial: serialValue,
-        media: const <PostMedia>[],
+        media: uploadedMedia,
         tags: state.tags,
       );
-
-      if (state.attachments.isNotEmpty) {
-        final List<PostMedia> uploaded = <PostMedia>[];
-        for (final PostMediaDraft draft in state.attachments) {
-          final PostMedia media = await _repository.uploadPostImage(
-            uid: uid,
-            postId: post.id,
-            fileName: draft.fileName,
-            bytes: draft.bytes,
-            contentType: draft.contentType,
-            width: draft.width,
-            height: draft.height,
-          );
-          uploaded.add(media);
-        }
-
-        await _repository.updatePost(postId: post.id, authorUid: uid, media: uploaded);
-      }
 
       emit(
         state.copyWith(
@@ -300,8 +306,8 @@ emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: f
         height = null;
       }
 
-      final String contentType =
-          compressedFile.mimeType ?? _contentTypeFromExtension(compressedFile.name);
+      // 압축된 이미지는 항상 WebP 포맷
+      final String contentType = 'image/webp';
       final PostMediaDraft draft = PostMediaDraft(
         file: compressedFile,
         bytes: bytes,

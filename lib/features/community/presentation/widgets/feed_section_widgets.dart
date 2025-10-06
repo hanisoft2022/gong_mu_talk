@@ -126,7 +126,7 @@ class FeedSectionBuilder extends StatelessWidget {
                 post.id,
                 post.isLiked,
                 post.likeCount,
-                post.isBookmarked,
+                post.isScrapped,
                 post.commentCount,
                 scope,
               ],
@@ -137,14 +137,12 @@ class FeedSectionBuilder extends StatelessWidget {
                   cubit.toggleLike(post);
                   PerformanceProfiler.end('toggle_like_feed');
                 },
-                onToggleBookmark: () {
-                  PerformanceProfiler.start('toggle_bookmark_feed');
-                  cubit.toggleBookmark(post);
-                  PerformanceProfiler.end('toggle_bookmark_feed');
+                onToggleScrap: () {
+                  PerformanceProfiler.start('toggle_scrap_feed');
+                  cubit.toggleScrap(post);
+                  PerformanceProfiler.end('toggle_scrap_feed');
                 },
                 displayScope: scope,
-                showShare: false,
-                showBookmark: false,
               ),
             ),
           ),
