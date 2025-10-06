@@ -38,6 +38,8 @@ import '../../domain/models/comment.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../cubit/post_card_cubit.dart';
+import '../cubit/post_card_state.dart';
 
 // Import new widget components
 import 'post/post_header.dart';
@@ -50,6 +52,8 @@ import 'post/author_menu_overlay.dart';
 import 'post/reply_sheet.dart';
 import 'post/comment_image_uploader.dart';
 import 'post/post_share_handler.dart';
+import 'report_dialog.dart';
+import 'block_user_dialog.dart';
 
 class PostCard extends StatefulWidget {
   const PostCard({
@@ -107,6 +111,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // Dependencies
   late final CommunityRepository _repository;
   late final AuthCubit _authCubit;
+  late final PostCardCubit _postCardCubit;
 
   // ==================== Lifecycle Methods ====================
 
@@ -115,6 +120,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     super.initState();
     _repository = context.read<CommunityRepository>();
     _authCubit = context.read<AuthCubit>();
+    
+    // Initialize PostCardCubit
+    _postCardCubit = PostCardCubit(
+      repository: _repository,
+      postId: widget.post.id,
+      initialCommentCount: widget.post.commentCount,
+    );
+    
     _commentCount = widget.post.commentCount;
     _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
@@ -139,6 +152,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _commentFocusNode.dispose();
     _isExpandedNotifier.dispose();
     _showCommentsNotifier.dispose();
+    _postCardCubit.close(); // Close cubit
     super.dispose();
   }
 
@@ -178,7 +192,29 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     final String timestamp = _formatTimestamp(post.createdAt);
     final ThemeData theme = Theme.of(context);
 
-    return Card(
+    return BlocListener<PostCardCubit, PostCardState>(
+      bloc: _postCardCubit,
+      listener: (context, state) {
+        // Sync Cubit state to local state for synthetic post handling
+        if (!_isSynthetic(post) && mounted) {
+          setState(() {
+            _isLoadingComments = state.isLoadingComments;
+            _featuredComments = state.featuredComments;
+            _timelineComments = state.timelineComments;
+            _commentCount = state.commentCount;
+            _isSubmittingComment = state.isSubmittingComment;
+          });
+
+          // Show error if any
+          if (state.error != null) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(content: Text(state.error!)));
+            _postCardCubit.clearError();
+          }
+        }
+      },
+      child: Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0.5,
       color: theme.colorScheme.surfaceContainer,
@@ -227,6 +263,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                     showShare: widget.showShare,
                     showBookmark: widget.showBookmark,
                     customTrailing: widget.trailing,
+                    onReportTap: _handleReport,
                   ),
                 ),
               ],
@@ -298,6 +335,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -345,6 +383,33 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     PostShareHandler.showShareOptions(context, post);
   }
 
+  Future<void> _handleReport() async {
+    _registerInteraction();
+
+    if (_isSynthetic(widget.post)) {
+      _showSnack('프리뷰 게시물은 신고할 수 없어요.');
+      return;
+    }
+
+    final String? reason = await ReportDialog.show(context);
+    if (reason == null || !mounted) return;
+
+    // Use Cubit for reporting
+    await _postCardCubit.reportPost(reason);
+    
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('신고가 접수되었습니다. 검토 후 조치하겠습니다.'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   void _handleAuthorMenuTap() {
     if (!mounted) return;
 
@@ -383,6 +448,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _handleAuthorAction(AuthorMenuAction.viewProfile, isFollowing: isFollowing),
       onToggleFollow: () =>
           _handleAuthorAction(AuthorMenuAction.toggleFollow, isFollowing: isFollowing),
+      onBlockUser: () =>
+          _handleAuthorAction(AuthorMenuAction.blockUser, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -430,6 +497,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         AuthorMenuAction.toggleFollow,
         isFollowing: isFollowing,
       ),
+      onBlockUser: () => _handleCommentAuthorAction(
+        comment,
+        AuthorMenuAction.blockUser,
+        isFollowing: isFollowing,
+      ),
       onClose: _closeAuthorMenu,
     );
 
@@ -474,6 +546,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           isFollowing: isFollowing,
         );
         break;
+      case AuthorMenuAction.blockUser:
+        await _handleBlockUser(
+          targetUid: widget.post.authorUid,
+          nickname: widget.post.authorNickname,
+        );
+        break;
     }
   }
 
@@ -500,6 +578,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           isFollowing: isFollowing,
         );
         break;
+      case AuthorMenuAction.blockUser:
+        await _handleBlockUser(
+          targetUid: comment.authorUid,
+          nickname: comment.authorNickname,
+        );
+        break;
     }
   }
 
@@ -524,13 +608,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Future<void> _loadComments({bool force = false}) async {
-    if (force) {
-      _commentsLoaded = false;
-    } else if (_commentsLoaded || _commentCount == 0) {
+    // Skip if already loaded (unless forcing)
+    if (!force && (_commentsLoaded || _commentCount == 0)) {
       return;
     }
 
     final Post post = widget.post;
+    
+    // Handle synthetic (preview) posts locally
     if (_isSynthetic(post)) {
       final List<Comment> syntheticTimeline = _applyRandomLikes(
         List<Comment>.generate(
@@ -542,8 +627,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       final List<Comment> sortedByLikes = List<Comment>.from(syntheticTimeline)
         ..sort((a, b) => b.likeCount.compareTo(a.likeCount));
 
+      // 베스트 댓글 조건: 최소 좋아요 3개 이상, 전체 댓글 3개 이상
+      final bool canSelectFeatured = syntheticTimeline.length >= 3 && 
+                                       sortedByLikes.isNotEmpty && 
+                                       sortedByLikes.first.likeCount >= 3;
+
       setState(() {
-        _featuredComments = sortedByLikes.take(1).toList(growable: false);
+        _featuredComments = canSelectFeatured 
+            ? sortedByLikes.take(1).toList(growable: false)
+            : <Comment>[];
         _timelineComments = syntheticTimeline;
         _commentsLoaded = true;
         _isLoadingComments = false;
@@ -551,44 +643,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
 
-    setState(() {
-      _isLoadingComments = true;
-    });
-
-    try {
-      final List<Comment> featured = await _repository.getTopComments(widget.post.id, limit: 1);
-      final List<Comment> timeline = await _repository.getComments(widget.post.id);
-
-      final Set<String> featuredIds = featured.map((Comment comment) => comment.id).toSet();
-      final List<Comment> mergedTimeline = timeline
-          .map((Comment comment) {
-            if (featuredIds.contains(comment.id)) {
-              return featured.firstWhere(
-                (Comment featuredComment) => featuredComment.id == comment.id,
-                orElse: () => comment,
-              );
-            }
-            return comment;
-          })
-          .toList(growable: false);
-
-      if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _featuredComments = featured;
-            _timelineComments = mergedTimeline;
-            _commentsLoaded = true;
-            _isLoadingComments = false;
-          });
-        }
-      });
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error loading comments for post ${widget.post.id}: $e');
-      debugPrint('Stack trace: $stackTrace');
-      if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _isLoadingComments = false);
+    // For real posts, use Cubit
+    await _postCardCubit.loadComments(force: force);
+    
+    // Mark as loaded locally (for synthetic check)
+    if (mounted) {
+      setState(() {
+        _commentsLoaded = true;
       });
     }
   }
@@ -618,6 +679,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     setState(() => _isSubmittingComment = true);
 
     try {
+      // Upload images if any
       List<String> imageUrls = [];
       if (_selectedImages.isNotEmpty) {
         imageUrls = await _uploadImages();
@@ -627,27 +689,25 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         }
       }
 
-      await _repository.addComment(widget.post.id, text, imageUrls: imageUrls);
+      // Submit comment via Cubit
+      await _postCardCubit.submitComment(text, imageUrls: imageUrls);
 
       if (!mounted) return;
 
+      // Clear local UI state
       _commentController.clear();
       _commentFocusNode.unfocus();
       setState(() {
-        _commentCount += 1;
         _canSubmitComment = false;
         _selectedImages.clear();
+        _isSubmittingComment = false;
       });
       _showCommentsNotifier.value = true;
-      await _loadComments(force: true);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')));
-      }
-    } finally {
-      if (mounted) {
         setState(() => _isSubmittingComment = false);
       }
     }
@@ -655,41 +715,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Future<void> _handleCommentLike(Comment comment) async {
     _registerInteraction();
-    final bool willLike = !comment.isLiked;
-    final int nextCount = max(0, comment.likeCount + (willLike ? 1 : -1));
-
-    void updateLists(bool liked, int likeCount) {
-      _timelineComments = _timelineComments
-          .map(
-            (Comment timelineComment) => timelineComment.id == comment.id
-                ? timelineComment.copyWith(isLiked: liked, likeCount: likeCount)
-                : timelineComment,
-          )
-          .toList(growable: false);
-      _featuredComments = _featuredComments
-          .map(
-            (Comment featuredComment) => featuredComment.id == comment.id
-                ? featuredComment.copyWith(isLiked: liked, likeCount: likeCount)
-                : featuredComment,
-          )
-          .toList(growable: false);
-    }
-
-    // Optimistic update - 즉시 반영
-    if (mounted) {
-      setState(() => updateLists(willLike, nextCount));
-    }
-
+    
+    // Skip for synthetic posts
     if (_isSynthetic(widget.post)) return;
 
-    try {
-      await _repository.toggleCommentLikeById(widget.post.id, comment.id);
-    } catch (_) {
-      // 실패 시 롤백
-      if (mounted) {
-        setState(() => updateLists(!willLike, comment.likeCount));
-      }
-    }
+    // Use Cubit for optimistic update
+    await _postCardCubit.toggleCommentLike(comment);
   }
 
   void _handleReplyTap(Comment comment) {
@@ -791,6 +822,36 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _showSnack('팔로우 기능은 곧 제공될 예정입니다.');
   }
 
+  Future<void> _handleBlockUser({
+    required String targetUid,
+    required String nickname,
+  }) async {
+    if (!mounted) return;
+
+    // Show confirmation dialog
+    final bool? confirmed = await BlockUserDialog.show(
+      context,
+      nickname: nickname,
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Use Cubit for blocking
+    await _postCardCubit.blockUser(targetUid);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('$nickname님을 차단했습니다'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   void _openMockProfile({required String uid, required String nickname}) {
     if (uid.isEmpty || uid == 'dummy_user') {
       return;
@@ -808,7 +869,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
     _hasTrackedInteraction = true;
-    unawaited(_repository.incrementViewCount(widget.post.id));
+    
+    // Use Cubit for view tracking
+    _postCardCubit.trackView();
   }
 
   bool _isSynthetic(Post post) {

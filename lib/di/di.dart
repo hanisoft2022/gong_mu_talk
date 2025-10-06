@@ -33,7 +33,6 @@ import '../features/community/domain/usecases/search_community.dart';
 
 
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
-import '../features/community/presentation/cubit/post_detail_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/cubit/bookmarks_cubit.dart';
 import '../features/notifications/data/notification_repository.dart';
@@ -124,7 +123,6 @@ Future<void> configureDependencies() async {
       () =>
           ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
-    ..registerFactory<PostDetailCubit>(() => PostDetailCubit(getIt()))
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
     ..registerFactory<BookmarksCubit>(() => BookmarksCubit(getIt()))
     // Calculator services
