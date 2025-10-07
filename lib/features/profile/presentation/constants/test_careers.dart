@@ -20,6 +20,7 @@
 /// - Others (기타)
 
 library;
+
 const List<Map<String, String>> testCareers = [
   // ================================
   // 교육공무원 (Education Officials)
@@ -67,7 +68,6 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 전문행정직 (Specialized Administrative)
   // ================================
-
   {'id': 'job_counselor', 'name': '💼 고용노동직'},
   {'id': 'statistics_officer', 'name': '📊 통계직'},
   {'id': 'librarian', 'name': '📖 사서직'},
@@ -77,7 +77,6 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 보건복지직 (Health & Welfare)
   // ================================
-
   {'id': 'public_health_officer', 'name': '🏥 보건직'},
   {'id': 'medical_technician', 'name': '🔬 의료기술직'},
   {'id': 'nurse', 'name': '💉 간호직'},
@@ -89,7 +88,6 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 공안직 (Public Security)
   // ================================
-
   {'id': 'correction_officer', 'name': '⚖️ 교정직'},
   {'id': 'probation_officer', 'name': '👁️ 보호직'},
   {'id': 'prosecution_officer', 'name': '⚖️ 검찰직'},
@@ -101,7 +99,6 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 치안/안전 (Public Safety)
   // ================================
-
   {'id': 'police', 'name': '👮‍♂️ 경찰관'},
   {'id': 'firefighter', 'name': '👨‍🚒 소방관'},
   {'id': 'coast_guard', 'name': '🌊 해양경찰'},
@@ -109,7 +106,6 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 군인 (Military)
   // ================================
-
   {'id': 'army', 'name': '🪖 육군'},
   {'id': 'navy', 'name': '⚓ 해군'},
   {'id': 'air_force', 'name': '✈️ 공군'},
@@ -147,13 +143,11 @@ const List<Map<String, String>> testCareers = [
   // ================================
   // 기타 직렬 (Others)
   // ================================
-
   {'id': 'postal_service', 'name': '📮 우정직'},
   {'id': 'researcher', 'name': '🔬 연구직'},
 
   // ================================
   // Fallback / Reset
   // ================================
-
   {'id': 'none', 'name': '❌ 직렬 없음 (기본)'},
 ];

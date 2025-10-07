@@ -18,8 +18,8 @@ class CalculateRetirementBenefitUseCase {
     required TeacherProfile profile,
     required int avgBaseIncome,
   }) {
-    final retirementDate = profile.expectedRetirementDate ??
-        profile.calculateRetirementDate();
+    final retirementDate =
+        profile.expectedRetirementDate ?? profile.calculateRetirementDate();
 
     return _service.calculateRetirementBenefit(
       employmentStartDate: profile.employmentStartDate,
@@ -38,13 +38,11 @@ class CalculateRetirementBenefitUseCase {
     required TeacherProfile profile,
     required int avgBaseIncome,
   }) {
-    final retirementDate = profile.expectedRetirementDate ??
-        profile.calculateRetirementDate();
+    final retirementDate =
+        profile.expectedRetirementDate ?? profile.calculateRetirementDate();
 
-    final serviceYears = retirementDate
-            .difference(profile.employmentStartDate)
-            .inDays ~/
-        365;
+    final serviceYears =
+        retirementDate.difference(profile.employmentStartDate).inDays ~/ 365;
 
     return _service.calculateLumpSum(
       serviceYears: serviceYears,

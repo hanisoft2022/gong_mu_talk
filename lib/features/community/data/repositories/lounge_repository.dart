@@ -19,9 +19,8 @@ typedef QueryJson = Query<JsonMap>;
 ///
 /// Dependencies: FirebaseFirestore
 class LoungeRepository {
-  LoungeRepository({
-    FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  LoungeRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
   static const Duration _dailyLookback = Duration(hours: 24);
@@ -91,10 +90,6 @@ class LoungeRepository {
     }
   }
 
-  
-
-  
-
   QueryJson _applyLoungeSort(QueryJson query, LoungeSort sort) {
     switch (sort) {
       case LoungeSort.latest:
@@ -112,10 +107,12 @@ class LoungeRepository {
     }
   }
 
-  Timestamp _dailyPopularCutoffTimestamp() => Timestamp.fromDate(_dailyPopularCutoff());
+  Timestamp _dailyPopularCutoffTimestamp() =>
+      Timestamp.fromDate(_dailyPopularCutoff());
   DateTime _dailyPopularCutoff() => DateTime.now().subtract(_dailyLookback);
 
-  Timestamp _weeklyPopularCutoffTimestamp() => Timestamp.fromDate(_weeklyPopularCutoff());
+  Timestamp _weeklyPopularCutoffTimestamp() =>
+      Timestamp.fromDate(_weeklyPopularCutoff());
   DateTime _weeklyPopularCutoff() => DateTime.now().subtract(_weeklyLookback);
 
   PaginatedQueryResult<Post> _buildPostPage(
@@ -129,7 +126,9 @@ class LoungeRepository {
         .toList(growable: false);
 
     final bool hasMore = docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last = docs.isEmpty ? null : docs.last;
+    final QueryDocumentSnapshot<JsonMap>? last = docs.isEmpty
+        ? null
+        : docs.last;
     return PaginatedQueryResult<Post>(
       items: posts,
       hasMore: hasMore,

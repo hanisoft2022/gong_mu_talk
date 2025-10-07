@@ -67,18 +67,14 @@ class _PostDetailViewState extends State<PostDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('게시물'),
-      ),
+      appBar: AppBar(title: const Text('게시물')),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -108,9 +104,7 @@ class _PostDetailViewState extends State<PostDetailView> {
     }
 
     if (_post == null) {
-      return const Center(
-        child: Text('게시물을 찾을 수 없습니다'),
-      );
+      return const Center(child: Text('게시물을 찾을 수 없습니다'));
     }
 
     return SingleChildScrollView(
@@ -152,9 +146,7 @@ class _PostDetailViewState extends State<PostDetailView> {
           onToggleScrap: () async {
             // Optimistic update
             setState(() {
-              _post = _post!.copyWith(
-                isScrapped: !_post!.isScrapped,
-              );
+              _post = _post!.copyWith(isScrapped: !_post!.isScrapped);
             });
 
             try {
@@ -163,9 +155,7 @@ class _PostDetailViewState extends State<PostDetailView> {
               // Revert on failure
               if (mounted) {
                 setState(() {
-                  _post = _post!.copyWith(
-                    isScrapped: !_post!.isScrapped,
-                  );
+                  _post = _post!.copyWith(isScrapped: !_post!.isScrapped);
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('스크랩 처리 중 오류가 발생했습니다')),

@@ -1,7 +1,7 @@
 import 'lounge_model.dart';
 
 /// 라운지 설정 - 기본 라운지 목록 정의
-/// 
+///
 /// 파일 분리 이유: CLAUDE.md 파일 크기 원칙 준수
 /// - 기존 lounge.dart (994줄, Red Zone) → 분리
 /// - lounge_model.dart (~300줄, Green Zone)
@@ -877,11 +877,7 @@ class LoungeDefinitions {
       shortName: '외교관',
       type: LoungeType.specific,
       accessType: LoungeAccessType.careerOnly,
-      requiredCareerIds: [
-        'diplomat_5th',
-        'diplomat_consular',
-        'diplomat_3rd',
-      ],
+      requiredCareerIds: ['diplomat_5th', 'diplomat_consular', 'diplomat_3rd'],
       memberCount: 4000,
       description: '외교관 전용 라운지',
       order: 12,

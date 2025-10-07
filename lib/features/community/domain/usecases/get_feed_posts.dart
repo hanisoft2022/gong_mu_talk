@@ -5,14 +5,7 @@ import '../models/feed_filters.dart';
 import '../models/post.dart';
 import '../repositories/i_community_repository.dart';
 
-enum FeedType {
-  chirp,
-  lounge,
-  serial,
-  hot,
-  author,
-  scraps,
-}
+enum FeedType { chirp, lounge, serial, hot, author, scraps }
 
 class GetFeedPosts {
   const GetFeedPosts(this._repository);
@@ -53,13 +46,12 @@ class GetFeedPosts {
           currentUid: currentUid,
         );
       case FeedType.hot:
-        return _repository.fetchHotFeed(
-          limit: limit,
-          currentUid: currentUid,
-        );
+        return _repository.fetchHotFeed(limit: limit, currentUid: currentUid);
       case FeedType.author:
         if (authorUid == null) {
-          return AppResultHelpers.failure(const ValidationError('작성자를 선택해주세요.'));
+          return AppResultHelpers.failure(
+            const ValidationError('작성자를 선택해주세요.'),
+          );
         }
         return _repository.fetchPostsByAuthor(
           authorUid: authorUid,

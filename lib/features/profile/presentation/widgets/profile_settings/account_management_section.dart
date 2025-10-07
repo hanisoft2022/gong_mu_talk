@@ -28,6 +28,7 @@
 /// 6. User is logged out and redirected
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -112,7 +113,9 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
                   backgroundColor: Theme.of(context).colorScheme.errorContainer,
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
-                onPressed: isProcessing ? null : () => _confirmDeleteAccount(context),
+                onPressed: isProcessing
+                    ? null
+                    : () => _confirmDeleteAccount(context),
                 child: const Text('회원 탈퇴'),
               ),
             ),
@@ -138,9 +141,7 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
               TextField(
                 controller: _deletePasswordController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '비밀번호',
-                ),
+                decoration: const InputDecoration(labelText: '비밀번호'),
               ),
             ],
           ),

@@ -122,10 +122,7 @@ class ScrapCubit extends Cubit<ScrapState> {
     } catch (e) {
       // Revert on error
       emit(
-        state.copyWith(
-          scraps: originalScraps,
-          error: '스크랩 삭제 중 오류가 발생했습니다.',
-        ),
+        state.copyWith(scraps: originalScraps, error: '스크랩 삭제 중 오류가 발생했습니다.'),
       );
     }
   }

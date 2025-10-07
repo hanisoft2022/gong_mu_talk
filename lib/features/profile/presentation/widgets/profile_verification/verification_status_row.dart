@@ -24,19 +24,25 @@ class VerificationStatusRow extends StatelessWidget {
         Icon(
           icon,
           size: 16,
-          color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
+          color: isVerified
+              ? theme.colorScheme.primary
+              : theme.colorScheme.error,
         ),
         const Gap(8),
         Expanded(
           child: Text(
             label,
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         Text(
           isVerified ? '인증됨' : '미인증',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: isVerified ? theme.colorScheme.primary : theme.colorScheme.error,
+            color: isVerified
+                ? theme.colorScheme.primary
+                : theme.colorScheme.error,
             fontWeight: FontWeight.w600,
           ),
         ),

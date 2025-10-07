@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
@@ -26,7 +24,7 @@ import '../../../../../core/utils/image_compression_util.dart';
 /// ```
 class CommentImageUploader {
   final ImagePicker _imagePicker = ImagePicker();
-  bool _isPickingImage = false;  // ImagePicker 중복 호출 방지 플래그
+  bool _isPickingImage = false; // ImagePicker 중복 호출 방지 플래그
 
   /// Pick and compress a single image for comment
   Future<XFile?> pickAndCompressImage(
@@ -155,26 +153,26 @@ class CommentImageUploader {
       for (int i = 0; i < images.length; i++) {
         final XFile image = images[i];
         final DateTime now = DateTime.now();
-        
+
         // 이미지 압축 (WebP 포맷, 80% 품질)
         final XFile? compressedImage = await ImageCompressionUtil.compressImage(
           image,
           ImageCompressionType.comment,
         );
         final XFile finalImage = compressedImage ?? image;
-        
+
         // 파일명 생성 (.webp 확장자)
         final String fileName = '${userId}_${now.millisecondsSinceEpoch}.webp';
-        
+
         // 올바른 경로 사용: comment_images/{userId}/{commentId}/{fileName}
         // postId를 commentId로 사용 (실제로는 댓글 ID가 들어와야 함)
         final String filePath = 'comment_images/$userId/$postId/$fileName';
-        
+
         final Reference ref = FirebaseStorage.instance.ref().child(filePath);
-        
+
         // 파일 데이터 읽기
         final Uint8List bytes = await finalImage.readAsBytes();
-        
+
         // CDN 캐싱 설정: 7일
         final UploadTask uploadTask = ref.putData(
           bytes,
@@ -185,7 +183,8 @@ class CommentImageUploader {
         );
 
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          final double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          final double progress =
+              snapshot.bytesTransferred / snapshot.totalBytes;
           final double totalProgress = (i + progress) / images.length;
           onProgress(totalProgress);
         });

@@ -20,7 +20,9 @@ class SearchCommunity {
     }
 
     if (query.trim().length < 2) {
-      return AppResultHelpers.failure(const ValidationError('검색어는 2글자 이상 입력해주세요.'));
+      return AppResultHelpers.failure(
+        const ValidationError('검색어는 2글자 이상 입력해주세요.'),
+      );
     }
 
     return _repository.searchCommunity(

@@ -30,6 +30,7 @@
 /// - ../../constants/test_careers.dart: Career options list
 
 library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -79,9 +80,7 @@ class ProfileHeader extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildCareerAndNickname(context, theme),
-                ),
+                Expanded(child: _buildCareerAndNickname(context, theme)),
                 const Gap(8),
                 // Action Button (Edit or Follow)
                 if (isOwnProfile)
@@ -111,10 +110,7 @@ class ProfileHeader extends StatelessWidget {
             _buildInlineStats(context),
 
             // Activity Stats (Posts, Scraps, Likes, Comments)
-            if (isOwnProfile) ...[
-              const Gap(16),
-              _buildActivityStats(context),
-            ],
+            if (isOwnProfile) ...[const Gap(16), _buildActivityStats(context)],
 
             // Bio
             if (profile.bio != null && profile.bio!.trim().isNotEmpty) ...[
@@ -138,7 +134,8 @@ class ProfileHeader extends StatelessWidget {
     final String displayText;
     if (profile.careerTrack != CareerTrack.none) {
       // Show: [직렬명] [이모지] [닉네임]
-      displayText = '${profile.careerTrack.displayName} ${profile.careerTrack.emoji} ${profile.nickname}';
+      displayText =
+          '${profile.careerTrack.displayName} ${profile.careerTrack.emoji} ${profile.nickname}';
     } else {
       // Fallback: Just nickname
       displayText = profile.nickname;
@@ -179,17 +176,16 @@ class ProfileHeader extends StatelessWidget {
   // Inline Stats (Instagram-style: "355k followers · 77 following")
   Widget _buildInlineStats(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Row(
       children: [
         InkWell(
           onTap: isOwnProfile
               ? () => showProfileRelationsSheet(
-                    context,
-                    ProfileRelationType.followers,
-                  )
+                  context,
+                  ProfileRelationType.followers,
+                )
               : () {
-                  // TODO: Implement viewing other users' followers
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('다른 사용자의 팔로워 목록은 곧 제공될 예정입니다.'),
@@ -226,11 +222,10 @@ class ProfileHeader extends StatelessWidget {
         InkWell(
           onTap: isOwnProfile
               ? () => showProfileRelationsSheet(
-                    context,
-                    ProfileRelationType.following,
-                  )
+                  context,
+                  ProfileRelationType.following,
+                )
               : () {
-                  // TODO: Implement viewing other users' following
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('다른 사용자의 팔로잉 목록은 곧 제공될 예정입니다.'),
@@ -261,13 +256,8 @@ class ProfileHeader extends StatelessWidget {
 
   // Simplified Bio (no card, just text with expand functionality)
   Widget _buildSimplifiedBio(ThemeData theme) {
-    return _ExpandableBio(
-      bio: profile.bio!.trim(),
-      theme: theme,
-    );
+    return _ExpandableBio(bio: profile.bio!.trim(), theme: theme);
   }
-
-
 
   // Test Career Selector (Debug Mode Only)
   Widget _buildTestCareerSelector(ThemeData theme, BuildContext context) {
@@ -286,11 +276,7 @@ class ProfileHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.bug_report,
-                size: 16,
-                color: theme.colorScheme.error,
-              ),
+              Icon(Icons.bug_report, size: 16, color: theme.colorScheme.error),
               const Gap(8),
               Text(
                 '테스트 모드',
@@ -324,9 +310,7 @@ class ProfileHeader extends StatelessWidget {
 
   // Activity Stats Row (Posts, Scraps, Likes, Comments)
   Widget _buildActivityStats(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
+    return SizedBox(
       height: 80,
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -393,20 +377,16 @@ class _ActivityStatCard extends StatelessWidget {
         width: 110,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: colorScheme.primary,
-            ),
+            Icon(icon, size: 24, color: colorScheme.primary),
             const Gap(8),
             Text(
               label,
@@ -427,10 +407,7 @@ class _ActivityStatCard extends StatelessWidget {
 
 /// Expandable Bio Widget
 class _ExpandableBio extends StatefulWidget {
-  const _ExpandableBio({
-    required this.bio,
-    required this.theme,
-  });
+  const _ExpandableBio({required this.bio, required this.theme});
 
   final String bio;
   final ThemeData theme;

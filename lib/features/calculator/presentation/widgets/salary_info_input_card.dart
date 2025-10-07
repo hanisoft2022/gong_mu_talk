@@ -33,7 +33,9 @@ class SalaryInfoInputCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -46,8 +48,8 @@ class SalaryInfoInputCard extends StatelessWidget {
                   Text(
                     '급여 정보 입력',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -61,9 +63,9 @@ class SalaryInfoInputCard extends StatelessWidget {
                   children: [
                     Text(
                       '탭하여 정보를 입력하세요',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -111,12 +113,8 @@ class SalaryInfoInputCard extends StatelessWidget {
                                 Text(
                                   '${profile!.currentGrade}호봉 · ${profile!.position.displayName} · '
                                   '${_calculateServiceYears(profile!)}년 재직',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(fontWeight: FontWeight.w500),
                                 ),
                             ],
                           ),

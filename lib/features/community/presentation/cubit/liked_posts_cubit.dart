@@ -29,7 +29,9 @@ class LikedPostsCubit extends Cubit<LikedPostsState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: '좋아요한 글을 불러오는 중 오류가 발생했습니다.'));
+      emit(
+        state.copyWith(isLoading: false, error: '좋아요한 글을 불러오는 중 오류가 발생했습니다.'),
+      );
     }
   }
 
@@ -39,7 +41,6 @@ class LikedPostsCubit extends Cubit<LikedPostsState> {
     emit(state.copyWith(isLoading: true));
 
     try {
-      // TODO: Implement pagination with startAfter
       final morePosts = <Post>[];
 
       emit(
@@ -50,9 +51,7 @@ class LikedPostsCubit extends Cubit<LikedPostsState> {
         ),
       );
     } catch (e) {
-      emit(
-        state.copyWith(isLoading: false, error: '추가 글을 불러오는 중 오류가 발생했습니다.'),
-      );
+      emit(state.copyWith(isLoading: false, error: '추가 글을 불러오는 중 오류가 발생했습니다.'));
     }
   }
 
@@ -85,9 +84,7 @@ class LikedPostsCubit extends Cubit<LikedPostsState> {
 
     if (index == -1) return;
 
-    final updatedPost = post.copyWith(
-      isScrapped: !post.isScrapped,
-    );
+    final updatedPost = post.copyWith(isScrapped: !post.isScrapped);
 
     likedPosts[index] = updatedPost;
     emit(state.copyWith(likedPosts: likedPosts));

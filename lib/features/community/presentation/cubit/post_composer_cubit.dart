@@ -31,7 +31,13 @@ class PostMediaDraft extends Equatable {
   String get fileName => file.name;
 
   @override
-  List<Object?> get props => <Object?>[file.path, contentType, width, height, bytes];
+  List<Object?> get props => <Object?>[
+    file.path,
+    contentType,
+    width,
+    height,
+    bytes,
+  ];
 }
 
 class PostComposerState extends Equatable {
@@ -113,15 +119,22 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     String? initialLoungeId,
   }) : _repository = communityRepository,
        _authCubit = authCubit,
-       super(PostComposerState(audience: initialAudience, selectedLoungeId: initialLoungeId));
+       super(
+         PostComposerState(
+           audience: initialAudience,
+           selectedLoungeId: initialLoungeId,
+         ),
+       );
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
   final ImagePicker _picker = ImagePicker();
-  bool _isPickingImage = false;  // ImagePicker 중복 호출 방지 플래그
+  bool _isPickingImage = false; // ImagePicker 중복 호출 방지 플래그
 
   void updateText(String value) {
-    emit(state.copyWith(text: value, errorMessage: null, submissionSuccess: false));
+    emit(
+      state.copyWith(text: value, errorMessage: null, submissionSuccess: false),
+    );
   }
 
   void updateTags(String raw) {
@@ -142,7 +155,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     emit(state.copyWith(isAnonymous: value, submissionSuccess: false));
   }
 
-void setLoungeId(String? loungeId) {
+  void setLoungeId(String? loungeId) {
     emit(state.copyWith(selectedLoungeId: loungeId, submissionSuccess: false));
   }
 
@@ -177,8 +190,9 @@ void setLoungeId(String? loungeId) {
   }
 
   void removeAttachment(PostMediaDraft draft) {
-    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)
-      ..remove(draft);
+    final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
+      state.attachments,
+    )..remove(draft);
     emit(state.copyWith(attachments: updated, submissionSuccess: false));
   }
 
@@ -186,7 +200,7 @@ void setLoungeId(String? loungeId) {
     await _submitPost(type: PostType.chirp);
   }
 
-Future<void> _submitPost({required PostType type}) async {
+  Future<void> _submitPost({required PostType type}) async {
     final AuthState authState = _authCubit.state;
     final String? uid = authState.userId;
     if (uid == null) {
@@ -200,7 +214,13 @@ Future<void> _submitPost({required PostType type}) async {
       return;
     }
 
-    emit(state.copyWith(isSubmitting: true, errorMessage: null, submissionSuccess: false));
+    emit(
+      state.copyWith(
+        isSubmitting: true,
+        errorMessage: null,
+        submissionSuccess: false,
+      ),
+    );
 
     try {
       final int supporterLevel = 0;
@@ -214,11 +234,11 @@ Future<void> _submitPost({required PostType type}) async {
       // 이미지를 먼저 업로드 (Post 생성 이전)
       List<PostMedia> uploadedMedia = <PostMedia>[];
       String? preGeneratedPostId;
-      
+
       if (state.attachments.isNotEmpty) {
         // Repository에서 Post ID를 먼저 생성
-        preGeneratedPostId = await _repository.generatePostId();
-        
+        preGeneratedPostId = _repository.generatePostId();
+
         for (final PostMediaDraft draft in state.attachments) {
           final PostMedia media = await _repository.uploadPostImage(
             uid: uid,
@@ -234,7 +254,7 @@ Future<void> _submitPost({required PostType type}) async {
       }
 
       // Post 생성 (이미 업로드된 media 포함)
-      final Post post = await _repository.createPost(
+      await _repository.createPost(
         postId: preGeneratedPostId,
         type: type,
         authorUid: uid,
@@ -273,7 +293,12 @@ Future<void> _submitPost({required PostType type}) async {
       emit(state.copyWith(isSubmitting: false, errorMessage: errorMessage));
     } catch (e) {
       debugPrint('❌ Post submission error: $e');
-      emit(state.copyWith(isSubmitting: false, errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.'));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          errorMessage: '게시글 등록 중 오류가 발생했습니다. 다시 시도해주세요.',
+        ),
+      );
     }
   }
 
@@ -297,7 +322,10 @@ Future<void> _submitPost({required PostType type}) async {
 
       try {
         final Completer<ui.Image> completer = Completer<ui.Image>();
-        ui.decodeImageFromList(bytes, (ui.Image img) => completer.complete(img));
+        ui.decodeImageFromList(
+          bytes,
+          (ui.Image img) => completer.complete(img),
+        );
         final ui.Image decoded = await completer.future;
         width = decoded.width;
         height = decoded.height;
@@ -316,34 +344,24 @@ Future<void> _submitPost({required PostType type}) async {
         height: height,
       );
 
-      final List<PostMediaDraft> updated = List<PostMediaDraft>.from(state.attachments)..add(draft);
+      final List<PostMediaDraft> updated = List<PostMediaDraft>.from(
+        state.attachments,
+      )..add(draft);
 
-      emit(state.copyWith(attachments: updated, submissionSuccess: false, isLoading: false));
+      emit(
+        state.copyWith(
+          attachments: updated,
+          submissionSuccess: false,
+          isLoading: false,
+        ),
+      );
     } on ImageCompressionException catch (e) {
       emit(state.copyWith(errorMessage: e.message, isLoading: false));
     } catch (e) {
-      emit(state.copyWith(errorMessage: '이미지 처리 중 오류가 발생했습니다.', isLoading: false));
+      emit(
+        state.copyWith(errorMessage: '이미지 처리 중 오류가 발생했습니다.', isLoading: false),
+      );
     }
-  }
-
-String _contentTypeFromExtension(String fileName) {
-    final String lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) {
-      return 'image/png';
-    }
-    if (lower.endsWith('.gif')) {
-      return 'image/gif';
-    }
-    if (lower.endsWith('.webp')) {
-      return 'image/webp';
-    }
-    if (lower.endsWith('.heic')) {
-      return 'image/heic';
-    }
-    if (lower.endsWith('.heif')) {
-      return 'image/heif';
-    }
-    return 'image/jpeg';
   }
 
   Future<void> loadPostForEditing(String postId) async {
@@ -366,7 +384,9 @@ String _contentTypeFromExtension(String fileName) {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'));
+      emit(
+        state.copyWith(isLoading: false, errorMessage: '게시글을 불러올 수 없습니다: $e'),
+      );
     }
   }
 }

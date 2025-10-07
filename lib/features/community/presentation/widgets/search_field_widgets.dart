@@ -7,6 +7,7 @@
 /// - Search suggestions card display
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -39,7 +40,9 @@ class CollapsedSearchTrigger extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: DecoratedBox(
-            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+            ),
             child: Material(
               type: MaterialType.transparency,
               child: InkWell(
@@ -49,7 +52,11 @@ class CollapsedSearchTrigger extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
-                      Icon(Icons.search, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.search,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       const Gap(8),
                       Expanded(
                         child: Text(
@@ -126,10 +133,14 @@ class ExpandedSearchField extends StatelessWidget {
     return SizedBox(
       height: 44,
       child: ClipRRect(
-        key: ValueKey<String>('expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}'),
+        key: ValueKey<String>(
+          'expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}',
+        ),
         borderRadius: radius,
         child: DecoratedBox(
-          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
           child: Row(
             children: [
               SearchIconButton(
@@ -226,11 +237,17 @@ class SearchSuggestionsCard extends StatelessWidget {
             if (recentSearches.isNotEmpty) ...[
               Row(
                 children: [
-                  Icon(Icons.history, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.history,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   const Gap(8),
                   Text(
                     '최근 검색어',
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -278,7 +295,9 @@ class SearchSuggestionsCard extends StatelessWidget {
                   const Gap(8),
                   Text(
                     '인기 검색어',
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -334,7 +353,8 @@ void showSearchOptionsBottomSheet({
             ...SearchScope.values
                 .where((SearchScope scope) {
                   // 전체 탭에서는 글 작성자 검색 옵션 제외
-                  if (feedScope == LoungeScope.all && scope == SearchScope.author) {
+                  if (feedScope == LoungeScope.all &&
+                      scope == SearchScope.author) {
                     return false;
                   }
                   return true;
@@ -345,7 +365,9 @@ void showSearchOptionsBottomSheet({
                     leading: isSelected
                         ? Icon(
                             Icons.check,
-                            color: Theme.of(bottomSheetContext).colorScheme.primary,
+                            color: Theme.of(
+                              bottomSheetContext,
+                            ).colorScheme.primary,
                           )
                         : const SizedBox(width: 24),
                     title: Text(scope.label),

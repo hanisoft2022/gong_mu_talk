@@ -94,14 +94,12 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('차단한 사용자'),
-      ),
+      appBar: AppBar(title: const Text('차단한 사용자')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _blockedUserIds.isEmpty
-              ? _buildEmptyState(theme)
-              : _buildBlockedUsersList(theme),
+          ? _buildEmptyState(theme)
+          : _buildBlockedUsersList(theme),
     );
   }
 

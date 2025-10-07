@@ -52,7 +52,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<SearchCubit>().loadMore();
     }
   }
@@ -88,7 +89,8 @@ class _SearchPageState extends State<SearchPage> {
               ),
               textInputAction: TextInputAction.search,
               onSubmitted: (query) => _performSearch(query.trim()),
-              onChanged: (value) => context.read<SearchCubit>().onQueryChanged(value),
+              onChanged: (value) =>
+                  context.read<SearchCubit>().onQueryChanged(value),
               autofocus: widget.initialQuery?.isEmpty ?? true,
             );
           },
@@ -105,7 +107,10 @@ class _SearchPageState extends State<SearchPage> {
           child: BlocBuilder<SearchCubit, SearchState>(
             builder: (context, state) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SegmentedButton<SearchScope>(
                   segments: const <ButtonSegment<SearchScope>>[
                     ButtonSegment<SearchScope>(
@@ -153,8 +158,11 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildBody(SearchState state) {
-    final bool showPosts = state.scope != SearchScope.comments && state.scope != SearchScope.author;
-    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showPosts =
+        state.scope != SearchScope.comments &&
+        state.scope != SearchScope.author;
+    final bool showComments =
+        state.scope == SearchScope.all || state.scope == SearchScope.comments;
     final bool showUsers = state.scope == SearchScope.author;
 
     if (state.isLoading &&
@@ -209,8 +217,10 @@ class _SearchPageState extends State<SearchPage> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: PostCard(
                         post: post,
-                        onToggleLike: () => context.read<SearchCubit>().toggleLike(post),
-                        onToggleScrap: () => context.read<SearchCubit>().toggleScrap(post),
+                        onToggleLike: () =>
+                            context.read<SearchCubit>().toggleLike(post),
+                        onToggleScrap: () =>
+                            context.read<SearchCubit>().toggleScrap(post),
                       ),
                     ),
                   ),
@@ -245,7 +255,11 @@ class _SearchPageState extends State<SearchPage> {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [Icon(Icons.search_outlined, size: 64), Gap(16), Text('검색어를 입력하세요')],
+          children: [
+            Icon(Icons.search_outlined, size: 64),
+            Gap(16),
+            Text('검색어를 입력하세요'),
+          ],
         ),
       );
     }
@@ -263,9 +277,9 @@ class _SearchPageState extends State<SearchPage> {
                 const Gap(8),
                 Text(
                   '인기 검색어',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -358,7 +372,9 @@ class _SearchPageState extends State<SearchPage> {
                 onTap: () {
                   _searchController
                     ..text = token
-                    ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
+                    ..selection = TextSelection.fromPosition(
+                      TextPosition(offset: token.length),
+                    );
                   context.read<SearchCubit>().onQueryChanged(token);
                   _performSearch(token);
                 },
@@ -373,7 +389,8 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildResultsHeader(SearchState state) {
     final ThemeData theme = Theme.of(context);
     final bool showPosts = state.scope != SearchScope.comments;
-    final bool showComments = state.scope == SearchScope.all || state.scope == SearchScope.comments;
+    final bool showComments =
+        state.scope == SearchScope.all || state.scope == SearchScope.comments;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -434,11 +451,18 @@ class _SearchPageState extends State<SearchPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const Gap(6),
           Text(
             '$count개',
-            style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -449,13 +473,16 @@ class _SearchPageState extends State<SearchPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32),
       alignment: Alignment.center,
-      child: Text('$label 검색 결과가 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
+      child: Text(
+        '$label 검색 결과가 없습니다.',
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 
   Widget _buildUserResultCard(UserProfile user) {
     final ThemeData theme = Theme.of(context);
-    
+
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
@@ -472,7 +499,9 @@ class _SearchPageState extends State<SearchPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Center(
@@ -504,7 +533,10 @@ class _SearchPageState extends State<SearchPage> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

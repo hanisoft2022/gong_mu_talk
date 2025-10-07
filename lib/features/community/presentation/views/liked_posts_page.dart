@@ -44,9 +44,7 @@ class _LikedPostsPageState extends State<LikedPostsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('좋아요한 글'),
-      ),
+      appBar: AppBar(title: const Text('좋아요한 글')),
       body: BlocBuilder<LikedPostsCubit, LikedPostsState>(
         builder: (context, state) {
           if (state.isLoading && state.likedPosts.isEmpty) {

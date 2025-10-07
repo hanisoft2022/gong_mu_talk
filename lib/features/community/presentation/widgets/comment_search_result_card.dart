@@ -60,7 +60,9 @@ class CommentSearchResultCard extends StatelessWidget {
                       scale: comment.isLiked ? 1.3 : 1,
                       curve: Curves.elasticOut,
                       child: Icon(
-                        comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                        comment.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
                         size: 16,
                         color: comment.isLiked
                             ? Colors.pink[400]
@@ -121,14 +123,6 @@ class CommentSearchResultCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _getFirstChar(String text) {
-    final String normalized = text.trim();
-    if (normalized.isEmpty) {
-      return '공';
-    }
-    return String.fromCharCode(normalized.runes.first).toUpperCase();
   }
 
   String _formatTimestamp(DateTime createdAt) {

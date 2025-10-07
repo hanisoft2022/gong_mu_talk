@@ -49,8 +49,8 @@ class RetirementBenefitCalculationService {
     // 7. 퇴직수당 계산
     // 퇴직수당 = 1기간 퇴직급여 + (2~3기간 퇴직급여 × 0.6)
     final period23Benefit = period2Benefit + period3Benefit;
-    final retirementAllowance =
-        (period1Benefit + (period23Benefit * 0.6)).toInt();
+    final retirementAllowance = (period1Benefit + (period23Benefit * 0.6))
+        .toInt();
 
     return RetirementBenefit(
       period1Benefit: period1Benefit,
@@ -101,8 +101,9 @@ class RetirementBenefitCalculationService {
     final results = <Map<String, dynamic>>[];
 
     for (int years = 1; years <= maxYears; years++) {
-      final retirementDate =
-          employmentStartDate.add(Duration(days: years * 365));
+      final retirementDate = employmentStartDate.add(
+        Duration(days: years * 365),
+      );
 
       final benefit = calculateRetirementBenefit(
         employmentStartDate: employmentStartDate,

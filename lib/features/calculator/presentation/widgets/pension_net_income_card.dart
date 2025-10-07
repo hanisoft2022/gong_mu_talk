@@ -70,8 +70,8 @@ class PensionNetIncomeCard extends StatelessWidget {
                       child: Text(
                         '퇴직 후 연금 실수령액',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (isLocked)
@@ -85,10 +85,7 @@ class PensionNetIncomeCard extends StatelessWidget {
 
                 // 신뢰 배지
                 if (!isLocked)
-                  const CalculationSourceBadge(
-                    source: '공무원연금법',
-                    year: '2025',
-                  ),
+                  const CalculationSourceBadge(source: '공무원연금법', year: '2025'),
 
                 const SizedBox(height: 20),
 
@@ -149,9 +146,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   '월 실수령액 (세후)',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(
                                         color: Colors.green[900],
                                         fontWeight: FontWeight.w600,
@@ -164,9 +159,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                               NumberFormatter.formatCurrency(
                                 afterTaxPension!.monthlyPensionAfterTax,
                               ),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineLarge
+                              style: Theme.of(context).textTheme.headlineLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.green[900],
@@ -217,9 +210,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               '세전/공제 상세 보기',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Colors.grey[800],
                                     fontWeight: FontWeight.w600,
@@ -252,9 +243,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                                 // 공제 항목
                                 Text(
                                   '공제 내역',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: Colors.grey[600],
                                         fontWeight: FontWeight.w500,
@@ -388,14 +377,12 @@ class PensionNetIncomeCard extends StatelessWidget {
         description: '재직 기간 평균',
       ),
       BreakdownItem(
-        label: '📈 연금 지급률: ${(pensionEstimate!.pensionRate * 100).toStringAsFixed(1)}%',
+        label:
+            '📈 연금 지급률: ${(pensionEstimate!.pensionRate * 100).toStringAsFixed(1)}%',
         amount: 0,
         description: '1.9% × ${pensionEstimate!.serviceYears}년',
       ),
-      const BreakdownItem(
-        label: '',
-        amount: 0,
-      ), // Divider
+      const BreakdownItem(label: '', amount: 0), // Divider
       BreakdownItem(
         label: '세전 월 연금액',
         amount: afterTaxPension!.monthlyPensionBeforeTax,
@@ -427,10 +414,7 @@ class PensionNetIncomeCard extends StatelessWidget {
     ];
 
     return CalculationBreakdownSection(
-      items: [
-        ...items,
-        ...deductions,
-      ],
+      items: [...items, ...deductions],
       totalAmount: afterTaxPension!.monthlyPensionAfterTax,
       totalLabel: '월 실수령액 (세후)',
     );
@@ -448,16 +432,16 @@ class PensionNetIncomeCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isHighlight ? Colors.green[900] : Colors.grey[700],
-                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
-              ),
+            color: isHighlight ? Colors.green[900] : Colors.grey[700],
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isHighlight ? Colors.green[800] : Colors.green[700],
-              ),
+            fontWeight: FontWeight.bold,
+            color: isHighlight ? Colors.green[800] : Colors.green[700],
+          ),
         ),
       ],
     );
@@ -469,16 +453,16 @@ class PensionNetIncomeCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[900],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[900],
+          ),
         ),
       ],
     );
@@ -490,15 +474,15 @@ class PensionNetIncomeCard extends StatelessWidget {
       children: [
         Text(
           '  - $label',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
         ),
         Text(
           '- ${NumberFormatter.formatCurrency(amount)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.red[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.red[600]),
         ),
       ],
     );
@@ -511,9 +495,7 @@ class PensionNetIncomeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,10 +521,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '62~65세 사이 3년간 연금 수령 불가',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange[800],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.orange[800]),
                 ),
               ],
             ),

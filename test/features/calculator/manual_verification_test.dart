@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
@@ -59,16 +61,17 @@ void main() {
       print('9호봉 2월 실수령액: ${february.netIncome}원');
 
       // 월 평균 실수령액
-      final avgNetIncome = monthlyIncomes.fold<int>(
+      final avgNetIncome =
+          monthlyIncomes.fold<int>(
             0,
             (sum, income) => sum + income.netIncome,
           ) ~/
           12;
-      print('9호봉 월 평균 실수령액: ${avgNetIncome}원');
+      print('9호봉 월 평균 실수령액: $avgNetIncome원');
 
       // 연간 실수령액
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);
-      print('9호봉 연간 실수령액: ${annualNetIncome}원');
+      print('9호봉 연간 실수령액: $annualNetIncome원');
 
       // 웹서핑 결과와 비교
       // 웹 자료의 240만~260만원은 일반 월급만 계산한 것으로 추정
@@ -109,12 +112,13 @@ void main() {
       print('1호봉 3월 실수령액: ${march.netIncome}원');
 
       // 월 평균
-      final avgNetIncome = monthlyIncomes.fold<int>(
+      final avgNetIncome =
+          monthlyIncomes.fold<int>(
             0,
             (sum, income) => sum + income.netIncome,
           ) ~/
           12;
-      print('1호봉 월 평균 실수령액: ${avgNetIncome}원');
+      print('1호봉 월 평균 실수령액: $avgNetIncome원');
 
       // 웹 검증: 240만~260만원 범위
       expect(avgNetIncome, greaterThanOrEqualTo(2200000));
@@ -150,16 +154,17 @@ void main() {
       print('21호봉 3월 실수령액: ${march.netIncome}원');
 
       // 월 평균
-      final avgNetIncome = monthlyIncomes.fold<int>(
+      final avgNetIncome =
+          monthlyIncomes.fold<int>(
             0,
             (sum, income) => sum + income.netIncome,
           ) ~/
           12;
-      print('21호봉 월 평균 실수령액: ${avgNetIncome}원');
+      print('21호봉 월 평균 실수령액: $avgNetIncome원');
 
       // 연간 총액
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);
-      print('21호봉 연간 실수령액: ${annualNetIncome}원');
+      print('21호봉 연간 실수령액: $annualNetIncome원');
 
       expect(avgNetIncome, greaterThan(3000000));
     });
@@ -195,12 +200,11 @@ void main() {
       expect(september.holidayBonus, (baseSalary * 0.6).round());
 
       // 연간 총액
-      final totalHolidayBonus =
-          february.holidayBonus + september.holidayBonus;
+      final totalHolidayBonus = february.holidayBonus + september.holidayBonus;
       expect(totalHolidayBonus, (baseSalary * 1.2).round());
 
-      print('\n15호봉 본봉: ${baseSalary}원');
-      print('15호봉 명절상여금 총액: ${totalHolidayBonus}원 (본봉의 120%)');
+      print('\n15호봉 본봉: $baseSalary원');
+      print('15호봉 명절상여금 총액: $totalHolidayBonus원 (본봉의 120%)');
     });
   });
 }

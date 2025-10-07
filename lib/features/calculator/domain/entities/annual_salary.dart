@@ -61,18 +61,18 @@ class AnnualSalary extends Equatable {
 
   @override
   List<Object?> get props => [
-        year,
-        grade,
-        basePay,
-        positionAllowance,
-        homeroomAllowance,
-        familyAllowance,
-        otherAllowances,
-        incomeTax,
-        insurance,
-        netPay,
-        annualTotalPay,
-      ];
+    year,
+    grade,
+    basePay,
+    positionAllowance,
+    homeroomAllowance,
+    familyAllowance,
+    otherAllowances,
+    incomeTax,
+    insurance,
+    netPay,
+    annualTotalPay,
+  ];
 
   AnnualSalary copyWith({
     int? year,

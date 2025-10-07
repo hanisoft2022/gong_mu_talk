@@ -67,8 +67,12 @@ class UiHelpers {
 
   /// 표준 패딩 값들
   static const EdgeInsets standardPadding = EdgeInsets.all(16.0);
-  static const EdgeInsets horizontalPadding = EdgeInsets.symmetric(horizontal: 16.0);
-  static const EdgeInsets verticalPadding = EdgeInsets.symmetric(vertical: 16.0);
+  static const EdgeInsets horizontalPadding = EdgeInsets.symmetric(
+    horizontal: 16.0,
+  );
+  static const EdgeInsets verticalPadding = EdgeInsets.symmetric(
+    vertical: 16.0,
+  );
   static const EdgeInsets cardPadding = EdgeInsets.all(20.0);
   static const EdgeInsets smallPadding = EdgeInsets.all(8.0);
   static const EdgeInsets largePadding = EdgeInsets.all(24.0);

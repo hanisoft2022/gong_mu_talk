@@ -27,7 +27,10 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
        super(const CommunityFeedState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
     emit(
-      state.copyWith(careerTrack: _authCubit.state.careerTrack, serial: _authCubit.state.serial),
+      state.copyWith(
+        careerTrack: _authCubit.state.careerTrack,
+        serial: _authCubit.state.serial,
+      ),
     );
   }
 
@@ -36,7 +39,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   final NotificationRepository _notificationRepository;
   late final StreamSubscription<AuthState> _authSubscription;
 
-  final Map<String, QueryDocumentSnapshotJson?> _cursors = <String, QueryDocumentSnapshotJson?>{};
+  final Map<String, QueryDocumentSnapshotJson?> _cursors =
+      <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
 
   // 동기적 pending 상태 관리 (race condition 방지)
@@ -47,7 +51,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
   static const int _pageSize = 20;
 
-  String _cursorKey(LoungeScope scope, LoungeSort sort) => '${scope.name}_${sort.name}';
+  String _cursorKey(LoungeScope scope, LoungeSort sort) =>
+      '${scope.name}_${sort.name}';
 
   bool get _shouldShowAds {
     return false;
@@ -150,7 +155,12 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
     _isFetching = true;
-    emit(state.copyWith(status: CommunityFeedStatus.refreshing, errorMessage: null));
+    emit(
+      state.copyWith(
+        status: CommunityFeedStatus.refreshing,
+        errorMessage: null,
+      ),
+    );
     try {
       final PaginatedQueryResult<Post> result = await _fetchPosts(
         state.scope,
@@ -185,7 +195,12 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         ),
       );
     } catch (_) {
-      emit(state.copyWith(status: CommunityFeedStatus.error, errorMessage: '새로고침 중 오류가 발생했습니다.'));
+      emit(
+        state.copyWith(
+          status: CommunityFeedStatus.error,
+          errorMessage: '새로고침 중 오류가 발생했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -205,11 +220,20 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         state.sort,
         reset: false,
       );
-      final List<Post> combined = List<Post>.from(state.posts)..addAll(result.items);
+      final List<Post> combined = List<Post>.from(state.posts)
+        ..addAll(result.items);
       final Set<String> liked = Set<String>.from(state.likedPostIds)
-        ..addAll(result.items.where((Post post) => post.isLiked).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isLiked)
+              .map((Post post) => post.id),
+        );
       final Set<String> scrapped = Set<String>.from(state.scrappedPostIds)
-        ..addAll(result.items.where((Post post) => post.isScrapped).map((Post post) => post.id));
+        ..addAll(
+          result.items
+              .where((Post post) => post.isScrapped)
+              .map((Post post) => post.id),
+        );
 
       emit(
         state.copyWith(
@@ -225,7 +249,12 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       final String key = _cursorKey(state.scope, state.sort);
       _cursors[key] = result.lastDocument ?? _cursors[key];
     } catch (_) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.'));
+      emit(
+        state.copyWith(
+          isLoadingMore: false,
+          errorMessage: '다음 글을 불러오는 중 문제가 발생했습니다.',
+        ),
+      );
     } finally {
       _isFetching = false;
     }
@@ -297,7 +326,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       debugPrint('⚠️  이미 처리 중인 좋아요 요청 - PostId: ${post.id}');
       return;
     }
-    
+
     // 즉시 pending에 추가 (동기적)
     _pendingLikePostIds.add(post.id);
 
@@ -324,7 +353,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
 
     // 좋아요 처리 시작을 UI에 알림
-    final Set<String> pendingLikes = Set<String>.from(state.pendingLikePostIds)..add(post.id);
+    final Set<String> pendingLikes = Set<String>.from(state.pendingLikePostIds)
+      ..add(post.id);
     emit(
       state.copyWith(
         posts: optimisticPosts,
@@ -349,9 +379,10 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     // pending 상태에서 제거 (동기적)
     _pendingLikePostIds.remove(post.id);
-    
-    final Set<String> finalPendingLikes = Set<String>.from(state.pendingLikePostIds)
-      ..remove(post.id);
+
+    final Set<String> finalPendingLikes = Set<String>.from(
+      state.pendingLikePostIds,
+    )..remove(post.id);
 
     if (!success && lastError != null) {
       // 실패 시 이전 상태로 복원
@@ -421,7 +452,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     if (authState.careerHierarchy != null) {
       try {
-        accessibleLounges = LoungeAccessService.convertToLoungeInfos(authState.careerHierarchy!);
+        accessibleLounges = LoungeAccessService.convertToLoungeInfos(
+          authState.careerHierarchy!,
+        );
       } catch (e) {
         accessibleLounges = [];
       }
@@ -449,9 +482,13 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       selectedLoungeInfo = accessibleLounges.first;
     }
 
-    final bool loungeAccessChanged = accessibleLounges != state.accessibleLounges;
+    final bool loungeAccessChanged =
+        accessibleLounges != state.accessibleLounges;
 
-    if (serialChanged || trackChanged || supporterChanged || loungeAccessChanged) {
+    if (serialChanged ||
+        trackChanged ||
+        supporterChanged ||
+        loungeAccessChanged) {
       emit(
         state.copyWith(
           careerTrack: authState.careerTrack,
@@ -459,7 +496,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           showAds: _shouldShowAds,
           accessibleLounges: accessibleLounges,
           selectedLoungeInfo: selectedLoungeInfo,
-          scope: selectedLoungeInfo != null ? LoungeScope(selectedLoungeInfo.id) : state.scope,
+          scope: selectedLoungeInfo != null
+              ? LoungeScope(selectedLoungeInfo.id)
+              : state.scope,
         ),
       );
 
@@ -481,7 +520,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     // 전체 라운지가 아닌 경우, 접근 권한 확인
     if (scope.loungeId != 'all') {
-      final bool hasAccess = state.accessibleLounges.any((lounge) => lounge.id == scope.loungeId);
+      final bool hasAccess = state.accessibleLounges.any(
+        (lounge) => lounge.id == scope.loungeId,
+      );
       if (!hasAccess) {
         return const PaginatedQueryResult<Post>(
           items: <Post>[],
@@ -537,5 +578,4 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     await _loadBlockedUsers();
     await refresh();
   }
-
 }

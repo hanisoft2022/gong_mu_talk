@@ -2,8 +2,8 @@
 /// Manages user profile subscription and updates
 
 library;
-import 'dart:async';
 
+import 'dart:async';
 
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/career_track.dart';
@@ -18,8 +18,8 @@ class AuthProfileManager {
   AuthProfileManager({
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
-  })  : _userProfileRepository = userProfileRepository,
-        _notificationRepository = notificationRepository;
+  }) : _userProfileRepository = userProfileRepository,
+       _notificationRepository = notificationRepository;
 
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
@@ -36,9 +36,13 @@ class AuthProfileManager {
     required AuthState currentState,
   }) {
     _profileSubscription?.cancel();
-    final String fallbackNickname = AuthCubitHelpers.deriveNickname(fallbackEmail);
+    final String fallbackNickname = AuthCubitHelpers.deriveNickname(
+      fallbackEmail,
+    );
 
-    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((UserProfile? profile) {
+    _profileSubscription = _userProfileRepository.watchProfile(uid).listen((
+      UserProfile? profile,
+    ) {
       if (profile == null) {
         return;
       }
@@ -60,10 +64,7 @@ class AuthProfileManager {
     );
   }
 
-  void applyProfile(
-    UserProfile profile, {
-    required StateEmitter emit,
-  }) {
+  void applyProfile(UserProfile profile, {required StateEmitter emit}) {
     final Set<CareerTrack> excludedTracks = profile.excludedSerials
         .map(AuthCubitHelpers.careerTrackFromSerial)
         .where((CareerTrack track) => track != CareerTrack.none)

@@ -20,7 +20,10 @@ class TimelineSection extends StatelessWidget {
           case ProfileTimelineStatus.initial:
           case ProfileTimelineStatus.loading:
             return const Center(
-              child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()),
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
             );
           case ProfileTimelineStatus.error:
             return Column(
@@ -31,7 +34,8 @@ class TimelineSection extends StatelessWidget {
                 ),
                 const Gap(12),
                 OutlinedButton(
-                  onPressed: () => context.read<ProfileTimelineCubit>().loadInitial(),
+                  onPressed: () =>
+                      context.read<ProfileTimelineCubit>().loadInitial(),
                   child: const Text('다시 시도'),
                 ),
               ],
@@ -45,7 +49,10 @@ class TimelineSection extends StatelessWidget {
                   children: [
                     const Icon(Icons.forum_outlined, size: 40),
                     const Gap(8),
-                    Text('아직 작성한 글이 없습니다.', style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      '아직 작성한 글이 없습니다.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ],
                 ),
               );
@@ -55,8 +62,10 @@ class TimelineSection extends StatelessWidget {
                 ...state.posts.map(
                   (Post post) => PostCard(
                     post: post,
-                    onToggleLike: () => context.read<ProfileTimelineCubit>().toggleLike(post),
-                    onToggleScrap: () => context.read<ProfileTimelineCubit>().toggleScrap(post),
+                    onToggleLike: () =>
+                        context.read<ProfileTimelineCubit>().toggleLike(post),
+                    onToggleScrap: () =>
+                        context.read<ProfileTimelineCubit>().toggleScrap(post),
                   ),
                 ),
                 if (state.isLoadingMore)
@@ -66,7 +75,8 @@ class TimelineSection extends StatelessWidget {
                   ),
                 if (state.hasMore && !state.isLoadingMore)
                   TextButton(
-                    onPressed: () => context.read<ProfileTimelineCubit>().loadMore(),
+                    onPressed: () =>
+                        context.read<ProfileTimelineCubit>().loadMore(),
                     child: const Text('더 보기'),
                   ),
               ],

@@ -19,6 +19,7 @@
 /// Used by ProfileHeader widget when in debug mode.
 
 library;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,10 +46,9 @@ void showTestCareerSelector(BuildContext context) {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   '테스트용 직렬 선택',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -87,9 +87,9 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
     final String? userId = authCubit.state.userId;
 
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
       return;
     }
 
@@ -102,10 +102,12 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
       careerHierarchy = CareerHierarchy.fromSpecificCareer(careerId);
 
       // LoungeAccessService를 사용하여 접근 가능한 라운지 ID 생성
-      final accessibleLounges =
-          LoungeAccessService.getAccessibleLounges(careerHierarchy);
-      accessibleLoungeIds =
-          accessibleLounges.map((lounge) => lounge.id).toList();
+      final accessibleLounges = LoungeAccessService.getAccessibleLounges(
+        careerHierarchy,
+      );
+      accessibleLoungeIds = accessibleLounges
+          .map((lounge) => lounge.id)
+          .toList();
 
       // 기본 라운지는 LoungeAccessService를 통해 가져옴
       defaultLoungeId = LoungeAccessService.getDefaultLoungeId(careerHierarchy);
@@ -139,9 +141,9 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
     }
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류가 발생했습니다: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
     }
   }
 }

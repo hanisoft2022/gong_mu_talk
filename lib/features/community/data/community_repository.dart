@@ -55,12 +55,12 @@ class CommunityRepository {
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
     required AuthCubit authCubit,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance,
-        _userSession = userSession,
-        _userProfileRepository = userProfileRepository,
-        _notificationRepository = notificationRepository,
-        _authCubit = authCubit {
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance,
+       _userSession = userSession,
+       _userProfileRepository = userProfileRepository,
+       _notificationRepository = notificationRepository,
+       _authCubit = authCubit {
     // Initialize specialized repositories
     _postRepository = PostRepository(
       firestore: _firestore,
@@ -126,11 +126,11 @@ class CommunityRepository {
   late final SearchRepository _searchRepository;
   late final LoungeRepository _loungeRepository;
   late final ReportRepository _reportRepository;
-  
+
   // Cache and enrichment services
   late final InteractionCacheManager _cacheManager;
   late final PostEnrichmentService _enrichmentService;
-  
+
   // Legacy cache variables (TODO: migrate to services)
   final Map<String, Set<String>> _likedPostsCache = {};
   final Map<String, Set<String>> _scrappedPostsCache = {};
@@ -204,10 +204,7 @@ class CommunityRepository {
     );
   }
 
-  Future<void> deletePost({
-    required String postId,
-    required String authorUid,
-  }) {
+  Future<void> deletePost({required String postId, required String authorUid}) {
     return _postRepository.deletePost(postId: postId, authorUid: authorUid);
   }
 
@@ -241,8 +238,6 @@ class CommunityRepository {
     );
     return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
-
-  
 
   Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
     required String authorUid,
@@ -286,7 +281,6 @@ class CommunityRepository {
   String generatePostId() {
     return _postRepository.generatePostId();
   }
-
 
   Future<Post?> getPost(String postId) async {
     return fetchPostById(postId, currentUid: currentUserId);
@@ -332,10 +326,6 @@ class CommunityRepository {
     return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
   }
 
-  
-
-  
-
   // ============================================================================
   // COMMENT OPERATIONS - Delegate to CommentRepository
   // ============================================================================
@@ -377,12 +367,15 @@ class CommunityRepository {
       // 캐시 업데이트
       _likedCommentsCache.putIfAbsent(currentUid, () => {});
       _likedCommentsCache[currentUid]![postId] = likedIds;
-      debugPrint('🔄 Comment Like 캐시 갱신 - postId: $postId, ${likedIds.length} likes');
+      debugPrint(
+        '🔄 Comment Like 캐시 갱신 - postId: $postId, ${likedIds.length} likes',
+      );
     }
 
     final enrichedComments = result.items
-        .map((comment) =>
-            comment.copyWith(isLiked: likedIds.contains(comment.id)))
+        .map(
+          (comment) => comment.copyWith(isLiked: likedIds.contains(comment.id)),
+        )
         .toList();
 
     return PaginatedQueryResult<Comment>(
@@ -420,11 +413,11 @@ class CommunityRepository {
       awardPoints: awardPoints,
       imageUrls: imageUrls,
     );
-    
+
     // Top Comment 캐시 무효화 (새 댓글이 top이 될 수 있음)
     _topCommentsCache.remove(postId);
     debugPrint('🗑️  Top Comment 캐시 무효화 - postId: $postId (새 댓글 생성)');
-    
+
     return comment;
   }
 
@@ -438,7 +431,7 @@ class CommunityRepository {
       commentId: commentId,
       requesterUid: requesterUid,
     );
-    
+
     // Top Comment 캐시 무효화 (top comment가 삭제되었을 수 있음)
     _topCommentsCache.remove(postId);
     debugPrint('🗑️  Top Comment 캐시 무효화 - postId: $postId (댓글 삭제)');
@@ -446,11 +439,12 @@ class CommunityRepository {
 
   Future<List<Comment>> getComments(String postId) async {
     final comments = await _commentRepository.getComments(postId);
-    final Set<String> likedIds = await _interactionRepository.fetchLikedCommentIds(
-      postId: postId,
-      uid: currentUserId,
-      commentIds: comments.map((c) => c.id).toList(),
-    );
+    final Set<String> likedIds = await _interactionRepository
+        .fetchLikedCommentIds(
+          postId: postId,
+          uid: currentUserId,
+          commentIds: comments.map((c) => c.id).toList(),
+        );
 
     return comments
         .map((c) => c.copyWith(isLiked: likedIds.contains(c.id)))
@@ -458,13 +452,16 @@ class CommunityRepository {
   }
 
   Future<List<Comment>> getTopComments(String postId, {int limit = 3}) async {
-    final comments =
-        await _commentRepository.getTopComments(postId, limit: limit);
-    final Set<String> likedIds = await _interactionRepository.fetchLikedCommentIds(
-      postId: postId,
-      uid: currentUserId,
-      commentIds: comments.map((c) => c.id).toList(),
+    final comments = await _commentRepository.getTopComments(
+      postId,
+      limit: limit,
     );
+    final Set<String> likedIds = await _interactionRepository
+        .fetchLikedCommentIds(
+          postId: postId,
+          uid: currentUserId,
+          commentIds: comments.map((c) => c.id).toList(),
+        );
 
     return comments
         .map((c) => c.copyWith(isLiked: likedIds.contains(c.id)))
@@ -505,8 +502,11 @@ class CommunityRepository {
     required String postId,
     required String uid,
   }) async {
-    final liked = await _interactionRepository.togglePostLike(postId: postId, uid: uid);
-    
+    final liked = await _interactionRepository.togglePostLike(
+      postId: postId,
+      uid: uid,
+    );
+
     // 캐시 즉시 업데이트
     if (_likedPostsCache.containsKey(uid)) {
       if (liked) {
@@ -516,7 +516,7 @@ class CommunityRepository {
       }
       debugPrint('💾 Like 캐시 업데이트 - postId: $postId, liked: $liked');
     }
-    
+
     return liked;
   }
 
@@ -539,7 +539,9 @@ class CommunityRepository {
       } else {
         _likedCommentsCache[uid]![postId]!.remove(commentId);
       }
-      debugPrint('💾 Comment Like 캐시 업데이트 - commentId: $commentId, liked: $liked');
+      debugPrint(
+        '💾 Comment Like 캐시 업데이트 - commentId: $commentId, liked: $liked',
+      );
     }
 
     return liked;
@@ -550,7 +552,7 @@ class CommunityRepository {
     required String postId,
   }) async {
     await _interactionRepository.toggleScrap(uid: uid, postId: postId);
-    
+
     // 캐시 즉시 업데이트 (토글이므로 존재 여부 확인)
     if (_scrappedPostsCache.containsKey(uid)) {
       if (_scrappedPostsCache[uid]!.contains(postId)) {
@@ -572,8 +574,7 @@ class CommunityRepository {
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    final scrapPage =
-        await _interactionRepository.fetchScrappedPostIdsPage(
+    final scrapPage = await _interactionRepository.fetchScrappedPostIdsPage(
       uid: uid,
       limit: limit,
       startAfter: startAfter,
@@ -587,15 +588,19 @@ class CommunityRepository {
       );
     }
 
-    final Map<String, Post> postMap =
-        await _postRepository.fetchPostsByIds(scrapPage.items);
+    final Map<String, Post> postMap = await _postRepository.fetchPostsByIds(
+      scrapPage.items,
+    );
 
     final List<Post> posts = scrapPage.items
         .map((id) => postMap[id])
         .whereType<Post>()
         .toList();
 
-    final enrichedPosts = await _enrichmentService.enrichPosts(posts, currentUid: uid);
+    final enrichedPosts = await _enrichmentService.enrichPosts(
+      posts,
+      currentUid: uid,
+    );
 
     return PaginatedQueryResult<Post>(
       items: enrichedPosts,
@@ -609,8 +614,7 @@ class CommunityRepository {
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    final likePage =
-        await _interactionRepository.fetchLikedPostIdsPage(
+    final likePage = await _interactionRepository.fetchLikedPostIdsPage(
       uid: uid,
       limit: limit,
       startAfter: startAfter,
@@ -624,15 +628,19 @@ class CommunityRepository {
       );
     }
 
-    final Map<String, Post> postMap =
-        await _postRepository.fetchPostsByIds(likePage.items);
+    final Map<String, Post> postMap = await _postRepository.fetchPostsByIds(
+      likePage.items,
+    );
 
     final List<Post> posts = likePage.items
         .map((id) => postMap[id])
         .whereType<Post>()
         .toList();
 
-    final enrichedPosts = await _enrichmentService.enrichPosts(posts, currentUid: uid);
+    final enrichedPosts = await _enrichmentService.enrichPosts(
+      posts,
+      currentUid: uid,
+    );
 
     return PaginatedQueryResult<Post>(
       items: enrichedPosts,
@@ -666,8 +674,9 @@ class CommunityRepository {
         .toSet();
 
     // Fetch posts by IDs
-    final Map<String, Post> postMap =
-        await _postRepository.fetchPostsByIds(postIds.toList());
+    final Map<String, Post> postMap = await _postRepository.fetchPostsByIds(
+      postIds.toList(),
+    );
 
     // Map comments to CommentWithPost objects
     final List<CommentWithPost> commentsWithPosts = commentPage.items
@@ -725,7 +734,8 @@ class CommunityRepository {
   }) async {
     // Rate Limiting: 2초 이내 재검색 방지
     final now = DateTime.now();
-    if (_lastSearchTime != null && now.difference(_lastSearchTime!) < _searchCooldown) {
+    if (_lastSearchTime != null &&
+        now.difference(_lastSearchTime!) < _searchCooldown) {
       debugPrint('⚠️  검색 Rate Limit - ${_searchCooldown.inSeconds}초 대기 필요');
       return const CommunitySearchResults();
     }
@@ -740,7 +750,10 @@ class CommunityRepository {
 
     // Enrich posts with user data
     final enrichedPosts = currentUid != null
-        ? await _enrichmentService.enrichPosts(results.posts, currentUid: currentUid)
+        ? await _enrichmentService.enrichPosts(
+            results.posts,
+            currentUid: currentUid,
+          )
         : results.posts;
 
     // Enrich comments with post data

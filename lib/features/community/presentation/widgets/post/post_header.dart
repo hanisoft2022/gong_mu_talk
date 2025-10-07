@@ -8,6 +8,7 @@
 /// Used by: PostCard
 
 library;
+
 import 'package:flutter/material.dart';
 
 import '../../../domain/models/post.dart';
@@ -45,13 +46,17 @@ class PostHeader extends StatelessWidget {
   Widget _buildAuthorMenu(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextStyle timestampStyle =
-        theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant) ??
+        theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ) ??
         TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11);
 
     final Widget timestampLabel = Text(timestamp, style: timestampStyle);
     final Widget identityButton = AuthorDisplayWidget(
       key: authorButtonKey,
-      nickname: post.authorNickname.isNotEmpty ? post.authorNickname : post.authorUid,
+      nickname: post.authorNickname.isNotEmpty
+          ? post.authorNickname
+          : post.authorUid,
       track: post.authorTrack,
       specificCareer: post.authorSpecificCareer,
       serialVisible: post.authorSerialVisible,

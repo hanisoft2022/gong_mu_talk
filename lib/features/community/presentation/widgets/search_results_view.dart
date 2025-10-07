@@ -26,7 +26,8 @@ class SearchResultsView extends StatelessWidget {
         final SearchCubit searchCubit = context.read<SearchCubit>();
         final bool showPosts = state.scope != SearchScope.comments;
         final bool showComments =
-            state.scope == SearchScope.all || state.scope == SearchScope.comments;
+            state.scope == SearchScope.all ||
+            state.scope == SearchScope.comments;
         final bool noPosts = !showPosts || state.postResults.isEmpty;
         final bool noComments = !showComments || state.commentResults.isEmpty;
 
@@ -159,10 +160,7 @@ class SearchResultsView extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const Gap(4),
-            Text(
-              error,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(error, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
@@ -170,12 +168,13 @@ class SearchResultsView extends StatelessWidget {
   }
 
   Widget _buildSearchResultsHeader(BuildContext context, SearchState state) {
-    final int totalResults = state.postResults.length + state.commentResults.length;
+    final int totalResults =
+        state.postResults.length + state.commentResults.length;
     return Text(
       '검색 결과 $totalResults개',
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
@@ -184,29 +183,30 @@ class SearchResultsView extends StatelessWidget {
       children: [
         const Icon(Icons.search_off, size: 48, color: Colors.grey),
         const Gap(16),
-        Text(
-          '검색 결과가 없습니다',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('검색 결과가 없습니다', style: Theme.of(context).textTheme.titleMedium),
         const Gap(8),
         Text(
           '다른 키워드로 검색해보세요',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
         ),
       ],
     );
   }
 
-  Widget _buildSearchSectionHeader(BuildContext context, String title, int count) {
+  Widget _buildSearchSectionHeader(
+    BuildContext context,
+    String title,
+    int count,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         '\$title (\$count)',
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -216,9 +216,9 @@ class SearchResultsView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Text(
         '\$section 결과가 없습니다',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Colors.grey,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
         textAlign: TextAlign.center,
       ),
     );

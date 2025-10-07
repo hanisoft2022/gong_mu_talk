@@ -31,13 +31,13 @@ class Allowance extends Equatable {
 
   @override
   List<Object?> get props => [
-        homeroom,
-        headTeacher,
-        family,
-        veteran,
-        other1,
-        other2,
-      ];
+    homeroom,
+    headTeacher,
+    family,
+    veteran,
+    other1,
+    other2,
+  ];
 
   Allowance copyWith({
     int? homeroom,

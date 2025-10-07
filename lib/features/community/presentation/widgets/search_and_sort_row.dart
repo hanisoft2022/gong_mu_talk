@@ -6,6 +6,7 @@
 /// - Coordinate layout between search and sort controls
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -87,10 +88,7 @@ class SearchAndSortRow extends StatelessWidget {
 
 /// Row of sort buttons
 class _SortButtonsRow extends StatelessWidget {
-  const _SortButtonsRow({
-    required this.currentSort,
-    required this.onSelect,
-  });
+  const _SortButtonsRow({required this.currentSort, required this.onSelect});
 
   final LoungeSort currentSort;
   final ValueChanged<LoungeSort> onSelect;
@@ -133,7 +131,7 @@ class _SortButtonsRow extends StatelessWidget {
           },
           theme: theme,
         ),
-],
+      ],
     );
   }
 }

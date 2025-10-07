@@ -253,20 +253,20 @@ class Lounge extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        emoji,
-        type,
-        accessType,
-        requiredCareerIds,
-        shortName,
-        description,
-        memberCount,
-        parentLoungeId,
-        childLoungeIds,
-        order,
-        isActive,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    name,
+    emoji,
+    type,
+    accessType,
+    requiredCareerIds,
+    shortName,
+    description,
+    memberCount,
+    parentLoungeId,
+    childLoungeIds,
+    order,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -44,7 +46,9 @@ Future<void> main() async {
   if (duplicateCount == 0) {
     print('✅ No duplicate likes found!');
   } else {
-    print('⚠️  Found $duplicateCount posts with duplicate likes from same user');
+    print(
+      '⚠️  Found $duplicateCount posts with duplicate likes from same user',
+    );
   }
 
   // Check likeCount accuracy

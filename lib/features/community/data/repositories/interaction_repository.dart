@@ -26,8 +26,8 @@ class InteractionRepository {
   InteractionRepository({
     FirebaseFirestore? firestore,
     required UserProfileRepository userProfileRepository,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _userProfileRepository = userProfileRepository;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _userProfileRepository = userProfileRepository;
 
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
@@ -79,22 +79,14 @@ class InteractionRepository {
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
 
-      transaction.set(
-        postDoc,
-        <String, Object?>{
-          'likeCount': FieldValue.increment(willLike ? 1 : -1),
-          'updatedAt': Timestamp.now(),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(postDoc, <String, Object?>{
+        'likeCount': FieldValue.increment(willLike ? 1 : -1),
+        'updatedAt': Timestamp.now(),
+      }, SetOptions(merge: true));
 
-      transaction.set(
-        shardDoc,
-        <String, Object?>{
-          'likes': FieldValue.increment(willLike ? 1 : -1),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(shardDoc, <String, Object?>{
+        'likes': FieldValue.increment(willLike ? 1 : -1),
+      }, SetOptions(merge: true));
 
       if (willLike) {
         transaction.set(likeDoc, <String, Object?>{
@@ -132,10 +124,12 @@ class InteractionRepository {
     required String uid,
   }) async {
     final CollectionReference<JsonMap> commentLikes = _commentLikesRef(postId);
-    final DocumentReference<JsonMap> likeDoc =
-        commentLikes.doc('${commentId}_$uid');
-    final DocumentReference<JsonMap> commentDoc =
-        _commentsRef(postId).doc(commentId);
+    final DocumentReference<JsonMap> likeDoc = commentLikes.doc(
+      '${commentId}_$uid',
+    );
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(
+      postId,
+    ).doc(commentId);
     String? commentAuthorUid;
     final bool liked = await _firestore.runTransaction<bool>((
       Transaction transaction,
@@ -190,8 +184,7 @@ class InteractionRepository {
     required String uid,
     required String postId,
   }) async {
-    final DocumentReference<JsonMap> scrapDoc =
-        _scrapsRef(uid).doc(postId);
+    final DocumentReference<JsonMap> scrapDoc = _scrapsRef(uid).doc(postId);
     final DocSnapshotJson snapshot = await scrapDoc.get();
     if (snapshot.exists) {
       await scrapDoc.delete();
@@ -215,8 +208,9 @@ class InteractionRepository {
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
   }) async {
-    Query<JsonMap> scrapQuery =
-        _scrapsRef(uid).orderBy('createdAt', descending: true).limit(limit);
+    Query<JsonMap> scrapQuery = _scrapsRef(
+      uid,
+    ).orderBy('createdAt', descending: true).limit(limit);
     if (startAfter != null) {
       scrapQuery = scrapQuery.startAfterDocument(startAfter);
     }
@@ -276,8 +270,9 @@ class InteractionRepository {
       final List<Future<DocumentSnapshot<JsonMap>>> futures = chunk
           .map((String postId) => _scrapsRef(uid).doc(postId).get())
           .toList(growable: false);
-      final List<DocumentSnapshot<JsonMap>> results =
-          await Future.wait(futures);
+      final List<DocumentSnapshot<JsonMap>> results = await Future.wait(
+        futures,
+      );
       for (int index = 0; index < results.length; index += 1) {
         if (results[index].exists) {
           scrapped.add(chunk[index]);
@@ -332,10 +327,9 @@ class InteractionRepository {
     final Set<String> likedIds = <String>{};
     final Iterable<List<String>> chunks = _chunk(commentIds, size: 10);
     for (final List<String> chunk in chunks) {
-      final QuerySnapshot<JsonMap> snapshot = await _commentLikesRef(postId)
-          .where('uid', isEqualTo: uid)
-          .where('commentId', whereIn: chunk)
-          .get();
+      final QuerySnapshot<JsonMap> snapshot = await _commentLikesRef(
+        postId,
+      ).where('uid', isEqualTo: uid).where('commentId', whereIn: chunk).get();
       likedIds.addAll(
         snapshot.docs.map(
           (QueryDocumentSnapshot<JsonMap> doc) => doc['commentId'] as String,

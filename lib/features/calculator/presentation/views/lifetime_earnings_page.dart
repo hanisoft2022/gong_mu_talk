@@ -8,10 +8,7 @@ import 'package:share_plus/share_plus.dart';
 class LifetimeEarningsPage extends StatelessWidget {
   final LifetimeSalary lifetimeSalary;
 
-  const LifetimeEarningsPage({
-    super.key,
-    required this.lifetimeSalary,
-  });
+  const LifetimeEarningsPage({super.key, required this.lifetimeSalary});
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +79,9 @@ class LifetimeEarningsPage extends StatelessWidget {
             Text(
               '총 소득',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                color: theme.colorScheme.onPrimaryContainer.withValues(
+                  alpha: 0.8,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -254,10 +253,7 @@ class LifetimeEarningsPage extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              height: 250,
-              child: _buildAnnualSalaryChart(theme),
-            ),
+            child: SizedBox(height: 250, child: _buildAnnualSalaryChart(theme)),
           ),
         ),
       ],
@@ -388,7 +384,9 @@ class LifetimeEarningsPage extends StatelessWidget {
                 _buildStatRow(
                   theme,
                   '평균 연봉',
-                  NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
+                  NumberFormatter.formatCurrency(
+                    lifetimeSalary.avgAnnualSalary,
+                  ),
                 ),
                 const Divider(height: 24),
                 _buildStatRow(
@@ -417,7 +415,9 @@ class LifetimeEarningsPage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: theme.colorScheme.outline.withValues(alpha: 0.2),
@@ -455,10 +455,7 @@ class LifetimeEarningsPage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyLarge,
-        ),
+        Text(label, style: theme.textTheme.bodyLarge),
         Text(
           value,
           style: theme.textTheme.titleMedium?.copyWith(
@@ -472,10 +469,15 @@ class LifetimeEarningsPage extends StatelessWidget {
 
   void _shareResults(BuildContext context) {
     final totalYears = lifetimeSalary.totalYears;
-    final totalIncome = NumberFormatter.formatCurrency(lifetimeSalary.totalIncome);
-    final avgAnnual = NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary);
+    final totalIncome = NumberFormatter.formatCurrency(
+      lifetimeSalary.totalIncome,
+    );
+    final avgAnnual = NumberFormatter.formatCurrency(
+      lifetimeSalary.avgAnnualSalary,
+    );
 
-    final text = '''
+    final text =
+        '''
 🎓 생애 소득 시뮬레이션 결과
 
 📅 근무 기간: $totalYears년
@@ -491,9 +493,6 @@ class LifetimeEarningsPage extends StatelessWidget {
         ? box.localToGlobal(Offset.zero) & box.size
         : null;
 
-    Share.share(
-      text,
-      sharePositionOrigin: sharePositionOrigin,
-    );
+    Share.share(text, sharePositionOrigin: sharePositionOrigin);
   }
 }

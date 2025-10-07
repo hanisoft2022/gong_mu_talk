@@ -14,10 +14,7 @@ class CalculateAfterTaxPensionUseCase {
   /// [age] 수령 시점 연령 (선택)
   ///
   /// Returns: 세후 연금 정보
-  AfterTaxPension call({
-    required PensionEstimate pensionEstimate,
-    int? age,
-  }) {
+  AfterTaxPension call({required PensionEstimate pensionEstimate, int? age}) {
     return _service.calculateAfterTaxPension(
       pensionEstimate: pensionEstimate,
       age: age,

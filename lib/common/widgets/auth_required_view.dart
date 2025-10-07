@@ -97,7 +97,11 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.icon, size: 64, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                widget.icon,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const Gap(24),
               Text(
                 widget.title,
@@ -134,9 +138,8 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                         children: [
                           Text(
                             '공직자 통합 메일 인증',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           const Gap(12),
                           Row(
@@ -164,7 +167,8 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                               ),
                               const Gap(8),
                               IconButton(
-                                onPressed: () => _showAllowedDomainsDialog(context),
+                                onPressed: () =>
+                                    _showAllowedDomainsDialog(context),
                                 icon: const Icon(Icons.help_outline),
                                 tooltip: '허용되는 이메일 도메인 확인',
                               ),
@@ -173,18 +177,23 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                           const Gap(16),
                           BlocBuilder<AuthCubit, AuthState>(
                             builder: (context, state) {
-                              final bool isLoading = state.isGovernmentEmailVerificationInProgress;
+                              final bool isLoading =
+                                  state.isGovernmentEmailVerificationInProgress;
 
                               return Row(
                                 children: [
                                   Expanded(
                                     child: FilledButton(
-                                      onPressed: isLoading ? null : _requestVerification,
+                                      onPressed: isLoading
+                                          ? null
+                                          : _requestVerification,
                                       child: isLoading
                                           ? const SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
                                             )
                                           : const Text('인증 메일 발송'),
                                     ),
@@ -208,9 +217,12 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
                           const Gap(12),
                           Text(
                             '입력하신 이메일 주소로 인증 메일이 발송됩니다.\n메일함을 확인하여 인증을 완료해주세요.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -260,7 +272,11 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Row(
-            children: [Icon(Icons.verified_user), SizedBox(width: 8), Text('허용되는 공무원 이메일')],
+            children: [
+              Icon(Icons.verified_user),
+              SizedBox(width: 8),
+              Text('허용되는 공무원 이메일'),
+            ],
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -268,7 +284,10 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('다음 도메인의 이메일 주소로 인증할 수 있습니다:', style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  '다음 도메인의 이메일 주소로 인증할 수 있습니다:',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 const Gap(16),
                 Flexible(
                   child: SingleChildScrollView(
@@ -329,14 +348,21 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('확인')),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
           ],
         );
       },
     );
   }
 
-  Widget _buildDomainCategory(BuildContext context, String title, List<String> domains) {
+  Widget _buildDomainCategory(
+    BuildContext context,
+    String title,
+    List<String> domains,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -353,9 +379,18 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
             padding: const EdgeInsets.only(left: 12, bottom: 4),
             child: Row(
               children: [
-                Icon(Icons.circle, size: 6, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.circle,
+                  size: 6,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const Gap(8),
-                Expanded(child: Text(domain, style: Theme.of(context).textTheme.bodySmall)),
+                Expanded(
+                  child: Text(
+                    domain,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
               ],
             ),
           ),

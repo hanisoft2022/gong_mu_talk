@@ -48,7 +48,11 @@ class PostTrailingActions extends StatelessWidget {
           value: 'share',
           child: Row(
             children: [
-              Icon(Icons.share_outlined, size: 20, color: theme.colorScheme.onSurface),
+              Icon(
+                Icons.share_outlined,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
               const SizedBox(width: 12),
               const Text('공유하기'),
             ],
@@ -67,7 +71,9 @@ class PostTrailingActions extends StatelessWidget {
               Icon(
                 post.isScrapped ? Icons.bookmark : Icons.bookmark_outline,
                 size: 20,
-                color: post.isScrapped ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                color: post.isScrapped
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface,
               ),
               const SizedBox(width: 12),
               Text(post.isScrapped ? '스크랩 해제' : '스크랩'),
@@ -87,7 +93,11 @@ class PostTrailingActions extends StatelessWidget {
           value: 'report',
           child: Row(
             children: [
-              Icon(Icons.flag_outlined, size: 20, color: theme.colorScheme.error),
+              Icon(
+                Icons.flag_outlined,
+                size: 20,
+                color: theme.colorScheme.error,
+              ),
               const SizedBox(width: 12),
               Text('신고하기', style: TextStyle(color: theme.colorScheme.error)),
             ],
@@ -103,7 +113,11 @@ class PostTrailingActions extends StatelessWidget {
 
     // Build 3-dot menu button
     final Widget menuButton = PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: 20, color: theme.colorScheme.onSurfaceVariant),
+      icon: Icon(
+        Icons.more_vert,
+        size: 20,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
       iconSize: 20,
       constraints: const BoxConstraints(minHeight: 36, minWidth: 36),
       padding: const EdgeInsets.all(6),

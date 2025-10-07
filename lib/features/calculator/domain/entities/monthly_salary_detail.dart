@@ -64,20 +64,20 @@ class MonthlySalaryDetail extends Equatable {
 
   @override
   List<Object?> get props => [
-        month,
-        baseSalary,
-        teachingAllowance,
-        homeroomAllowance,
-        positionAllowance,
-        veteranAllowance,
-        familyAllowance,
-        researchAllowance,
-        mealAllowance,
-        overtimeAllowance,
-        longevityBonus,
-        longevityMonthly,
-        grossSalary,
-      ];
+    month,
+    baseSalary,
+    teachingAllowance,
+    homeroomAllowance,
+    positionAllowance,
+    veteranAllowance,
+    familyAllowance,
+    researchAllowance,
+    mealAllowance,
+    overtimeAllowance,
+    longevityBonus,
+    longevityMonthly,
+    grossSalary,
+  ];
 
   MonthlySalaryDetail copyWith({
     int? month,

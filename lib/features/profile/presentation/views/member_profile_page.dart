@@ -110,9 +110,8 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         '작성한 글',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     );
                   } else if (index == 3) {
@@ -147,10 +146,16 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
     setState(() => _isFollowActionPending = true);
     try {
       if (isFollowing) {
-        await _followRepository.unfollow(followerUid: followerUid, targetUid: targetUid);
+        await _followRepository.unfollow(
+          followerUid: followerUid,
+          targetUid: targetUid,
+        );
         _showSnackBar('팔로우를 취소했어요.');
       } else {
-        await _followRepository.follow(followerUid: followerUid, targetUid: targetUid);
+        await _followRepository.follow(
+          followerUid: followerUid,
+          targetUid: targetUid,
+        );
         _showSnackBar('새로운 동료를 팔로우했어요.');
       }
     } catch (_) {
@@ -185,7 +190,10 @@ class _ProfileNotFoundView extends StatelessWidget {
           children: [
             const Icon(Icons.person_off_outlined, size: 48),
             const Gap(12),
-            Text('해당 사용자를 찾을 수 없습니다.', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              '해당 사용자를 찾을 수 없습니다.',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ],
         ),
       ),
@@ -221,7 +229,10 @@ class _FollowButton extends StatelessWidget {
     }
 
     return StreamBuilder<bool>(
-      stream: followRepository.watchIsFollowing(followerUid: currentUid, targetUid: targetUid),
+      stream: followRepository.watchIsFollowing(
+        followerUid: currentUid,
+        targetUid: targetUid,
+      ),
       builder: (context, snapshot) {
         final bool isFollowing = snapshot.data ?? false;
         return FilledButton.tonal(

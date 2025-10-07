@@ -7,18 +7,12 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary
 class AnnualSalaryDetailPage extends StatelessWidget {
   final LifetimeSalary lifetimeSalary;
 
-  const AnnualSalaryDetailPage({
-    super.key,
-    required this.lifetimeSalary,
-  });
+  const AnnualSalaryDetailPage({super.key, required this.lifetimeSalary});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('연도별 급여 계산'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('연도별 급여 계산'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -34,27 +28,34 @@ class AnnualSalaryDetailPage extends StatelessWidget {
                     Text(
                       '📊 요약',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildSummaryItem(
                       context,
                       '💼 생애 총 소득',
-                      NumberFormatter.formatCurrency(lifetimeSalary.totalIncome),
+                      NumberFormatter.formatCurrency(
+                        lifetimeSalary.totalIncome,
+                      ),
                     ),
                     const Divider(height: 24),
                     _buildSummaryItem(
                       context,
                       '💵 현재 가치 환산',
-                      NumberFormatter.formatCurrency(lifetimeSalary.presentValue),
-                      subtitle: '인플레이션 ${NumberFormatter.formatPercent(lifetimeSalary.inflationRate)} 반영',
+                      NumberFormatter.formatCurrency(
+                        lifetimeSalary.presentValue,
+                      ),
+                      subtitle:
+                          '인플레이션 ${NumberFormatter.formatPercent(lifetimeSalary.inflationRate)} 반영',
                     ),
                     const Divider(height: 24),
                     _buildSummaryItem(
                       context,
                       '📈 평균 연봉',
-                      NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
+                      NumberFormatter.formatCurrency(
+                        lifetimeSalary.avgAnnualSalary,
+                      ),
                     ),
                   ],
                 ),
@@ -71,9 +72,9 @@ class AnnualSalaryDetailPage extends StatelessWidget {
             // 연도별 상세 내역
             Text(
               '📅 연도별 상세',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
@@ -161,17 +162,14 @@ class AnnualSalaryDetailPage extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            Text(label, style: Theme.of(context).textTheme.bodyLarge),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ],
@@ -179,9 +177,9 @@ class AnnualSalaryDetailPage extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
         ),
       ],
     );
@@ -234,10 +232,7 @@ class AnnualSalaryDetailPage extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              height: 250,
-              child: _buildLineChart(theme),
-            ),
+            child: SizedBox(height: 250, child: _buildLineChart(theme)),
           ),
         ),
       ],

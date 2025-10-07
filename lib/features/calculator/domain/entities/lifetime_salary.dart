@@ -37,12 +37,12 @@ class LifetimeSalary extends Equatable {
 
   @override
   List<Object?> get props => [
-        annualSalaries,
-        totalIncome,
-        presentValue,
-        avgAnnualSalary,
-        inflationRate,
-      ];
+    annualSalaries,
+    totalIncome,
+    presentValue,
+    avgAnnualSalary,
+    inflationRate,
+  ];
 
   LifetimeSalary copyWith({
     List<AnnualSalary>? annualSalaries,

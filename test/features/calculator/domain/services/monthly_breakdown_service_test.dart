@@ -57,8 +57,11 @@ void main() {
       // 2월 (설날 상여금 포함)
       final february = monthlyIncomes[1];
       expect(february.month, 2);
-      expect(february.holidayBonus, (1915100 * 0.6).round(),
-          reason: '2월 설날 상여금은 본봉의 60%');
+      expect(
+        february.holidayBonus,
+        (1915100 * 0.6).round(),
+        reason: '2월 설날 상여금은 본봉의 60%',
+      );
       expect(february.longevityBonus, 0, reason: '2월은 정근수당 없음');
 
       // 7월 (정근수당 포함)
@@ -70,8 +73,11 @@ void main() {
       // 9월 (추석 상여금 포함)
       final september = monthlyIncomes[8];
       expect(september.month, 9);
-      expect(september.holidayBonus, (1915100 * 0.6).round(),
-          reason: '9월 추석 상여금은 본봉의 60%');
+      expect(
+        september.holidayBonus,
+        (1915100 * 0.6).round(),
+        reason: '9월 추석 상여금은 본봉의 60%',
+      );
       expect(september.longevityBonus, 0, reason: '9월은 정근수당 없음');
 
       // 일반 월 (3월)
@@ -102,7 +108,7 @@ void main() {
       );
 
       // 재직 년수: 2025 - 2017 = 8년
-      final serviceYears = 8;
+      // final serviceYears = 8;
 
       final baseSalary = SalaryTable.getBasePay(9);
       expect(baseSalary, 2365500);
@@ -111,8 +117,9 @@ void main() {
       final teachingAllowance = AllowanceTable.teachingAllowance;
       final homeroomAllowance = AllowanceTable.homeroomAllowance;
       final familyAllowance = 40000 + 50000 + 80000; // 배우자 + 첫째 + 둘째
-      final overtimeAllowance =
-          AllowanceTable.getOvertimeAllowance(9); // 1~10호봉: 12만원
+      final overtimeAllowance = AllowanceTable.getOvertimeAllowance(
+        9,
+      ); // 1~10호봉: 12만원
       final researchAllowance = 60000; // 5년 이상: 6만원
 
       expect(teachingAllowance, 250000);
@@ -126,14 +133,15 @@ void main() {
       expect(january.baseSalary, baseSalary);
 
       // 정근수당 검증 (8년 재직: 40%)
-      final expectedMonthlySalary = baseSalary +
+      final expectedMonthlySalary =
+          baseSalary +
           teachingAllowance +
           homeroomAllowance +
           familyAllowance +
           researchAllowance +
           overtimeAllowance +
           100000; // 정근수당 가산금 (5년 이상 10년 미만)
-      
+
       expect(
         january.longevityBonus,
         (expectedMonthlySalary * 0.4).round(),
@@ -276,7 +284,9 @@ void main() {
       );
 
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);
-      final annualDeductions = service.calculateAnnualDeductions(monthlyIncomes);
+      final annualDeductions = service.calculateAnnualDeductions(
+        monthlyIncomes,
+      );
 
       expect(annualNetIncome, greaterThan(0));
       expect(annualDeductions, greaterThan(0));

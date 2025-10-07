@@ -38,11 +38,7 @@ class CalculationBreakdownSection extends StatelessWidget {
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.calculate,
-                size: 18,
-                color: Colors.blue.shade700,
-              ),
+              Icon(Icons.calculate, size: 18, color: Colors.blue.shade700),
               const SizedBox(width: 8),
               Text(
                 '계산 근거 보기',
@@ -93,22 +89,24 @@ class CalculationBreakdownSection extends StatelessWidget {
                 Text(
                   item.label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: item.isHighlight ? FontWeight.w600 : FontWeight.normal,
-                        color: item.isHighlight
-                            ? Colors.orange.shade900
-                            : (item.isDeduction
-                                ? Colors.red.shade700
-                                : Colors.black87),
-                      ),
+                    fontWeight: item.isHighlight
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: item.isHighlight
+                        ? Colors.orange.shade900
+                        : (item.isDeduction
+                              ? Colors.red.shade700
+                              : Colors.black87),
+                  ),
                 ),
                 if (item.description != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     item.description!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ],
@@ -120,13 +118,13 @@ class CalculationBreakdownSection extends StatelessWidget {
               item.isDeduction
                   ? '- ${NumberFormatter.formatCurrency(item.amount)}'
                   : NumberFormatter.formatCurrency(item.amount),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: item.isHighlight
-                      ? Colors.orange.shade900
-                      : (item.isDeduction ? Colors.red.shade700 : Colors.black87),
-                ),
-          ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: item.isHighlight
+                    ? Colors.orange.shade900
+                    : (item.isDeduction ? Colors.red.shade700 : Colors.black87),
+              ),
+            ),
         ],
       ),
     );
@@ -145,16 +143,16 @@ class CalculationBreakdownSection extends StatelessWidget {
           Text(
             totalLabel ?? '합계',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade900,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.blue.shade900,
+            ),
           ),
           Text(
             NumberFormatter.formatCurrency(totalAmount!),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade900,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.blue.shade900,
+            ),
           ),
         ],
       ),
@@ -202,40 +200,42 @@ class BreakdownGroup extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: titleColor ?? Colors.black87,
-              ),
+            fontWeight: FontWeight.bold,
+            color: titleColor ?? Colors.black87,
+          ),
         ),
         const SizedBox(height: 8),
-        ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      if (item.icon != null) ...[
-                        Icon(item.icon, size: 14, color: Colors.grey[600]),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(
-                        item.label,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    if (item.icon != null) ...[
+                      Icon(item.icon, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 6),
                     ],
+                    Text(
+                      item.label,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+                Text(
+                  item.isDeduction
+                      ? '- ${NumberFormatter.formatCurrency(item.amount)}'
+                      : NumberFormatter.formatCurrency(item.amount),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: item.isDeduction ? Colors.red[700] : null,
                   ),
-                  Text(
-                    item.isDeduction
-                        ? '- ${NumberFormatter.formatCurrency(item.amount)}'
-                        : NumberFormatter.formatCurrency(item.amount),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: item.isDeduction ? Colors.red[700] : null,
-                        ),
-                  ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

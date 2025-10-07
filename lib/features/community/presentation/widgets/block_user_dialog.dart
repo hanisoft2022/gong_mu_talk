@@ -14,18 +14,12 @@ import 'package:flutter/material.dart';
 /// }
 /// ```
 class BlockUserDialog extends StatelessWidget {
-  const BlockUserDialog({
-    super.key,
-    required this.targetNickname,
-  });
+  const BlockUserDialog({super.key, required this.targetNickname});
 
   final String targetNickname;
 
   /// Show the block confirmation dialog
-  static Future<bool?> show(
-    BuildContext context, {
-    required String nickname,
-  }) {
+  static Future<bool?> show(BuildContext context, {required String nickname}) {
     return showDialog<bool>(
       context: context,
       builder: (_) => BlockUserDialog(targetNickname: nickname),
@@ -42,10 +36,7 @@ class BlockUserDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$targetNickname님을 차단하시겠습니까?',
-            style: theme.textTheme.bodyLarge,
-          ),
+          Text('$targetNickname님을 차단하시겠습니까?', style: theme.textTheme.bodyLarge),
           const SizedBox(height: 16),
           Text(
             '차단하면:',

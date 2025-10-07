@@ -24,11 +24,17 @@ class ProfileLoggedOut extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.lock_outline, size: 56, color: theme.colorScheme.primary),
+            Icon(
+              Icons.lock_outline,
+              size: 56,
+              color: theme.colorScheme.primary,
+            ),
             const Gap(12),
             Text(
               '로그인이 필요합니다',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Gap(8),
             Text(

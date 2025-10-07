@@ -7,17 +7,16 @@ import '../../../profile/domain/lounge_info.dart';
 
 /// 라운지 상세 정보를 표시하는 BottomSheet
 class LoungeDetailSheet extends StatelessWidget {
-  const LoungeDetailSheet({
-    super.key,
-    required this.lounge,
-  });
+  const LoungeDetailSheet({super.key, required this.lounge});
 
   final LoungeInfo lounge;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final requiredCareerIds = LoungeAccessService.getRequiredCareerIds(lounge.id);
+    final requiredCareerIds = LoungeAccessService.getRequiredCareerIds(
+      lounge.id,
+    );
     final isUnified = requiredCareerIds.length > 1;
 
     if (!isUnified) {
@@ -120,12 +119,18 @@ class LoungeDetailSheet extends StatelessWidget {
                   const Gap(12),
 
                   // 직렬 목록 (그룹별)
-                  ...CareerDisplayHelper.groupCareers(requiredCareerIds).expand((group) {
+                  ...CareerDisplayHelper.groupCareers(
+                    requiredCareerIds,
+                  ).expand((group) {
                     return [
                       // 그룹 헤더
                       if (requiredCareerIds.length > 5) ...[
                         Padding(
-                          padding: const EdgeInsets.only(left: 4, top: 8, bottom: 6),
+                          padding: const EdgeInsets.only(
+                            left: 4,
+                            top: 8,
+                            bottom: 6,
+                          ),
                           child: Text(
                             group.name,
                             style: theme.textTheme.labelSmall?.copyWith(
@@ -139,14 +144,21 @@ class LoungeDetailSheet extends StatelessWidget {
 
                       // 그룹 내 직렬 목록
                       ...group.careerIds.map((careerId) {
-                        final careerName = CareerDisplayHelper.getCareerDisplayName(careerId);
-                        final careerEmoji = CareerDisplayHelper.getCareerEmoji(careerId);
+                        final careerName =
+                            CareerDisplayHelper.getCareerDisplayName(careerId);
+                        final careerEmoji = CareerDisplayHelper.getCareerEmoji(
+                          careerId,
+                        );
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -170,11 +182,14 @@ class LoungeDetailSheet extends StatelessWidget {
                   const Gap(16),
 
                   // 설명 (있는 경우)
-                  if (lounge.description != null && lounge.description!.isNotEmpty) ...[
+                  if (lounge.description != null &&
+                      lounge.description!.isNotEmpty) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                        color: theme.colorScheme.secondaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

@@ -129,7 +129,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
 
     _commentCount = widget.post.commentCount;
-    _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
+    _commentController = TextEditingController()
+      ..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
     _isExpandedNotifier = ValueNotifier<bool>(false);
     _showCommentsNotifier = ValueNotifier<bool>(false);
@@ -240,7 +241,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       valueListenable: _isExpandedNotifier,
                       builder: (context, isExpanded, _) {
                         final bool showMoreButton =
-                            !isExpanded && content.shouldShowMore(post.text, context);
+                            !isExpanded &&
+                            content.shouldShowMore(post.text, context);
                         return content.PostContent(
                           post: post,
                           isExpanded: isExpanded,
@@ -325,7 +327,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                               featuredComments: _featuredComments,
                               onToggleCommentLike: _handleCommentLike,
                               onReplyTap: _handleReplyTap,
-                              onOpenCommentAuthorProfile: _showCommentAuthorMenu,
+                              onOpenCommentAuthorProfile:
+                                  _showCommentAuthorMenu,
                             ),
                           ),
                         ),
@@ -369,7 +372,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text(isCurrentlyScrapped ? '스크랩가 해제되었습니다' : '스크랩에 추가되었습니다'),
+            content: Text(
+              isCurrentlyScrapped ? '스크랩가 해제되었습니다' : '스크랩에 추가되었습니다',
+            ),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
@@ -414,15 +419,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
-    final bool isSelf = currentUid != null && currentUid == widget.post.authorUid;
-    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, widget.post.authorUid);
+    final bool isSelf =
+        currentUid != null && currentUid == widget.post.authorUid;
+    final bool canFollow = _canFollowUser(
+      authState,
+      currentUid,
+      isSelf,
+      widget.post.authorUid,
+    );
     final bool isFollowing = false; // Social graph feature not yet implemented
 
     _showAuthorMenuAtPosition(canFollow: canFollow, isFollowing: isFollowing);
   }
 
   void _handleCommentInputChanged() {
-    final bool canSubmit = _commentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
+    final bool canSubmit =
+        _commentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
     if (canSubmit != _canSubmitComment) {
       setState(() {
         _canSubmitComment = canSubmit;
@@ -432,7 +444,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // ==================== Author Menu ====================
 
-  void _showAuthorMenuAtPosition({required bool canFollow, required bool isFollowing}) {
+  void _showAuthorMenuAtPosition({
+    required bool canFollow,
+    required bool isFollowing,
+  }) {
     if (_menuOverlayEntry != null) {
       _closeAuthorMenu();
       return;
@@ -443,11 +458,18 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorButtonKey: _authorButtonKey,
       canFollow: canFollow,
       isFollowing: isFollowing,
-      onViewProfile: () =>
-          _handleAuthorAction(AuthorMenuAction.viewProfile, isFollowing: isFollowing),
-      onToggleFollow: () =>
-          _handleAuthorAction(AuthorMenuAction.toggleFollow, isFollowing: isFollowing),
-      onBlockUser: () => _handleAuthorAction(AuthorMenuAction.blockUser, isFollowing: isFollowing),
+      onViewProfile: () => _handleAuthorAction(
+        AuthorMenuAction.viewProfile,
+        isFollowing: isFollowing,
+      ),
+      onToggleFollow: () => _handleAuthorAction(
+        AuthorMenuAction.toggleFollow,
+        isFollowing: isFollowing,
+      ),
+      onBlockUser: () => _handleAuthorAction(
+        AuthorMenuAction.blockUser,
+        isFollowing: isFollowing,
+      ),
       onClose: _closeAuthorMenu,
     );
 
@@ -495,8 +517,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         AuthorMenuAction.toggleFollow,
         isFollowing: isFollowing,
       ),
-      onBlockUser: () =>
-          _handleCommentAuthorAction(comment, AuthorMenuAction.blockUser, isFollowing: isFollowing),
+      onBlockUser: () => _handleCommentAuthorAction(
+        comment,
+        AuthorMenuAction.blockUser,
+        isFollowing: isFollowing,
+      ),
       onClose: _closeAuthorMenu,
     );
 
@@ -522,17 +547,24 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleAuthorAction(AuthorMenuAction action, {required bool isFollowing}) async {
+  Future<void> _handleAuthorAction(
+    AuthorMenuAction action, {
+    required bool isFollowing,
+  }) async {
     _closeAuthorMenu();
     if (!mounted) return;
 
     switch (action) {
       case AuthorMenuAction.viewProfile:
-        if (widget.post.authorUid.isEmpty || widget.post.authorUid == 'preview') {
+        if (widget.post.authorUid.isEmpty ||
+            widget.post.authorUid == 'preview') {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(uid: widget.post.authorUid, nickname: widget.post.authorNickname);
+        _openMockProfile(
+          uid: widget.post.authorUid,
+          nickname: widget.post.authorNickname,
+        );
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -564,7 +596,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(uid: comment.authorUid, nickname: comment.authorNickname);
+        _openMockProfile(
+          uid: comment.authorUid,
+          nickname: comment.authorNickname,
+        );
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -574,7 +609,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
         break;
       case AuthorMenuAction.blockUser:
-        await _handleBlockUser(targetUid: comment.authorUid, nickname: comment.authorNickname);
+        await _handleBlockUser(
+          targetUid: comment.authorUid,
+          nickname: comment.authorNickname,
+        );
         break;
     }
   }
@@ -700,7 +738,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')));
+          ..showSnackBar(
+            const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
+          );
         setState(() => _isSubmittingComment = false);
       }
     }
@@ -811,15 +851,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     required bool isFollowing,
   }) async {
     if (!mounted) return;
-    // TODO: Implement follow functionality
     _showSnack('팔로우 기능은 곧 제공될 예정입니다.');
   }
 
-  Future<void> _handleBlockUser({required String targetUid, required String nickname}) async {
+  Future<void> _handleBlockUser({
+    required String targetUid,
+    required String nickname,
+  }) async {
     if (!mounted) return;
 
     // Show confirmation dialog
-    final bool? confirmed = await BlockUserDialog.show(context, nickname: nickname);
+    final bool? confirmed = await BlockUserDialog.show(
+      context,
+      nickname: nickname,
+    );
 
     if (confirmed != true || !mounted) return;
 
@@ -843,7 +888,10 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     if (uid.isEmpty || uid == 'dummy_user') {
       return;
     }
-    context.pushNamed(MemberProfileRoute.name, pathParameters: <String, String>{'uid': uid});
+    context.pushNamed(
+      MemberProfileRoute.name,
+      pathParameters: <String, String>{'uid': uid},
+    );
   }
 
   // ==================== Helper Methods ====================
@@ -880,7 +928,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorSerialVisible: cached.authorSerialVisible,
       text: cached.text,
       likeCount: cached.likeCount,
-      createdAt: (post.updatedAt ?? post.createdAt).add(Duration(minutes: index)),
+      createdAt: (post.updatedAt ?? post.createdAt).add(
+        Duration(minutes: index),
+      ),
     );
   }
 
@@ -888,7 +938,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return createdAt.relativeTime;
   }
 
-  bool _canFollowUser(AuthState authState, String? currentUid, bool isSelf, String targetUid) {
+  bool _canFollowUser(
+    AuthState authState,
+    String? currentUid,
+    bool isSelf,
+    String targetUid,
+  ) {
     return authState.isLoggedIn &&
         currentUid != null &&
         currentUid.isNotEmpty &&

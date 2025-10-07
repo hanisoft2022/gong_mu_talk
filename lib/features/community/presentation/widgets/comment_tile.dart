@@ -8,6 +8,7 @@
 /// - Handles profile navigation
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -126,10 +127,7 @@ class CommentTile extends StatelessWidget {
           ),
           style: TextButton.styleFrom(
             minimumSize: Size.zero,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
@@ -140,10 +138,7 @@ class CommentTile extends StatelessWidget {
           label: const Text('답글'),
           style: TextButton.styleFrom(
             minimumSize: Size.zero,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),

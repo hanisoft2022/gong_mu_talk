@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/pension_calculation_service.dart';
 
@@ -14,7 +13,7 @@ void main() {
     group('calculateAfterTaxPension', () {
       test('70세 미만 - 기본 공제 500만원', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2000000,
           annualPension: 26000000,
           totalPension: 520000000,
@@ -44,7 +43,7 @@ void main() {
 
       test('70-79세 - 공제 700만원', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2500000,
           annualPension: 32500000,
           totalPension: 325000000,
@@ -71,7 +70,7 @@ void main() {
 
       test('80세 이상 - 공제 1000만원', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 3000000,
           annualPension: 39000000,
           totalPension: 195000000,
@@ -98,7 +97,7 @@ void main() {
 
       test('건강보험료 6.99%', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2200000,
           annualPension: 28600000,
           totalPension: 572000000,
@@ -124,7 +123,7 @@ void main() {
 
       test('장기요양보험료는 건강보험료의 12.95%', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 1900000,
           annualPension: 24700000,
           totalPension: 494000000,
@@ -150,7 +149,7 @@ void main() {
 
       test('세후 월 연금 계산', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2000000,
           annualPension: 26000000,
           totalPension: 520000000,
@@ -170,7 +169,8 @@ void main() {
         );
 
         // Assert
-        final totalDeductions = result.incomeTax +
+        final totalDeductions =
+            result.incomeTax +
             result.localTax +
             result.healthInsurance +
             result.longTermCareInsurance;
@@ -183,7 +183,7 @@ void main() {
 
       test('연간 세후 연금 계산', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2400000,
           annualPension: 31200000,
           totalPension: 468000000,
@@ -211,7 +211,7 @@ void main() {
 
       test('나이에 따른 세금 차이 비교', () {
         // Arrange
-        final pensionEstimate = PensionEstimate(
+        final pensionEstimate = const PensionEstimate(
           monthlyPension: 2000000,
           annualPension: 26000000,
           totalPension: 520000000,

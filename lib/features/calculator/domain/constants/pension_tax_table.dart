@@ -90,7 +90,9 @@ class PensionTaxTable {
     final deduction = getPensionDeduction(age);
 
     // 3. 과세표준
-    final taxableIncome = (annualPension - deduction).clamp(0, double.infinity).toInt();
+    final taxableIncome = (annualPension - deduction)
+        .clamp(0, double.infinity)
+        .toInt();
 
     // 4. 소득세 (연간)
     final annualIncomeTax = calculateIncomeTax(taxableIncome);
@@ -112,7 +114,8 @@ class PensionTaxTable {
     final monthlyLocalTax = (annualLocalTax / 12).round();
 
     // 9. 월 총 공제액
-    final monthlyTotal = monthlyIncomeTax +
+    final monthlyTotal =
+        monthlyIncomeTax +
         monthlyLocalTax +
         monthlyHealthInsurance +
         monthlyLongTermCareInsurance;

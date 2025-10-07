@@ -7,10 +7,7 @@ import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions
 /// 라운지 데이터를 JSON 파일로 내보내기
 void main() {
   final lounges = LoungeDefinitions.defaultLounges;
-  final jsonData = lounges.map((l) => {
-    'id': l.id,
-    ...l.toMap(),
-  }).toList();
+  final jsonData = lounges.map((l) => {'id': l.id, ...l.toMap()}).toList();
 
   final file = File('lounges_export.json');
   file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(jsonData));

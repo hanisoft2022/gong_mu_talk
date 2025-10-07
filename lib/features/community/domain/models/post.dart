@@ -91,7 +91,8 @@ class CachedComment extends Equatable {
     final int likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
     final String? authorNickname = data['authorNickname'] as String?;
     final CareerTrack authorTrack = Post._parseTrack(data['authorTrack']);
-    final String? authorSpecificCareer = data['authorSpecificCareer'] as String?;
+    final String? authorSpecificCareer =
+        data['authorSpecificCareer'] as String?;
     final bool authorSerialVisible =
         data['authorSerialVisible'] as bool? ?? true;
     if (id == null || text == null || authorNickname == null) {
@@ -223,12 +224,7 @@ class Post extends Equatable {
       throw StateError('Post document ${snapshot.id} has no data');
     }
 
-    return fromMap(
-      snapshot.id,
-      data,
-      isLiked: isLiked,
-      isScrapped: isScrapped,
-    );
+    return fromMap(snapshot.id, data, isLiked: isLiked, isScrapped: isScrapped);
   }
 
   static Post fromMap(

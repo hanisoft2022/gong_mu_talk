@@ -4,11 +4,7 @@ import 'package:gap/gap.dart';
 import '../../../../core/utils/performance_optimizations.dart';
 
 class CommunityErrorView extends StatelessWidget {
-  const CommunityErrorView({
-    super.key,
-    required this.onRetry,
-    this.message,
-  });
+  const CommunityErrorView({super.key, required this.onRetry, this.message});
 
   final Future<void> Function() onRetry;
   final String? message;

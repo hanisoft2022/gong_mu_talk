@@ -60,18 +60,18 @@ class PensionEstimate extends Equatable {
 
   @override
   List<Object?> get props => [
-        monthlyPension,
-        annualPension,
-        totalPension,
-        retirementAge,
-        lifeExpectancy,
-        serviceYears,
-        avgBaseIncome,
-        pensionRate,
-        totalContribution,
-        transitionRate,
-        redistributionRate,
-      ];
+    monthlyPension,
+    annualPension,
+    totalPension,
+    retirementAge,
+    lifeExpectancy,
+    serviceYears,
+    avgBaseIncome,
+    pensionRate,
+    totalContribution,
+    transitionRate,
+    redistributionRate,
+  ];
 
   PensionEstimate copyWith({
     int? monthlyPension,

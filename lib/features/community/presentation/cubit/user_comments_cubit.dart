@@ -31,8 +31,7 @@ class UserCommentsCubit extends Cubit<UserCommentsState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(
-          isLoading: false, error: '댓글을 불러오는 중 오류가 발생했습니다.'));
+      emit(state.copyWith(isLoading: false, error: '댓글을 불러오는 중 오류가 발생했습니다.'));
     }
   }
 
@@ -60,8 +59,7 @@ class UserCommentsCubit extends Cubit<UserCommentsState> {
       );
     } catch (e) {
       emit(
-        state.copyWith(
-            isLoading: false, error: '추가 댓글을 불러오는 중 오류가 발생했습니다.'),
+        state.copyWith(isLoading: false, error: '추가 댓글을 불러오는 중 오류가 발생했습니다.'),
       );
     }
   }

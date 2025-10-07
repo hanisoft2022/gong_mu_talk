@@ -7,6 +7,7 @@
 /// - Ad insertion logic
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -39,7 +40,11 @@ class FeedSectionBuilder extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, CommunityFeedState feedState, bool hasSerialTabAccess) {
+  Widget _buildContent(
+    BuildContext context,
+    CommunityFeedState feedState,
+    bool hasSerialTabAccess,
+  ) {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
     final bool showEmptyPosts = feedState.posts.isEmpty;
 
@@ -50,7 +55,7 @@ class FeedSectionBuilder extends StatelessWidget {
     // Skeleton UI for sorting and lounging states (identical appearance)
     final bool isSorting = feedState.status == CommunityFeedStatus.sorting;
     final bool isLounging = feedState.status == CommunityFeedStatus.lounging;
-    
+
     // Show skeleton for both sorting and lounging
     if (isSorting || isLounging) {
       return Skeletonizer(
@@ -64,7 +69,7 @@ class FeedSectionBuilder extends StatelessWidget {
         child: _buildSkeletonList(),
       );
     }
-    
+
     // Normal state: Show actual posts
     return _buildPostsList(context, cubit, feedState.posts, feedState.scope);
   }
@@ -84,15 +89,6 @@ class FeedSectionBuilder extends StatelessWidget {
     );
   }
 
-  Widget _buildSerialGuideState(CommunityFeedCubit cubit) {
-    return EmptyStateView(
-      icon: Icons.description_outlined,
-      title: '급여 명세서를 통해서 본인의 직렬을 인증하세요',
-      message: '내 직렬 탭을 이용하려면 급여명세서 인증을 완료해주세요.',
-      onRefresh: () => cubit.refresh(),
-    );
-  }
-
   Widget _buildEmptyPostsState(CommunityFeedCubit cubit) {
     return Column(
       children: [
@@ -108,8 +104,8 @@ class FeedSectionBuilder extends StatelessWidget {
   }
 
   Widget _buildPostsList(
-    BuildContext context, 
-    CommunityFeedCubit cubit, 
+    BuildContext context,
+    CommunityFeedCubit cubit,
     List<Post> posts,
     LoungeScope scope,
   ) {

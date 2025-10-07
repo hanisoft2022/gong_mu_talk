@@ -57,12 +57,10 @@ class _MonthlyBreakdownTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (monthlyBreakdown == null || monthlyBreakdown!.isEmpty) {
-      return const Center(
-        child: Text('월별 급여 데이터가 없습니다.'),
-      );
+      return const Center(child: Text('월별 급여 데이터가 없습니다.'));
     }
 
-final annualNet = monthlyBreakdown!.fold<int>(
+    final annualNet = monthlyBreakdown!.fold<int>(
       0,
       (sum, m) => sum + m.netIncome,
     );
@@ -82,10 +80,7 @@ final annualNet = monthlyBreakdown!.fold<int>(
             children: [
               const Text(
                 '연간 총 실수령액',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 8),
               Text(
@@ -99,10 +94,7 @@ final annualNet = monthlyBreakdown!.fold<int>(
               const SizedBox(height: 4),
               Text(
                 '평균 월 ${NumberFormatter.formatCurrency(annualNet ~/ 12)}',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
@@ -246,8 +238,14 @@ final annualNet = monthlyBreakdown!.fold<int>(
           Text(
             NumberFormatter.formatCurrency(amount),
             style: TextStyle(
-              fontWeight: isBold || highlight ? FontWeight.bold : FontWeight.normal,
-              color: color ?? (isHighlight ? Colors.teal[700] : (highlight ? Colors.orange.shade900 : null)),
+              fontWeight: isBold || highlight
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              color:
+                  color ??
+                  (isHighlight
+                      ? Colors.teal[700]
+                      : (highlight ? Colors.orange.shade900 : null)),
             ),
           ),
         ],
@@ -279,14 +277,16 @@ class _AnnualGrowthTab extends StatelessWidget {
                   Text(
                     '📊 요약',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildSummaryItem(
                     context,
                     '평균 연봉',
-                    NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
+                    NumberFormatter.formatCurrency(
+                      lifetimeSalary.avgAnnualSalary,
+                    ),
                   ),
                   const Divider(height: 24),
                   _buildSummaryItem(
@@ -304,18 +304,15 @@ class _AnnualGrowthTab extends StatelessWidget {
           // 차트
           Text(
             '📈 연도별 급여 증가 추이',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                height: 250,
-                child: _buildLineChart(context),
-              ),
+              child: SizedBox(height: 250, child: _buildLineChart(context)),
             ),
           ),
 
@@ -324,9 +321,9 @@ class _AnnualGrowthTab extends StatelessWidget {
           // 연도별 리스트
           Text(
             '📅 연도별 상세',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -366,16 +363,13 @@ class _AnnualGrowthTab extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodyLarge),
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
         ),
       ],
     );
@@ -430,8 +424,12 @@ class _AnnualGrowthTab extends StatelessWidget {
               },
             ),
           ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -486,9 +484,9 @@ class _LifetimeSimulationTab extends StatelessWidget {
                   Text(
                     NumberFormatter.formatCurrency(lifetimeSalary.totalIncome),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
                   ),
                 ],
               ),
@@ -507,8 +505,8 @@ class _LifetimeSimulationTab extends StatelessWidget {
                   Text(
                     '💰 상세 정보',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildInfoRow(
@@ -521,13 +519,16 @@ class _LifetimeSimulationTab extends StatelessWidget {
                     context,
                     '현재 가치',
                     NumberFormatter.formatCurrency(lifetimeSalary.presentValue),
-                    subtitle: '인플레이션 ${NumberFormatter.formatPercent(lifetimeSalary.inflationRate)} 반영',
+                    subtitle:
+                        '인플레이션 ${NumberFormatter.formatPercent(lifetimeSalary.inflationRate)} 반영',
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     context,
                     '평균 연봉',
-                    NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
+                    NumberFormatter.formatCurrency(
+                      lifetimeSalary.avgAnnualSalary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
@@ -548,18 +549,12 @@ class _LifetimeSimulationTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.blue.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.blue.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.blue[700],
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -608,17 +603,14 @@ class _LifetimeSimulationTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
             ),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
               textAlign: TextAlign.right,
             ),
           ],
@@ -627,9 +619,9 @@ class _LifetimeSimulationTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ],

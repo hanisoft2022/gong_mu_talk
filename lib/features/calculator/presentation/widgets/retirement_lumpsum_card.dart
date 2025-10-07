@@ -25,11 +25,12 @@ class RetirementLumpsumCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 총 일시금 계산
-    final totalLumpsum = (retirementBenefit?.totalBenefit ?? 0) +
+    final totalLumpsum =
+        (retirementBenefit?.totalBenefit ?? 0) +
         (earlyRetirementBonus?.totalAmount ?? 0);
 
-    final hasEarlyBonus = earlyRetirementBonus != null &&
-        earlyRetirementBonus!.totalAmount > 0;
+    final hasEarlyBonus =
+        earlyRetirementBonus != null && earlyRetirementBonus!.totalAmount > 0;
 
     return Card(
       elevation: 2,
@@ -62,8 +63,8 @@ class RetirementLumpsumCard extends StatelessWidget {
                     child: Text(
                       '퇴직 시 일시금 총액',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -94,10 +95,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -138,7 +136,8 @@ class RetirementLumpsumCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 '퇴직 시 수령 총액',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
                                       color: Colors.orange[900],
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -148,7 +147,8 @@ class RetirementLumpsumCard extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(
                             NumberFormatter.formatCurrency(totalLumpsum),
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.orange[900],
                                 ),
@@ -172,7 +172,8 @@ class RetirementLumpsumCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             '상세 내역 보기',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: Colors.grey[800],
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -356,48 +357,59 @@ class RetirementLumpsumCard extends StatelessWidget {
 
     // 기간별 상세
     if (retirementBenefit!.period1Years > 0) {
-      items.add(BreakdownItem(
-        label: '  └ 1기간 (${retirementBenefit!.period1Years}년)',
-        amount: retirementBenefit!.period1Benefit,
-        description: '2009.12.31 이전',
-      ));
+      items.add(
+        BreakdownItem(
+          label: '  └ 1기간 (${retirementBenefit!.period1Years}년)',
+          amount: retirementBenefit!.period1Benefit,
+          description: '2009.12.31 이전',
+        ),
+      );
     }
     if (retirementBenefit!.period2Years > 0) {
-      items.add(BreakdownItem(
-        label: '  └ 2기간 (${retirementBenefit!.period2Years}년)',
-        amount: retirementBenefit!.period2Benefit,
-        description: '2010.1.1 ~ 2015.12.31',
-      ));
+      items.add(
+        BreakdownItem(
+          label: '  └ 2기간 (${retirementBenefit!.period2Years}년)',
+          amount: retirementBenefit!.period2Benefit,
+          description: '2010.1.1 ~ 2015.12.31',
+        ),
+      );
     }
     if (retirementBenefit!.period3Years > 0) {
-      items.add(BreakdownItem(
-        label: '  └ 3기간 (${retirementBenefit!.period3Years}년)',
-        amount: retirementBenefit!.period3Benefit,
-        description: '2016.1.1 이후',
-      ));
+      items.add(
+        BreakdownItem(
+          label: '  └ 3기간 (${retirementBenefit!.period3Years}년)',
+          amount: retirementBenefit!.period3Benefit,
+          description: '2016.1.1 이후',
+        ),
+      );
     }
 
     // 퇴직수당
     if (retirementBenefit!.retirementAllowance > 0) {
-      items.add(BreakdownItem(
-        label: '퇴직수당',
-        amount: retirementBenefit!.retirementAllowance,
-        description: '재직기간별 가산금',
-      ));
+      items.add(
+        BreakdownItem(
+          label: '퇴직수당',
+          amount: retirementBenefit!.retirementAllowance,
+          description: '재직기간별 가산금',
+        ),
+      );
     }
 
     // 명예퇴직금
     if (earlyRetirementBonus != null && earlyRetirementBonus!.totalAmount > 0) {
-      items.add(BreakdownItem(
-        label: '명예퇴직금',
-        amount: earlyRetirementBonus!.totalAmount,
-        description: '정년 ${earlyRetirementBonus!.remainingYears}년 전 퇴직',
-        icon: Icons.card_giftcard,
-        isHighlight: true,
-      ));
+      items.add(
+        BreakdownItem(
+          label: '명예퇴직금',
+          amount: earlyRetirementBonus!.totalAmount,
+          description: '정년 ${earlyRetirementBonus!.remainingYears}년 전 퇴직',
+          icon: Icons.card_giftcard,
+          isHighlight: true,
+        ),
+      );
     }
 
-    final totalLumpsum = (retirementBenefit?.totalBenefit ?? 0) +
+    final totalLumpsum =
+        (retirementBenefit?.totalBenefit ?? 0) +
         (earlyRetirementBonus?.totalAmount ?? 0);
 
     return CalculationBreakdownSection(
@@ -423,16 +435,16 @@ class RetirementLumpsumCard extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color[900],
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color[900],
+              ),
             ),
             Text(
               NumberFormatter.formatCurrency(amount),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color[800],
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color[800],
+              ),
             ),
           ],
         ),
@@ -450,16 +462,16 @@ class RetirementLumpsumCard extends StatelessWidget {
         children: [
           Text(
             '  • $label',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[700],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
           ),
           Text(
             NumberFormatter.formatCurrency(amount),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
-                ),
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
           ),
         ],
       ),

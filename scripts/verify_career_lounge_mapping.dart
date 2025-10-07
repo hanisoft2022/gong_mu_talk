@@ -5,13 +5,13 @@ import 'package:gong_mu_talk/features/community/domain/models/lounge_model.dart'
 import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
 
 /// 직렬-라운지 매핑 검증 스크립트
-/// 
+///
 /// 다음 사항을 검증:
 /// 1. 모든 직렬이 CareerHierarchy에 정의되어 있는가?
 /// 2. 모든 라운지의 requiredCareerIds가 유효한가?
 /// 3. 고아 라운지(접근 가능한 직렬 없음) 확인
 /// 4. 고아 직렬(라운지 없음) 확인
-/// 
+///
 /// 실행 방법:
 /// ```bash
 /// dart run scripts/verify_career_lounge_mapping.dart

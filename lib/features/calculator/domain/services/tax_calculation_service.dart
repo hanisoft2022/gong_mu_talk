@@ -60,11 +60,11 @@ class TaxCalculationService {
   }
 
   /// 총 공제액 계산 (세금 + 4대보험)
-  int calculateTotalDeductions(
-    int monthlyGrossPay, {
-    int dependents = 1,
-  }) {
-    final incomeTax = calculateIncomeTax(monthlyGrossPay, dependents: dependents);
+  int calculateTotalDeductions(int monthlyGrossPay, {int dependents = 1}) {
+    final incomeTax = calculateIncomeTax(
+      monthlyGrossPay,
+      dependents: dependents,
+    );
     final localIncomeTax = calculateLocalIncomeTax(incomeTax);
     final insurance = calculateTotalInsurance(monthlyGrossPay);
 
@@ -72,10 +72,7 @@ class TaxCalculationService {
   }
 
   /// 실수령액 계산
-  int calculateNetPay(
-    int monthlyGrossPay, {
-    int dependents = 1,
-  }) {
+  int calculateNetPay(int monthlyGrossPay, {int dependents = 1}) {
     final deductions = calculateTotalDeductions(
       monthlyGrossPay,
       dependents: dependents,

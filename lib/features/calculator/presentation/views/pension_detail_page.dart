@@ -44,11 +44,11 @@ class PensionDetailPage extends StatelessWidget {
                           const SizedBox(width: 12),
                           Text(
                             '월 실수령액 (세후)',
-                            style:
-                                Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green[900],
-                                    ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[900],
+                                ),
                           ),
                         ],
                       ),
@@ -57,7 +57,8 @@ class PensionDetailPage extends StatelessWidget {
                         NumberFormatter.formatCurrency(
                           afterTaxPension!.monthlyPensionAfterTax,
                         ),
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.green[900],
                             ),
@@ -85,22 +86,34 @@ class PensionDetailPage extends StatelessWidget {
                   children: [
                     Text(
                       '💰 연금 계산 결과',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    _buildInfoRow(context, '📅 퇴직 예정 연령', '${pensionEstimate.retirementAge}세'),
-                    _buildInfoRow(context, '📊 재직 기간', '${pensionEstimate.serviceYears}년'),
+                    _buildInfoRow(
+                      context,
+                      '📅 퇴직 예정 연령',
+                      '${pensionEstimate.retirementAge}세',
+                    ),
+                    _buildInfoRow(
+                      context,
+                      '📊 재직 기간',
+                      '${pensionEstimate.serviceYears}년',
+                    ),
                     _buildInfoRow(
                       context,
                       '💵 평균 기준소득',
-                      NumberFormatter.formatCurrency(pensionEstimate.avgBaseIncome),
+                      NumberFormatter.formatCurrency(
+                        pensionEstimate.avgBaseIncome,
+                      ),
                     ),
                     _buildInfoRow(
                       context,
                       '📈 연금 지급률',
-                      NumberFormatter.formatPercent(pensionEstimate.pensionRate),
+                      NumberFormatter.formatPercent(
+                        pensionEstimate.pensionRate,
+                      ),
                     ),
                   ],
                 ),
@@ -120,8 +133,8 @@ class PensionDetailPage extends StatelessWidget {
                       Text(
                         '💰 세전/공제 상세',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
@@ -142,14 +155,22 @@ class PensionDetailPage extends StatelessWidget {
                       Text(
                         '공제 내역',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 12),
 
-                      _buildDeductionRow(context, '소득세', afterTaxPension!.incomeTax),
+                      _buildDeductionRow(
+                        context,
+                        '소득세',
+                        afterTaxPension!.incomeTax,
+                      ),
                       const SizedBox(height: 8),
-                      _buildDeductionRow(context, '지방세', afterTaxPension!.localTax),
+                      _buildDeductionRow(
+                        context,
+                        '지방세',
+                        afterTaxPension!.localTax,
+                      ),
                       const SizedBox(height: 8),
                       _buildDeductionRow(
                         context,
@@ -179,18 +200,12 @@ class PensionDetailPage extends StatelessWidget {
                           children: [
                             Text(
                               '총 공제액 (${afterTaxPension!.deductionRate.toStringAsFixed(1)}%)',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               '- ${NumberFormatter.formatCurrency(afterTaxPension!.totalDeductions)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red[700],
@@ -214,9 +229,7 @@ class PensionDetailPage extends StatelessWidget {
                     children: [
                       Text(
                         '💎 월 수령액 (세전)',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
+                        style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 12),
@@ -224,7 +237,8 @@ class PensionDetailPage extends StatelessWidget {
                         NumberFormatter.formatCurrency(
                           pensionEstimate.monthlyPension,
                         ),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue[900],
                             ),
@@ -232,10 +246,9 @@ class PensionDetailPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '연간 ${NumberFormatter.formatCurrency(pensionEstimate.annualPension)} (13개월 기준)',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.grey[700]),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[700],
+                        ),
                       ),
                     ],
                   ),
@@ -253,17 +266,20 @@ class PensionDetailPage extends StatelessWidget {
                   children: [
                     Text(
                       '📊 총 수령 예상액',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      NumberFormatter.formatCurrency(pensionEstimate.totalPension),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[900],
+                      NumberFormatter.formatCurrency(
+                        pensionEstimate.totalPension,
                       ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[900],
+                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -280,7 +296,8 @@ class PensionDetailPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // 소득 공백 경고 (62세 정년인 경우)
-            if (pensionEstimate.retirementAge == 62) _buildIncomeGapWarning(context),
+            if (pensionEstimate.retirementAge == 62)
+              _buildIncomeGapWarning(context),
 
             const SizedBox(height: 24),
 
@@ -292,7 +309,9 @@ class PensionDetailPage extends StatelessWidget {
             // 상세 분석
             Text(
               '🔍 상세 분석',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
@@ -306,12 +325,16 @@ class PensionDetailPage extends StatelessWidget {
                       children: [
                         _buildDetailRow(
                           '총 납부액',
-                          NumberFormatter.formatCurrency(pensionEstimate.totalContribution),
+                          NumberFormatter.formatCurrency(
+                            pensionEstimate.totalContribution,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         _buildDetailRow(
                           '총 수령액',
-                          NumberFormatter.formatCurrency(pensionEstimate.totalPension),
+                          NumberFormatter.formatCurrency(
+                            pensionEstimate.totalPension,
+                          ),
                         ),
                         const Divider(height: 24),
                         _buildDetailRow(
@@ -367,20 +390,28 @@ class PensionDetailPage extends StatelessWidget {
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isHighlight = false}) {
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isHighlight = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal),
+          style: TextStyle(
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         Text(
           value,
@@ -401,7 +432,9 @@ class PensionDetailPage extends StatelessWidget {
       children: [
         Text(
           '📊 연금 누적 수령액 시뮬레이션',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Card(
@@ -426,7 +459,9 @@ class PensionDetailPage extends StatelessWidget {
       cumulativeData.add(FlSpot(i.toDouble(), cumulative.toDouble()));
 
       // 기여금 총액 (비교용)
-      contributionLineData.add(FlSpot(i.toDouble(), pensionEstimate.totalContribution.toDouble()));
+      contributionLineData.add(
+        FlSpot(i.toDouble(), pensionEstimate.totalContribution.toDouble()),
+      );
     }
 
     final maxValue = pensionEstimate.totalPension.toDouble();
@@ -438,7 +473,10 @@ class PensionDetailPage extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxValue / 5,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: theme.colorScheme.outline.withValues(alpha: 0.2), strokeWidth: 1);
+            return FlLine(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              strokeWidth: 1,
+            );
           },
         ),
         titlesData: FlTitlesData(
@@ -466,8 +504,12 @@ class PensionDetailPage extends StatelessWidget {
               },
             ),
           ),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -568,7 +610,11 @@ class PensionDetailPage extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange.shade700,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -585,7 +631,11 @@ class PensionDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '정년 퇴직 후 ${pensionEstimate.retirementAge}세~$pensionStartAge세 사이 $gapYears년간 연금 수령이 불가능합니다.',
-                    style: TextStyle(fontSize: 14, color: Colors.orange.shade900, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.orange.shade900,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -632,9 +682,15 @@ class PensionDetailPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ', style: TextStyle(fontSize: 13, color: Colors.orange.shade700)),
+          Text(
+            '• ',
+            style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
+          ),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+            ),
           ),
         ],
       ),
@@ -648,16 +704,16 @@ class PensionDetailPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[900],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[900],
+          ),
         ),
       ],
     );
@@ -670,16 +726,16 @@ class PensionDetailPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           '- ${NumberFormatter.formatCurrency(amount)}',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.red[600],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.red[600],
+          ),
         ),
       ],
     );

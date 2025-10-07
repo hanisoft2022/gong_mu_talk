@@ -91,7 +91,7 @@ class Comment extends Equatable {
       parentCommentId: data['parentCommentId'] as String?,
       deleted: data['deleted'] as bool? ?? false,
       isLiked: isLiked,
-      
+
       imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }

@@ -563,7 +563,6 @@ features/[feature_name]/
 
 **Variations**:
 - **salary_insights**: Simplified structure (domain + presentation only)
-- **year_end_tax**: In development (placeholder)
 
 ### Key Architectural Patterns
 
@@ -1318,11 +1317,6 @@ flutter pub upgrade
 
 ### In Development
 
-**Year-End Tax Feature**:
-- Domain layer complete
-- Data and presentation layers in progress
-- Target: Q1 2025
-
 **Test Expansion**:
 - Auth module tests (Priority 1)
 - Calculator/Pension calculation tests (Priority 2)
@@ -1331,7 +1325,6 @@ flutter pub upgrade
 ### Roadmap
 
 **Short-term (Q1 2025)**:
-- Complete year-end tax feature
 - Expand test coverage to 20%+
 - Refactor large files (post_card.dart, community_repository.dart)
 - Implement analytics dashboard

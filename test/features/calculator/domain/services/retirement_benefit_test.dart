@@ -31,7 +31,7 @@ void main() {
         expect(result.period2Benefit, 0);
         expect(result.period3Benefit, 0);
         expect(result.totalBenefit, equals(result.period1Benefit));
-        
+
         // 퇴직수당 = 1기간급여만 (2~3기간 없음)
         expect(result.retirementAllowance, equals(result.period1Benefit));
       });
@@ -56,13 +56,13 @@ void main() {
         expect(result.period1Benefit, greaterThan(0));
         expect(result.period2Benefit, greaterThan(0));
         expect(result.period3Benefit, 0);
-        
+
         // 총 퇴직급여 = 1기간 + 2기간
         expect(
           result.totalBenefit,
           equals(result.period1Benefit + result.period2Benefit),
         );
-        
+
         // 퇴직수당 = 1기간 + (2기간 × 0.6)
         final expected2PeriodAllowance = (result.period2Benefit * 0.6).round();
         expect(
@@ -91,7 +91,7 @@ void main() {
         expect(result.period1Benefit, greaterThan(0));
         expect(result.period2Benefit, greaterThan(0));
         expect(result.period3Benefit, greaterThan(0));
-        
+
         // 총 퇴직급여 = 1기간 + 2기간 + 3기간
         expect(
           result.totalBenefit,
@@ -101,9 +101,9 @@ void main() {
                 result.period3Benefit,
           ),
         );
-        
+
         // 퇴직수당 = 1기간 + (2~3기간 × 0.6)
-        final expected23PeriodAllowance = 
+        final expected23PeriodAllowance =
             ((result.period2Benefit + result.period3Benefit) * 0.6).round();
         expect(
           result.retirementAllowance,
@@ -132,7 +132,7 @@ void main() {
         expect(result.period2Benefit, 0);
         expect(result.period3Benefit, greaterThan(0));
         expect(result.totalBenefit, equals(result.period3Benefit));
-        
+
         // 퇴직수당 = (3기간 × 0.6)
         final expected3PeriodAllowance = (result.period3Benefit * 0.6).round();
         expect(result.retirementAllowance, equals(expected3PeriodAllowance));

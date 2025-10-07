@@ -16,13 +16,15 @@ class MonthlyBreakdownCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 평균 계산
-    final avgNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final avgNetIncome =
+        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? (monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b) /
-                monthlyBreakdown!.length)
-            .round()
+                  monthlyBreakdown!.length)
+              .round()
         : 0;
 
-    final annualNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final annualNetIncome =
+        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b)
         : 0;
 
@@ -57,8 +59,8 @@ class MonthlyBreakdownCard extends StatelessWidget {
                     child: Text(
                       '월별 실수령액 분석',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -80,10 +82,7 @@ class MonthlyBreakdownCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -116,9 +115,9 @@ class MonthlyBreakdownCard extends StatelessWidget {
                     Text(
                       '월별 상세 (정기상여금 포함)',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -133,18 +132,12 @@ class MonthlyBreakdownCard extends StatelessWidget {
                               children: [
                                 Text(
                                   '${m.month}월 (정기상여금)',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.teal[700],
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: Colors.teal[700]),
                                 ),
                                 Text(
                                   NumberFormatter.formatCurrency(m.netIncome),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: Colors.teal[700],
@@ -175,16 +168,16 @@ class MonthlyBreakdownCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isHighlight ? Colors.teal[900] : Colors.grey[700],
-                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
-              ),
+            color: isHighlight ? Colors.teal[900] : Colors.grey[700],
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isHighlight ? Colors.teal[700] : Colors.teal[600],
-              ),
+            fontWeight: FontWeight.bold,
+            color: isHighlight ? Colors.teal[700] : Colors.teal[600],
+          ),
         ),
       ],
     );

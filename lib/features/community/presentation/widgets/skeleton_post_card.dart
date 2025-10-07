@@ -6,6 +6,7 @@
 /// - Regular widgets wrapped by Skeletonizer for shimmer effect
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -27,19 +28,13 @@ class SkeletonPostCard extends StatelessWidget {
                 // Nickname (will be skeletonized)
                 const Text(
                   '닉네임 로딩중',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
                 // Timestamp (will be skeletonized)
                 Text(
                   '방금 전',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -60,10 +55,7 @@ class SkeletonPostCard extends StatelessWidget {
                   style: TextStyle(fontSize: 14, height: 1.5),
                 ),
                 Gap(6),
-                Text(
-                  '로딩 중입니다.',
-                  style: TextStyle(fontSize: 14, height: 1.5),
-                ),
+                Text('로딩 중입니다.', style: TextStyle(fontSize: 14, height: 1.5)),
               ],
             ),
 
@@ -75,27 +67,48 @@ class SkeletonPostCard extends StatelessWidget {
                 // Like
                 Row(
                   children: [
-                    Icon(Icons.favorite_outline, size: 20, color: Colors.grey[700]),
+                    Icon(
+                      Icons.favorite_outline,
+                      size: 20,
+                      color: Colors.grey[700],
+                    ),
                     const Gap(4),
-                    Text('42', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                    Text(
+                      '42',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                    ),
                   ],
                 ),
                 const Gap(20),
                 // Comment
                 Row(
                   children: [
-                    Icon(Icons.mode_comment_outlined, size: 20, color: Colors.grey[700]),
+                    Icon(
+                      Icons.mode_comment_outlined,
+                      size: 20,
+                      color: Colors.grey[700],
+                    ),
                     const Gap(4),
-                    Text('8', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                    Text(
+                      '8',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                    ),
                   ],
                 ),
                 const Gap(20),
                 // View
                 Row(
                   children: [
-                    Icon(Icons.visibility_outlined, size: 20, color: Colors.grey[700]),
+                    Icon(
+                      Icons.visibility_outlined,
+                      size: 20,
+                      color: Colors.grey[700],
+                    ),
                     const Gap(4),
-                    Text('120', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                    Text(
+                      '120',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                    ),
                   ],
                 ),
               ],

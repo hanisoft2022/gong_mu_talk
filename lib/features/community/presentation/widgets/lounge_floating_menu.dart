@@ -50,18 +50,12 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
     _scaleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutQuart,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // 각 메뉴 아이템 애니메이션 (Staggered) - 초기화
     _initializeItemAnimations();
@@ -104,20 +98,16 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
         return Tween<Offset>(
           begin: const Offset(0.3, 0),
           end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeOutCubic,
-        ));
+        ).animate(
+          CurvedAnimation(parent: controller, curve: Curves.easeOutCubic),
+        );
       }).toList();
 
       _itemFadeAnimations = _itemControllers.map((controller) {
         return Tween<double>(
           begin: 0.0,
           end: 1.0,
-        ).animate(CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeOut,
-        ));
+        ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
       }).toList();
 
       // 애니메이션 컨트롤러가 생성된 후 즉시 메뉴가 열려있으면 애니메이션 시작
@@ -261,7 +251,9 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                           color: theme.colorScheme.surfaceContainerHighest,
                           border: Border(
                             bottom: BorderSide(
-                              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.1,
+                              ),
                             ),
                           ),
                         ),
@@ -293,12 +285,15 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                       ),
 
                       // 급여명세서 인증 버튼 (미인증 시)
-                      if (!widget.hasCareerVerification && widget.onVerifyCareer != null) ...[
+                      if (!widget.hasCareerVerification &&
+                          widget.onVerifyCareer != null) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Divider(
                             height: 1,
-                            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.2,
+                            ),
                           ),
                         ),
                         _buildVerificationButton(theme),
@@ -343,12 +338,7 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
             position: _itemSlideAnimations[index],
             child: FadeTransition(
               opacity: _itemFadeAnimations[index],
-              child: _buildMenuItem(
-                context,
-                lounge,
-                isSelected,
-                theme,
-              ),
+              child: _buildMenuItem(context, lounge, isSelected, theme),
             ),
           );
         },
@@ -454,7 +444,9 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
 
   /// 통합 라운지 여부 확인
   bool _isUnifiedLounge(LoungeInfo lounge) {
-    final requiredCareerIds = LoungeAccessService.getRequiredCareerIds(lounge.id);
+    final requiredCareerIds = LoungeAccessService.getRequiredCareerIds(
+      lounge.id,
+    );
     return requiredCareerIds.length > 1;
   }
 
@@ -498,10 +490,7 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Center(
-                    child: Text(
-                      '🎓',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text('🎓', style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const Gap(12),

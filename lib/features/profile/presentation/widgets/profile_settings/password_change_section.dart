@@ -26,6 +26,7 @@
 /// - Secure password update via AuthCubit
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -35,10 +36,7 @@ import 'settings_section.dart';
 
 /// Password change section with form validation and submission
 class PasswordChangeSection extends StatefulWidget {
-  const PasswordChangeSection({
-    super.key,
-    required this.showMessage,
-  });
+  const PasswordChangeSection({super.key, required this.showMessage});
 
   final void Function(BuildContext context, String message) showMessage;
 
@@ -91,9 +89,9 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
 
     // Submit password change
     await context.read<AuthCubit>().changePassword(
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        );
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
 
     // Clear fields on success
     if (mounted) {
@@ -117,9 +115,7 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
               controller: _currentPasswordController,
               obscureText: true,
               enabled: !isProcessing,
-              decoration: const InputDecoration(
-                labelText: '현재 비밀번호',
-              ),
+              decoration: const InputDecoration(labelText: '현재 비밀번호'),
             ),
             const Gap(12),
 
@@ -128,9 +124,7 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
               controller: _newPasswordController,
               obscureText: true,
               enabled: !isProcessing,
-              decoration: const InputDecoration(
-                labelText: '새 비밀번호',
-              ),
+              decoration: const InputDecoration(labelText: '새 비밀번호'),
             ),
             const Gap(12),
 
@@ -139,16 +133,15 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
               controller: _confirmPasswordController,
               obscureText: true,
               enabled: !isProcessing,
-              decoration: const InputDecoration(
-                labelText: '새 비밀번호 확인',
-              ),
+              decoration: const InputDecoration(labelText: '새 비밀번호 확인'),
             ),
             const Gap(12),
 
             // 비밀번호 변경 버튼
             FilledButton(
-              onPressed:
-                  isProcessing ? null : () => _handlePasswordChange(context, isProcessing),
+              onPressed: isProcessing
+                  ? null
+                  : () => _handlePasswordChange(context, isProcessing),
               child: const Text('비밀번호 변경'),
             ),
           ],

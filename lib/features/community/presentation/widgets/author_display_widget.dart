@@ -64,7 +64,9 @@ class AuthorDisplayWidget extends StatelessWidget {
     final String trackLabel;
     if (serialVisible && specificCareer != null) {
       // Use specific career if available
-      final displayName = CareerDisplayHelper.getCareerDisplayName(specificCareer!);
+      final displayName = CareerDisplayHelper.getCareerDisplayName(
+        specificCareer!,
+      );
       final emoji = CareerDisplayHelper.getCareerEmoji(specificCareer!);
       trackLabel = '$displayName $emoji';
     } else if (serialVisible && track != CareerTrack.none) {

@@ -23,7 +23,8 @@ class GovernmentEmailVerificationCard extends StatefulWidget {
       _GovernmentEmailVerificationCardState();
 }
 
-class _GovernmentEmailVerificationCardState extends State<GovernmentEmailVerificationCard> {
+class _GovernmentEmailVerificationCardState
+    extends State<GovernmentEmailVerificationCard> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
@@ -56,12 +57,16 @@ class _GovernmentEmailVerificationCardState extends State<GovernmentEmailVerific
           return Card(
             color: theme.colorScheme.primaryContainer,
             child: ListTile(
-              leading: Icon(Icons.verified_outlined, color: theme.colorScheme.onPrimaryContainer),
+              leading: Icon(
+                Icons.verified_outlined,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
               title: const Text('공직자 통합 메일 인증 완료'),
               subtitle: const Text('확장 기능을 모두 이용할 수 있습니다.'),
               trailing: TextButton(
-                onPressed: () =>
-                    context.read<AuthCubit>().clearGovernmentEmailVerificationForTesting(),
+                onPressed: () => context
+                    .read<AuthCubit>()
+                    .clearGovernmentEmailVerificationForTesting(),
                 child: const Text('인증 취소(개발)'),
               ),
             ),
@@ -70,7 +75,8 @@ class _GovernmentEmailVerificationCardState extends State<GovernmentEmailVerific
 
         return BlocListener<AuthCubit, AuthState>(
           listenWhen: (previous, current) =>
-              previous.lastMessage != current.lastMessage && current.lastMessage != null,
+              previous.lastMessage != current.lastMessage &&
+              current.lastMessage != null,
           listener: (context, authState) {
             final String? message = authState.lastMessage;
             if (message == null || message.isEmpty) {
@@ -89,11 +95,16 @@ class _GovernmentEmailVerificationCardState extends State<GovernmentEmailVerific
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.mark_email_unread_outlined, color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.mark_email_unread_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
                         const Gap(8),
                         Text(
                           '공직자 통합 메일 인증',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),

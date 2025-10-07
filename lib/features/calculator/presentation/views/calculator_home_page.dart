@@ -10,7 +10,7 @@ import 'package:gong_mu_talk/features/calculator/presentation/widgets/pension_ne
 /// 계산기 홈 페이지 (3단계 시간축 기반 재구성)
 ///
 /// 구조:
-/// 1. Section 1: 재직 중 급여 분석 (현재)
+/// 1. Section 1: 재직 중 급여 (현재)
 /// 2. Section 2: 퇴직 시 일시금 (퇴직 시점)
 /// 3. Section 3: 퇴직 후 연금 (퇴직 후)
 class CalculatorHomePage extends StatelessWidget {
@@ -56,20 +56,26 @@ class CalculatorHomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 급여 정보 입력 카드
-                SalaryInfoInputCard(isDataEntered: state.isDataEntered, profile: state.profile),
+                SalaryInfoInputCard(
+                  isDataEntered: state.isDataEntered,
+                  profile: state.profile,
+                ),
 
                 const SizedBox(height: 16),
 
-                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+                Divider(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  thickness: 1,
+                ),
 
                 const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
-                // Section 1: 💼 재직 중 급여 분석
+                // Section 1: 💼 재직 중 급여
                 // ═══════════════════════════════════════════
-                _SectionHeader(
+                const _SectionHeader(
                   icon: Icons.work,
-                  title: '재직 중 급여 분석',
+                  title: '재직 중 급여',
                   subtitle: '현재 받고 있는 월급과 연간 실수령액',
                 ),
 
@@ -84,14 +90,17 @@ class CalculatorHomePage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+                Divider(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  thickness: 1,
+                ),
 
                 const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
                 // Section 2: 🎁 퇴직 시 일시금
                 // ═══════════════════════════════════════════
-                _SectionHeader(
+                const _SectionHeader(
                   icon: Icons.card_giftcard,
                   title: '퇴직 시 일시금',
                   subtitle: '퇴직할 때 한 번에 받는 금액',
@@ -108,14 +117,17 @@ class CalculatorHomePage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                Divider(color: Colors.grey.withValues(alpha: 0.3), thickness: 1),
+                Divider(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  thickness: 1,
+                ),
 
                 const SizedBox(height: 16),
 
                 // ═══════════════════════════════════════════
                 // Section 3: 🏦 퇴직 후 연금
                 // ═══════════════════════════════════════════
-                _SectionHeader(
+                const _SectionHeader(
                   icon: Icons.account_balance,
                   title: '퇴직 후 연금',
                   subtitle: '퇴직 후 매달 받는 실수령액',
@@ -146,7 +158,11 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionHeader({required this.icon, required this.title, required this.subtitle});
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +190,9 @@ class _SectionHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),

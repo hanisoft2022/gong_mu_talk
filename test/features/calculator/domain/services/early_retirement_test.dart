@@ -35,7 +35,10 @@ void main() {
         expect(result.remainingYears, greaterThan(5));
         expect(result.baseAmount, greaterThan(0));
         expect(result.bonusAmount, greaterThan(0));
-        expect(result.totalAmount, equals(result.baseAmount + result.bonusAmount));
+        expect(
+          result.totalAmount,
+          equals(result.baseAmount + result.bonusAmount),
+        );
       });
 
       test('58세 명퇴 (7년 잔여)', () {
@@ -189,7 +192,10 @@ void main() {
 
         // 잔여기간이 긴 초기 명퇴일수록 명퇴금 많음
         if (results.length >= 2) {
-          expect(results.first.totalAmount, greaterThan(results.last.totalAmount));
+          expect(
+            results.first.totalAmount,
+            greaterThan(results.last.totalAmount),
+          );
         }
       });
     });

@@ -260,7 +260,9 @@ class UserProfileRepository {
       updates['governmentEmail'] = governmentEmail;
     }
     if (governmentEmailVerifiedAt != null) {
-      updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(governmentEmailVerifiedAt);
+      updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(
+        governmentEmailVerifiedAt,
+      );
     }
     updates['updatedAt'] = Timestamp.now();
 

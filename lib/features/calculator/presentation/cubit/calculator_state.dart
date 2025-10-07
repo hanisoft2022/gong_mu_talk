@@ -61,18 +61,18 @@ class CalculatorState extends Equatable {
 
   @override
   List<Object?> get props => [
-        profile,
-        lifetimeSalary,
-        pensionEstimate,
-        retirementBenefit,
-        earlyRetirementBonus,
-        afterTaxPension,
-        monthlyBreakdown,
-        baseIncomeEstimate,
-        isLoading,
-        errorMessage,
-        isDataEntered,
-      ];
+    profile,
+    lifetimeSalary,
+    pensionEstimate,
+    retirementBenefit,
+    earlyRetirementBonus,
+    afterTaxPension,
+    monthlyBreakdown,
+    baseIncomeEstimate,
+    isLoading,
+    errorMessage,
+    isDataEntered,
+  ];
 
   CalculatorState copyWith({
     TeacherProfile? profile,

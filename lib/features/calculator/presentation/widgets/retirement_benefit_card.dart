@@ -46,8 +46,8 @@ class RetirementBenefitCard extends StatelessWidget {
                     child: Text(
                       '퇴직급여',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -69,10 +69,7 @@ class RetirementBenefitCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -83,7 +80,7 @@ class RetirementBenefitCard extends StatelessWidget {
                   children: [
                     // 기간별 퇴직급여
                     _buildPeriodSection(context),
-                    
+
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 16),
@@ -98,7 +95,7 @@ class RetirementBenefitCard extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 12),
-                    
+
                     // 총 퇴직급여
                     _buildSummaryRow(
                       context,
@@ -124,12 +121,12 @@ class RetirementBenefitCard extends StatelessWidget {
         Text(
           '기간별 퇴직급여',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
-        
+
         // 1기간
         if (retirementBenefit!.period1Years > 0)
           Padding(
@@ -140,7 +137,7 @@ class RetirementBenefitCard extends StatelessWidget {
               retirementBenefit!.period1Benefit,
             ),
           ),
-        
+
         // 2기간
         if (retirementBenefit!.period2Years > 0)
           Padding(
@@ -151,7 +148,7 @@ class RetirementBenefitCard extends StatelessWidget {
               retirementBenefit!.period2Benefit,
             ),
           ),
-        
+
         // 3기간
         if (retirementBenefit!.period3Years > 0)
           Padding(
@@ -172,16 +169,16 @@ class RetirementBenefitCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           NumberFormatter.formatCurrency(amount),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.orange[700],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.orange[700],
+          ),
         ),
       ],
     );
@@ -199,16 +196,16 @@ class RetirementBenefitCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isHighlight ? Colors.orange[900] : Colors.grey[700],
-                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
-              ),
+            color: isHighlight ? Colors.orange[900] : Colors.grey[700],
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isHighlight ? Colors.orange[700] : Colors.orange[600],
-              ),
+            fontWeight: FontWeight.bold,
+            color: isHighlight ? Colors.orange[700] : Colors.orange[600],
+          ),
         ),
       ],
     );

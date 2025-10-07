@@ -18,7 +18,8 @@ class InteractionCacheManager {
   DateTime? _lastCacheUpdate;
 
   // Comment Like 캐시 (추가 최적화)
-  final Map<String, Map<String, Set<String>>> _likedCommentsCache = {}; // uid -> postId -> commentIds
+  final Map<String, Map<String, Set<String>>> _likedCommentsCache =
+      {}; // uid -> postId -> commentIds
 
   // Top Comment 캐시 (추가 최적화)
   final Map<String, dynamic> _topCommentsCache = {}; // postId -> CachedComment?
@@ -42,10 +43,7 @@ class InteractionCacheManager {
     required Set<String> scrappedIds,
   }) {
     // 캐시 업데이트 (병합 방식)
-    _likedPostsCache[uid] = {
-      ...(_likedPostsCache[uid] ?? {}),
-      ...likedIds,
-    };
+    _likedPostsCache[uid] = {...(_likedPostsCache[uid] ?? {}), ...likedIds};
     _scrappedPostsCache[uid] = {
       ...(_scrappedPostsCache[uid] ?? {}),
       ...scrappedIds,
@@ -54,30 +52,32 @@ class InteractionCacheManager {
 
     // 캐시 미스 기록
     _cacheMissCount++;
-    debugPrint('🔄 Like/Scrap 캐시 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps');
+    debugPrint(
+      '🔄 Like/Scrap 캐시 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps',
+    );
     _logCacheStats();
   }
 
   /// Get liked post IDs from cache
   Set<String>? getLikedPostIds(String uid, List<String> postIds) {
     if (!_likedPostsCache.containsKey(uid)) return null;
-    
+
     final cached = _likedPostsCache[uid]!
         .where((id) => postIds.contains(id))
         .toSet();
-    
+
     // 캐시 히트 기록
     _cacheHitCount++;
     debugPrint('✅ Like/Scrap 캐시 사용 - Firestore 호출 없음');
     _logCacheStats();
-    
+
     return cached;
   }
 
   /// Get scrapped post IDs from cache
   Set<String>? getScrappedPostIds(String uid, List<String> postIds) {
     if (!_scrappedPostsCache.containsKey(uid)) return null;
-    
+
     return _scrappedPostsCache[uid]!
         .where((id) => postIds.contains(id))
         .toSet();
@@ -128,7 +128,9 @@ class InteractionCacheManager {
     _scrappedPostsCache[uid] = scrappedIds;
     _lastCacheUpdate = DateTime.now();
 
-    debugPrint('🔄 Like/Scrap 캐시 강제 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps');
+    debugPrint(
+      '🔄 Like/Scrap 캐시 강제 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps',
+    );
   }
 
   /// 캐시 히트율 통계 로깅
@@ -137,7 +139,9 @@ class InteractionCacheManager {
     if (totalRequests == 0) return;
 
     final hitRate = (_cacheHitCount / totalRequests * 100).toStringAsFixed(1);
-    debugPrint('📊 캐시 히트율: $hitRate% (히트: $_cacheHitCount, 미스: $_cacheMissCount)');
+    debugPrint(
+      '📊 캐시 히트율: $hitRate% (히트: $_cacheHitCount, 미스: $_cacheMissCount)',
+    );
 
     // 100회마다 상세 통계 출력
     if (totalRequests % 100 == 0) {

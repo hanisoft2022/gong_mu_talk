@@ -14,11 +14,8 @@ import '../../../profile/domain/user_profile.dart';
 part 'search_state.dart';
 
 class SearchCubit extends Cubit<SearchState> {
-  SearchCubit(
-    this._repository,
-    this._searchCommunity,
-    this._preferences,
-  ) : super(const SearchState());
+  SearchCubit(this._repository, this._searchCommunity, this._preferences)
+    : super(const SearchState());
 
   final ICommunityRepository _repository;
   final SearchCommunity _searchCommunity;
@@ -64,12 +61,9 @@ class SearchCubit extends Cubit<SearchState> {
 
   Future<void> loadSuggestions() async {
     final result = await _repository.topSearchSuggestions(limit: 10);
-    result.fold(
-      (error) {
-        // Silently handle error - suggestions are optional
-      },
-      (suggestions) => emit(state.copyWith(suggestions: suggestions)),
-    );
+    result.fold((error) {
+      // Silently handle error - suggestions are optional
+    }, (suggestions) => emit(state.copyWith(suggestions: suggestions)));
   }
 
   Future<void> search(String query) async {
@@ -100,10 +94,13 @@ class SearchCubit extends Cubit<SearchState> {
     final result = await _searchCommunity(
       query: trimmedQuery,
       scope: state.scope,
-      postLimit: state.scope == SearchScope.comments || state.scope == SearchScope.author ? 0 : 20,
-      commentLimit:
-          state.scope == SearchScope.posts ||
+      postLimit:
+          state.scope == SearchScope.comments ||
               state.scope == SearchScope.author
+          ? 0
+          : 20,
+      commentLimit:
+          state.scope == SearchScope.posts || state.scope == SearchScope.author
           ? 0
           : 20,
       userLimit: state.scope == SearchScope.author ? 20 : 0,

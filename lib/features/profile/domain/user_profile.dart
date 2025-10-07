@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
-
 import 'career_track.dart';
 import 'career_hierarchy.dart';
 
@@ -118,7 +117,8 @@ class UserProfile extends Equatable {
     return nicknameChangeCount < 1;
   }
 
-  bool get isGovernmentEmailVerified => governmentEmail != null && governmentEmailVerifiedAt != null;
+  bool get isGovernmentEmailVerified =>
+      governmentEmail != null && governmentEmailVerifiedAt != null;
 
   UserProfile copyWith({
     String? nickname,
@@ -207,7 +207,8 @@ class UserProfile extends Equatable {
           supporterBadgeVisible ?? this.supporterBadgeVisible,
       serialVisible: serialVisible ?? this.serialVisible,
       governmentEmail: governmentEmail ?? this.governmentEmail,
-      governmentEmailVerifiedAt: governmentEmailVerifiedAt ?? this.governmentEmailVerifiedAt,
+      governmentEmailVerifiedAt:
+          governmentEmailVerifiedAt ?? this.governmentEmailVerifiedAt,
       careerHierarchy: careerHierarchy ?? this.careerHierarchy,
       accessibleLoungeIds: accessibleLoungeIds ?? this.accessibleLoungeIds,
       defaultLoungeId: defaultLoungeId ?? this.defaultLoungeId,
@@ -322,7 +323,9 @@ class UserProfile extends Equatable {
       supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
       serialVisible: data['serialVisible'] as bool? ?? true,
       governmentEmail: data['governmentEmail'] as String?,
-      governmentEmailVerifiedAt: _parseTimestamp(data['governmentEmailVerifiedAt']),
+      governmentEmailVerifiedAt: _parseTimestamp(
+        data['governmentEmailVerifiedAt'],
+      ),
       careerHierarchy: _parseCareerHierarchy(data['careerHierarchy']),
       accessibleLoungeIds: _parseStringList(data['accessibleLoungeIds']),
       defaultLoungeId: data['defaultLoungeId'] as String?,

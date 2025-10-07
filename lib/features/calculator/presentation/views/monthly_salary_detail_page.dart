@@ -8,10 +8,7 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_
 class MonthlySalaryDetailPage extends StatelessWidget {
   final List<MonthlySalaryDetail> monthlyDetails;
 
-  const MonthlySalaryDetailPage({
-    super.key,
-    required this.monthlyDetails,
-  });
+  const MonthlySalaryDetailPage({super.key, required this.monthlyDetails});
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +39,7 @@ class MonthlySalaryDetailPage extends StatelessWidget {
               children: [
                 const Text(
                   '연간 총 급여',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -59,10 +53,7 @@ class MonthlySalaryDetailPage extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '평균 월 ${NumberFormatter.formatCurrency(annualGrossSalary ~/ 12)}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -99,10 +90,7 @@ class _MonthCard extends StatelessWidget {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: detail.hasLongevityBonus
                     ? Colors.orange.shade100
@@ -123,10 +111,7 @@ class _MonthCard extends StatelessWidget {
             if (detail.hasLongevityBonus) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.orange,
                   borderRadius: BorderRadius.circular(4),
@@ -147,10 +132,7 @@ class _MonthCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8),
           child: Text(
             '총 지급액: ${NumberFormatter.formatCurrency(detail.grossSalary)}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
         children: [
@@ -161,17 +143,17 @@ class _MonthCard extends StatelessWidget {
                 _SalaryRow('본봉', detail.baseSalary),
                 const SizedBox(height: 8),
                 _SalaryRow('교직수당', detail.teachingAllowance),
-                
+
                 if (detail.homeroomAllowance > 0) ...[
                   const SizedBox(height: 8),
                   _SalaryRow('담임수당', detail.homeroomAllowance),
                 ],
-                
+
                 if (detail.positionAllowance > 0) ...[
                   const SizedBox(height: 8),
                   _SalaryRow('보직교사수당', detail.positionAllowance),
                 ],
-                
+
                 if (detail.veteranAllowance > 0) ...[
                   const SizedBox(height: 8),
                   _SalaryRow(
@@ -180,24 +162,24 @@ class _MonthCard extends StatelessWidget {
                     icon: Icons.star,
                   ),
                 ],
-                
+
                 const SizedBox(height: 8),
                 _SalaryRow('가족수당', detail.familyAllowance),
-                
+
                 const SizedBox(height: 8),
                 _SalaryRow('교원연구비', detail.researchAllowance),
-                
+
                 if (detail.mealAllowance > 0) ...[
                   const SizedBox(height: 8),
                   _SalaryRow('정액급식비', detail.mealAllowance),
                 ],
-                
+
                 const SizedBox(height: 8),
                 _SalaryRow('시간외근무수당', detail.overtimeAllowance),
-                
+
                 const SizedBox(height: 8),
                 _SalaryRow('정근수당 가산금', detail.longevityMonthly),
-                
+
                 if (detail.longevityBonus > 0) ...[
                   const SizedBox(height: 8),
                   _SalaryRow(
@@ -207,14 +189,10 @@ class _MonthCard extends StatelessWidget {
                     icon: Icons.celebration,
                   ),
                 ],
-                
+
                 const Divider(height: 24),
-                
-                _SalaryRow(
-                  '총 지급액',
-                  detail.grossSalary,
-                  isTotal: true,
-                ),
+
+                _SalaryRow('총 지급액', detail.grossSalary, isTotal: true),
               ],
             ),
           ),

@@ -22,7 +22,8 @@ class SalaryCalculationService {
     final results = <AnnualSalary>[];
     final currentYear = DateTime.now().year;
     final retirementAge = targetRetirementAge ?? profile.retirementAge;
-    final birthYear = profile.employmentStartDate.year - 25; // 대략적인 출생년도 (25세 입직 가정)
+    final birthYear =
+        profile.employmentStartDate.year - 25; // 대략적인 출생년도 (25세 입직 가정)
     final retirementYear = birthYear + retirementAge;
 
     int grade = profile.currentGrade;
@@ -104,7 +105,8 @@ class SalaryCalculationService {
     int presentValue = 0;
     for (int i = 0; i < annualSalaries.length; i++) {
       final discountFactor = pow(1 + inflationRate, i);
-      presentValue += (annualSalaries[i].annualTotalPay / discountFactor).round();
+      presentValue += (annualSalaries[i].annualTotalPay / discountFactor)
+          .round();
     }
 
     // 3. 평균 연봉
@@ -232,8 +234,7 @@ class SalaryCalculationService {
     required int currentMonth,
   }) {
     // 나이 계산
-    final age =
-        currentYear - birthYear - (currentMonth < birthMonth ? 1 : 0);
+    final age = currentYear - birthYear - (currentMonth < birthMonth ? 1 : 0);
 
     // 30년 이상 재직 + 55세 이상
     if (serviceYears >= 30 && age >= 55) {
@@ -331,17 +332,16 @@ class SalaryCalculationService {
     final mealAllowance = includeMealAllowance ? 140000 : 0;
 
     // 9. 시간외근무수당 정액분
-    final overtimeAllowance =
-        calculateOvertimeAllowance(profile.currentGrade);
+    final overtimeAllowance = calculateOvertimeAllowance(profile.currentGrade);
 
     // 10. 정근수당 가산금 (매월)
-    final longevityMonthly =
-        calculateLongevityMonthlyAllowance(serviceYears);
+    final longevityMonthly = calculateLongevityMonthlyAllowance(serviceYears);
 
     // 월별 계산
     for (int month = 1; month <= 12; month++) {
       // 월급 (정근수당 제외)
-      final monthlySalary = baseSalary +
+      final monthlySalary =
+          baseSalary +
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +

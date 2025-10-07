@@ -117,7 +117,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
             if (state.audience != desiredAudience) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (context.mounted) {
-                  context.read<PostComposerCubit>().selectAudience(desiredAudience);
+                  context.read<PostComposerCubit>().selectAudience(
+                    desiredAudience,
+                  );
                 }
               });
             }
@@ -127,7 +129,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
           if (!hasSerial && state.audience == PostAudience.serial) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted) {
-                context.read<PostComposerCubit>().selectAudience(PostAudience.all);
+                context.read<PostComposerCubit>().selectAudience(
+                  PostAudience.all,
+                );
               }
             });
           }
@@ -151,7 +155,10 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                   Row(
                     children: [
                       Text(
-                        _getTitleForScope(widget.selectedLoungeInfo, serialDisplayName),
+                        _getTitleForScope(
+                          widget.selectedLoungeInfo,
+                          serialDisplayName,
+                        ),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -171,7 +178,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                     controller: _controller,
                     minLines: 2,
                     maxLines: 4,
-                    enabled: !state.isSubmitting && authState.isGovernmentEmailVerified,
+                    enabled:
+                        !state.isSubmitting &&
+                        authState.isGovernmentEmailVerified,
                     readOnly: !authState.isGovernmentEmailVerified,
                     onTap: authState.isGovernmentEmailVerified
                         ? null
@@ -181,8 +190,8 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                       hintText: authState.isGovernmentEmailVerified
                           ? '나누고 싶은 이야기를 적어보세요.'
                           : authState.isLoggedIn
-                              ? '글 작성은 공직자 메일 인증 후 가능합니다'
-                              : '로그인 후 글을 작성할 수 있어요.',
+                          ? '글 작성은 공직자 메일 인증 후 가능합니다'
+                          : '로그인 후 글을 작성할 수 있어요.',
                       hintStyle: theme.textTheme.bodyMedium,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -328,8 +337,6 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: 인증 페이지로 이동
-              // context.push('/profile/verify-email');
             },
             child: const Text('지금 인증하기'),
           ),

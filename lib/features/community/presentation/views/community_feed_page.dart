@@ -73,13 +73,15 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   // ==================== Event Handlers ====================
   void _onScroll() {
     final CommunityFeedCubit cubit = context.read<CommunityFeedCubit>();
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       PerformanceProfiler.start('fetch_more_posts');
       cubit.fetchMore();
       PerformanceProfiler.end('fetch_more_posts');
     }
 
-    final bool shouldElevate = _scrollController.hasClients && _scrollController.offset > 4;
+    final bool shouldElevate =
+        _scrollController.hasClients && _scrollController.offset > 4;
     if (shouldElevate != _isAppBarElevated && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && shouldElevate != _isAppBarElevated) {
@@ -154,13 +156,17 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   void _useSuggestion(String token) {
     _searchController
       ..text = token
-      ..selection = TextSelection.fromPosition(TextPosition(offset: token.length));
+      ..selection = TextSelection.fromPosition(
+        TextPosition(offset: token.length),
+      );
     _onSearchSubmitted(token);
   }
 
   void _showSearchOptions() {
     final SearchCubit searchCubit = _searchCubit ?? context.read<SearchCubit>();
-    final CommunityFeedState feedState = context.read<CommunityFeedCubit>().state;
+    final CommunityFeedState feedState = context
+        .read<CommunityFeedCubit>()
+        .state;
 
     showSearchOptionsBottomSheet(
       context: context,
@@ -198,8 +204,13 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         builder: (context, hasLoungeReadAccess) {
           return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
             builder: (context, feedState) {
-              return BlocSelector<SearchCubit, SearchState, ({String query, bool isLoading})>(
-                selector: (state) => (query: state.query, isLoading: state.isLoading),
+              return BlocSelector<
+                SearchCubit,
+                SearchState,
+                ({String query, bool isLoading})
+              >(
+                selector: (state) =>
+                    (query: state.query, isLoading: state.isLoading),
                 builder: (context, searchData) {
                   // Check lounge read access (로그인 필요)
                   if (!hasLoungeReadAccess) {
@@ -210,7 +221,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                   _handleScopeChange(feedState);
 
                   final bool showSearchResults =
-                      _isSearchExpanded && (searchData.query.isNotEmpty || searchData.isLoading);
+                      _isSearchExpanded &&
+                      (searchData.query.isNotEmpty || searchData.isLoading);
 
                   // Initial loading state
                   if (!showSearchResults && _isInitialLoading(feedState)) {
@@ -242,7 +254,8 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   }
 
   bool _isErrorState(CommunityFeedState feedState) {
-    return feedState.status == CommunityFeedStatus.error && feedState.posts.isEmpty;
+    return feedState.status == CommunityFeedStatus.error &&
+        feedState.posts.isEmpty;
   }
 
   void _handleScopeChange(CommunityFeedState feedState) {
@@ -292,7 +305,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+              CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const Gap(16),
               Text(
                 '라운지 게시물을 불러오고 있습니다...',
@@ -350,10 +365,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeIn,
                 transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
+                  return FadeTransition(opacity: animation, child: child);
                 },
                 child: OptimizedListView(
                   key: ValueKey<String>(
@@ -397,14 +409,14 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
               feedState: feedState,
               searchState: searchState,
               isSearchExpanded: _isSearchExpanded,
-          searchController: _searchController,
-          searchFocusNode: _searchFocusNode,
-          onExpandSearch: _expandSearchField,
-          onCollapseSearch: _collapseSearchField,
-          onSearchSubmitted: _onSearchSubmitted,
-          onSearchChanged: _onQueryChanged,
-          onClearSearch: _clearSearchQuery,
-          onShowSearchOptions: _showSearchOptions,
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              onExpandSearch: _expandSearchField,
+              onCollapseSearch: _collapseSearchField,
+              onSearchSubmitted: _onSearchSubmitted,
+              onSearchChanged: _onQueryChanged,
+              onClearSearch: _clearSearchQuery,
+              onShowSearchOptions: _showSearchOptions,
             ),
           );
         },
@@ -417,9 +429,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
       children.add(
         BlocBuilder<SearchCubit, SearchState>(
           builder: (context, searchState) {
-            final bool hasContent = searchState.suggestions.isNotEmpty || 
-                                   searchState.recentSearches.isNotEmpty;
-            
+            final bool hasContent =
+                searchState.suggestions.isNotEmpty ||
+                searchState.recentSearches.isNotEmpty;
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -429,8 +442,10 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                     child: SearchSuggestionsCard(
                       searchState: searchState,
                       onSuggestionTap: _useSuggestion,
-                      onClearRecentSearches: () => searchCubit.clearRecentSearches(),
-                      onRemoveRecentSearch: (search) => searchCubit.removeRecentSearch(search),
+                      onClearRecentSearches: () =>
+                          searchCubit.clearRecentSearches(),
+                      onRemoveRecentSearch: (search) =>
+                          searchCubit.removeRecentSearch(search),
                     ),
                   ),
                   const Gap(12),
@@ -490,11 +505,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
                 },
                 isVisible: feedState.isLoungeMenuOpen,
                 hasCareerVerification: hasCareerVerification,
-            onVerifyCareer: () {
-              context.read<CommunityFeedCubit>().toggleLoungeMenu();
-              context.push('/profile/verify-paystub');
-            },
-          ),
+                onVerifyCareer: () {
+                  context.read<CommunityFeedCubit>().toggleLoungeMenu();
+                  context.push('/profile/verify-paystub');
+                },
+              ),
 
               // FAB
               LoungeFAB(

@@ -67,13 +67,13 @@ class PostCardState extends Equatable {
 
   @override
   List<Object?> get props => [
-        commentCount,
-        isLoadingComments,
-        commentsLoaded,
-        featuredComments,
-        timelineComments,
-        isSubmittingComment,
-        hasTrackedView,
-        error,
-      ];
+    commentCount,
+    isLoadingComments,
+    commentsLoaded,
+    featuredComments,
+    timelineComments,
+    isSubmittingComment,
+    hasTrackedView,
+    error,
+  ];
 }

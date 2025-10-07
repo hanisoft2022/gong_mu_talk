@@ -19,8 +19,7 @@ class LoungeFAB extends StatefulWidget {
   State<LoungeFAB> createState() => _LoungeFABState();
 }
 
-class _LoungeFABState extends State<LoungeFAB>
-    with TickerProviderStateMixin {
+class _LoungeFABState extends State<LoungeFAB> with TickerProviderStateMixin {
   late AnimationController _rotationController;
   late AnimationController _pulseController;
   late Animation<double> _rotationAnimation;
@@ -41,29 +40,21 @@ class _LoungeFABState extends State<LoungeFAB>
       vsync: this,
     );
 
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.125, // 45도 회전 (0.125 = 45/360)
-    ).animate(CurvedAnimation(
-      parent: _rotationController,
-      curve: Curves.easeInOut,
-    ));
+    _rotationAnimation =
+        Tween<double>(
+          begin: 0.0,
+          end: 0.125, // 45도 회전 (0.125 = 45/360)
+        ).animate(
+          CurvedAnimation(parent: _rotationController, curve: Curves.easeInOut),
+        );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _rotationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _rotationController, curve: Curves.easeInOut),
+    );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
     // 미묘한 펄스 애니메이션 시작 (3초마다 반복)
     _startPulseAnimation();
@@ -123,84 +114,82 @@ class _LoungeFABState extends State<LoungeFAB>
         animation: Listenable.merge([_rotationController, _pulseController]),
         builder: (context, child) {
           return Transform.scale(
-          scale: _scaleAnimation.value * _pulseAnimation.value,
-          child: Transform.rotate(
-            angle: _rotationAnimation.value * 2 * 3.141592653589793, // 라디안 변환
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.surfaceContainerHighest,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _handleTap,
-                  borderRadius: BorderRadius.circular(28),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
+            scale: _scaleAnimation.value * _pulseAnimation.value,
+            child: Transform.rotate(
+              angle: _rotationAnimation.value * 2 * 3.141592653589793, // 라디안 변환
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                    child: Stack(
-                      children: [
-                        // 메인 아이콘 (라운지 이모지 또는 기본 아이콘)
-                        Center(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            transitionBuilder: (child, animation) {
-                              return ScaleTransition(
-                                scale: animation,
-                                child: FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: selectedLounge != null
-                                ? Text(
-                                    selectedLounge.emoji,
-                                    key: ValueKey(selectedLounge.emoji),
-                                    style: const TextStyle(fontSize: 24),
-                                  )
-                                : Icon(
-                                    Icons.forum,
-                                    key: const ValueKey('default'),
-                                    color: theme.colorScheme.onSurface,
-                                    size: 24,
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _handleTap,
+                    borderRadius: BorderRadius.circular(28),
+                    child: Container(
+                      decoration: const BoxDecoration(shape: BoxShape.circle),
+                      child: Stack(
+                        children: [
+                          // 메인 아이콘 (라운지 이모지 또는 기본 아이콘)
+                          Center(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
                                   ),
+                                );
+                              },
+                              child: selectedLounge != null
+                                  ? Text(
+                                      selectedLounge.emoji,
+                                      key: ValueKey(selectedLounge.emoji),
+                                      style: const TextStyle(fontSize: 24),
+                                    )
+                                  : Icon(
+                                      Icons.forum,
+                                      key: const ValueKey('default'),
+                                      color: theme.colorScheme.onSurface,
+                                      size: 24,
+                                    ),
+                            ),
                           ),
-                        ),
 
-                        // 접근성을 위한 텍스트 (화면에는 보이지 않음)
-                        Semantics(
-                          label: widget.isMenuOpen
-                              ? '라운지 메뉴 닫기'
-                              : '라운지 메뉴 열기',
-                          button: true,
-                          child: const SizedBox.expand(),
-                        ),
-                      ],
+                          // 접근성을 위한 텍스트 (화면에는 보이지 않음)
+                          Semantics(
+                            label: widget.isMenuOpen
+                                ? '라운지 메뉴 닫기'
+                                : '라운지 메뉴 열기',
+                            button: true,
+                            child: const SizedBox.expand(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
       ),
     );
   }
@@ -243,10 +232,7 @@ class LoungeIndicator extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              lounge.emoji,
-              style: const TextStyle(fontSize: 12),
-            ),
+            Text(lounge.emoji, style: const TextStyle(fontSize: 12)),
             const SizedBox(width: 4),
             Text(
               lounge.shortName,
@@ -261,4 +247,3 @@ class LoungeIndicator extends StatelessWidget {
     );
   }
 }
-

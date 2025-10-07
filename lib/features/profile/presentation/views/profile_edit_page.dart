@@ -205,7 +205,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   ? null
                                   : (bool value) async {
                                       setState(
-                                        () => _isUpdatingSerialVisibility = true,
+                                        () =>
+                                            _isUpdatingSerialVisibility = true,
                                       );
                                       try {
                                         await context
@@ -214,8 +215,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                       } finally {
                                         if (mounted) {
                                           setState(
-                                            () =>
-                                                _isUpdatingSerialVisibility = false,
+                                            () => _isUpdatingSerialVisibility =
+                                                false,
                                           );
                                         }
                                       }

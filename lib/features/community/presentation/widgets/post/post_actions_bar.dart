@@ -8,6 +8,7 @@
 /// Used by: PostCard
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -110,9 +111,10 @@ class PostActionButton extends StatelessWidget {
     );
 
     final TextStyle labelStyle =
-        Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(color: iconColor, fontWeight: FontWeight.w600) ??
+        Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: iconColor,
+          fontWeight: FontWeight.w600,
+        ) ??
         TextStyle(color: iconColor, fontWeight: FontWeight.w600);
 
     final Widget labelWidget = AnimatedSwitcher(

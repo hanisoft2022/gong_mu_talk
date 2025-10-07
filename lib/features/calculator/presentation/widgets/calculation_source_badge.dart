@@ -26,19 +26,12 @@ class CalculationSourceBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.blue.shade50,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.blue.shade200,
-            width: 1,
-          ),
+          border: Border.all(color: Colors.blue.shade200, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.account_balance,
-              size: 16,
-              color: Colors.blue.shade700,
-            ),
+            Icon(Icons.account_balance, size: 16, color: Colors.blue.shade700),
             const SizedBox(width: 6),
             Text(
               displayText,
@@ -49,11 +42,7 @@ class CalculationSourceBadge extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(
-              Icons.info_outline,
-              size: 14,
-              color: Colors.blue.shade600,
-            ),
+            Icon(Icons.info_outline, size: 14, color: Colors.blue.shade600),
           ],
         ),
       ),
@@ -76,10 +65,7 @@ class _SourceInfoSheet extends StatelessWidget {
   final String source;
   final String? year;
 
-  const _SourceInfoSheet({
-    required this.source,
-    this.year,
-  });
+  const _SourceInfoSheet({required this.source, this.year});
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +93,9 @@ class _SourceInfoSheet extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 '신뢰할 수 있는 계산',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -125,27 +111,15 @@ class _SourceInfoSheet extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          _buildInfoRow(
-            context,
-            '🏛️ 법적 근거',
-            _getLegalBasis(source),
-          ),
+          _buildInfoRow(context, '🏛️ 법적 근거', _getLegalBasis(source)),
 
           const SizedBox(height: 12),
 
-          _buildInfoRow(
-            context,
-            '📊 데이터 출처',
-            _getDataSource(source),
-          ),
+          _buildInfoRow(context, '📊 데이터 출처', _getDataSource(source)),
 
           const SizedBox(height: 12),
 
-          _buildInfoRow(
-            context,
-            '🔄 마지막 업데이트',
-            year ?? '2025',
-          ),
+          _buildInfoRow(context, '🔄 마지막 업데이트', year ?? '2025'),
 
           const SizedBox(height: 24),
 
@@ -202,17 +176,17 @@ class _SourceInfoSheet extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],

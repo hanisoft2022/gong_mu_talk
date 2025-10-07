@@ -22,9 +22,9 @@ class PostCardCubit extends Cubit<PostCardState> {
     required CommunityRepository repository,
     required String postId,
     required int initialCommentCount,
-  })  : _repository = repository,
-        _postId = postId,
-        super(PostCardState.initial(commentCount: initialCommentCount));
+  }) : _repository = repository,
+       _postId = postId,
+       super(PostCardState.initial(commentCount: initialCommentCount));
 
   final CommunityRepository _repository;
   final String _postId;
@@ -52,8 +52,8 @@ class PostCardCubit extends Cubit<PostCardState> {
         _repository.getComments(_postId),
       ]);
 
-      final List<Comment> featured = results[0] as List<Comment>;
-      final List<Comment> timeline = results[1] as List<Comment>;
+      final List<Comment> featured = results[0];
+      final List<Comment> timeline = results[1];
 
       // Merge featured comments into timeline to ensure consistency
       final Set<String> featuredIds = featured.map((c) => c.id).toSet();
@@ -68,25 +68,30 @@ class PostCardCubit extends Cubit<PostCardState> {
       }).toList();
 
       // Apply featured comment criteria
-      final bool canShowFeatured = timeline.length >= 3 &&
+      final bool canShowFeatured =
+          timeline.length >= 3 &&
           featured.isNotEmpty &&
           featured.first.likeCount >= 3;
 
-      emit(state.copyWith(
-        isLoadingComments: false,
-        commentsLoaded: true,
-        featuredComments: canShowFeatured ? featured : [],
-        timelineComments: mergedTimeline,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          isLoadingComments: false,
+          commentsLoaded: true,
+          featuredComments: canShowFeatured ? featured : [],
+          timelineComments: mergedTimeline,
+          clearError: true,
+        ),
+      );
     } catch (e, stackTrace) {
       debugPrint('❌ Error loading comments for post $_postId: $e');
       debugPrint('Stack trace: $stackTrace');
-      
-      emit(state.copyWith(
-        isLoadingComments: false,
-        error: '댓글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
-      ));
+
+      emit(
+        state.copyWith(
+          isLoadingComments: false,
+          error: '댓글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
+        ),
+      );
     }
   }
 
@@ -98,7 +103,10 @@ class PostCardCubit extends Cubit<PostCardState> {
   /// After successful submission:
   /// - Increments comment count
   /// - Reloads comments automatically
-  Future<void> submitComment(String text, {List<String> imageUrls = const []}) async {
+  Future<void> submitComment(
+    String text, {
+    List<String> imageUrls = const [],
+  }) async {
     final String trimmedText = text.trim();
 
     // Validate comment content
@@ -112,22 +120,26 @@ class PostCardCubit extends Cubit<PostCardState> {
       await _repository.addComment(_postId, trimmedText, imageUrls: imageUrls);
 
       // Increment count
-      emit(state.copyWith(
-        isSubmittingComment: false,
-        commentCount: state.commentCount + 1,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          isSubmittingComment: false,
+          commentCount: state.commentCount + 1,
+          clearError: true,
+        ),
+      );
 
       // Reload comments to show the new one
       await loadComments(force: true);
     } catch (e) {
       debugPrint('❌ Error submitting comment for post $_postId: $e');
-      
+
       // Don't reload comments on error
-      emit(state.copyWith(
-        isSubmittingComment: false,
-        error: '댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.',
-      ));
+      emit(
+        state.copyWith(
+          isSubmittingComment: false,
+          error: '댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.',
+        ),
+      );
     }
   }
 
@@ -151,7 +163,7 @@ class PostCardCubit extends Cubit<PostCardState> {
       await _repository.toggleCommentLikeById(_postId, comment.id);
     } catch (e) {
       debugPrint('❌ Error toggling comment like: $e');
-      
+
       // Rollback on failure (no error emit - silent fail for better UX)
       _updateCommentInLists(
         comment.id,
@@ -166,10 +178,8 @@ class PostCardCubit extends Cubit<PostCardState> {
       await _repository.reportPost(_postId, reason);
     } catch (e) {
       debugPrint('❌ Error reporting post $_postId: $e');
-      
-      emit(state.copyWith(
-        error: '신고를 처리하지 못했어요. 잠시 후 다시 시도해주세요.',
-      ));
+
+      emit(state.copyWith(error: '신고를 처리하지 못했어요. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -179,10 +189,8 @@ class PostCardCubit extends Cubit<PostCardState> {
       await _repository.blockUser(uid);
     } catch (e) {
       debugPrint('❌ Error blocking user $uid: $e');
-      
-      emit(state.copyWith(
-        error: '차단에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      ));
+
+      emit(state.copyWith(error: '차단에 실패했습니다. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -219,9 +227,11 @@ class PostCardCubit extends Cubit<PostCardState> {
         .map((c) => c.id == commentId ? updatedComment : c)
         .toList();
 
-    emit(state.copyWith(
-      timelineComments: updatedTimeline,
-      featuredComments: updatedFeatured,
-    ));
+    emit(
+      state.copyWith(
+        timelineComments: updatedTimeline,
+        featuredComments: updatedFeatured,
+      ),
+    );
   }
 }

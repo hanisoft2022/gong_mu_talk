@@ -8,6 +8,7 @@
 /// - Posts and comments results rendering
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -40,7 +41,9 @@ class SearchResultsHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 "'${searchState.query}' 검색 결과",
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             TextButton.icon(
@@ -88,11 +91,18 @@ class SearchSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const Gap(6),
           Text(
             '$count',
-            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -102,10 +112,7 @@ class SearchSectionHeader extends StatelessWidget {
 
 /// Empty results message for a section
 class NoSectionResults extends StatelessWidget {
-  const NoSectionResults({
-    required this.target,
-    super.key,
-  });
+  const NoSectionResults({required this.target, super.key});
 
   final String target;
 
@@ -115,9 +122,9 @@ class NoSectionResults extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         '$target 결과가 없습니다.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -159,11 +166,16 @@ class SearchEmptyResults extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("'${searchState.query}'에 대한 $target 결과가 없습니다.", style: theme.textTheme.titleMedium),
+            Text(
+              "'${searchState.query}'에 대한 $target 결과가 없습니다.",
+              style: theme.textTheme.titleMedium,
+            ),
             const Gap(8),
             Text(
               '검색어를 바꾸거나 범위를 조정해보세요.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const Gap(12),
             TextButton.icon(
@@ -202,7 +214,10 @@ class SearchErrorCard extends StatelessWidget {
                 const Icon(Icons.error_outline, color: Colors.red),
                 const Gap(8),
                 Expanded(
-                  child: Text('검색 중 오류가 발생했습니다.', style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    '검색 중 오류가 발생했습니다.',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -249,7 +264,9 @@ class SearchResultsSection extends StatelessWidget {
     }
 
     final bool showPosts = searchState.scope != SearchScope.comments;
-    final bool showComments = searchState.scope == SearchScope.all || searchState.scope == SearchScope.comments;
+    final bool showComments =
+        searchState.scope == SearchScope.all ||
+        searchState.scope == SearchScope.comments;
     final bool noPosts = !showPosts || searchState.postResults.isEmpty;
     final bool noComments = !showComments || searchState.commentResults.isEmpty;
 
@@ -281,7 +298,10 @@ class SearchResultsSection extends StatelessWidget {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SearchSectionHeader(title: '글 결과', count: searchState.postResults.length),
+          child: SearchSectionHeader(
+            title: '글 결과',
+            count: searchState.postResults.length,
+          ),
         ),
       );
       if (searchState.postResults.isEmpty && !searchState.isLoading) {
@@ -330,7 +350,10 @@ class SearchResultsSection extends StatelessWidget {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SearchSectionHeader(title: '댓글 결과', count: searchState.commentResults.length),
+          child: SearchSectionHeader(
+            title: '댓글 결과',
+            count: searchState.commentResults.length,
+          ),
         ),
       );
       if (searchState.commentResults.isEmpty && !searchState.isLoading) {

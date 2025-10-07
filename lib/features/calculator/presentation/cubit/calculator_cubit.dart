@@ -19,24 +19,22 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   CalculatorCubit({
     required CalculateLifetimeSalaryUseCase calculateLifetimeSalaryUseCase,
     required CalculatePensionUseCase calculatePensionUseCase,
-    required CalculateRetirementBenefitUseCase calculateRetirementBenefitUseCase,
+    required CalculateRetirementBenefitUseCase
+    calculateRetirementBenefitUseCase,
     required CalculateEarlyRetirementUseCase calculateEarlyRetirementUseCase,
     required CalculateAfterTaxPensionUseCase calculateAfterTaxPensionUseCase,
     required CalculateMonthlyBreakdownUseCase calculateMonthlyBreakdownUseCase,
-  })  : _calculateLifetimeSalaryUseCase = calculateLifetimeSalaryUseCase,
-        _calculatePensionUseCase = calculatePensionUseCase,
-        _calculateRetirementBenefitUseCase = calculateRetirementBenefitUseCase,
-        _calculateEarlyRetirementUseCase = calculateEarlyRetirementUseCase,
-        _calculateAfterTaxPensionUseCase = calculateAfterTaxPensionUseCase,
-        _calculateMonthlyBreakdownUseCase = calculateMonthlyBreakdownUseCase,
-        super(const CalculatorState());
+  }) : _calculateLifetimeSalaryUseCase = calculateLifetimeSalaryUseCase,
+       _calculatePensionUseCase = calculatePensionUseCase,
+       _calculateRetirementBenefitUseCase = calculateRetirementBenefitUseCase,
+       _calculateEarlyRetirementUseCase = calculateEarlyRetirementUseCase,
+       _calculateAfterTaxPensionUseCase = calculateAfterTaxPensionUseCase,
+       _calculateMonthlyBreakdownUseCase = calculateMonthlyBreakdownUseCase,
+       super(const CalculatorState());
 
   /// 교사 프로필 저장
   void saveProfile(TeacherProfile profile) {
-    emit(state.copyWith(
-      profile: profile,
-      isDataEntered: true,
-    ));
+    emit(state.copyWith(profile: profile, isDataEntered: true));
 
     // 자동으로 계산 실행
     calculate();
@@ -52,18 +50,16 @@ class CalculatorCubit extends Cubit<CalculatorState> {
       final profile = state.profile!;
 
       // 1. 생애 급여 계산
-      final lifetimeSalary = _calculateLifetimeSalaryUseCase(
-        profile: profile,
-      );
+      final lifetimeSalary = _calculateLifetimeSalaryUseCase(profile: profile);
 
       // 2. 평균 기준소득 계산 (연도별 급여의 평균)
       final avgBaseIncome = lifetimeSalary.annualSalaries.isEmpty
           ? 0
           : (lifetimeSalary.annualSalaries
-                      .map((e) => e.basePay)
-                      .reduce((a, b) => a + b) /
-                  lifetimeSalary.annualSalaries.length)
-              .round();
+                        .map((e) => e.basePay)
+                        .reduce((a, b) => a + b) /
+                    lifetimeSalary.annualSalaries.length)
+                .round();
 
       // 3. 기준소득월액 추정은 현재 사용하지 않음 (향후 확장 예정)
       // final baseIncomeEstimate = null;
@@ -88,9 +84,7 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       // 7. 명예퇴직금 계산 (55세 이상 퇴직 시)
       final earlyRetirementBonus = profile.retirementAge >= 55
-          ? _calculateEarlyRetirementUseCase(
-              profile: profile,
-            )
+          ? _calculateEarlyRetirementUseCase(profile: profile)
           : null;
 
       // 8. 월별 실수령액 분석
@@ -101,20 +95,24 @@ class CalculatorCubit extends Cubit<CalculatorState> {
         numberOfChildren: profile.numberOfChildren,
       );
 
-      emit(state.copyWith(
-        lifetimeSalary: lifetimeSalary,
-        pensionEstimate: pensionEstimate,
-        retirementBenefit: retirementBenefit,
-        earlyRetirementBonus: earlyRetirementBonus,
-        afterTaxPension: afterTaxPension,
-        monthlyBreakdown: monthlyBreakdown,
-        isLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          lifetimeSalary: lifetimeSalary,
+          pensionEstimate: pensionEstimate,
+          retirementBenefit: retirementBenefit,
+          earlyRetirementBonus: earlyRetirementBonus,
+          afterTaxPension: afterTaxPension,
+          monthlyBreakdown: monthlyBreakdown,
+          isLoading: false,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: '계산 중 오류가 발생했습니다: ${e.toString()}',
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: '계산 중 오류가 발생했습니다: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -126,10 +124,10 @@ class CalculatorCubit extends Cubit<CalculatorState> {
       final avgBaseIncome = state.lifetimeSalary?.annualSalaries.isEmpty ?? true
           ? 0
           : (state.lifetimeSalary!.annualSalaries
-                      .map((e) => e.basePay)
-                      .reduce((a, b) => a + b) /
-                  state.lifetimeSalary!.annualSalaries.length)
-              .round();
+                        .map((e) => e.basePay)
+                        .reduce((a, b) => a + b) /
+                    state.lifetimeSalary!.annualSalaries.length)
+                .round();
 
       final retirementBenefit = _calculateRetirementBenefitUseCase(
         profile: state.profile!,
@@ -138,9 +136,9 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       emit(state.copyWith(retirementBenefit: retirementBenefit));
     } catch (e) {
-      emit(state.copyWith(
-        errorMessage: '퇴직급여 계산 중 오류가 발생했습니다: ${e.toString()}',
-      ));
+      emit(
+        state.copyWith(errorMessage: '퇴직급여 계산 중 오류가 발생했습니다: ${e.toString()}'),
+      );
     }
   }
 
@@ -155,9 +153,9 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       emit(state.copyWith(earlyRetirementBonus: earlyRetirementBonus));
     } catch (e) {
-      emit(state.copyWith(
-        errorMessage: '명예퇴직금 계산 중 오류가 발생했습니다: ${e.toString()}',
-      ));
+      emit(
+        state.copyWith(errorMessage: '명예퇴직금 계산 중 오류가 발생했습니다: ${e.toString()}'),
+      );
     }
   }
 
@@ -173,9 +171,9 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       emit(state.copyWith(afterTaxPension: afterTaxPension));
     } catch (e) {
-      emit(state.copyWith(
-        errorMessage: '세후 연금 계산 중 오류가 발생했습니다: ${e.toString()}',
-      ));
+      emit(
+        state.copyWith(errorMessage: '세후 연금 계산 중 오류가 발생했습니다: ${e.toString()}'),
+      );
     }
   }
 
@@ -193,9 +191,11 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       emit(state.copyWith(monthlyBreakdown: monthlyBreakdown));
     } catch (e) {
-      emit(state.copyWith(
-        errorMessage: '월별 실수령액 계산 중 오류가 발생했습니다: ${e.toString()}',
-      ));
+      emit(
+        state.copyWith(
+          errorMessage: '월별 실수령액 계산 중 오류가 발생했습니다: ${e.toString()}',
+        ),
+      );
     }
   }
 

@@ -9,6 +9,7 @@
 /// Used by: PostCard (navigation)
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -26,7 +27,8 @@ class MockMemberProfileScreen extends StatefulWidget {
   final MockSocialGraph socialGraph;
 
   @override
-  State<MockMemberProfileScreen> createState() => _MockMemberProfileScreenState();
+  State<MockMemberProfileScreen> createState() =>
+      _MockMemberProfileScreenState();
 }
 
 class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
@@ -79,7 +81,9 @@ class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
                     children: [
                       Text(
                         widget.profile.nickname,
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const Gap(8),
                       Text(
@@ -99,7 +103,12 @@ class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
             const Gap(24),
 
             // Bio
-            Text('소개', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              '소개',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const Gap(8),
             Text(widget.profile.bio, style: theme.textTheme.bodyLarge),
 
@@ -119,7 +128,9 @@ class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
             // Recent posts
             Text(
               '최근 이야기',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const Gap(12),
             if (widget.profile.recentPosts.isEmpty)
@@ -143,7 +154,10 @@ class _MockMemberProfileScreenState extends State<MockMemberProfileScreen> {
   Future<void> _handleFollowToggle() async {
     setState(() => _isProcessing = true);
     try {
-      await widget.socialGraph.toggleFollow(widget.profile.uid, shouldFollow: !_isFollowing);
+      await widget.socialGraph.toggleFollow(
+        widget.profile.uid,
+        shouldFollow: !_isFollowing,
+      );
       if (!mounted) {
         return;
       }

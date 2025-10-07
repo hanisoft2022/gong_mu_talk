@@ -4,9 +4,8 @@ import '../domain/user_sensitive_info.dart';
 /// 🔒 민감 정보 Repository
 /// users/{uid}/private/sensitive 서브컬렉션 관리
 class UserSensitiveInfoRepository {
-  UserSensitiveInfoRepository({
-    FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserSensitiveInfoRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -33,10 +32,9 @@ class UserSensitiveInfoRepository {
 
   /// 민감 정보 저장/업데이트
   Future<void> saveSensitiveInfo(UserSensitiveInfo info) async {
-    await _sensitiveDoc(info.uid).set(
-      info.toFirestore(),
-      SetOptions(merge: true),
-    );
+    await _sensitiveDoc(
+      info.uid,
+    ).set(info.toFirestore(), SetOptions(merge: true));
   }
 
   /// 공무원 이메일 업데이트

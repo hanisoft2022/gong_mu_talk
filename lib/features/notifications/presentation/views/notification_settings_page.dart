@@ -10,7 +10,8 @@ class NotificationSettingsPage extends StatefulWidget {
   const NotificationSettingsPage({super.key});
 
   @override
-  State<NotificationSettingsPage> createState() => _NotificationSettingsPageState();
+  State<NotificationSettingsPage> createState() =>
+      _NotificationSettingsPageState();
 }
 
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
@@ -65,9 +66,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('설정을 불러오는데 실패했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('설정을 불러오는데 실패했습니다: $e')));
       }
     }
   }
@@ -85,9 +86,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _settings[key] = !value;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('설정 변경에 실패했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('설정 변경에 실패했습니다: $e')));
       }
     }
   }
@@ -150,7 +151,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     child: Gap(16),
                   );
                 } else if (index >= 2 && index <= 6) {
-                  final entry = _notificationOptions.entries.elementAt(index - 2);
+                  final entry = _notificationOptions.entries.elementAt(
+                    index - 2,
+                  );
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildNotificationTile(

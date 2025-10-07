@@ -8,11 +8,7 @@ class PensionCard extends StatelessWidget {
   final bool isLocked;
   final PensionEstimate? pensionEstimate;
 
-  const PensionCard({
-    super.key,
-    required this.isLocked,
-    this.pensionEstimate,
-  });
+  const PensionCard({super.key, required this.isLocked, this.pensionEstimate});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +22,8 @@ class PensionCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PensionDetailPage(
-                        pensionEstimate: pensionEstimate!,
-                      ),
+                      builder: (context) =>
+                          PensionDetailPage(pensionEstimate: pensionEstimate!),
                     ),
                   );
                 }
@@ -63,8 +58,8 @@ class PensionCard extends StatelessWidget {
                       child: Text(
                         '예상 연금 수령액',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (isLocked)
@@ -184,17 +179,17 @@ class PensionCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isHighlight ? Colors.blue[900] : Colors.grey[700],
-                fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
-              ),
+            color: isHighlight ? Colors.blue[900] : Colors.grey[700],
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         if (value.isNotEmpty)
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isHighlight ? Colors.blue[700] : Colors.blue[600],
-                ),
+              fontWeight: FontWeight.bold,
+              color: isHighlight ? Colors.blue[700] : Colors.blue[600],
+            ),
           ),
       ],
     );

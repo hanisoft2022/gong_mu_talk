@@ -29,13 +29,15 @@ class CurrentSalaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 평균 계산
-    final avgNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final avgNetIncome =
+        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? (monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b) /
-                monthlyBreakdown!.length)
-            .round()
+                  monthlyBreakdown!.length)
+              .round()
         : 0;
 
-    final annualNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final annualNetIncome =
+        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b)
         : 0;
 
@@ -70,8 +72,8 @@ class CurrentSalaryCard extends StatelessWidget {
                     child: Text(
                       '현재 급여 실수령액',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -82,10 +84,7 @@ class CurrentSalaryCard extends StatelessWidget {
 
               // 신뢰 배지
               if (!isLocked)
-                const CalculationSourceBadge(
-                  source: '공무원 보수규정',
-                  year: '2025',
-                ),
+                const CalculationSourceBadge(source: '공무원 보수규정', year: '2025'),
 
               const SizedBox(height: 20),
 
@@ -102,10 +101,7 @@ class CurrentSalaryCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -130,7 +126,8 @@ class CurrentSalaryCard extends StatelessWidget {
                         children: [
                           Text(
                             '월 평균 실수령액',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: Colors.teal[800],
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -138,7 +135,8 @@ class CurrentSalaryCard extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             NumberFormatter.formatCurrency(avgNetIncome),
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.teal[900],
                                 ),
@@ -169,9 +167,8 @@ class CurrentSalaryCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '정근수당·명절상여금 포함, 세후 기준',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -180,33 +177,54 @@ class CurrentSalaryCard extends StatelessWidget {
 
                     // 계산 근거 섹션
                     if (profile != null)
-                      _buildCalculationBreakdown(context, monthlyBreakdown!.first),
+                      _buildCalculationBreakdown(
+                        context,
+                        monthlyBreakdown!.first,
+                      ),
 
                     const SizedBox(height: 20),
 
-                    // 액션 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: lifetimeSalary != null
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SalaryAnalysisPage(
-                                      lifetimeSalary: lifetimeSalary!,
-                                      monthlyBreakdown: monthlyBreakdown,
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
-                        icon: const Icon(Icons.analytics, size: 18),
-                        label: const Text('상세 분석 보기'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    // 액션 버튼들
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: lifetimeSalary != null
+                                ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            SalaryAnalysisPage(
+                                              lifetimeSalary: lifetimeSalary!,
+                                              monthlyBreakdown:
+                                                  monthlyBreakdown,
+                                            ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            icon: const Icon(Icons.analytics, size: 18),
+                            label: const Text('상세 분석'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              context.push('/calculator/salary');
+                            },
+                            icon: const Icon(Icons.insights, size: 18),
+                            label: const Text('급여 인사이트'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -217,8 +235,11 @@ class CurrentSalaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCalculationBreakdown(BuildContext context, MonthlyNetIncome monthly) {
-    final basePay = profile != null 
+  Widget _buildCalculationBreakdown(
+    BuildContext context,
+    MonthlyNetIncome monthly,
+  ) {
+    final basePay = profile != null
         ? SalaryTable.getBasePay(profile!.currentGrade)
         : monthly.baseSalary;
 
@@ -228,24 +249,24 @@ class CurrentSalaryCard extends StatelessWidget {
         amount: basePay,
         description: '공무원 보수규정 별표 1',
       ),
-      BreakdownItem(
+      const BreakdownItem(
         label: '교직수당',
         amount: AllowanceTable.teachingAllowance,
         description: '전 교사 동일',
       ),
       if (profile?.isHomeroom ?? false)
-        BreakdownItem(
+        const BreakdownItem(
           label: '담임수당',
           amount: AllowanceTable.homeroomAllowance,
         ),
       if (profile?.hasPosition ?? false)
-        BreakdownItem(
+        const BreakdownItem(
           label: '보직교사수당',
           amount: AllowanceTable.headTeacherAllowance,
         ),
       BreakdownItem(
         label: '시간외수당',
-        amount: profile != null 
+        amount: profile != null
             ? AllowanceTable.getOvertimeAllowance(profile!.currentGrade)
             : 0,
         description: '${profile?.currentGrade ?? 0}호봉 기준',
@@ -267,19 +288,12 @@ class CurrentSalaryCard extends StatelessWidget {
     ];
 
     final deductions = <BreakdownItem>[
-      BreakdownItem(
-        label: '소득세',
-        amount: monthly.incomeTax,
-        isDeduction: true,
-      ),
-      BreakdownItem(
-        label: '지방세',
-        amount: monthly.localTax,
-        isDeduction: true,
-      ),
+      BreakdownItem(label: '소득세', amount: monthly.incomeTax, isDeduction: true),
+      BreakdownItem(label: '지방세', amount: monthly.localTax, isDeduction: true),
       BreakdownItem(
         label: '4대보험',
-        amount: monthly.nationalPension +
+        amount:
+            monthly.nationalPension +
             monthly.healthInsurance +
             monthly.longTermCareInsurance +
             monthly.employmentInsurance,
@@ -291,10 +305,7 @@ class CurrentSalaryCard extends StatelessWidget {
     return CalculationBreakdownSection(
       items: [
         ...items,
-        const BreakdownItem(
-          label: '',
-          amount: 0,
-        ), // Spacer
+        const BreakdownItem(label: '', amount: 0), // Spacer
         ...deductions,
       ],
       totalAmount: monthly.netIncome,
@@ -308,16 +319,16 @@ class CurrentSalaryCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[700],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.teal[700],
+          ),
         ),
       ],
     );

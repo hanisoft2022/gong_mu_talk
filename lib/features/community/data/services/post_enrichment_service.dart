@@ -25,10 +25,10 @@ class PostEnrichmentService {
     required CommentRepository commentRepository,
     required PostRepository postRepository,
     required InteractionCacheManager cacheManager,
-  })  : _interactionRepository = interactionRepository,
-        _commentRepository = commentRepository,
-        _postRepository = postRepository,
-        _cacheManager = cacheManager;
+  }) : _interactionRepository = interactionRepository,
+       _commentRepository = commentRepository,
+       _postRepository = postRepository,
+       _cacheManager = cacheManager;
 
   final InteractionRepository _interactionRepository;
   final CommentRepository _commentRepository;
@@ -36,10 +36,7 @@ class PostEnrichmentService {
   final InteractionCacheManager _cacheManager;
 
   /// Enrich a single post with user data
-  Future<Post> enrichPost(
-    Post post, {
-    String? currentUid,
-  }) async {
+  Future<Post> enrichPost(Post post, {String? currentUid}) async {
     if (currentUid == null) return post;
 
     final likedIds = await _interactionRepository.fetchLikedPostIds(
@@ -59,12 +56,12 @@ class PostEnrichmentService {
     if (enriched.topComment == null && enriched.commentCount > 0) {
       // Top Comment 캐시 사용
       CachedComment? topComment = _cacheManager.getTopComment(post.id);
-      
+
       if (topComment == null) {
         topComment = await _commentRepository.loadTopComment(post.id);
         _cacheManager.updateTopCommentCache(post.id, topComment);
       }
-      
+
       if (topComment != null) {
         enriched = enriched.copyWith(topComment: topComment);
       }
@@ -74,10 +71,7 @@ class PostEnrichmentService {
   }
 
   /// Enrich multiple posts with user data
-  Future<List<Post>> enrichPosts(
-    List<Post> posts, {
-    String? currentUid,
-  }) async {
+  Future<List<Post>> enrichPosts(List<Post> posts, {String? currentUid}) async {
     if (posts.isEmpty) return posts;
     if (currentUid == null) return posts;
 
@@ -87,7 +81,7 @@ class PostEnrichmentService {
     Set<String> scrappedIds;
 
     // 캐시 사용 (10분 유효 - 비용 최적화)
-    if (_cacheManager.shouldRefreshCache() || 
+    if (_cacheManager.shouldRefreshCache() ||
         !_cacheManager.hasLikedCache(currentUid)) {
       // 캐시 갱신 필요
       likedIds = await _interactionRepository.fetchLikedPostIds(
@@ -120,12 +114,12 @@ class PostEnrichmentService {
       if (p.topComment == null && p.commentCount > 0) {
         // Top Comment 캐시 사용
         CachedComment? topComment = _cacheManager.getTopComment(post.id);
-        
+
         if (topComment == null) {
           topComment = await _commentRepository.loadTopComment(post.id);
           _cacheManager.updateTopCommentCache(post.id, topComment);
         }
-        
+
         if (topComment != null) {
           p = p.copyWith(topComment: topComment);
         }
@@ -141,10 +135,7 @@ class PostEnrichmentService {
     PaginatedQueryResult<Post> page, {
     String? currentUid,
   }) async {
-    final enrichedPosts = await enrichPosts(
-      page.items,
-      currentUid: currentUid,
-    );
+    final enrichedPosts = await enrichPosts(page.items, currentUid: currentUid);
 
     return PaginatedQueryResult<Post>(
       items: enrichedPosts,
@@ -178,14 +169,17 @@ class PostEnrichmentService {
           uid: currentUid,
           commentIds: [comment.id],
         );
-        enrichedComment =
-            comment.copyWith(isLiked: likedIds.contains(comment.id));
+        enrichedComment = comment.copyWith(
+          isLiked: likedIds.contains(comment.id),
+        );
       }
 
-      enriched.add(CommentSearchResult(
-        comment: enrichedComment,
-        post: postMap[comment.postId],
-      ));
+      enriched.add(
+        CommentSearchResult(
+          comment: enrichedComment,
+          post: postMap[comment.postId],
+        ),
+      );
     }
 
     return enriched;

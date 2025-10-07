@@ -19,17 +19,14 @@
 /// remain private (prefixed with underscore) to this feature.
 
 library;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../di/di.dart';
-import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../data/paystub_verification_repository.dart';
 import '../../../domain/paystub_verification.dart';
-
-
 
 /// Bio card with expand/collapse functionality for long text
 class BioCard extends StatefulWidget {
@@ -56,10 +53,7 @@ class _BioCardState extends State<BioCard> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant,
-          width: 1,
-        ),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,8 +133,9 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final IconData icon =
-        title == '팔로잉' ? Icons.people_outline : Icons.favorite_border;
+    final IconData icon = title == '팔로잉'
+        ? Icons.people_outline
+        : Icons.favorite_border;
 
     return InkWell(
       onTap: onTap,
@@ -150,18 +145,11 @@ class StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant,
-            width: 1,
-          ),
+          border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
             const Gap(6),
             Text(
               '$count',
@@ -213,8 +201,9 @@ class VerificationStatusRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurface),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
         Text(
@@ -248,102 +237,108 @@ class PaystubStatusRow extends StatelessWidget {
           .collection('users')
           .doc(uid)
           .snapshots(),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<DocumentSnapshot> userSnapshot,
-      ) {
-        // 테스트 모드 직렬이 설정되어 있으면 인증됨으로 표시
-        bool isTestModeVerified = false;
-        if (userSnapshot.hasData && userSnapshot.data!.exists) {
-          final data = userSnapshot.data!.data() as Map<String, dynamic>?;
-          isTestModeVerified = data != null && data['testModeCareer'] != null;
-        }
+      builder:
+          (BuildContext context, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+            // 테스트 모드 직렬이 설정되어 있으면 인증됨으로 표시
+            bool isTestModeVerified = false;
+            if (userSnapshot.hasData && userSnapshot.data!.exists) {
+              final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+              isTestModeVerified =
+                  data != null && data['testModeCareer'] != null;
+            }
 
-        if (isTestModeVerified) {
-          return Row(
-            children: [
-              Icon(
-                Icons.verified,
-                size: 16,
-                color: theme.colorScheme.primary,
-              ),
-              const Gap(8),
-              Expanded(
-                child: Text(
-                  '직렬 인증',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurface),
-                ),
-              ),
-              Text(
-                '인증됨',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          );
-        }
-
-        return StreamBuilder<PaystubVerification>(
-          stream: repository.watchVerification(uid),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<PaystubVerification> snapshot,
-          ) {
-            final PaystubVerification verification =
-                snapshot.data ?? PaystubVerification.none;
-
-            return Row(
-              children: [
-                Icon(
-                  verification.status == PaystubVerificationStatus.verified
-                      ? Icons.verified
-                      : verification.status ==
-                              PaystubVerificationStatus.processing
-                          ? Icons.hourglass_empty
-                          : Icons.description_outlined,
-                  size: 16,
-                  color: verification.status ==
-                          PaystubVerificationStatus.verified
-                      ? theme.colorScheme.primary
-                      : verification.status ==
-                              PaystubVerificationStatus.processing
-                          ? theme.colorScheme.tertiary
-                          : theme.colorScheme.error,
-                ),
-                const Gap(8),
-                Expanded(
-                  child: Text(
-                    '직렬 인증',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.onSurface),
+            if (isTestModeVerified) {
+              return Row(
+                children: [
+                  Icon(
+                    Icons.verified,
+                    size: 16,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
-                Text(
-                  verification.status == PaystubVerificationStatus.verified
-                      ? '인증됨'
-                      : verification.status ==
-                              PaystubVerificationStatus.processing
-                          ? '검토중'
-                          : '미인증',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: verification.status ==
-                            PaystubVerificationStatus.verified
-                        ? theme.colorScheme.primary
-                        : verification.status ==
-                                PaystubVerificationStatus.processing
-                            ? theme.colorScheme.tertiary
-                            : theme.colorScheme.error,
-                    fontWeight: FontWeight.w600,
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      '직렬 인증',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    '인증됨',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return StreamBuilder<PaystubVerification>(
+              stream: repository.watchVerification(uid),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<PaystubVerification> snapshot,
+                  ) {
+                    final PaystubVerification verification =
+                        snapshot.data ?? PaystubVerification.none;
+
+                    return Row(
+                      children: [
+                        Icon(
+                          verification.status ==
+                                  PaystubVerificationStatus.verified
+                              ? Icons.verified
+                              : verification.status ==
+                                    PaystubVerificationStatus.processing
+                              ? Icons.hourglass_empty
+                              : Icons.description_outlined,
+                          size: 16,
+                          color:
+                              verification.status ==
+                                  PaystubVerificationStatus.verified
+                              ? theme.colorScheme.primary
+                              : verification.status ==
+                                    PaystubVerificationStatus.processing
+                              ? theme.colorScheme.tertiary
+                              : theme.colorScheme.error,
+                        ),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            '직렬 인증',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          verification.status ==
+                                  PaystubVerificationStatus.verified
+                              ? '인증됨'
+                              : verification.status ==
+                                    PaystubVerificationStatus.processing
+                              ? '검토중'
+                              : '미인증',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color:
+                                verification.status ==
+                                    PaystubVerificationStatus.verified
+                                ? theme.colorScheme.primary
+                                : verification.status ==
+                                      PaystubVerificationStatus.processing
+                                ? theme.colorScheme.tertiary
+                                : theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
             );
           },
-        );
-      },
     );
   }
 }

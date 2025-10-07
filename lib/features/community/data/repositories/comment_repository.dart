@@ -32,9 +32,9 @@ class CommentRepository {
     FirebaseFirestore? firestore,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _userProfileRepository = userProfileRepository,
-        _notificationRepository = notificationRepository;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _userProfileRepository = userProfileRepository,
+       _notificationRepository = notificationRepository;
 
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
@@ -63,9 +63,9 @@ class CommentRepository {
     int limit = 50,
     QueryDocumentSnapshot<JsonMap>? startAfter,
   }) async {
-    Query<JsonMap> query = _commentsRef(postId)
-        .orderBy('createdAt', descending: false)
-        .limit(limit);
+    Query<JsonMap> query = _commentsRef(
+      postId,
+    ).orderBy('createdAt', descending: false).limit(limit);
 
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
@@ -73,13 +73,16 @@ class CommentRepository {
 
     final QuerySnapshot<JsonMap> snapshot = await query.get();
     final List<Comment> comments = snapshot.docs
-        .map((QueryDocumentSnapshot<JsonMap> doc) =>
-            Comment.fromSnapshot(doc, postId: postId))
+        .map(
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Comment.fromSnapshot(doc, postId: postId),
+        )
         .toList(growable: false);
 
     final bool hasMore = snapshot.docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last =
-        snapshot.docs.isEmpty ? null : snapshot.docs.last;
+    final QueryDocumentSnapshot<JsonMap>? last = snapshot.docs.isEmpty
+        ? null
+        : snapshot.docs.last;
     return PaginatedQueryResult<Comment>(
       items: comments,
       lastDocument: last,
@@ -130,11 +133,9 @@ class CommentRepository {
       });
 
       final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(
-        shardRef,
-        <String, Object?>{'comments': FieldValue.increment(1)},
-        SetOptions(merge: true),
-      );
+      transaction.set(shardRef, <String, Object?>{
+        'comments': FieldValue.increment(1),
+      }, SetOptions(merge: true));
     });
 
     if (awardPoints) {
@@ -182,8 +183,9 @@ class CommentRepository {
     required String commentId,
     required String requesterUid,
   }) async {
-    final DocumentReference<JsonMap> commentDoc =
-        _commentsRef(postId).doc(commentId);
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(
+      postId,
+    ).doc(commentId);
     await _firestore.runTransaction<void>((Transaction transaction) async {
       final DocSnapshotJson snapshot = await transaction.get(commentDoc);
       if (!snapshot.exists) {
@@ -206,21 +208,22 @@ class CommentRepository {
         'updatedAt': Timestamp.now(),
       });
       final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(
-        shardRef,
-        <String, Object?>{'comments': FieldValue.increment(-1)},
-        SetOptions(merge: true),
-      );
+      transaction.set(shardRef, <String, Object?>{
+        'comments': FieldValue.increment(-1),
+      }, SetOptions(merge: true));
     });
   }
 
   Future<List<Comment>> getComments(String postId) async {
-    final QuerySnapshot<JsonMap> snapshot =
-        await _commentsRef(postId).orderBy('createdAt', descending: false).get();
+    final QuerySnapshot<JsonMap> snapshot = await _commentsRef(
+      postId,
+    ).orderBy('createdAt', descending: false).get();
 
     return snapshot.docs
-        .map((QueryDocumentSnapshot<JsonMap> doc) =>
-            Comment.fromSnapshot(doc, postId: postId))
+        .map(
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Comment.fromSnapshot(doc, postId: postId),
+        )
         .toList();
   }
 
@@ -232,17 +235,18 @@ class CommentRepository {
         .get();
 
     return snapshot.docs
-        .map((QueryDocumentSnapshot<JsonMap> doc) =>
-            Comment.fromSnapshot(doc, postId: postId))
+        .map(
+          (QueryDocumentSnapshot<JsonMap> doc) =>
+              Comment.fromSnapshot(doc, postId: postId),
+        )
         .toList(growable: false);
   }
 
   Future<CachedComment?> loadTopComment(String postId) async {
     try {
-      final QuerySnapshot<JsonMap> snapshot = await _commentsRef(postId)
-          .orderBy('likeCount', descending: true)
-          .limit(1)
-          .get();
+      final QuerySnapshot<JsonMap> snapshot = await _commentsRef(
+        postId,
+      ).orderBy('likeCount', descending: true).limit(1).get();
 
       if (snapshot.docs.isEmpty) return null;
 
@@ -280,10 +284,12 @@ class CommentRepository {
       return const <Comment>[];
     }
 
-    return snapshot.docs.map((doc) {
-      final String postId = doc.reference.parent.parent?.id ?? '';
-      return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
-    }).toList(growable: false);
+    return snapshot.docs
+        .map((doc) {
+          final String postId = doc.reference.parent.parent?.id ?? '';
+          return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
+        })
+        .toList(growable: false);
   }
 
   Future<void> _dispatchCommentNotifications({
@@ -347,8 +353,9 @@ class CommentRepository {
         .toList(growable: false);
 
     final bool hasMore = snapshot.docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last =
-        snapshot.docs.isEmpty ? null : snapshot.docs.last;
+    final QueryDocumentSnapshot<JsonMap>? last = snapshot.docs.isEmpty
+        ? null
+        : snapshot.docs.last;
 
     return PaginatedQueryResult<Comment>(
       items: comments,

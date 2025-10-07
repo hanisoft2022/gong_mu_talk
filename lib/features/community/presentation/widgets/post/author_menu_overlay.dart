@@ -9,6 +9,7 @@
 /// Used by: PostCard
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -26,7 +27,8 @@ class AuthorMenuOverlay {
     required VoidCallback onBlockUser,
     required VoidCallback onClose,
   }) {
-    final RenderBox? renderBox = authorButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        authorButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return null;
 
     final Offset buttonPosition = renderBox.localToGlobal(Offset.zero);
@@ -62,7 +64,9 @@ class AuthorMenuOverlay {
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Column(
@@ -86,7 +90,9 @@ class AuthorMenuOverlay {
                         Divider(
                           height: 1,
                           thickness: 1,
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.2),
                         ),
                         _buildMenuOption(
                           context: context,
@@ -131,7 +137,9 @@ class AuthorMenuOverlay {
             Expanded(
               child: Text(
                 text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: color),
               ),
             ),
           ],

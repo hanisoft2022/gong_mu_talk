@@ -32,7 +32,6 @@ import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/profile/presentation/views/blocked_users_page.dart';
-import '../features/salary_insights/presentation/views/teacher_salary_insight_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
@@ -76,10 +75,11 @@ GoRouter createRouter() {
     },
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => BlocProvider<CommunityFeedCubit>(
-          create: (_) => getIt<CommunityFeedCubit>(),
-          child: AppShell(navigationShell: navigationShell),
-        ),
+        builder: (context, state, navigationShell) =>
+            BlocProvider<CommunityFeedCubit>(
+              create: (_) => getIt<CommunityFeedCubit>(),
+              child: AppShell(navigationShell: navigationShell),
+            ),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -210,12 +210,6 @@ GoRouter createRouter() {
         path: NotificationSettingsRoute.path,
         name: NotificationSettingsRoute.name,
         builder: (context, state) => const NotificationSettingsPage(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/calculator/salary',
-        name: 'calculator-salary',
-        builder: (context, state) => const TeacherSalaryInsightPage(),
       ),
       // CALCULATOR ROUTES TEMPORARILY DISABLED - UNDER REDESIGN
       // GoRoute(

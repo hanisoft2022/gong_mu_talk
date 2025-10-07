@@ -18,6 +18,7 @@
 /// - Terms of Service: https://www.hanisoft.kr/terms
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,10 +26,7 @@ import 'settings_section.dart';
 
 /// Privacy and terms section with external links
 class PrivacyTermsSection extends StatelessWidget {
-  const PrivacyTermsSection({
-    super.key,
-    required this.showMessage,
-  });
+  const PrivacyTermsSection({super.key, required this.showMessage});
 
   final void Function(BuildContext context, String message) showMessage;
 
@@ -42,20 +40,14 @@ class PrivacyTermsSection extends StatelessWidget {
           leading: const Icon(Icons.privacy_tip_outlined),
           title: const Text('개인정보 처리방침'),
           trailing: const Icon(Icons.open_in_new),
-          onTap: () => _launchUrl(
-            context,
-            'https://www.hanisoft.kr/privacy',
-          ),
+          onTap: () => _launchUrl(context, 'https://www.hanisoft.kr/privacy'),
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.description_outlined),
           title: const Text('서비스 이용약관'),
           trailing: const Icon(Icons.open_in_new),
-          onTap: () => _launchUrl(
-            context,
-            'https://www.hanisoft.kr/terms',
-          ),
+          onTap: () => _launchUrl(context, 'https://www.hanisoft.kr/terms'),
         ),
       ],
     );

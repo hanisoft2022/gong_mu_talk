@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../../../routing/app_router.dart';
 import '../../../domain/models/post.dart';
 
 /// Post Share Handler
@@ -30,7 +29,9 @@ class PostShareHandler {
             children: [
               Text(
                 '공유하기',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 20),
               ListTile(
@@ -59,9 +60,7 @@ class PostShareHandler {
 
   /// Copy post link to clipboard
   static void copyLinkToClipboard(BuildContext context, Post post) {
-    final Uri shareUri = Uri.parse(
-      'gongmutalk://community/posts/${post.id}',
-    );
+    final Uri shareUri = Uri.parse('gongmutalk://community/posts/${post.id}');
 
     Clipboard.setData(ClipboardData(text: shareUri.toString()));
 
@@ -81,13 +80,15 @@ class PostShareHandler {
   /// Share post to other apps
   static Future<void> sharePost(BuildContext context, Post post) async {
     final String source = post.text.trim();
-    final String truncated = source.length > 120 ? '${source.substring(0, 120)}...' : source;
+    final String truncated = source.length > 120
+        ? '${source.substring(0, 120)}...'
+        : source;
     final String snippet = truncated.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final Uri shareUri = Uri.parse(
-      'gongmutalk://community/posts/${post.id}',
-    );
+    final Uri shareUri = Uri.parse('gongmutalk://community/posts/${post.id}');
 
-    final String message = snippet.isEmpty ? shareUri.toString() : '$snippet\n\n${shareUri.toString()}';
+    final String message = snippet.isEmpty
+        ? shareUri.toString()
+        : '$snippet\n\n${shareUri.toString()}';
 
     try {
       await Share.share(message, subject: '공뮤톡 라운지 글 공유');

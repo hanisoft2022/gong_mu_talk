@@ -26,8 +26,6 @@ class ReportDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
     return AlertDialog(
       title: const Text('신고 사유 선택'),
       contentPadding: const EdgeInsets.symmetric(vertical: 16),

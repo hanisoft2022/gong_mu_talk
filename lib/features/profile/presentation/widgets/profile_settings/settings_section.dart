@@ -18,6 +18,7 @@
 /// consistent visual appearance throughout the settings tab.
 
 library;
+
 import 'package:flutter/material.dart';
 
 /// Settings section container with title and children

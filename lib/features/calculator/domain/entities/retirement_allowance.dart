@@ -41,14 +41,14 @@ class RetirementAllowance extends Equatable {
 
   @override
   List<Object?> get props => [
-        retirementPay,
-        earlyRetirementBonus,
-        retirementPension,
-        totalAmount,
-        retirementAge,
-        serviceYears,
-        isEarlyRetirement,
-      ];
+    retirementPay,
+    earlyRetirementBonus,
+    retirementPension,
+    totalAmount,
+    retirementAge,
+    serviceYears,
+    isEarlyRetirement,
+  ];
 
   RetirementAllowance copyWith({
     int? retirementPay,

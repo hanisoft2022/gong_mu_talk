@@ -46,8 +46,8 @@ class AfterTaxPensionCard extends StatelessWidget {
                     child: Text(
                       '세후 연금 (실수령액)',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -69,10 +69,7 @@ class AfterTaxPensionCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -98,9 +95,9 @@ class AfterTaxPensionCard extends StatelessWidget {
                     Text(
                       '공제 내역',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
@@ -166,16 +163,16 @@ class AfterTaxPensionCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.green[700],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.green[700],
+          ),
         ),
       ],
     );
@@ -187,15 +184,15 @@ class AfterTaxPensionCard extends StatelessWidget {
       children: [
         Text(
           '  - $label',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
         ),
         Text(
           '- ${NumberFormatter.formatCurrency(amount)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.red[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.red[600]),
         ),
       ],
     );
@@ -208,16 +205,16 @@ class AfterTaxPensionCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.green[900],
-                fontWeight: FontWeight.w600,
-              ),
+            color: Colors.green[900],
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.green[700],
+          ),
         ),
       ],
     );

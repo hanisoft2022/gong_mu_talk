@@ -64,8 +64,8 @@ class AnnualSalaryCard extends StatelessWidget {
                       child: Text(
                         '연도별 급여 계산',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (isLocked)
@@ -146,10 +146,15 @@ class AnnualSalaryCard extends StatelessWidget {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.analytics_outlined, size: 18),
+                              icon: const Icon(
+                                Icons.analytics_outlined,
+                                size: 18,
+                              ),
                               label: const Text('시뮬레이션'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -160,16 +165,19 @@ class AnnualSalaryCard extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => AnnualSalaryDetailPage(
-                                      lifetimeSalary: lifetimeSalary!,
-                                    ),
+                                    builder: (context) =>
+                                        AnnualSalaryDetailPage(
+                                          lifetimeSalary: lifetimeSalary!,
+                                        ),
                                   ),
                                 );
                               },
                               icon: const Icon(Icons.list_alt, size: 18),
                               label: const Text('상세보기'),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -199,18 +207,18 @@ class AnnualSalaryCard extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[700],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[500],
-                      fontSize: 11,
-                    ),
+                  color: Colors.grey[500],
+                  fontSize: 11,
+                ),
               ),
             ],
           ],
@@ -218,9 +226,9 @@ class AnnualSalaryCard extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.green[700],
+          ),
         ),
       ],
     );

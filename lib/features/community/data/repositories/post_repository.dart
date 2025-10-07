@@ -33,9 +33,9 @@ class PostRepository {
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
     required UserProfileRepository userProfileRepository,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance,
-        _userProfileRepository = userProfileRepository;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance,
+       _userProfileRepository = userProfileRepository;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -80,7 +80,9 @@ class PostRepository {
     String? boardId,
     bool awardPoints = true,
   }) async {
-    final DocumentReference<JsonMap> ref = postId != null ? _postsRef.doc(postId) : _postsRef.doc();
+    final DocumentReference<JsonMap> ref = postId != null
+        ? _postsRef.doc(postId)
+        : _postsRef.doc();
     final DateTime now = DateTime.now();
     final List<String> keywords = _tokenizer.buildPrefixes(
       title: authorNickname,
@@ -269,13 +271,11 @@ class PostRepository {
     }
   }
 
-  
-
   Future<PaginatedQueryResult<Post>> fetchPostsByAuthor({
     required String authorUid,
     int limit = 20,
     QueryDocumentSnapshotJson? startAfter,
-    }) async {
+  }) async {
     try {
       QueryJson query = _postsRef
           .where('authorUid', isEqualTo: authorUid)
@@ -328,7 +328,7 @@ class PostRepository {
     final Reference fileRef = _storage.ref(
       'post_images/$uid/$postId/$fileName',
     );
-    
+
     // CDN 캐싱 설정: 7일 (604800초)
     await fileRef.putData(
       bytes,
@@ -343,12 +343,12 @@ class PostRepository {
     // 원본 파일명에서 확장자를 제거하고 .webp로 변경
     final String baseFileName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
     final String thumbnailFileName = 'thumb_$baseFileName.webp';
-    
+
     // 썸네일 URL 생성 (Function이 생성할 경로)
     final Reference thumbRef = _storage.ref(
       'post_images/$uid/$postId/$thumbnailFileName',
     );
-    
+
     // 썸네일 URL은 Firebase Function이 생성한 후에 사용 가능
     // 일단 경로만 저장하고, 나중에 URL을 가져올 수 있도록 준비
     String? thumbnailUrl;
@@ -369,10 +369,7 @@ class PostRepository {
     );
   }
 
-
-  Future<Map<String, Post>> fetchPostsByIds(
-    Iterable<String> ids,
-  ) async {
+  Future<Map<String, Post>> fetchPostsByIds(Iterable<String> ids) async {
     final List<String> postIds = ids
         .where((String id) => id.isNotEmpty)
         .toSet()
@@ -400,9 +397,7 @@ class PostRepository {
       posts.add(Post.fromSnapshot(snapshot));
     }
 
-    return <String, Post>{
-      for (final Post post in posts) post.id: post,
-    };
+    return <String, Post>{for (final Post post in posts) post.id: post};
   }
 
   PaginatedQueryResult<Post> _buildPostPage(
@@ -416,7 +411,9 @@ class PostRepository {
         .toList(growable: false);
 
     final bool hasMore = docs.length == limit;
-    final QueryDocumentSnapshot<JsonMap>? last = docs.isEmpty ? null : docs.last;
+    final QueryDocumentSnapshot<JsonMap>? last = docs.isEmpty
+        ? null
+        : docs.last;
     return PaginatedQueryResult<Post>(
       items: posts,
       hasMore: hasMore,

@@ -18,7 +18,8 @@ class BaseIncomeEstimationService {
     required int currentGrade,
   }) {
     // 1. 총 급여 계산 (세전)
-    final grossIncome = baseSalary +
+    final grossIncome =
+        baseSalary +
         allowances.homeroom +
         allowances.headTeacher +
         allowances.family +
@@ -56,7 +57,8 @@ class BaseIncomeEstimationService {
 
     // 4. 최종 기준소득월액 계산
     // = 총 급여 - 제외 항목 + 포함 항목
-    final baseIncome = grossIncome -
+    final baseIncome =
+        grossIncome -
         excludedPerformance -
         excludedOvertime -
         excludedResearch -
@@ -178,9 +180,7 @@ class BaseIncomeEstimationService {
   /// [lifetimeEstimates] 연도별 기준소득월액 목록
   ///
   /// Returns: 평균 기준소득월액
-  int calculateAverageBaseIncome(
-    List<Map<String, dynamic>> lifetimeEstimates,
-  ) {
+  int calculateAverageBaseIncome(List<Map<String, dynamic>> lifetimeEstimates) {
     if (lifetimeEstimates.isEmpty) return 0;
 
     final total = lifetimeEstimates.fold<int>(

@@ -28,6 +28,7 @@
 /// - Body: User info + feedback content
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,10 +38,7 @@ import 'settings_section.dart';
 
 /// Customer support section with feedback functionality
 class CustomerSupportSection extends StatelessWidget {
-  const CustomerSupportSection({
-    super.key,
-    required this.showMessage,
-  });
+  const CustomerSupportSection({super.key, required this.showMessage});
 
   final void Function(BuildContext context, String message) showMessage;
 
@@ -104,7 +102,9 @@ class CustomerSupportSection extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   child: const Text('취소'),
                 ),
                 FilledButton(
@@ -120,10 +120,7 @@ class CustomerSupportSection extends StatelessWidget {
                               );
                               if (context.mounted) {
                                 Navigator.of(context).pop();
-                                showMessage(
-                                  context,
-                                  '피드백이 전송되었습니다. 감사합니다!',
-                                );
+                                showMessage(context, '피드백이 전송되었습니다. 감사합니다!');
                               }
                             } catch (error) {
                               if (context.mounted) {
@@ -153,14 +150,12 @@ class CustomerSupportSection extends StatelessWidget {
   }
 
   /// Sends feedback email via mailto URL
-  Future<void> _sendFeedbackEmail(
-    BuildContext context,
-    String feedback,
-  ) async {
+  Future<void> _sendFeedbackEmail(BuildContext context, String feedback) async {
     final AuthState authState = context.read<AuthCubit>().state;
     final String userEmail = authState.email ?? 'anonymous@example.com';
-    final String userName =
-        authState.nickname.isNotEmpty ? authState.nickname : '익명 사용자';
+    final String userName = authState.nickname.isNotEmpty
+        ? authState.nickname
+        : '익명 사용자';
 
     // 이메일 제목과 본문 구성
     final String subject = Uri.encodeComponent('[공무톡] 사용자 피드백');
@@ -189,9 +184,7 @@ $feedback
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      throw Exception(
-        '이메일 앱을 열 수 없습니다. 기기에 이메일 앱이 설치되어 있는지 확인해주세요.',
-      );
+      throw Exception('이메일 앱을 열 수 없습니다. 기기에 이메일 앱이 설치되어 있는지 확인해주세요.');
     }
   }
 }

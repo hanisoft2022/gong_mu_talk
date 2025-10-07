@@ -1,5 +1,6 @@
 /// DateTime 관련 유틸리티 함수들
 library;
+
 class DateTimeHelpers {
   DateTimeHelpers._();
 
@@ -39,7 +40,9 @@ class DateTimeHelpers {
     if (use24Hour) {
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
-      final int hour = dateTime.hour == 0 ? 12 : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+      final int hour = dateTime.hour == 0
+          ? 12
+          : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
       final String period = dateTime.hour < 12 ? '오전' : '오후';
       return '$period $hour:${dateTime.minute.toString().padLeft(2, '0')}';
     }
@@ -74,8 +77,10 @@ extension DateTimeExtensions on DateTime {
   bool get isYesterday => DateTimeHelpers.isYesterday(this);
 
   /// 포맷된 날짜 문자열
-  String format([String format = 'yyyy-MM-dd']) => DateTimeHelpers.formatDate(this, format: format);
+  String format([String format = 'yyyy-MM-dd']) =>
+      DateTimeHelpers.formatDate(this, format: format);
 
   /// 포맷된 시간 문자열
-  String formatTime({bool use24Hour = false}) => DateTimeHelpers.formatTime(this, use24Hour: use24Hour);
+  String formatTime({bool use24Hour = false}) =>
+      DateTimeHelpers.formatTime(this, use24Hour: use24Hour);
 }

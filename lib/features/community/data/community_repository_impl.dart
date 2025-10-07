@@ -37,7 +37,8 @@ class CommunityRepositoryImpl implements ICommunityRepository {
         audience: PostAudience.all,
         authorUid: currentUserId ?? '',
         authorNickname: await currentUserNickname,
-        authorTrack: CareerTrack.none, // Default value, should be passed properly
+        authorTrack:
+            CareerTrack.none, // Default value, should be passed properly
         serial: '', // Should be determined from context
       );
     });
@@ -65,15 +66,15 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required String currentUid,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {
-      return _repository.deletePost(
-        postId: postId,
-        authorUid: currentUid,
-      );
+      return _repository.deletePost(postId: postId, authorUid: currentUid);
     });
   }
 
   @override
-  Future<AppResult<Post?>> fetchPostById(String postId, {String? currentUid}) async {
+  Future<AppResult<Post?>> fetchPostById(
+    String postId, {
+    String? currentUid,
+  }) async {
     return AppResultHelpers.tryCallAsync(() async {
       return _repository.fetchPostById(postId, currentUid: currentUid);
     });
@@ -135,14 +136,9 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     String? currentUid,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {
-      return _repository.fetchHotFeed(
-        limit: limit,
-        currentUid: currentUid,
-      );
+      return _repository.fetchHotFeed(limit: limit, currentUid: currentUid);
     });
   }
-
-  
 
   @override
   Future<AppResult<PaginatedQueryResult<Post>>> fetchPostsByAuthor({
@@ -231,10 +227,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required String currentUid,
   }) async {
     return AppResultHelpers.tryCallAsync(() async {
-      return _repository.togglePostLike(
-        postId: postId,
-        uid: currentUid,
-      );
+      return _repository.togglePostLike(postId: postId, uid: currentUid);
     });
   }
 
@@ -267,8 +260,6 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     });
   }
 
-  
-
   @override
   Future<AppResult<CommunitySearchResults>> searchCommunity({
     required String query,
@@ -294,10 +285,7 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     required String prefix,
     int limit = 10,
   }) async {
-    return _repository.autocompleteSearchTokens(
-      prefix: prefix,
-      limit: limit,
-    );
+    return _repository.autocompleteSearchTokens(prefix: prefix, limit: limit);
   }
 
   @override
@@ -320,7 +308,9 @@ class CommunityRepositoryImpl implements ICommunityRepository {
   }
 
   @override
-  Future<void> addComment(String postId, String text, {
+  Future<void> addComment(
+    String postId,
+    String text, {
     List<String> imageUrls = const [],
     String? parentCommentId,
   }) async {

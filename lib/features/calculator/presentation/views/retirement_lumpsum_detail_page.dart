@@ -18,16 +18,14 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalLumpsum = retirementBenefit.totalBenefit +
+    final totalLumpsum =
+        retirementBenefit.totalBenefit +
         (earlyRetirementBonus?.totalAmount ?? 0);
-    final hasEarlyBonus = earlyRetirementBonus != null &&
-        earlyRetirementBonus!.totalAmount > 0;
+    final hasEarlyBonus =
+        earlyRetirementBonus != null && earlyRetirementBonus!.totalAmount > 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('퇴직 시 일시금 상세'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('퇴직 시 일시금 상세'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -52,7 +50,8 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                         const SizedBox(width: 12),
                         Text(
                           '퇴직 시 수령 총액',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.orange[900],
                               ),
@@ -63,9 +62,9 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                     Text(
                       NumberFormatter.formatCurrency(totalLumpsum),
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[900],
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[900],
+                      ),
                     ),
                   ],
                 ),
@@ -88,8 +87,8 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                     Text(
                       '기간별 퇴직급여',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -146,7 +145,8 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                         children: [
                           Text(
                             '퇴직수당',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.orange[900],
                                 ),
@@ -168,9 +168,7 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                                 NumberFormatter.formatCurrency(
                                   retirementBenefit.retirementAllowance,
                                 ),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.orange[900],
@@ -200,20 +198,14 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                         children: [
                           Text(
                             '퇴직급여 총액',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
                             NumberFormatter.formatCurrency(
                               retirementBenefit.totalBenefit,
                             ),
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
+                            style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.orange[900],
@@ -271,8 +263,8 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                       Text(
                         '계산 방식',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 12),
 
@@ -301,7 +293,9 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                                   NumberFormatter.formatCurrency(
                                     earlyRetirementBonus!.baseAmount,
                                   ),
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -330,7 +324,8 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('가산금'),
                                   Text(
@@ -367,20 +362,14 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                           children: [
                             Text(
                               '명예퇴직금 총액',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               NumberFormatter.formatCurrency(
                                 earlyRetirementBonus!.totalAmount,
                               ),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
+                              style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.purple[900],
@@ -403,18 +392,12 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.blue.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.blue.withValues(alpha: 0.2),
-                ),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.blue[700],
-                    size: 20,
-                  ),
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -450,13 +433,17 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, MaterialColor color) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    MaterialColor color,
+  ) {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color[900],
-          ),
+        fontWeight: FontWeight.bold,
+        color: color[900],
+      ),
     );
   }
 
@@ -474,9 +461,7 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,25 +475,22 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                   Text(
                     period,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     dateRange,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
               Text(
                 NumberFormatter.formatCurrency(amount),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange[800],
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange[800],
+                ),
               ),
             ],
           ),
@@ -517,10 +499,7 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
           const SizedBox(height: 12),
           _buildDetailRow('재직 기간', '$years년'),
           const SizedBox(height: 8),
-          _buildDetailRow(
-            '적용 보수',
-            NumberFormatter.formatCurrency(baseIncome),
-          ),
+          _buildDetailRow('적용 보수', NumberFormatter.formatCurrency(baseIncome)),
           const SizedBox(height: 8),
           _buildDetailRow('계산식', explanation),
         ],
@@ -532,15 +511,12 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -552,10 +528,7 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
       children: [
         Text(
           '• $label: ',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[700],
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
         ),
         Expanded(
           child: Text(

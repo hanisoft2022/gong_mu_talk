@@ -7,12 +7,12 @@ import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions
 import 'package:gong_mu_talk/features/community/domain/models/lounge_model.dart';
 
 /// Firestore 라운지 데이터 마이그레이션 스크립트
-/// 
+///
 /// 실행 방법:
 /// ```bash
 /// dart run scripts/migrate_lounges.dart [--dry-run]
 /// ```
-/// 
+///
 /// --dry-run: 실제 변경 없이 시뮬레이션만 수행
 
 void main(List<String> arguments) async {
@@ -130,7 +130,9 @@ void main(List<String> arguments) async {
 }
 
 /// 기존 라운지 백업
-Future<void> _backupExistingLounges(CollectionReference loungesCollection) async {
+Future<void> _backupExistingLounges(
+  CollectionReference loungesCollection,
+) async {
   try {
     final snapshot = await loungesCollection.get();
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');

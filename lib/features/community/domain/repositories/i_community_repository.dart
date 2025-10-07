@@ -130,7 +130,12 @@ abstract class ICommunityRepository {
 
   // Legacy methods for compatibility
   Future<bool> toggleLike(String postId);
-  Future<void> addComment(String postId, String text, {List<String> imageUrls = const [], String? parentCommentId});
+  Future<void> addComment(
+    String postId,
+    String text, {
+    List<String> imageUrls = const [],
+    String? parentCommentId,
+  });
   Future<List<Comment>> getComments(String postId);
   Future<List<Comment>> getTopComments(String postId, {int limit = 3});
   Future<bool> toggleCommentLikeById(String postId, String commentId);

@@ -20,7 +20,8 @@ class ProfileLoggedInScaffold extends StatefulWidget {
   const ProfileLoggedInScaffold({super.key});
 
   @override
-  State<ProfileLoggedInScaffold> createState() => _ProfileLoggedInScaffoldState();
+  State<ProfileLoggedInScaffold> createState() =>
+      _ProfileLoggedInScaffoldState();
 }
 
 class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
@@ -58,7 +59,8 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
       listenWhen: (AuthState previous, AuthState current) =>
-          previous.lastMessage != current.lastMessage && current.lastMessage != null,
+          previous.lastMessage != current.lastMessage &&
+          current.lastMessage != null,
       listener: (BuildContext context, AuthState state) {
         final String? message = state.lastMessage;
         if (message == null) {
@@ -81,10 +83,7 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
             ),
           ),
           body: const TabBarView(
-            children: [
-              ProfileOverviewTab(),
-              ProfileSettingsTab(),
-            ],
+            children: [ProfileOverviewTab(), ProfileSettingsTab()],
           ),
         ),
       ),

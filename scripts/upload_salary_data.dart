@@ -20,10 +20,10 @@ void main() async {
   try {
     // 1. 2025년 일반직 봉급표 업로드
     await uploadSalaryTable2025(firestore);
-    
+
     // 2. 2024년 일반직 봉급표 업로드
     await uploadSalaryTable2024(firestore);
-    
+
     // 3. 2025년 수당 기준표 업로드
     await uploadAllowanceStandard2025(firestore);
 
@@ -194,10 +194,7 @@ Future<void> uploadSalaryTable2025(FirebaseFirestore firestore) async {
     },
   };
 
-  await firestore
-      .collection('salary_tables')
-      .doc('2025_general')
-      .set(data);
+  await firestore.collection('salary_tables').doc('2025_general').set(data);
 
   // ignore: avoid_print
   print('  ✓ 2025년 일반직 봉급표 업로드 완료');
@@ -273,10 +270,7 @@ Future<void> uploadSalaryTable2024(FirebaseFirestore firestore) async {
     },
   };
 
-  await firestore
-      .collection('salary_tables')
-      .doc('2024_general')
-      .set(data);
+  await firestore.collection('salary_tables').doc('2024_general').set(data);
 
   // ignore: avoid_print
   print('  ✓ 2024년 일반직 봉급표 업로드 완료');
@@ -310,10 +304,7 @@ Future<void> uploadAllowanceStandard2025(FirebaseFirestore firestore) async {
     },
   };
 
-  await firestore
-      .collection('allowance_standards')
-      .doc('2025')
-      .set(data);
+  await firestore.collection('allowance_standards').doc('2025').set(data);
 
   // ignore: avoid_print
   print('  ✓ 2025년 수당 기준표 업로드 완료');

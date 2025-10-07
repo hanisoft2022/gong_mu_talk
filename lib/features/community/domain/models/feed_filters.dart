@@ -13,8 +13,8 @@ class LoungeScope {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is LoungeScope &&
-      runtimeType == other.runtimeType &&
-      loungeId == other.loungeId;
+          runtimeType == other.runtimeType &&
+          loungeId == other.loungeId;
 
   @override
   int get hashCode => loungeId.hashCode;

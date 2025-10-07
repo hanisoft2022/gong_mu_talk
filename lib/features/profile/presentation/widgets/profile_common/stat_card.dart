@@ -19,7 +19,9 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final IconData icon = title == '팔로잉' ? Icons.people_outline : Icons.favorite_border;
+    final IconData icon = title == '팔로잉'
+        ? Icons.people_outline
+        : Icons.favorite_border;
 
     return InkWell(
       onTap: onTap,
@@ -29,18 +31,11 @@ class StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant,
-            width: 1,
-          ),
+          border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
             const Gap(6),
             Text(
               '$count',

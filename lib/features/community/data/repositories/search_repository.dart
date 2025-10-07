@@ -28,7 +28,8 @@ class SearchRepository {
     FirebaseFirestore? firestore,
     UserProfileRepository? userProfileRepository,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _userProfileRepository = userProfileRepository ?? UserProfileRepository();
+       _userProfileRepository =
+           userProfileRepository ?? UserProfileRepository();
 
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
@@ -55,7 +56,9 @@ class SearchRepository {
 
     if (authorOnly) {
       posts = posts
-          .where((Post post) => post.authorNickname.toLowerCase().contains(token))
+          .where(
+            (Post post) => post.authorNickname.toLowerCase().contains(token),
+          )
           .toList(growable: false);
     }
 
@@ -78,10 +81,12 @@ class SearchRepository {
       return const <Comment>[];
     }
 
-    return snapshot.docs.map((doc) {
-      final String postId = doc.reference.parent.parent?.id ?? '';
-      return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
-    }).toList(growable: false);
+    return snapshot.docs
+        .map((doc) {
+          final String postId = doc.reference.parent.parent?.id ?? '';
+          return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
+        })
+        .toList(growable: false);
   }
 
   Future<CommunitySearchResults> searchCommunity({
@@ -96,7 +101,8 @@ class SearchRepository {
       return const CommunitySearchResults();
     }
 
-    final bool includePosts = scope != SearchScope.comments && scope != SearchScope.author;
+    final bool includePosts =
+        scope != SearchScope.comments && scope != SearchScope.author;
     final bool authorOnly = scope == SearchScope.author;
     final bool includeComments =
         scope == SearchScope.comments || scope == SearchScope.all;
@@ -120,10 +126,7 @@ class SearchRepository {
     }
 
     if (includeComments && commentLimit > 0) {
-      comments = await searchComments(
-        token: token,
-        limit: commentLimit,
-      );
+      comments = await searchComments(token: token, limit: commentLimit);
     }
 
     recordSearchToken(token);
@@ -152,7 +155,8 @@ class SearchRepository {
     try {
       if (prefix.isEmpty) return AppResultHelpers.success([]);
 
-      final String endPrefix = prefix.substring(0, prefix.length - 1) +
+      final String endPrefix =
+          prefix.substring(0, prefix.length - 1) +
           String.fromCharCode(prefix.codeUnitAt(prefix.length - 1) + 1);
 
       final QuerySnapshot<JsonMap> snapshot = await _searchSuggestionRef
@@ -166,7 +170,8 @@ class SearchRepository {
       return AppResultHelpers.success(tokens);
     } catch (e) {
       return AppResultHelpers.failure(
-          UnknownError('검색어 자동완성 중 오류가 발생했습니다: $e'));
+        UnknownError('검색어 자동완성 중 오류가 발생했습니다: $e'),
+      );
     }
   }
 

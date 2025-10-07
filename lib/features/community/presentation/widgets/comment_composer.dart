@@ -9,6 +9,7 @@
 /// - Adjusts padding for keyboard visibility
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/comment.dart';
@@ -63,7 +64,6 @@ class _CommentComposerState extends State<CommentComposer> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Comment? replyingTo = widget.replyingTo;
-    
 
     final List<Widget> children = <Widget>[];
 
@@ -98,10 +98,7 @@ class _CommentComposerState extends State<CommentComposer> {
 
   // ==================== Reply Indicator ====================
 
-  Widget _buildReplyIndicator(
-    ThemeData theme,
-    Comment replyingTo,
-  ) {
+  Widget _buildReplyIndicator(ThemeData theme, Comment replyingTo) {
     final String displayName = replyingTo.authorNickname.isNotEmpty
         ? replyingTo.authorNickname
         : replyingTo.authorUid;
@@ -139,10 +136,7 @@ class _CommentComposerState extends State<CommentComposer> {
               ],
             ),
           ),
-          TextButton(
-            onPressed: widget.onCancelReply,
-            child: const Text('취소'),
-          ),
+          TextButton(onPressed: widget.onCancelReply, child: const Text('취소')),
         ],
       ),
     );

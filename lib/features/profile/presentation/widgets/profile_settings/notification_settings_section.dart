@@ -25,6 +25,7 @@
 /// - Push notification token management
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -68,8 +69,8 @@ class _NotificationSettingsSectionState
                 onChanged: isProcessing
                     ? null
                     : (bool value) => context
-                        .read<AuthCubit>()
-                        .updateNotificationsEnabled(value),
+                          .read<AuthCubit>()
+                          .updateNotificationsEnabled(value),
               ),
             ),
             const Divider(),

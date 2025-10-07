@@ -9,6 +9,7 @@
 /// Used by: PostCard
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -86,7 +87,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
               // Title
               Text(
                 '답글 작성',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Gap(12),
 
@@ -103,7 +106,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
                   children: [
                     Text(
                       displayName,
-                      style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Gap(6),
@@ -127,7 +132,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
                 textInputAction: TextInputAction.newline,
                 decoration: InputDecoration(
                   hintText: '답글을 입력하세요',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const Gap(12),
@@ -136,7 +143,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
               Row(
                 children: [
                   TextButton(
-                    onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => Navigator.of(context).pop(false),
                     child: const Text('취소'),
                   ),
                   const Spacer(),
@@ -171,7 +180,11 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
       final String? parentId = target.parentCommentId?.isNotEmpty == true
           ? target.parentCommentId
           : target.id;
-      await widget.repository.addComment(widget.postId, text, parentCommentId: parentId);
+      await widget.repository.addComment(
+        widget.postId,
+        text,
+        parentCommentId: parentId,
+      );
       if (!mounted) {
         return;
       }
@@ -183,7 +196,9 @@ class _InlineReplySheetState extends State<InlineReplySheet> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('답글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')));
+        ..showSnackBar(
+          const SnackBar(content: Text('답글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
+        );
     }
   }
 }

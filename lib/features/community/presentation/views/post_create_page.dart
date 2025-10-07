@@ -112,111 +112,127 @@ class _PostCreatePageState extends State<PostCreatePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  if (widget.postType == null)
-                    SegmentedButton<PostType>(
-                      segments: const [
-                        ButtonSegment<PostType>(
-                          value: PostType.chirp,
-                          label: Text('라운지'),
-                          icon: Icon(Icons.bubble_chart_outlined),
-                        ),
-                        ButtonSegment<PostType>(
-                          value: PostType.board,
-                          label: Text('게시판'),
-                          icon: Icon(Icons.article_outlined),
-                        ),
-                      ],
-                      selected: <PostType>{_postType},
-                      onSelectionChanged: (selection) {
-                        setState(() {
-                          _postType = selection.first;
-                        });
-                      },
-                    ),
-                  const Gap(16),
-                  if (_postType == PostType.chirp) _ChirpOptions(state: state, cubit: cubit),
-                  const Gap(16),
-                  TextField(
-                    controller: _textController,
-                    minLines: 6,
-                    maxLines: 12,
-                    onChanged: cubit.updateText,
-                    decoration: const InputDecoration(
-                      labelText: '내용',
-                      hintText: '나누고 싶은 이야기를 작성해주세요.',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const Gap(16),
-                  TextField(
-                    controller: _tagController,
-                    onChanged: cubit.updateTags,
-                    decoration: const InputDecoration(
-                      labelText: '태그',
-                      hintText: '# 없이 쉼표 또는 공백으로 구분해 입력하세요',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const Gap(20),
-                  Text('이미지 첨부', style: theme.textTheme.titleMedium),
-                  const Gap(8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      for (final PostMediaDraft draft in state.attachments)
-                        Stack(
-                          alignment: Alignment.topRight,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.memory(
-                                draft.bytes,
-                                width: 96,
-                                height: 96,
-                                fit: BoxFit.cover,
-                              ),
+                      if (widget.postType == null)
+                        SegmentedButton<PostType>(
+                          segments: const [
+                            ButtonSegment<PostType>(
+                              value: PostType.chirp,
+                              label: Text('라운지'),
+                              icon: Icon(Icons.bubble_chart_outlined),
                             ),
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minHeight: 18, minWidth: 18),
-                                  icon: const Icon(Icons.close, size: 12, color: Colors.white),
-                                  onPressed: () => cubit.removeAttachment(draft),
-                                ),
-                              ),
+                            ButtonSegment<PostType>(
+                              value: PostType.board,
+                              label: Text('게시판'),
+                              icon: Icon(Icons.article_outlined),
                             ),
                           ],
+                          selected: <PostType>{_postType},
+                          onSelectionChanged: (selection) {
+                            setState(() {
+                              _postType = selection.first;
+                            });
+                          },
                         ),
-                      GestureDetector(
-                        onTap: state.isSubmitting
-                            ? null
-                            : () async {
-                                await _showAttachmentPicker(context, cubit);
-                              },
-                        child: Container(
-                          width: 96,
-                          height: 96,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary),
+                      const Gap(16),
+                      if (_postType == PostType.chirp)
+                        _ChirpOptions(state: state, cubit: cubit),
+                      const Gap(16),
+                      TextField(
+                        controller: _textController,
+                        minLines: 6,
+                        maxLines: 12,
+                        onChanged: cubit.updateText,
+                        decoration: const InputDecoration(
+                          labelText: '내용',
+                          hintText: '나누고 싶은 이야기를 작성해주세요.',
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                    ],
-                  ),
+                      const Gap(16),
+                      TextField(
+                        controller: _tagController,
+                        onChanged: cubit.updateTags,
+                        decoration: const InputDecoration(
+                          labelText: '태그',
+                          hintText: '# 없이 쉼표 또는 공백으로 구분해 입력하세요',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const Gap(20),
+                      Text('이미지 첨부', style: theme.textTheme.titleMedium),
+                      const Gap(8),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          for (final PostMediaDraft draft in state.attachments)
+                            Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.memory(
+                                    draft.bytes,
+                                    width: 96,
+                                    height: 96,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 2,
+                                  top: 2,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                        minHeight: 18,
+                                        minWidth: 18,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.close,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: () =>
+                                          cubit.removeAttachment(draft),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          GestureDetector(
+                            onTap: state.isSubmitting
+                                ? null
+                                : () async {
+                                    await _showAttachmentPicker(context, cubit);
+                                  },
+                            child: Container(
+                              width: 96,
+                              height: 96,
+                              decoration: BoxDecoration(
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.add_a_photo_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const Gap(24),
-                      if (state.isSubmitting) const LinearProgressIndicator(minHeight: 3),
+                      if (state.isSubmitting)
+                        const LinearProgressIndicator(minHeight: 3),
                     ],
                   ),
                 ),
@@ -228,7 +244,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
     );
   }
 
-  Future<void> _showAttachmentPicker(BuildContext context, PostComposerCubit cubit) async {
+  Future<void> _showAttachmentPicker(
+    BuildContext context,
+    PostComposerCubit cubit,
+  ) async {
     final ThemeData theme = Theme.of(context);
     await showModalBottomSheet<void>(
       context: context,
@@ -247,7 +266,10 @@ class _PostCreatePageState extends State<PostCreatePage> {
 
             ListTile(
               leading: Icon(Icons.close, color: theme.colorScheme.error),
-              title: Text('취소', style: TextStyle(color: theme.colorScheme.error)),
+              title: Text(
+                '취소',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
               onTap: () => Navigator.of(context).pop(),
             ),
           ],
@@ -285,7 +307,8 @@ class _ChirpOptions extends StatelessWidget {
             ),
           ],
           selected: <PostAudience>{audience},
-          onSelectionChanged: (selection) => cubit.selectAudience(selection.first),
+          onSelectionChanged: (selection) =>
+              cubit.selectAudience(selection.first),
         ),
       ],
     );

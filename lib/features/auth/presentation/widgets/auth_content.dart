@@ -19,7 +19,8 @@ class _AuthContentState extends State<AuthContent> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _passwordConfirmController = TextEditingController();
+  final TextEditingController _passwordConfirmController =
+      TextEditingController();
 
   bool _isSignUpMode = false;
   bool _passwordVisible = false;
@@ -38,7 +39,8 @@ class _AuthContentState extends State<AuthContent> {
     final ThemeData theme = Theme.of(context);
 
     return BlocConsumer<AuthCubit, AuthState>(
-      listenWhen: (previous, current) => previous.isLoggedIn != current.isLoggedIn,
+      listenWhen: (previous, current) =>
+          previous.isLoggedIn != current.isLoggedIn,
       listener: (context, state) {
         if (state.isLoggedIn) {
           widget.onAuthenticated?.call(context, state);
@@ -49,9 +51,12 @@ class _AuthContentState extends State<AuthContent> {
         final bool isSignUp = _isSignUpMode;
         final bool isGoogleFlow = isSignUp && _signUpFlow == _SignUpFlow.google;
         final bool showEmailFields = !isGoogleFlow;
-        final bool showPasswordConfirmation = isSignUp && _signUpFlow == _SignUpFlow.email;
+        final bool showPasswordConfirmation =
+            isSignUp && _signUpFlow == _SignUpFlow.email;
         final String actionLabel = isSignUp ? '회원가입' : '로그인';
-        final String toggleLabel = isSignUp ? '이미 계정이 있으신가요? 로그인' : '처음이신가요? 회원가입';
+        final String toggleLabel = isSignUp
+            ? '이미 계정이 있으신가요? 로그인'
+            : '처음이신가요? 회원가입';
 
         return Form(
           key: _formKey,
@@ -61,7 +66,9 @@ class _AuthContentState extends State<AuthContent> {
             children: [
               Text(
                 actionLabel,
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const Gap(16),
               if (isSignUp) ...[
@@ -97,7 +104,10 @@ class _AuthContentState extends State<AuthContent> {
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(labelText: '이메일', hintText: 'example@korea.kr'),
+                  decoration: const InputDecoration(
+                    labelText: '이메일',
+                    hintText: 'example@korea.kr',
+                  ),
                   validator: _validateEmail,
                 ),
                 const Gap(16),
@@ -108,7 +118,9 @@ class _AuthContentState extends State<AuthContent> {
                   obscureText: !_passwordVisible,
                   decoration: InputDecoration(
                     labelText: '비밀번호',
-                    helperText: isSignUp ? '8자 이상, 대·소문자·숫자·특수문자를 포함해주세요.' : null,
+                    helperText: isSignUp
+                        ? '8자 이상, 대·소문자·숫자·특수문자를 포함해주세요.'
+                        : null,
                     suffixIcon: IconButton(
                       tooltip: _passwordVisible ? '비밀번호 숨기기' : '비밀번호 보기',
                       onPressed: () => setState(() {
@@ -153,7 +165,9 @@ class _AuthContentState extends State<AuthContent> {
               if (state.authError != null)
                 Text(
                   state.authError!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
                 ),
               const Gap(20),
               if (showEmailFields) ...[

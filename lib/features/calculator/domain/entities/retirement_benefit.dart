@@ -50,17 +50,17 @@ class RetirementBenefit extends Equatable {
 
   @override
   List<Object?> get props => [
-        period1Benefit,
-        period2Benefit,
-        period3Benefit,
-        totalBenefit,
-        retirementAllowance,
-        period1Years,
-        period2Years,
-        period3Years,
-        period1BaseIncome,
-        period23BaseIncome,
-      ];
+    period1Benefit,
+    period2Benefit,
+    period3Benefit,
+    totalBenefit,
+    retirementAllowance,
+    period1Years,
+    period2Years,
+    period3Years,
+    period1BaseIncome,
+    period23BaseIncome,
+  ];
 
   RetirementBenefit copyWith({
     int? period1Benefit,

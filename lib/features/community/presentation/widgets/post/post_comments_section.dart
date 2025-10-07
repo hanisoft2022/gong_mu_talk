@@ -10,6 +10,7 @@
 /// Used by: PostCard
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -53,7 +54,9 @@ class PostCommentsSection extends StatelessWidget {
                 Icon(
                   Icons.comment_outlined,
                   size: 32,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
+                  ),
                 ),
                 const Gap(8),
                 Text(
@@ -93,7 +96,8 @@ class PostCommentsSection extends StatelessWidget {
       // Build threaded comment list
       final List<Widget> threadedComments = roots
           .map((Comment comment) {
-            final List<Comment> children = replies[comment.id] ?? const <Comment>[];
+            final List<Comment> children =
+                replies[comment.id] ?? const <Comment>[];
             final GlobalKey commentAuthorKey = GlobalKey();
 
             return Column(
@@ -106,7 +110,8 @@ class PostCommentsSection extends StatelessWidget {
                   onToggleLike: onToggleCommentLike,
                   onReply: onReplyTap,
                   authorKey: commentAuthorKey,
-                  onOpenProfile: () => onOpenCommentAuthorProfile(comment, commentAuthorKey),
+                  onOpenProfile: () =>
+                      onOpenCommentAuthorProfile(comment, commentAuthorKey),
                 ),
 
                 // Reply comments (indented)
@@ -124,7 +129,10 @@ class PostCommentsSection extends StatelessWidget {
                               onToggleLike: onToggleCommentLike,
                               onReply: onReplyTap,
                               authorKey: replyAuthorKey,
-                              onOpenProfile: () => onOpenCommentAuthorProfile(reply, replyAuthorKey),
+                              onOpenProfile: () => onOpenCommentAuthorProfile(
+                                reply,
+                                replyAuthorKey,
+                              ),
                             );
                           })
                           .toList(growable: false),
@@ -154,6 +162,8 @@ class PostCommentsSection extends StatelessWidget {
   }
 
   bool _isFeatured(Comment comment) {
-    return featuredComments.any((Comment featured) => featured.id == comment.id);
+    return featuredComments.any(
+      (Comment featured) => featured.id == comment.id,
+    );
   }
 }

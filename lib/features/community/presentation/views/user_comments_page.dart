@@ -8,10 +8,7 @@ import '../../domain/models/comment_with_post.dart';
 import '../cubit/user_comments_cubit.dart';
 
 class UserCommentsPage extends StatefulWidget {
-  const UserCommentsPage({
-    super.key,
-    required this.authorUid,
-  });
+  const UserCommentsPage({super.key, required this.authorUid});
 
   final String authorUid;
 
@@ -47,9 +44,7 @@ class _UserCommentsPageState extends State<UserCommentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('작성한 댓글'),
-      ),
+      appBar: AppBar(title: const Text('작성한 댓글')),
       body: BlocBuilder<UserCommentsCubit, UserCommentsState>(
         builder: (context, state) {
           if (state.isLoading && state.comments.isEmpty) {
@@ -76,9 +71,7 @@ class _UserCommentsPageState extends State<UserCommentsPage> {
                 }
 
                 final CommentWithPost commentWithPost = state.comments[index];
-                return _CommentCard(
-                  commentWithPost: commentWithPost,
-                );
+                return _CommentCard(commentWithPost: commentWithPost);
               },
             ),
           );
@@ -124,9 +117,7 @@ class _UserCommentsPageState extends State<UserCommentsPage> {
 }
 
 class _CommentCard extends StatelessWidget {
-  const _CommentCard({
-    required this.commentWithPost,
-  });
+  const _CommentCard({required this.commentWithPost});
 
   final CommentWithPost commentWithPost;
 
@@ -153,7 +144,9 @@ class _CommentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -197,10 +190,7 @@ class _CommentCard extends StatelessWidget {
               const Gap(12),
 
               // Comment content
-              Text(
-                comment.text,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(comment.text, style: theme.textTheme.bodyMedium),
               const Gap(12),
 
               // Comment metadata

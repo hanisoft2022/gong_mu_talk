@@ -22,8 +22,9 @@ class PensionCalculationService {
     final retirementDate = profile.calculateRetirementDate();
 
     // 2. 재직 년수 계산 (정확한 날짜 기반)
-    final totalDays =
-        retirementDate.difference(profile.employmentStartDate).inDays;
+    final totalDays = retirementDate
+        .difference(profile.employmentStartDate)
+        .inDays;
     final serviceYears = (totalDays / 365).floor();
 
     // 3. 기간별 경력 계산 (이행률 적용 위해)
@@ -40,8 +41,7 @@ class PensionCalculationService {
     );
 
     // 5. 소득재분배 적용비율 계산
-    final redistributionRate =
-        IncomeRedistributionTable.getRedistributionRate(
+    final redistributionRate = IncomeRedistributionTable.getRedistributionRate(
       avgBaseIncome.toDouble(),
     );
 
@@ -49,11 +49,9 @@ class PensionCalculationService {
     final pensionRate = _calculatePensionRate(serviceYears);
 
     // 7. 월 연금액 = 평균소득월액 × 이행률 × 재분배율 × 지급률
-    final monthlyPension = (avgBaseIncome *
-            transitionRate *
-            redistributionRate *
-            pensionRate)
-        .round();
+    final monthlyPension =
+        (avgBaseIncome * transitionRate * redistributionRate * pensionRate)
+            .round();
 
     // 8. 연간 연금액 (13개월 기준)
     final annualPension = monthlyPension * 13;
@@ -63,8 +61,8 @@ class PensionCalculationService {
     final totalPension = annualPension * receivingYears;
 
     // 10. 기여금 총 납부액 추정 (기준소득의 9% × 재직월수)
-    final totalContribution =
-        (avgBaseIncome * 0.09 * serviceYears * 12).round();
+    final totalContribution = (avgBaseIncome * 0.09 * serviceYears * 12)
+        .round();
 
     return PensionEstimate(
       monthlyPension: monthlyPension,

@@ -233,7 +233,9 @@ class NotificationRepository {
   static const String _notificationSettingsKey = 'notification_settings';
 
   Future<Map<String, bool>> getNotificationSettings() async {
-    final String? settingsJson = _preferences.getString(_notificationSettingsKey);
+    final String? settingsJson = _preferences.getString(
+      _notificationSettingsKey,
+    );
     if (settingsJson == null) {
       // 기본 설정 (모든 알림 켜짐)
       return {
@@ -282,10 +284,9 @@ class NotificationRepository {
     }
 
     try {
-      final snapshot = await _notificationsRef(userId)
-          .orderBy('createdAt', descending: true)
-          .limit(100)
-          .get();
+      final snapshot = await _notificationsRef(
+        userId,
+      ).orderBy('createdAt', descending: true).limit(100).get();
 
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -298,7 +299,8 @@ class NotificationRepository {
           ),
           title: data['title'] as String? ?? '',
           body: data['body'] as String? ?? '',
-          createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          createdAt:
+              (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
           isRead: data['read'] as bool? ?? false,
           data: data['payload'] as Map<String, dynamic>?,
         );
@@ -316,10 +318,9 @@ class NotificationRepository {
     }
 
     try {
-      await _notificationsRef(userId).doc(notificationId).update({
-        'read': true,
-        'readAt': Timestamp.now(),
-      });
+      await _notificationsRef(
+        userId,
+      ).doc(notificationId).update({'read': true, 'readAt': Timestamp.now()});
     } catch (error, stackTrace) {
       debugPrint('Failed to mark notification as read: $error\n$stackTrace');
       rethrow;
@@ -347,21 +348,20 @@ class NotificationRepository {
     }
 
     try {
-      final snapshot = await _notificationsRef(userId)
-          .where('read', isEqualTo: false)
-          .get();
+      final snapshot = await _notificationsRef(
+        userId,
+      ).where('read', isEqualTo: false).get();
 
       final batch = _firestore.batch();
       for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {
-          'read': true,
-          'readAt': Timestamp.now(),
-        });
+        batch.update(doc.reference, {'read': true, 'readAt': Timestamp.now()});
       }
 
       await batch.commit();
     } catch (error, stackTrace) {
-      debugPrint('Failed to mark all notifications as read: $error\n$stackTrace');
+      debugPrint(
+        'Failed to mark all notifications as read: $error\n$stackTrace',
+      );
       rethrow;
     }
   }

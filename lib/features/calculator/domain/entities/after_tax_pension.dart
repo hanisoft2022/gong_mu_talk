@@ -55,15 +55,15 @@ class AfterTaxPension extends Equatable {
 
   @override
   List<Object?> get props => [
-        monthlyPensionBeforeTax,
-        incomeTax,
-        localTax,
-        healthInsurance,
-        longTermCareInsurance,
-        monthlyPensionAfterTax,
-        annualPensionAfterTax,
-        age,
-      ];
+    monthlyPensionBeforeTax,
+    incomeTax,
+    localTax,
+    healthInsurance,
+    longTermCareInsurance,
+    monthlyPensionAfterTax,
+    annualPensionAfterTax,
+    age,
+  ];
 
   AfterTaxPension copyWith({
     int? monthlyPensionBeforeTax,

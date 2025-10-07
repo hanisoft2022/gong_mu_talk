@@ -46,8 +46,8 @@ class EarlyRetirementCard extends StatelessWidget {
                     child: Text(
                       '명예퇴직금',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -69,10 +69,7 @@ class EarlyRetirementCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         '55세 이상 퇴직 시 이용 가능',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -138,16 +135,16 @@ class EarlyRetirementCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[700],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.purple[700],
-              ),
+            fontWeight: FontWeight.w600,
+            color: Colors.purple[700],
+          ),
         ),
       ],
     );
@@ -160,16 +157,16 @@ class EarlyRetirementCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.purple[900],
-                fontWeight: FontWeight.w600,
-              ),
+            color: Colors.purple[900],
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.purple[700],
+          ),
         ),
       ],
     );

@@ -66,20 +66,20 @@ class TeacherProfile extends Equatable {
 
   @override
   List<Object?> get props => [
-        birthYear,
-        birthMonth,
-        currentGrade,
-        position,
-        employmentStartDate,
-        expectedRetirementDate,
-        retirementAge,
-        allowances,
-        baseIncomeMonthly,
-        hasSpouse,
-        numberOfChildren,
-        isHomeroom,
-        hasPosition,
-      ];
+    birthYear,
+    birthMonth,
+    currentGrade,
+    position,
+    employmentStartDate,
+    expectedRetirementDate,
+    retirementAge,
+    allowances,
+    baseIncomeMonthly,
+    hasSpouse,
+    numberOfChildren,
+    isHomeroom,
+    hasPosition,
+  ];
 
   TeacherProfile copyWith({
     int? birthYear,
@@ -102,7 +102,8 @@ class TeacherProfile extends Equatable {
       currentGrade: currentGrade ?? this.currentGrade,
       position: position ?? this.position,
       employmentStartDate: employmentStartDate ?? this.employmentStartDate,
-      expectedRetirementDate: expectedRetirementDate ?? this.expectedRetirementDate,
+      expectedRetirementDate:
+          expectedRetirementDate ?? this.expectedRetirementDate,
       retirementAge: retirementAge ?? this.retirementAge,
       allowances: allowances ?? this.allowances,
       baseIncomeMonthly: baseIncomeMonthly ?? this.baseIncomeMonthly,

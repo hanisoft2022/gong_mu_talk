@@ -9,20 +9,12 @@ import 'package:path/path.dart' as path;
 /// - Original images are uploaded without compression
 /// - This leads to HIGHER storage and bandwidth costs (up to 5x)
 ///
-/// **TODO**:
-/// 1. Fix flutter_image_compress plugin errors
-/// 2. Or migrate to alternative compression library
-/// 3. Re-enable compression to reduce costs by 70-80%
-///
 /// **Current Limits** (enforced):
 /// - File size: 10MB max (enforced at app level AND Firebase Storage Rules)
 /// - File types: JPEG, PNG, WebP, HEIC, GIF only
 /// - Post images: Max 5 images
 /// - Comment images: Max 1 image
-enum ImageCompressionType {
-  post,
-  comment,
-}
+enum ImageCompressionType { post, comment }
 
 class ImageCompressionUtil {
   static const int _maxFileSizeBytes = 10 * 1024 * 1024; // 10MB
@@ -43,8 +35,10 @@ class ImageCompressionUtil {
 
       // 파일 타입 검증
       if (!_isValidImageType(originalFile.path)) {
-        throw const ImageCompressionException('지원하지 않는 이미지 형식입니다. '
-            'JPEG, PNG, WebP, HEIC, GIF만 지원됩니다.');
+        throw const ImageCompressionException(
+          '지원하지 않는 이미지 형식입니다. '
+          'JPEG, PNG, WebP, HEIC, GIF만 지원됩니다.',
+        );
       }
 
       // 압축 설정
@@ -72,15 +66,16 @@ class ImageCompressionUtil {
         '_compressed.webp',
       );
 
-      final XFile? compressedFile = await FlutterImageCompress.compressAndGetFile(
-        originalFile.path,
-        targetPath,
-        quality: quality,
-        minWidth: minWidth,
-        minHeight: minHeight,
-        format: format,
-        keepExif: false, // EXIF 제거로 추가 용량 절감
-      );
+      final XFile? compressedFile =
+          await FlutterImageCompress.compressAndGetFile(
+            originalFile.path,
+            targetPath,
+            quality: quality,
+            minWidth: minWidth,
+            minHeight: minHeight,
+            format: format,
+            keepExif: false, // EXIF 제거로 추가 용량 절감
+          );
 
       if (compressedFile == null) {
         // 압축 실패 시 원본 반환 (fallback)
@@ -101,7 +96,6 @@ class ImageCompressionUtil {
       throw ImageCompressionException('이미지 처리 중 오류가 발생했습니다: ${e.toString()}');
     }
   }
-
 
   /// 여러 이미지를 압축합니다.
   static Future<List<XFile>> compressImages(
@@ -126,7 +120,15 @@ class ImageCompressionUtil {
   /// 이미지 파일 타입 검증
   static bool _isValidImageType(String filePath) {
     final String extension = path.extension(filePath).toLowerCase();
-    return ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.gif'].contains(extension);
+    return [
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.webp',
+      '.heic',
+      '.heif',
+      '.gif',
+    ].contains(extension);
   }
 
   /// 압축된 임시 파일들을 정리합니다.
@@ -142,7 +144,8 @@ class ImageCompressionUtil {
   ) async {
     final int originalSize = await File(originalFile.path).length();
     final int compressedSize = await File(compressedFile.path).length();
-    final double compressionRatio = (originalSize - compressedSize) / originalSize;
+    final double compressionRatio =
+        (originalSize - compressedSize) / originalSize;
 
     return CompressionInfo(
       originalSizeBytes: originalSize,
@@ -170,7 +173,8 @@ class CompressionInfo {
   String get originalSizeFormatted => _formatBytes(originalSizeBytes);
   String get compressedSizeFormatted => _formatBytes(compressedSizeBytes);
   String get savedSizeFormatted => _formatBytes(savedBytes);
-  String get compressionPercentage => '${(compressionRatio * 100).toStringAsFixed(1)}%';
+  String get compressionPercentage =>
+      '${(compressionRatio * 100).toStringAsFixed(1)}%';
 
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';

@@ -20,8 +20,9 @@ class EarlyRetirementCalculationService {
     final regularRetirementDate = profile.calculateRetirementDate();
 
     // 2. 잔여 기간 계산 (명퇴일 ~ 정년퇴직일)
-    final remainingDays =
-        regularRetirementDate.difference(retirementDate).inDays;
+    final remainingDays = regularRetirementDate
+        .difference(retirementDate)
+        .inDays;
     final remainingYears = (remainingDays / 365).floor();
     final remainingMonths = ((remainingDays % 365) / 30).floor();
 
@@ -173,7 +174,8 @@ class EarlyRetirementCalculationService {
     // 1. 명퇴 시 총 수령액
     // = 명퇴금 + (명퇴 연금 × 12개월 × 수령년수)
     final earlyPensionYears = lifeExpectancy - retirementAge;
-    final earlyTotal = earlyRetirementBonus +
+    final earlyTotal =
+        earlyRetirementBonus +
         (earlyRetirementPension * 12 * earlyPensionYears);
 
     // 2. 정년 시 총 수령액
@@ -181,7 +183,8 @@ class EarlyRetirementCalculationService {
     final regularRetirementAge = retirementAge + remainingYears;
     final regularPensionYears = lifeExpectancy - regularRetirementAge;
     final estimatedMonthlySalary = earlyRetirementPension; // 간략화: 연금액과 동일하게 가정
-    final regularTotal = (estimatedMonthlySalary * 12 * remainingYears) +
+    final regularTotal =
+        (estimatedMonthlySalary * 12 * remainingYears) +
         (regularRetirementPension * 12 * regularPensionYears);
 
     final difference = earlyTotal - regularTotal;

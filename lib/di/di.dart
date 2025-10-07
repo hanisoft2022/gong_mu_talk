@@ -31,7 +31,6 @@ import '../features/community/data/community_repository_impl.dart';
 import '../features/community/domain/repositories/i_community_repository.dart';
 import '../features/community/domain/usecases/search_community.dart';
 
-
 import '../features/community/presentation/cubit/community_feed_cubit.dart';
 import '../features/community/presentation/cubit/search_cubit.dart';
 import '../features/community/presentation/cubit/scrap_cubit.dart';
@@ -108,9 +107,7 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<ICommunityRepository>(
       () => CommunityRepositoryImpl(getIt()),
     )
-    ..registerLazySingleton<SearchCommunity>(
-      () => SearchCommunity(getIt()),
-    )
+    ..registerLazySingleton<SearchCommunity>(() => SearchCommunity(getIt()))
     ..registerFactory<CommunityFeedCubit>(
       () => CommunityFeedCubit(
         repository: getIt(),
@@ -181,5 +178,7 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton<GoRouter>(createRouter)
     // Firestore
-    ..registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
+    ..registerLazySingleton<FirebaseFirestore>(
+      () => FirebaseFirestore.instance,
+    );
 }

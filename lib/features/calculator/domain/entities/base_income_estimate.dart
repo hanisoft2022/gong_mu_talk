@@ -43,10 +43,7 @@ class BaseIncomeEstimate extends Equatable {
 
   /// 총 제외액
   int get totalExcluded =>
-      excludedPerformance +
-      excludedOvertime +
-      excludedResearch +
-      excludedMeal;
+      excludedPerformance + excludedOvertime + excludedResearch + excludedMeal;
 
   /// 총 포함액
   int get totalIncluded =>
@@ -54,16 +51,16 @@ class BaseIncomeEstimate extends Equatable {
 
   @override
   List<Object?> get props => [
-        grossIncome,
-        excludedPerformance,
-        excludedOvertime,
-        excludedResearch,
-        excludedMeal,
-        includedAvgPerformance,
-        includedAvgOvertime,
-        includedYearEndBonus,
-        baseIncome,
-      ];
+    grossIncome,
+    excludedPerformance,
+    excludedOvertime,
+    excludedResearch,
+    excludedMeal,
+    includedAvgPerformance,
+    includedAvgOvertime,
+    includedYearEndBonus,
+    baseIncome,
+  ];
 
   BaseIncomeEstimate copyWith({
     int? grossIncome,

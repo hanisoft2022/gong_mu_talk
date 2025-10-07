@@ -70,32 +70,23 @@ extension AppResultExtensions<T> on AppResult<T> {
 
   /// 성공 시 실행할 콜백
   AppResult<T> onSuccess(void Function(T data) callback) {
-    return fold(
-      (error) => this,
-      (data) {
-        callback(data);
-        return this;
-      },
-    );
+    return fold((error) => this, (data) {
+      callback(data);
+      return this;
+    });
   }
 
   /// 실패 시 실행할 콜백
   AppResult<T> onFailure(void Function(AppError error) callback) {
-    return fold(
-      (error) {
-        callback(error);
-        return this;
-      },
-      (data) => this,
-    );
+    return fold((error) {
+      callback(error);
+      return this;
+    }, (data) => this);
   }
 
   /// 다른 타입으로 변환
   AppResult<R> map<R>(R Function(T data) mapper) {
-    return fold(
-      (error) => Left(error),
-      (data) => Right(mapper(data)),
-    );
+    return fold((error) => Left(error), (data) => Right(mapper(data)));
   }
 
   /// 비동기 변환
@@ -127,7 +118,9 @@ class AppResultHelpers {
   }
 
   /// 비동기 try-catch를 Result로 변환
-  static Future<AppResult<T>> tryCallAsync<T>(Future<T> Function() callback) async {
+  static Future<AppResult<T>> tryCallAsync<T>(
+    Future<T> Function() callback,
+  ) async {
     try {
       return Right(await callback());
     } catch (e) {

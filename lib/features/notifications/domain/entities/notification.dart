@@ -1,10 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum NotificationKind {
-  commentReply,
-  scrappedPostComment,
-  weeklySerialDigest,
-}
+enum NotificationKind { commentReply, scrappedPostComment, weeklySerialDigest }
 
 extension NotificationKindX on NotificationKind {
   String get id => name;
@@ -65,13 +61,13 @@ class AppNotification extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        kind,
-        title,
-        body,
-        createdAt,
-        isRead,
-        data,
-      ];
+    id,
+    userId,
+    kind,
+    title,
+    body,
+    createdAt,
+    isRead,
+    data,
+  ];
 }

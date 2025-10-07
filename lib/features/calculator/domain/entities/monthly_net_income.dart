@@ -75,21 +75,21 @@ class MonthlyNetIncome extends Equatable {
 
   @override
   List<Object?> get props => [
-        month,
-        baseSalary,
-        totalAllowances,
-        longevityBonus,
-        holidayBonus,
-        grossSalary,
-        incomeTax,
-        localTax,
-        nationalPension,
-        healthInsurance,
-        longTermCareInsurance,
-        employmentInsurance,
-        totalDeductions,
-        netIncome,
-      ];
+    month,
+    baseSalary,
+    totalAllowances,
+    longevityBonus,
+    holidayBonus,
+    grossSalary,
+    incomeTax,
+    localTax,
+    nationalPension,
+    healthInsurance,
+    longTermCareInsurance,
+    employmentInsurance,
+    totalDeductions,
+    netIncome,
+  ];
 
   MonthlyNetIncome copyWith({
     int? month,

@@ -41,7 +41,10 @@ class LoungeAccessService {
   }
 
   /// 특정 라운지에 접근 가능한지 확인
-  static bool canAccessLounge(String loungeId, CareerHierarchy careerHierarchy) {
+  static bool canAccessLounge(
+    String loungeId,
+    CareerHierarchy careerHierarchy,
+  ) {
     final accessibleIds = _getAccessibleLoungeIds(careerHierarchy);
     return accessibleIds.contains(loungeId);
   }
@@ -62,7 +65,9 @@ class LoungeAccessService {
   }
 
   /// CareerHierarchy를 LoungeInfo 목록으로 변환 (기존 호환성)
-  static List<LoungeInfo> convertToLoungeInfos(CareerHierarchy careerHierarchy) {
+  static List<LoungeInfo> convertToLoungeInfos(
+    CareerHierarchy careerHierarchy,
+  ) {
     final accessibleLounges = getAccessibleLounges(careerHierarchy);
 
     return accessibleLounges
@@ -98,8 +103,18 @@ class LoungeAccessService {
     'elementary_teacher': ['all', 'teacher', 'elementary_teacher'],
 
     // 중등교사 - 교과별 (Secondary Teachers by Subject)
-    'secondary_math_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_math_teacher'],
-    'secondary_korean_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_korean_teacher'],
+    'secondary_math_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_math_teacher',
+    ],
+    'secondary_korean_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_korean_teacher',
+    ],
     'secondary_english_teacher': [
       'all',
       'teacher',
@@ -112,14 +127,28 @@ class LoungeAccessService {
       'secondary_teacher',
       'secondary_science_teacher',
     ],
-    'secondary_social_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_social_teacher'],
-    'secondary_arts_teacher': ['all', 'teacher', 'secondary_teacher', 'secondary_arts_teacher'],
+    'secondary_social_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_social_teacher',
+    ],
+    'secondary_arts_teacher': [
+      'all',
+      'teacher',
+      'secondary_teacher',
+      'secondary_arts_teacher',
+    ],
 
     // 유치원 교사 (Kindergarten Teacher)
     'kindergarten_teacher': ['all', 'teacher', 'kindergarten_teacher'],
 
     // 특수교육 교사 (Special Education Teacher)
-    'special_education_teacher': ['all', 'teacher', 'special_education_teacher'],
+    'special_education_teacher': [
+      'all',
+      'teacher',
+      'special_education_teacher',
+    ],
 
     // 비교과 교사들 (Non-Subject Teachers) - 통합 라운지
     'counselor_teacher': ['all', 'teacher', 'non_subject_teacher'],
@@ -132,9 +161,24 @@ class LoungeAccessService {
     // ================================
 
     // 국가직 (National)
-    'admin_9th_national': ['all', 'admin', 'national_admin', 'admin_9th_national'],
-    'admin_7th_national': ['all', 'admin', 'national_admin', 'admin_7th_national'],
-    'admin_5th_national': ['all', 'admin', 'national_admin', 'admin_5th_national'],
+    'admin_9th_national': [
+      'all',
+      'admin',
+      'national_admin',
+      'admin_9th_national',
+    ],
+    'admin_7th_national': [
+      'all',
+      'admin',
+      'national_admin',
+      'admin_7th_national',
+    ],
+    'admin_5th_national': [
+      'all',
+      'admin',
+      'national_admin',
+      'admin_5th_national',
+    ],
 
     // 지방직 (Local)
     'admin_9th_local': ['all', 'admin', 'local_admin', 'admin_9th_local'],
@@ -215,7 +259,11 @@ class LoungeAccessService {
     'environmental_officer': ['all', 'technical', 'facilities_environment'],
 
     // 농림수산직 (Agriculture, Forestry, Fisheries) - 통합 라운지
-    'agriculture_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'agriculture_officer': [
+      'all',
+      'technical',
+      'agriculture_forestry_fisheries',
+    ],
     'plant_quarantine': ['all', 'technical', 'agriculture_forestry_fisheries'],
     'livestock_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
     'forestry_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
@@ -223,7 +271,11 @@ class LoungeAccessService {
     'fisheries_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
     'ship_officer': ['all', 'technical', 'agriculture_forestry_fisheries'],
     'veterinarian': ['all', 'technical', 'agriculture_forestry_fisheries'],
-    'agricultural_extension': ['all', 'technical', 'agriculture_forestry_fisheries'],
+    'agricultural_extension': [
+      'all',
+      'technical',
+      'agriculture_forestry_fisheries',
+    ],
 
     // IT통신직 (IT & Communications) - 통합 라운지
     'computer_officer': ['all', 'technical', 'it_communications'],
@@ -253,7 +305,10 @@ class LoungeAccessService {
   }
 
   /// 라운지 계층 구조 검증 - 부모 라운지 접근 권한이 있는지 확인
-  static bool hasParentAccess(String loungeId, List<String> accessibleLoungeIds) {
+  static bool hasParentAccess(
+    String loungeId,
+    List<String> accessibleLoungeIds,
+  ) {
     final lounge = LoungeDefinitions.defaultLounges.firstWhere(
       (l) => l.id == loungeId,
       orElse: () => const Lounge(
@@ -274,7 +329,7 @@ class LoungeAccessService {
   }
 
   /// 라운지 멤버십 정보 업데이트
-  /// 
+  ///
   /// Firestore에 사용자의 라운지 접근 권한을 저장하여
   /// 실시간 멤버 수 업데이트, 라운지별 알림 설정 등에 활용
   static Future<void> updateLoungeMembership(
@@ -297,11 +352,13 @@ class LoungeAccessService {
 
       // 각 라운지의 멤버 수 업데이트 (배치 작업)
       final batch = firestore.batch();
-      
+
       // 기존 멤버십 정보 가져오기
       final doc = await userDoc.get();
-      final previousIds = (doc.data()?['loungeMemberships']?['accessibleLoungeIds'] as List?)
-          ?.cast<String>() ?? <String>[];
+      final previousIds =
+          (doc.data()?['loungeMemberships']?['accessibleLoungeIds'] as List?)
+              ?.cast<String>() ??
+          <String>[];
 
       // 추가된 라운지 (멤버 수 +1)
       final addedLounges = newAccessibleLoungeIds
@@ -324,9 +381,7 @@ class LoungeAccessService {
 
       for (final loungeId in removedLounges) {
         final loungeRef = firestore.collection('lounges').doc(loungeId);
-        batch.update(loungeRef, {
-          'memberCount': FieldValue.increment(-1),
-        });
+        batch.update(loungeRef, {'memberCount': FieldValue.increment(-1)});
       }
 
       await batch.commit();

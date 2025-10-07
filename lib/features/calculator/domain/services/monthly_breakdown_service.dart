@@ -42,8 +42,9 @@ class MonthlyBreakdownService {
     final homeroomAllowance = isHomeroom ? AllowanceTable.homeroomAllowance : 0;
 
     // 보직교사수당
-    final positionAllowance =
-        hasPosition ? AllowanceTable.headTeacherAllowance : 0;
+    final positionAllowance = hasPosition
+        ? AllowanceTable.headTeacherAllowance
+        : 0;
 
     // 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = _calculateVeteranAllowance(
@@ -62,17 +63,18 @@ class MonthlyBreakdownService {
     final researchAllowance = _calculateResearchAllowance(serviceYears);
 
     // 시간외근무수당 정액분
-    final overtimeAllowance =
-        AllowanceTable.getOvertimeAllowance(profile.currentGrade);
+    final overtimeAllowance = AllowanceTable.getOvertimeAllowance(
+      profile.currentGrade,
+    );
 
     // 정근수당 가산금 (매월)
-    final longevityMonthly =
-        _calculateLongevityMonthlyAllowance(serviceYears);
+    final longevityMonthly = _calculateLongevityMonthlyAllowance(serviceYears);
 
     // 월별 계산
     for (int month = 1; month <= 12; month++) {
       // 각종 수당 합계
-      final totalAllowances = teachingAllowance +
+      final totalAllowances =
+          teachingAllowance +
           homeroomAllowance +
           positionAllowance +
           veteranAllowance +
@@ -95,7 +97,8 @@ class MonthlyBreakdownService {
       );
 
       // 총 지급액 (세전)
-      final grossSalary = baseSalary + totalAllowances + longevityBonus + holidayBonus;
+      final grossSalary =
+          baseSalary + totalAllowances + longevityBonus + holidayBonus;
 
       // 소득세
       final incomeTax = _taxService.calculateIncomeTax(grossSalary);
@@ -116,7 +119,8 @@ class MonthlyBreakdownService {
       final employmentInsurance = (grossSalary * 0.009).round();
 
       // 총 공제액
-      final totalDeductions = incomeTax +
+      final totalDeductions =
+          incomeTax +
           localTax +
           nationalPension +
           healthInsurance +
@@ -263,10 +267,7 @@ class MonthlyBreakdownService {
   /// [month] 월
   ///
   /// Returns: 명절상여금 (2월 설날, 9월 추석에 본봉의 60%)
-  int _calculateHolidayBonus({
-    required int baseSalary,
-    required int month,
-  }) {
+  int _calculateHolidayBonus({required int baseSalary, required int month}) {
     // 2월 (설날), 9월 (추석)에만 지급
     if (month == 2 || month == 9) {
       return (baseSalary * 0.6).round();
@@ -280,10 +281,7 @@ class MonthlyBreakdownService {
   ///
   /// Returns: 연간 총 실수령액
   int calculateAnnualNetIncome(List<MonthlyNetIncome> monthlyIncomes) {
-    return monthlyIncomes.fold<int>(
-      0,
-      (sum, income) => sum + income.netIncome,
-    );
+    return monthlyIncomes.fold<int>(0, (sum, income) => sum + income.netIncome);
   }
 
   /// 연간 총 공제액 계산

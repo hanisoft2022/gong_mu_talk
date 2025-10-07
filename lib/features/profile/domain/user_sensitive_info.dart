@@ -22,7 +22,10 @@ class UserSensitiveInfo extends Equatable {
   final DateTime? updatedAt;
 
   /// Firestore에서 읽기
-  factory UserSensitiveInfo.fromFirestore(String uid, DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory UserSensitiveInfo.fromFirestore(
+    String uid,
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     if (!doc.exists) {
       return UserSensitiveInfo(uid: uid);
     }
@@ -44,7 +47,9 @@ class UserSensitiveInfo extends Equatable {
       'governmentEmail': governmentEmail,
       'primaryEmail': primaryEmail,
       'phone': phone,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -68,11 +73,11 @@ class UserSensitiveInfo extends Equatable {
 
   @override
   List<Object?> get props => [
-        uid,
-        governmentEmail,
-        primaryEmail,
-        phone,
-        createdAt,
-        updatedAt,
-      ];
+    uid,
+    governmentEmail,
+    primaryEmail,
+    phone,
+    createdAt,
+    updatedAt,
+  ];
 }

@@ -99,8 +99,7 @@ class TransitionRateTable {
     }
 
     // 키 생성
-    final key =
-        '1기간_${period1Pct}_2기간_${period2Pct}_3기간_$adjustedPeriod3Pct';
+    final key = '1기간_${period1Pct}_2기간_${period2Pct}_3기간_$adjustedPeriod3Pct';
 
     // 테이블에서 정확히 매칭되는 이행률 반환
     if (rates.containsKey(key)) {
@@ -117,12 +116,17 @@ class TransitionRateTable {
   /// - 1기간 비율이 높을수록 1.9에 가까움
   /// - 2기간 비율이 높을수록 0.95에 가까움
   /// - 3기간 비율이 높을수록 1.0에 가까움
-  static double _interpolateRate(int period1Pct, int period2Pct, int period3Pct) {
+  static double _interpolateRate(
+    int period1Pct,
+    int period2Pct,
+    int period3Pct,
+  ) {
     const period1Rate = 1.9;
     const period2Rate = 0.95;
     const period3Rate = 1.0;
 
-    final interpolated = (period1Pct / 100 * period1Rate) +
+    final interpolated =
+        (period1Pct / 100 * period1Rate) +
         (period2Pct / 100 * period2Rate) +
         (period3Pct / 100 * period3Rate);
 
@@ -136,7 +140,7 @@ class TransitionRateTable {
   ///
   /// Returns: (1기간 년수, 2기간 년수, 3기간 년수)
   static ({int period1Years, int period2Years, int period3Years})
-      calculatePeriodYears({
+  calculatePeriodYears({
     required DateTime employmentStartDate,
     required DateTime retirementDate,
   }) {

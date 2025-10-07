@@ -20,6 +20,7 @@
 /// Called from ProfileHeader when user taps on follower/following stats.
 
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -28,10 +29,7 @@ import '../../../domain/user_profile.dart';
 import '../../cubit/profile_relations_cubit.dart';
 
 /// Shows modal bottom sheet with follower/following list
-void showProfileRelationsSheet(
-  BuildContext context,
-  ProfileRelationType type,
-) {
+void showProfileRelationsSheet(BuildContext context, ProfileRelationType type) {
   final ProfileRelationsCubit cubit = context.read<ProfileRelationsCubit>();
   cubit.load(type);
 
@@ -70,9 +68,7 @@ void showProfileRelationsSheet(
                           state.type == ProfileRelationType.followers
                               ? '팔로워'
                               : '팔로잉',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         IconButton(
@@ -157,17 +153,10 @@ Widget _buildContent(
         final UserProfile profile = state.users[index];
         return ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            Icons.person_outline,
-            color: theme.colorScheme.primary,
-          ),
+          leading: Icon(Icons.person_outline, color: theme.colorScheme.primary),
           title: Text(profile.nickname),
           subtitle: profile.bio != null && profile.bio!.isNotEmpty
-              ? Text(
-                  profile.bio!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
+              ? Text(profile.bio!, maxLines: 1, overflow: TextOverflow.ellipsis)
               : null,
           onTap: () {
             Navigator.of(context).pop();

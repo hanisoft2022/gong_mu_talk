@@ -109,7 +109,9 @@ class CommentTile extends StatelessWidget {
                       scale: comment.isLiked ? 1.3 : 1,
                       curve: Curves.elasticOut,
                       child: Icon(
-                        comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                        comment.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
                         size: 16,
                         color: comment.isLiked
                             ? Colors.pink[400]

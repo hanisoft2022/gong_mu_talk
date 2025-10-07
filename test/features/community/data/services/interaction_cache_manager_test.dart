@@ -38,7 +38,10 @@ void main() {
 
     group('Liked Posts Cache', () {
       test('should return null when no cache exists', () {
-        final result = cacheManager.getLikedPostIds('user1', ['post1', 'post2']);
+        final result = cacheManager.getLikedPostIds('user1', [
+          'post1',
+          'post2',
+        ]);
         expect(result, isNull);
       });
 
@@ -49,7 +52,11 @@ void main() {
           scrappedIds: {},
         );
 
-        final result = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post4']);
+        final result = cacheManager.getLikedPostIds('user1', [
+          'post1',
+          'post2',
+          'post4',
+        ]);
         expect(result, {'post1', 'post2'});
       });
 
@@ -66,7 +73,12 @@ void main() {
           scrappedIds: {},
         );
 
-        final result = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post3', 'post4']);
+        final result = cacheManager.getLikedPostIds('user1', [
+          'post1',
+          'post2',
+          'post3',
+          'post4',
+        ]);
         expect(result, {'post1', 'post2', 'post3', 'post4'});
       });
     });
@@ -84,7 +96,11 @@ void main() {
           scrappedIds: {'post1', 'post3'},
         );
 
-        final result = cacheManager.getScrappedPostIds('user1', ['post1', 'post2', 'post3']);
+        final result = cacheManager.getScrappedPostIds('user1', [
+          'post1',
+          'post2',
+          'post3',
+        ]);
         expect(result, {'post1', 'post3'});
       });
     });
@@ -97,16 +113,16 @@ void main() {
 
       test('should cache and retrieve top comment', () {
         final mockComment = {'id': 'comment1', 'text': 'Great post!'};
-        
+
         cacheManager.updateTopCommentCache('post1', mockComment);
-        
+
         final result = cacheManager.getTopComment('post1');
         expect(result, mockComment);
       });
 
       test('should handle null top comment', () {
         cacheManager.updateTopCommentCache('post1', null);
-        
+
         final result = cacheManager.getTopComment('post1');
         expect(result, isNull);
       });
@@ -200,8 +216,15 @@ void main() {
           scrappedIds: {'post5'},
         );
 
-        final liked = cacheManager.getLikedPostIds('user1', ['post1', 'post2', 'post4']);
-        final scrapped = cacheManager.getScrappedPostIds('user1', ['post3', 'post5']);
+        final liked = cacheManager.getLikedPostIds('user1', [
+          'post1',
+          'post2',
+          'post4',
+        ]);
+        final scrapped = cacheManager.getScrappedPostIds('user1', [
+          'post3',
+          'post5',
+        ]);
 
         expect(liked, {'post4'});
         expect(scrapped, {'post5'});

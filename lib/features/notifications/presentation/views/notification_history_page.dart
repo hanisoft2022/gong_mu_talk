@@ -12,7 +12,8 @@ class NotificationHistoryPage extends StatefulWidget {
   const NotificationHistoryPage({super.key});
 
   @override
-  State<NotificationHistoryPage> createState() => _NotificationHistoryPageState();
+  State<NotificationHistoryPage> createState() =>
+      _NotificationHistoryPageState();
 }
 
 class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
@@ -57,7 +58,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         return;
       }
 
-      final notifications = await _repository.getAllNotifications(authState.userId!);
+      final notifications = await _repository.getAllNotifications(
+        authState.userId!,
+      );
 
       if (mounted) {
         setState(() {
@@ -76,8 +79,6 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     }
   }
 
-
-
   Future<void> _markAsRead(AppNotification notification) async {
     if (notification.isRead) return;
 
@@ -89,7 +90,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
 
       if (mounted) {
         setState(() {
-          final index = _notifications.indexWhere((n) => n.id == notification.id);
+          final index = _notifications.indexWhere(
+            (n) => n.id == notification.id,
+          );
           if (index != -1) {
             _notifications[index] = notification.copyWith(isRead: true);
           }
@@ -97,9 +100,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('알림 읽기 처리에 실패했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('알림 읽기 처리에 실패했습니다: $e')));
       }
     }
   }
@@ -118,15 +121,15 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('알림이 삭제되었습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('알림이 삭제되었습니다')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('알림 삭제에 실패했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('알림 삭제에 실패했습니다: $e')));
       }
     }
   }
@@ -147,15 +150,15 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('모든 알림을 읽음으로 처리했습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('모든 알림을 읽음으로 처리했습니다')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('일괄 읽기 처리에 실패했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('일괄 읽기 처리에 실패했습니다: $e')));
       }
     }
   }
@@ -223,10 +226,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         backgroundColor: theme.colorScheme.surface,
         actions: [
           if (unreadCount > 0)
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: const Text('모두 읽음'),
-            ),
+            TextButton(onPressed: _markAllAsRead, child: const Text('모두 읽음')),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadNotifications,
@@ -297,10 +297,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const Gap(16),
-            Text(
-              '알림이 없습니다',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('알림이 없습니다', style: Theme.of(context).textTheme.titleMedium),
             const Gap(8),
             Text(
               '새로운 알림이 도착하면 여기에 표시됩니다',
@@ -346,10 +343,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
             color: theme.colorScheme.error,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            Icons.delete,
-            color: theme.colorScheme.onError,
-          ),
+          child: Icon(Icons.delete, color: theme.colorScheme.onError),
         ),
         onDismissed: (_) => _deleteNotification(notification),
         child: ListTile(
@@ -367,7 +361,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
                 child: Text(
                   notification.title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: notification.isRead ? FontWeight.normal : FontWeight.w600,
+                    fontWeight: notification.isRead
+                        ? FontWeight.normal
+                        : FontWeight.w600,
                   ),
                 ),
               ),

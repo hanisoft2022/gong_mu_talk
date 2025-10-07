@@ -55,10 +55,7 @@ class AppShell extends StatelessWidget {
                     surfaceTintColor: Colors.transparent,
                     leading: Padding(
                       padding: const EdgeInsets.only(left: 8),
-                      child: AppLogoButton(
-                        compact: true,
-                        onTap: () {},
-                      ),
+                      child: AppLogoButton(compact: true, onTap: () {}),
                     ),
                     title: Text(
                       _titleForIndex(navigationShell.currentIndex),

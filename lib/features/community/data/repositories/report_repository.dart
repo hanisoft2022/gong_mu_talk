@@ -13,13 +13,13 @@ typedef JsonMap = Map<String, Object?>;
 ///
 /// Dependencies: FirebaseFirestore
 class ReportRepository {
-  ReportRepository({
-    FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+  ReportRepository({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
-  CollectionReference<JsonMap> get _reportsRef => _firestore.collection('reports');
+  CollectionReference<JsonMap> get _reportsRef =>
+      _firestore.collection('reports');
 
   DocumentReference<JsonMap> _userDoc(String uid) =>
       _firestore.collection('users').doc(uid);
@@ -92,10 +92,9 @@ class ReportRepository {
     required String userId,
     required String blockerUid,
   }) async {
-    await _userDoc(blockerUid)
-        .collection('blocked_users')
-        .doc(userId)
-        .set({'blockedAt': Timestamp.now()});
+    await _userDoc(blockerUid).collection('blocked_users').doc(userId).set({
+      'blockedAt': Timestamp.now(),
+    });
   }
 
   /// Unblock a user
@@ -103,10 +102,7 @@ class ReportRepository {
     required String userId,
     required String blockerUid,
   }) async {
-    await _userDoc(blockerUid)
-        .collection('blocked_users')
-        .doc(userId)
-        .delete();
+    await _userDoc(blockerUid).collection('blocked_users').doc(userId).delete();
   }
 
   /// Get blocked user IDs
@@ -120,10 +116,9 @@ class ReportRepository {
     required String userId,
     required String blockerUid,
   }) async {
-    final doc = await _userDoc(blockerUid)
-        .collection('blocked_users')
-        .doc(userId)
-        .get();
+    final doc = await _userDoc(
+      blockerUid,
+    ).collection('blocked_users').doc(userId).get();
     return doc.exists;
   }
 }
