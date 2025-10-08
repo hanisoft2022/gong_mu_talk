@@ -178,6 +178,10 @@ class MonthlyBreakdownService {
           positionAllowance: positionAllowance,
           teachingAllowanceBonuses: teachingAllowanceBonuses,
           longevityMonthly: longevityMonthly,
+          veteranAllowance: veteranAllowance,
+          familyAllowance: familyAllowance,
+          researchAllowance: researchAllowance,
+          overtimeAllowance: overtimeAllowance,
           performanceBonus: performanceBonus,
           longevityBonus: longevityBonus,
           holidayBonus: holidayBonus,
@@ -213,18 +217,22 @@ class MonthlyBreakdownService {
     // 1월/7월만 지급
     if (month != 1 && month != 7) return 0;
 
-    // 재직 년수별 지급률 (2025년 개정 기준)
+    // 재직 년수별 지급률 (공무원 수당 등에 관한 규정)
     double rate;
-    if (serviceYears < 1) {
-      rate = 0.10; // 1년 미만: 10%
-    } else if (serviceYears < 2) {
-      rate = 0.10; // 1년 이상 2년 미만: 10%
-    } else if (serviceYears < 3) {
-      rate = 0.20; // 2년 이상 3년 미만: 20%
+    if (serviceYears < 2) {
+      rate = 0.10; // 2년 미만: 10%
     } else if (serviceYears < 5) {
-      rate = 0.20; // 3년 이상 5년 미만: 20%
+      rate = 0.20; // 2~5년: 20%
+    } else if (serviceYears < 6) {
+      rate = 0.25; // 5~6년: 25%
+    } else if (serviceYears < 7) {
+      rate = 0.30; // 6~7년: 30%
+    } else if (serviceYears < 8) {
+      rate = 0.35; // 7~8년: 35%
+    } else if (serviceYears < 9) {
+      rate = 0.40; // 8~9년: 40%
     } else if (serviceYears < 10) {
-      rate = 0.40; // 5년 이상 10년 미만: 40%
+      rate = 0.45; // 9~10년: 45%
     } else {
       rate = 0.50; // 10년 이상: 50%
     }

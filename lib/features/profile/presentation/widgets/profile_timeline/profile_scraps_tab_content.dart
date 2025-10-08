@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import '../../../../community/domain/models/post.dart';
 import '../../../../community/presentation/cubit/scrap_cubit.dart';
 import '../../../../community/presentation/widgets/post_card.dart';
+import '../../../../../common/widgets/scrap_undo_snackbar.dart';
 
 /// Tab content for user's scrapped posts.
 ///
@@ -21,21 +22,14 @@ class ProfileScrapsTabContent extends StatelessWidget {
             current.lastUndoNotificationTime != null;
       },
       listener: (context, state) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: const Text('스크랩이 해제되었습니다'),
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(
-                label: '실행 취소',
-                textColor: Colors.yellow,
-                onPressed: () {
-                  context.read<ScrapCubit>().undoRemoveScrap();
-                },
-              ),
-            ),
-          );
+        // 마이페이지 스크랩 리스트에서는 항상 스크랩 해제
+        showScrapUndoSnackBar(
+          context: context,
+          wasAdded: false,
+          onUndo: () {
+            context.read<ScrapCubit>().undoRemoveScrap();
+          },
+        );
       },
       child: BlocBuilder<ScrapCubit, ScrapState>(
         builder: (context, state) {

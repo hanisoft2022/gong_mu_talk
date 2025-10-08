@@ -29,6 +29,7 @@ class CommunityFeedState extends Equatable {
     this.selectedLoungeInfo,
     this.isLoungeMenuOpen = false,
     this.lastScrapUndoNotificationTime,
+    this.lastScrapWasAdded,
   });
 
   final CommunityFeedStatus status;
@@ -48,6 +49,7 @@ class CommunityFeedState extends Equatable {
   final LoungeInfo? selectedLoungeInfo;
   final bool isLoungeMenuOpen;
   final DateTime? lastScrapUndoNotificationTime;
+  final bool? lastScrapWasAdded; // true: 스크랩 추가, false: 스크랩 해제
 
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
@@ -67,6 +69,7 @@ class CommunityFeedState extends Equatable {
     LoungeInfo? selectedLoungeInfo,
     bool? isLoungeMenuOpen,
     DateTime? lastScrapUndoNotificationTime,
+    bool? lastScrapWasAdded,
   }) {
     return CommunityFeedState(
       status: status ?? this.status,
@@ -86,6 +89,7 @@ class CommunityFeedState extends Equatable {
       selectedLoungeInfo: selectedLoungeInfo ?? this.selectedLoungeInfo,
       isLoungeMenuOpen: isLoungeMenuOpen ?? this.isLoungeMenuOpen,
       lastScrapUndoNotificationTime: lastScrapUndoNotificationTime ?? this.lastScrapUndoNotificationTime,
+      lastScrapWasAdded: lastScrapWasAdded ?? this.lastScrapWasAdded,
     );
   }
 
@@ -108,5 +112,6 @@ class CommunityFeedState extends Equatable {
     selectedLoungeInfo,
     isLoungeMenuOpen,
     lastScrapUndoNotificationTime,
+    lastScrapWasAdded,
   ];
 }

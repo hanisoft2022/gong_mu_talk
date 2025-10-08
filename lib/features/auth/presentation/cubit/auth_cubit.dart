@@ -177,7 +177,7 @@ class AuthCubit extends Cubit<AuthState> {
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, careerTrack: track, serial: serial);
 
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
 
       final String message = track == CareerTrack.none
           ? '직렬 설정이 초기화되었습니다.'
@@ -213,7 +213,7 @@ class AuthCubit extends Cubit<AuthState> {
         uid: uid,
         newNickname: trimmed,
       );
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false, lastMessage: '닉네임이 변경되었습니다.'));
     } on StateError catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
@@ -241,7 +241,7 @@ class AuthCubit extends Cubit<AuthState> {
       final String trimmed = bio.trim();
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, bio: trimmed.isEmpty ? null : trimmed);
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트했습니다.'));
     } catch (_) {
       emit(
@@ -263,7 +263,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final UserProfile profile =
           await _userProfileRepository.resetNicknameChangeLimit(uid: uid);
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(lastMessage: '닉네임 변경 제한이 초기화되었습니다.'));
     } catch (_) {
       emit(state.copyWith(lastMessage: '제한 초기화에 실패했습니다.'));
@@ -280,7 +280,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, notificationsEnabled: enabled);
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
       emit(state.copyWith(isProcessing: false));
@@ -297,7 +297,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final UserProfile profile = await _userProfileRepository
           .updateProfileFields(uid: uid, serialVisible: visible);
-      _profileManager.applyProfile(profile, emit: emit);
+      _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
       emit(state.copyWith(isProcessing: false));
@@ -491,6 +491,7 @@ class AuthCubit extends Cubit<AuthState> {
       fallbackEmail: newEmail,
       emit: emit,
       currentState: state,
+      getCurrentState: () => state,
     );
     unawaited(_notificationRepository.startListening(user.uid));
   }

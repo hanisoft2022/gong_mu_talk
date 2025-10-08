@@ -306,7 +306,7 @@ class SalaryCalculationService {
     for (final bonus in bonuses) {
       switch (bonus) {
         case TeachingAllowanceBonus.headTeacher:
-          total += AllowanceTable.headTeacherAllowance;
+          // 보직교사수당은 hasPosition으로 별도 처리되므로 여기서는 제외
           break;
         case TeachingAllowanceBonus.specialEducation:
           total += AllowanceTable.allowance2SpecialEducation;

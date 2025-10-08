@@ -5,26 +5,27 @@
 /// **Purpose**:
 /// - Provide access to privacy policy
 /// - Provide access to terms of service
-/// - Open documents in external browser
+/// - Display documents within the app
 ///
 /// **Features**:
-/// - External link icons
-/// - Opens in external browser for better reading experience
-/// - Error handling for URL launch failures
-/// - User feedback on errors
+/// - In-app pages for privacy policy and terms
+/// - No external browser required
+/// - Consistent with app navigation
+/// - GDPR and legal compliance
 ///
-/// **Links**:
-/// - Privacy Policy: https://www.hanisoft.kr/privacy
-/// - Terms of Service: https://www.hanisoft.kr/terms
+/// **Pages**:
+/// - Privacy Policy: /profile/privacy
+/// - Terms of Service: /profile/terms
 
 library;
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../../routing/app_router.dart';
 import 'settings_section.dart';
 
-/// Privacy and terms section with external links
+/// Privacy and terms section with in-app pages
 class PrivacyTermsSection extends StatelessWidget {
   const PrivacyTermsSection({super.key, required this.showMessage});
 
@@ -39,35 +40,17 @@ class PrivacyTermsSection extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.privacy_tip_outlined),
           title: const Text('개인정보 처리방침'),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () => _launchUrl(context, 'https://www.hanisoft.kr/privacy'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.pushNamed(PrivacyPolicyRoute.name),
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.description_outlined),
           title: const Text('서비스 이용약관'),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () => _launchUrl(context, 'https://www.hanisoft.kr/terms'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.pushNamed(TermsOfServiceRoute.name),
         ),
       ],
     );
-  }
-
-  /// Launches URL in external browser
-  Future<void> _launchUrl(BuildContext context, String url) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          showMessage(context, 'URL을 열 수 없습니다: $url');
-        }
-      }
-    } catch (error) {
-      if (context.mounted) {
-        showMessage(context, 'URL을 여는 중 오류가 발생했습니다: $error');
-      }
-    }
   }
 }

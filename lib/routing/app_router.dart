@@ -34,6 +34,8 @@ import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/profile/presentation/views/blocked_users_page.dart';
 import '../features/profile/presentation/views/profile_settings_page.dart';
 import '../features/profile/presentation/widgets/profile_settings/custom_license_page.dart';
+import '../features/profile/presentation/views/privacy_policy_page.dart';
+import '../features/profile/presentation/views/terms_of_service_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
@@ -135,6 +137,18 @@ GoRouter createRouter() {
         path: '${ProfileRoute.path}/licenses',
         name: LicensesRoute.name,
         builder: (context, state) => const CustomLicensePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/privacy',
+        name: PrivacyPolicyRoute.name,
+        builder: (context, state) => const PrivacyPolicyPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/terms',
+        name: TermsOfServiceRoute.name,
+        builder: (context, state) => const TermsOfServicePage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -347,6 +361,20 @@ class LicensesRoute {
 
   static const String name = 'licenses';
   static const String path = '${ProfileRoute.path}/licenses';
+}
+
+class PrivacyPolicyRoute {
+  const PrivacyPolicyRoute._();
+
+  static const String name = 'privacy-policy';
+  static const String path = '${ProfileRoute.path}/privacy';
+}
+
+class TermsOfServiceRoute {
+  const TermsOfServiceRoute._();
+
+  static const String name = 'terms-of-service';
+  static const String path = '${ProfileRoute.path}/terms';
 }
 
 class ScrapRoute {

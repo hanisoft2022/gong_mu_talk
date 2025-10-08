@@ -442,6 +442,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       posts: updatedPosts,
       scrappedPostIds: scrapped,
       lastScrapUndoNotificationTime: DateTime.now(),
+      lastScrapWasAdded: nowScrapped,
     ));
 
     // Set timer to actually toggle after 5 seconds

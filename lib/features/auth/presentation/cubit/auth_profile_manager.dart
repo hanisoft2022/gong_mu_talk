@@ -13,6 +13,7 @@ import 'auth_cubit_helpers.dart';
 import 'auth_cubit.dart';
 
 typedef StateEmitter = void Function(AuthState);
+typedef StateGetter = AuthState Function();
 
 class AuthProfileManager {
   AuthProfileManager({
@@ -24,6 +25,7 @@ class AuthProfileManager {
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
   StreamSubscription<UserProfile?>? _profileSubscription;
+  StateGetter? _getCurrentState;
 
   Future<void> dispose() async {
     await _profileSubscription?.cancel();
@@ -34,8 +36,11 @@ class AuthProfileManager {
     String? fallbackEmail,
     required StateEmitter emit,
     required AuthState currentState,
+    required StateGetter getCurrentState,
   }) {
     _profileSubscription?.cancel();
+    _getCurrentState = getCurrentState;
+
     final String fallbackNickname = AuthCubitHelpers.deriveNickname(
       fallbackEmail,
     );
@@ -46,7 +51,8 @@ class AuthProfileManager {
       if (profile == null) {
         return;
       }
-      applyProfile(profile, emit: emit);
+      // Get latest state dynamically
+      applyProfile(profile, emit: emit, currentState: _getCurrentState!());
     });
 
     unawaited(
@@ -60,11 +66,15 @@ class AuthProfileManager {
             jobTitle: currentState.jobTitle,
             yearsOfService: currentState.yearsOfService,
           )
-          .then((profile) => applyProfile(profile, emit: emit)),
+          .then((profile) => applyProfile(profile, emit: emit, currentState: _getCurrentState!())),
     );
   }
 
-  void applyProfile(UserProfile profile, {required StateEmitter emit}) {
+  void applyProfile(
+    UserProfile profile, {
+    required StateEmitter emit,
+    AuthState? currentState,
+  }) {
     final Set<CareerTrack> excludedTracks = profile.excludedSerials
         .map(AuthCubitHelpers.careerTrackFromSerial)
         .where((CareerTrack track) => track != CareerTrack.none)
@@ -77,6 +87,7 @@ class AuthProfileManager {
         email: profile.uid,
         primaryEmail: profile.uid,
         isEmailVerified: false,
+        isPasswordProvider: currentState?.isPasswordProvider ?? true,
         userProfile: profile,
         nickname: profile.nickname,
         handle: profile.handle,

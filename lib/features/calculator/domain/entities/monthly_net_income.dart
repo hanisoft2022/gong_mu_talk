@@ -11,6 +11,10 @@ class MonthlyNetIncome extends Equatable {
     this.positionAllowance = 0,
     this.teachingAllowanceBonuses = 0,
     this.longevityMonthly = 0,
+    this.veteranAllowance = 0,
+    this.familyAllowance = 0,
+    this.researchAllowance = 0,
+    this.overtimeAllowance = 0,
     required this.performanceBonus,
     required this.longevityBonus,
     required this.holidayBonus,
@@ -49,6 +53,18 @@ class MonthlyNetIncome extends Equatable {
 
   /// 정근수당 가산금 (매월)
   final int longevityMonthly;
+
+  /// 원로교사수당 (30년 이상 + 55세 이상)
+  final int veteranAllowance;
+
+  /// 가족수당
+  final int familyAllowance;
+
+  /// 연구비
+  final int researchAllowance;
+
+  /// 시간외근무수당
+  final int overtimeAllowance;
 
   /// 성과상여금 (3월만)
   final int performanceBonus;
@@ -114,6 +130,10 @@ class MonthlyNetIncome extends Equatable {
     positionAllowance,
     teachingAllowanceBonuses,
     longevityMonthly,
+    veteranAllowance,
+    familyAllowance,
+    researchAllowance,
+    overtimeAllowance,
     performanceBonus,
     longevityBonus,
     holidayBonus,
@@ -138,6 +158,10 @@ class MonthlyNetIncome extends Equatable {
     int? positionAllowance,
     int? teachingAllowanceBonuses,
     int? longevityMonthly,
+    int? veteranAllowance,
+    int? familyAllowance,
+    int? researchAllowance,
+    int? overtimeAllowance,
     int? performanceBonus,
     int? longevityBonus,
     int? holidayBonus,
@@ -162,6 +186,10 @@ class MonthlyNetIncome extends Equatable {
       teachingAllowanceBonuses:
           teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
       longevityMonthly: longevityMonthly ?? this.longevityMonthly,
+      veteranAllowance: veteranAllowance ?? this.veteranAllowance,
+      familyAllowance: familyAllowance ?? this.familyAllowance,
+      researchAllowance: researchAllowance ?? this.researchAllowance,
+      overtimeAllowance: overtimeAllowance ?? this.overtimeAllowance,
       performanceBonus: performanceBonus ?? this.performanceBonus,
       longevityBonus: longevityBonus ?? this.longevityBonus,
       holidayBonus: holidayBonus ?? this.holidayBonus,

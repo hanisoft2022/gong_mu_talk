@@ -21,6 +21,7 @@ import '../widgets/lounge_app_bar.dart';
 import '../../../../di/di.dart';
 import '../../../../core/utils/performance_optimizations.dart';
 import '../../../../common/widgets/auth_required_view.dart';
+import '../../../../common/widgets/scrap_undo_snackbar.dart';
 
 class CommunityFeedPage extends StatefulWidget {
   const CommunityFeedPage({super.key});
@@ -222,22 +223,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage>
         },
         listener: (context, state) {
           debugPrint('📢 CommunityFeedPage: Showing scrap undo SnackBar');
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: const Text('스크랩 상태가 변경되었습니다'),
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: '실행 취소',
-                  textColor: Colors.yellow,
-                  onPressed: () {
-                    debugPrint('↩️ CommunityFeedPage: Undo button pressed');
-                    context.read<CommunityFeedCubit>().undoScrapToggle();
-                  },
-                ),
-              ),
+          if (state.lastScrapWasAdded != null) {
+            showScrapUndoSnackBar(
+              context: context,
+              wasAdded: state.lastScrapWasAdded!,
+              onUndo: () {
+                debugPrint('↩️ CommunityFeedPage: Undo button pressed');
+                context.read<CommunityFeedCubit>().undoScrapToggle();
+              },
             );
+          }
         },
         child: BlocSelector<AuthCubit, AuthState, bool>(
           selector: (state) => state.hasLoungeReadAccess,

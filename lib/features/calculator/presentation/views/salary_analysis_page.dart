@@ -448,6 +448,96 @@ class _MonthlyBreakdownTab extends StatelessWidget {
 💡 정근수당(1월/7월)은 특별 지급이며, 정근수당 가산금은 매월 지급됩니다.''',
             ),
           ],
+          if (month.veteranAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '원로교사수당',
+              month.veteranAllowance,
+              detailedInfo: '''🎓 원로교사수당
+
+【지급 기준】
+• 월 50,000원
+• 교직수당 가산금 1 해당
+
+【지급 대상】
+• 재직연수 30년 이상
+• 만 55세 이상
+• 두 조건 모두 충족 시 지급
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 장기 근속 교사에 대한 예우 차원의 수당입니다.''',
+            ),
+          ],
+          if (month.familyAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '가족수당',
+              month.familyAllowance,
+              detailedInfo: '''👨‍👩‍👧‍👦 가족수당
+
+【지급 기준】
+• 배우자: 40,000원
+• 첫째 자녀: 50,000원
+• 둘째 자녀: 80,000원
+• 셋째 이상 자녀: 각 120,000원
+• 60세 이상 직계존속: 1인당 20,000원 (최대 4명)
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 가족관계증명서 제출 필요
+
+💡 자녀 수가 많을수록 가산금이 증가합니다.''',
+            ),
+          ],
+          if (month.researchAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '연구비',
+              month.researchAllowance,
+              detailedInfo: '''📖 연구비
+
+【지급 기준】
+• 5년 미만: 70,000원
+• 5년 이상: 60,000원
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 교육활동 및 연구 활동 지원
+
+💡 교육 및 연구 활동을 위한 수당입니다.''',
+            ),
+          ],
+          if (month.overtimeAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '시간외근무수당',
+              month.overtimeAllowance,
+              detailedInfo: '''🕓 시간외근무수당
+
+【지급 기준】
+• 호봉에 따라 차등 지급
+• 정액으로 매월 지급 (실제 근무시간 무관)
+
+【호봉별 지급액】
+• 1~10호봉: 30,000원
+• 11~20호봉: 40,000원
+• 21~30호봉: 50,000원
+• 31~40호봉: 60,000원
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 실제 초과근무 시간과 무관하게 정액 지급
+
+💡 공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.''',
+            ),
+          ],
           if (month.teachingAllowanceBonuses > 0) ...[
             const SizedBox(height: 4),
             _buildTappableDetailRow(
@@ -457,16 +547,19 @@ class _MonthlyBreakdownTab extends StatelessWidget {
               detailedInfo: '''💼 그 외 교직수당 가산금
 
 【포함 항목 예시】
-• 특수교사 가산금
-• 보건교사 가산금
-• 사서교사 가산금
-• 영양교사 가산금
-• 전문상담교사 가산금
+• 특수교사 가산금: 120,000원
+• 보건교사 가산금: 40,000원
+• 사서교사 가산금: 30,000원
+• 영양교사 가산금: 40,000원
+• 전문상담교사 가산금: 30,000원
+• 특성화교사 가산금: 25,000~50,000원 (호봉별)
+• 겸직수당: 50,000~100,000원
 • 기타 특수 업무 가산금
 
 【지급 방식】
 • 해당 직무 수행 시 지급
 • 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
 
 💡 특수 직무나 자격에 따라 추가로 지급되는 가산금입니다.''',
             ),

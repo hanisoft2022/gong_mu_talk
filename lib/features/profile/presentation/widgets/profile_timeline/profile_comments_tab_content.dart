@@ -185,6 +185,8 @@ class _CommentCard extends StatelessWidget {
               // Comment content
               Text(
                 comment.text,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   height: 1.5,
                 ),
@@ -194,14 +196,8 @@ class _CommentCard extends StatelessWidget {
               // Metadata row
               Row(
                 children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: 16,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const Gap(4),
                   Text(
-                    comment.likeCount.toString(),
+                    '좋아요 ${comment.likeCount}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

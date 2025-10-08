@@ -141,7 +141,7 @@ class _AppInfoSectionState extends State<AppInfoSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('개발사: HANISOFT'),
-              Text('이메일: contact@hanisoft.kr'),
+              Text('이메일: hanisoft2022@gmail.com'),
               Gap(16),
               Text('공무톡은 공무원을 위한 종합 서비스 플랫폼입니다.'),
             ],
