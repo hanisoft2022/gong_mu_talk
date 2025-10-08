@@ -132,7 +132,6 @@ class CommunityRepository {
   late final PostEnrichmentService _enrichmentService;
 
   // Legacy cache variables (TODO: migrate to services)
-  final Map<String, Set<String>> _likedPostsCache = {};
   final Map<String, Map<String, Set<String>>> _likedCommentsCache = {};
   final Map<String, List<Comment>> _topCommentsCache = {};
 
@@ -528,15 +527,6 @@ class CommunityRepository {
     // Update InteractionCacheManager (used by PostEnrichmentService)
     _cacheManager.toggleLikeInCache(uid: uid, postId: postId);
     debugPrint('💾 InteractionCacheManager Like 업데이트 - postId: $postId, liked: $liked');
-
-    // Also update legacy cache (for backward compatibility)
-    if (_likedPostsCache.containsKey(uid)) {
-      if (liked) {
-        _likedPostsCache[uid]!.add(postId);
-      } else {
-        _likedPostsCache[uid]!.remove(postId);
-      }
-    }
 
     return liked;
   }
