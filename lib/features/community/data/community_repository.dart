@@ -525,14 +525,17 @@ class CommunityRepository {
       uid: uid,
     );
 
-    // 캐시 즉시 업데이트
+    // Update InteractionCacheManager (used by PostEnrichmentService)
+    _cacheManager.toggleLikeInCache(uid: uid, postId: postId);
+    debugPrint('💾 InteractionCacheManager Like 업데이트 - postId: $postId, liked: $liked');
+
+    // Also update legacy cache (for backward compatibility)
     if (_likedPostsCache.containsKey(uid)) {
       if (liked) {
         _likedPostsCache[uid]!.add(postId);
       } else {
         _likedPostsCache[uid]!.remove(postId);
       }
-      debugPrint('💾 Like 캐시 업데이트 - postId: $postId, liked: $liked');
     }
 
     return liked;
