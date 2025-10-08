@@ -26,15 +26,24 @@ const db = getFirestore();
 const COUNTER_SHARD_COUNT = 20;
 
 const HOT_SCORE_WEIGHTS = {
-  like: 2.0,
-  comment: 3.0,
-  view: 0.1,
+  likeLogScale: 10.0, // Multiplier for log10(likes + 1)
+  comment: 3.0, // Linear weight for comments
+  viewLogScale: 0.5, // Multiplier for log10(views + 1)
   timeDecayHours: 24,
   decayFactor: 0.8,
 };
 
 /**
  * Calculate a time-decayed hot score based on post engagement.
+ *
+ * Uses logarithmic scaling for likes and views to reduce gaming/bot abuse:
+ * - First 10 likes have same weight as next 100 likes
+ * - Prioritizes early engagement (Reddit/HackerNews style)
+ * - Comments remain linear (discussion is valuable)
+ *
+ * Formula:
+ *   baseScore = log10(likes+1)*10 + comments*3 + log10(views+1)*0.5
+ *   hotScore = baseScore * (0.8 ^ (hoursAgo / 24))
  *
  * @param {number} likeCount Total likes for the post.
  * @param {number} commentCount Total comments for the post.
@@ -54,11 +63,18 @@ function calculateHotScore(
   const hoursAgo =
     (currentTime.toMillis() - createdAt.toMillis()) / (1000 * 60 * 60);
 
-  const baseScore =
-    (likeCount * HOT_SCORE_WEIGHTS.like) +
-    (commentCount * HOT_SCORE_WEIGHTS.comment) +
-    (viewCount * HOT_SCORE_WEIGHTS.view);
+  // Logarithmic scaling for likes (anti-gaming)
+  const voteScore = Math.log10(likeCount + 1) * HOT_SCORE_WEIGHTS.likeLogScale;
 
+  // Linear scaling for comments (discussion value)
+  const commentScore = commentCount * HOT_SCORE_WEIGHTS.comment;
+
+  // Logarithmic scaling for views (engagement signal)
+  const viewScore = Math.log10(viewCount + 1) * HOT_SCORE_WEIGHTS.viewLogScale;
+
+  const baseScore = voteScore + commentScore + viewScore;
+
+  // Exponential time decay
   const timeDecayFactor = Math.pow(
     HOT_SCORE_WEIGHTS.decayFactor,
     hoursAgo / HOT_SCORE_WEIGHTS.timeDecayHours

@@ -3,16 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/utils/performance_optimizations.dart';
 import '../../../../di/di.dart';
 import '../../../../routing/app_router.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../community/presentation/cubit/user_comments_cubit.dart';
 import '../../data/follow_repository.dart';
 import '../../data/user_profile_repository.dart';
 import '../../domain/user_profile.dart';
 import '../cubit/profile_timeline_cubit.dart';
 import '../widgets/profile_overview/profile_header.dart';
-import '../widgets/profile_timeline/timeline_section.dart';
+import '../widgets/profile_timeline/profile_comments_tab_content.dart';
+import '../widgets/profile_timeline/profile_posts_tab_content.dart';
 
 class MemberProfilePage extends StatefulWidget {
   const MemberProfilePage({super.key, required this.uid});
@@ -25,6 +26,7 @@ class MemberProfilePage extends StatefulWidget {
 
 class _MemberProfilePageState extends State<MemberProfilePage> {
   late final ProfileTimelineCubit _timelineCubit;
+  late final UserCommentsCubit _commentsCubit;
   late final UserProfileRepository _profileRepository;
   late final FollowRepository _followRepository;
   bool _isFollowActionPending = false;
@@ -39,97 +41,93 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
       authCubit: getIt<AuthCubit>(),
       targetUserId: widget.uid,
     )..loadInitial();
+    _commentsCubit = UserCommentsCubit(
+      getIt(),
+    )..loadInitial(widget.uid);
   }
 
   @override
   void dispose() {
     _timelineCubit.close();
+    _commentsCubit.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AuthState authState = context.watch<AuthCubit>().state;
-    return BlocProvider<ProfileTimelineCubit>.value(
-      value: _timelineCubit,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('사용자 프로필'),
-          actions: [
-            IconButton(
-              tooltip: '내 프로필',
-              icon: const Icon(Icons.person_outline),
-              onPressed: () => context.pushNamed(ProfileRoute.name),
-            ),
-          ],
-        ),
-        body: StreamBuilder<UserProfile?>(
-          stream: _profileRepository.watchProfile(widget.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final UserProfile? profile = snapshot.data;
-            if (profile == null) {
-              return const _ProfileNotFoundView();
-            }
-            final bool isSelf = authState.userId == profile.uid;
-            return RefreshIndicator(
-              onRefresh: () async {
-                await _timelineCubit.refresh();
-              },
-              child: OptimizedListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: ProfileHeader(
-                        profile: profile,
-                        isOwnProfile: isSelf,
-                        currentUserId: authState.userId,
-                        followButton: isSelf
-                            ? null
-                            : _FollowButton(
-                                targetUid: profile.uid,
-                                followerUid: authState.userId,
-                                followRepository: _followRepository,
-                                onToggle: _handleFollowToggle,
-                                isPending: _isFollowActionPending,
-                              ),
-                      ),
-                    );
-                  } else if (index == 1) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Gap(20),
-                    );
-                  } else if (index == 2) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        '작성한 글',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    );
-                  } else if (index == 3) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Gap(12),
-                    );
-                  } else if (index == 4) {
-                    return const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: TimelineSection(),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ProfileTimelineCubit>.value(value: _timelineCubit),
+        BlocProvider<UserCommentsCubit>.value(value: _commentsCubit),
+      ],
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('사용자 프로필'),
+            actions: [
+              IconButton(
+                tooltip: '내 프로필',
+                icon: const Icon(Icons.person_outline),
+                onPressed: () => context.pushNamed(ProfileRoute.name),
               ),
-            );
-          },
+            ],
+          ),
+          body: StreamBuilder<UserProfile?>(
+            stream: _profileRepository.watchProfile(widget.uid),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final UserProfile? profile = snapshot.data;
+              if (profile == null) {
+                return const _ProfileNotFoundView();
+              }
+              final bool isSelf = authState.userId == profile.uid;
+              return Column(
+                children: [
+                  // Profile Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: ProfileHeader(
+                      profile: profile,
+                      isOwnProfile: isSelf,
+                      currentUserId: authState.userId,
+                      followButton: isSelf
+                          ? null
+                          : _FollowButton(
+                              targetUid: profile.uid,
+                              followerUid: authState.userId,
+                              followRepository: _followRepository,
+                              onToggle: _handleFollowToggle,
+                              isPending: _isFollowActionPending,
+                            ),
+                    ),
+                  ),
+                  const Gap(20),
+
+                  // TabBar
+                  const TabBar(
+                    tabs: [
+                      Tab(text: '작성한 글'),
+                      Tab(text: '작성한 댓글'),
+                    ],
+                  ),
+
+                  // TabBarView
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        const ProfilePostsTabContent(),
+                        ProfileCommentsTabContent(authorUid: widget.uid),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

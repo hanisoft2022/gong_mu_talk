@@ -51,11 +51,29 @@ class MonthlyBreakdownService {
         ? AllowanceTable.headTeacherAllowance
         : 0;
 
-    // 그 외 교직수당 가산금
-    final teachingAllowanceBonuses = _salaryService.calculateTeachingAllowanceBonuses(
-      bonuses: profile.teachingAllowanceBonuses,
-      currentGrade: profile.currentGrade,
-      position: profile.position,
+    // 교직수당 가산금 (개별 항목)
+    final specialEducationAllowance = _salaryService.calculateSpecialEducationAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final vocationalEducationAllowance = _salaryService.calculateVocationalEducationAllowance(
+      profile.teachingAllowanceBonuses,
+      profile.currentGrade,
+    );
+    final healthTeacherAllowance = _salaryService.calculateHealthTeacherAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final concurrentPositionAllowance = _salaryService.calculateConcurrentPositionAllowance(
+      profile.teachingAllowanceBonuses,
+      profile.position,
+    );
+    final nutritionTeacherAllowance = _salaryService.calculateNutritionTeacherAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final librarianAllowance = _salaryService.calculateLibrarianAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final counselorAllowance = _salaryService.calculateCounselorAllowance(
+      profile.teachingAllowanceBonuses,
     );
 
     // 원로교사수당 (30년 이상 + 55세 이상)
@@ -90,7 +108,13 @@ class MonthlyBreakdownService {
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +
-          teachingAllowanceBonuses +
+          specialEducationAllowance +
+          vocationalEducationAllowance +
+          healthTeacherAllowance +
+          concurrentPositionAllowance +
+          nutritionTeacherAllowance +
+          librarianAllowance +
+          counselorAllowance +
           veteranAllowance +
           familyAllowance +
           researchAllowance +
@@ -176,12 +200,18 @@ class MonthlyBreakdownService {
           teachingAllowance: teachingAllowance,
           homeroomAllowance: homeroomAllowance,
           positionAllowance: positionAllowance,
-          teachingAllowanceBonuses: teachingAllowanceBonuses,
           longevityMonthly: longevityMonthly,
           veteranAllowance: veteranAllowance,
           familyAllowance: familyAllowance,
           researchAllowance: researchAllowance,
           overtimeAllowance: overtimeAllowance,
+          specialEducationAllowance: specialEducationAllowance,
+          vocationalEducationAllowance: vocationalEducationAllowance,
+          healthTeacherAllowance: healthTeacherAllowance,
+          concurrentPositionAllowance: concurrentPositionAllowance,
+          nutritionTeacherAllowance: nutritionTeacherAllowance,
+          librarianAllowance: librarianAllowance,
+          counselorAllowance: counselorAllowance,
           performanceBonus: performanceBonus,
           longevityBonus: longevityBonus,
           holidayBonus: holidayBonus,

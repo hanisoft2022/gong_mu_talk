@@ -24,8 +24,7 @@ class SalaryCalculationService {
     final results = <AnnualSalary>[];
     final currentYear = DateTime.now().year;
     final retirementAge = targetRetirementAge ?? profile.retirementAge;
-    final birthYear =
-        profile.employmentStartDate.year - 25; // 대략적인 출생년도 (25세 입직 가정)
+    final birthYear = profile.employmentStartDate.year - 25; // 대략적인 출생년도 (25세 입직 가정)
     final retirementYear = birthYear + retirementAge;
 
     int grade = profile.currentGrade;
@@ -49,11 +48,7 @@ class SalaryCalculationService {
 
       // 3. 총 급여 (세전)
       final grossPay =
-          basePay +
-          positionAllowance +
-          homeroomAllowance +
-          familyAllowance +
-          otherAllowances;
+          basePay + positionAllowance + homeroomAllowance + familyAllowance + otherAllowances;
 
       // 4. 세금 및 4대보험
       final incomeTax = _taxService.calculateIncomeTax(grossPay);
@@ -98,17 +93,13 @@ class SalaryCalculationService {
     final annualSalaries = calculateAnnualSalaries(profile: profile);
 
     // 1. 명목 총 소득
-    final totalIncome = annualSalaries.fold<int>(
-      0,
-      (sum, salary) => sum + salary.annualTotalPay,
-    );
+    final totalIncome = annualSalaries.fold<int>(0, (sum, salary) => sum + salary.annualTotalPay);
 
     // 2. 현재 가치 환산 (인플레이션 반영)
     int presentValue = 0;
     for (int i = 0; i < annualSalaries.length; i++) {
       final discountFactor = pow(1 + inflationRate, i);
-      presentValue += (annualSalaries[i].annualTotalPay / discountFactor)
-          .round();
+      presentValue += (annualSalaries[i].annualTotalPay / discountFactor).round();
     }
 
     // 3. 평균 연봉
@@ -143,11 +134,9 @@ class SalaryCalculationService {
       case Position.teacher:
         return AllowanceTable.teachingAllowance;
       case Position.vicePrincipal:
-        return AllowanceTable.teachingAllowance +
-            AllowanceTable.vicePrincipalManagementAllowance;
+        return AllowanceTable.teachingAllowance + AllowanceTable.vicePrincipalManagementAllowance;
       case Position.principal:
-        return AllowanceTable.teachingAllowance +
-            AllowanceTable.principalManagementAllowance;
+        return AllowanceTable.teachingAllowance + AllowanceTable.principalManagementAllowance;
     }
   }
 
@@ -222,10 +211,7 @@ class SalaryCalculationService {
   /// [month] 현재 월 (3월에만 지급)
   ///
   /// Returns: 성과상여금 (3월만 지급, 그 외 0)
-  int calculatePerformanceBonus({
-    required PerformanceGrade grade,
-    required int month,
-  }) {
+  int calculatePerformanceBonus({required PerformanceGrade grade, required int month}) {
     // 3월만 지급
     if (month != 3) return 0;
 
@@ -266,10 +252,7 @@ class SalaryCalculationService {
   /// [numberOfChildren] 자녀 수
   ///
   /// Returns: 가족수당 (배우자 4만 + 첫째 5만 + 둘째 8만 + 셋째이상 각12만)
-  int calculateFamilyAllowance({
-    required bool hasSpouse,
-    required int numberOfChildren,
-  }) {
+  int calculateFamilyAllowance({required bool hasSpouse, required int numberOfChildren}) {
     int total = 0;
 
     // 배우자: 4만원
@@ -296,64 +279,69 @@ class SalaryCalculationService {
   /// [position] 직급 (겸직수당 계산용)
   ///
   /// Returns: 총 교직수당 가산금
-  int calculateTeachingAllowanceBonuses({
-    required Set<TeachingAllowanceBonus> bonuses,
-    required int currentGrade,
-    required Position position,
-  }) {
-    int total = 0;
+  /// 특수교사 가산금 계산
+  int calculateSpecialEducationAllowance(Set<TeachingAllowanceBonus> bonuses) {
+    return bonuses.contains(TeachingAllowanceBonus.specialEducation)
+        ? AllowanceTable.allowance2SpecialEducation
+        : 0;
+  }
 
-    for (final bonus in bonuses) {
-      switch (bonus) {
-        case TeachingAllowanceBonus.headTeacher:
-          // 보직교사수당은 hasPosition으로 별도 처리되므로 여기서는 제외
-          break;
-        case TeachingAllowanceBonus.specialEducation:
-          total += AllowanceTable.allowance2SpecialEducation;
-          break;
-        case TeachingAllowanceBonus.vocationalEducation:
-          // 특성화교사 수당은 호봉별 차등
-          if (currentGrade <= 4) {
-            total += AllowanceTable.allowance5VocationalMin;
-          } else if (currentGrade >= 31) {
-            total += AllowanceTable.allowance5VocationalMax;
-          } else {
-            // 5~30호봉: 선형 보간
-            final ratio = (currentGrade - 4) / (31 - 4);
-            total += (AllowanceTable.allowance5VocationalMin +
-                    (AllowanceTable.allowance5VocationalMax -
-                            AllowanceTable.allowance5VocationalMin) *
-                        ratio)
-                .round();
-          }
-          break;
-        case TeachingAllowanceBonus.healthTeacher:
-          total += AllowanceTable.allowance6HealthTeacher;
-          break;
-        case TeachingAllowanceBonus.concurrentPosition:
-          // 겸직수당은 직급에 따라 다름
-          if (position == Position.principal) {
-            total += AllowanceTable.allowance7ConcurrentPrincipal;
-          } else if (position == Position.vicePrincipal) {
-            total += AllowanceTable.allowance7ConcurrentVice;
-          } else {
-            // 교사는 겸직수당 없음
-            total += 0;
-          }
-          break;
-        case TeachingAllowanceBonus.nutritionTeacher:
-          total += AllowanceTable.allowance8Nutrition;
-          break;
-        case TeachingAllowanceBonus.librarian:
-          total += AllowanceTable.allowance9Librarian;
-          break;
-        case TeachingAllowanceBonus.counselor:
-          total += AllowanceTable.allowance10Counselor;
-          break;
-      }
+  /// 특성화교사 가산금 계산
+  int calculateVocationalEducationAllowance(Set<TeachingAllowanceBonus> bonuses, int currentGrade) {
+    if (!bonuses.contains(TeachingAllowanceBonus.vocationalEducation)) return 0;
+
+    if (currentGrade <= 4) {
+      return AllowanceTable.allowance5VocationalMin;
+    } else if (currentGrade >= 31) {
+      return AllowanceTable.allowance5VocationalMax;
+    } else {
+      // 5~30호봉: 선형 보간
+      final ratio = (currentGrade - 4) / (31 - 4);
+      return (AllowanceTable.allowance5VocationalMin +
+              (AllowanceTable.allowance5VocationalMax - AllowanceTable.allowance5VocationalMin) *
+                  ratio)
+          .round();
     }
+  }
 
-    return total;
+  /// 보건교사 가산금 계산
+  int calculateHealthTeacherAllowance(Set<TeachingAllowanceBonus> bonuses) {
+    return bonuses.contains(TeachingAllowanceBonus.healthTeacher)
+        ? AllowanceTable.allowance6HealthTeacher
+        : 0;
+  }
+
+  /// 겸직수당 계산
+  int calculateConcurrentPositionAllowance(Set<TeachingAllowanceBonus> bonuses, Position position) {
+    if (!bonuses.contains(TeachingAllowanceBonus.concurrentPosition)) return 0;
+
+    if (position == Position.principal) {
+      return AllowanceTable.allowance7ConcurrentPrincipal;
+    } else if (position == Position.vicePrincipal) {
+      return AllowanceTable.allowance7ConcurrentVice;
+    }
+    return 0;
+  }
+
+  /// 영양교사 가산금 계산
+  int calculateNutritionTeacherAllowance(Set<TeachingAllowanceBonus> bonuses) {
+    return bonuses.contains(TeachingAllowanceBonus.nutritionTeacher)
+        ? AllowanceTable.allowance8Nutrition
+        : 0;
+  }
+
+  /// 사서교사 가산금 계산
+  int calculateLibrarianAllowance(Set<TeachingAllowanceBonus> bonuses) {
+    return bonuses.contains(TeachingAllowanceBonus.librarian)
+        ? AllowanceTable.allowance9Librarian
+        : 0;
+  }
+
+  /// 전문상담교사 가산금 계산
+  int calculateCounselorAllowance(Set<TeachingAllowanceBonus> bonuses) {
+    return bonuses.contains(TeachingAllowanceBonus.counselor)
+        ? AllowanceTable.allowance10Counselor
+        : 0;
   }
 
   /// 월별 급여명세서 계산 (12개월)
@@ -393,11 +381,29 @@ class SalaryCalculationService {
     // 4. 보직교사수당 (15만원, 보직교사만)
     final positionAllowance = hasPosition ? 150000 : 0;
 
-    // 4-1. 그 외 교직수당 가산금
-    final teachingAllowanceBonuses = calculateTeachingAllowanceBonuses(
-      bonuses: profile.teachingAllowanceBonuses,
-      currentGrade: profile.currentGrade,
-      position: profile.position,
+    // 4-1. 개별 교직수당 가산금
+    final specialEducationAllowance = calculateSpecialEducationAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final vocationalEducationAllowance = calculateVocationalEducationAllowance(
+      profile.teachingAllowanceBonuses,
+      profile.currentGrade,
+    );
+    final healthTeacherAllowance = calculateHealthTeacherAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final concurrentPositionAllowance = calculateConcurrentPositionAllowance(
+      profile.teachingAllowanceBonuses,
+      profile.position,
+    );
+    final nutritionTeacherAllowance = calculateNutritionTeacherAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final librarianAllowance = calculateLibrarianAllowance(
+      profile.teachingAllowanceBonuses,
+    );
+    final counselorAllowance = calculateCounselorAllowance(
+      profile.teachingAllowanceBonuses,
     );
 
     // 5. 원로교사수당 (30년 이상 + 55세 이상)
@@ -435,7 +441,13 @@ class SalaryCalculationService {
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +
-          teachingAllowanceBonuses +
+          specialEducationAllowance +
+          vocationalEducationAllowance +
+          healthTeacherAllowance +
+          concurrentPositionAllowance +
+          nutritionTeacherAllowance +
+          librarianAllowance +
+          counselorAllowance +
           veteranAllowance +
           familyAllowance +
           researchAllowance +
@@ -453,6 +465,16 @@ class SalaryCalculationService {
       // 총 지급액
       final grossSalary = monthlySalary + longevityBonus;
 
+      // 개별 교직수당 가산금 합계
+      final totalTeachingAllowanceBonuses =
+          specialEducationAllowance +
+          vocationalEducationAllowance +
+          healthTeacherAllowance +
+          concurrentPositionAllowance +
+          nutritionTeacherAllowance +
+          librarianAllowance +
+          counselorAllowance;
+
       monthlyDetails.add(
         MonthlySalaryDetail(
           month: month,
@@ -460,7 +482,7 @@ class SalaryCalculationService {
           teachingAllowance: teachingAllowance,
           homeroomAllowance: homeroomAllowance,
           positionAllowance: positionAllowance,
-          teachingAllowanceBonuses: teachingAllowanceBonuses,
+          teachingAllowanceBonuses: totalTeachingAllowanceBonuses,
           veteranAllowance: veteranAllowance,
           familyAllowance: familyAllowance,
           researchAllowance: researchAllowance,

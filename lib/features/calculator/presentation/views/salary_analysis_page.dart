@@ -538,30 +538,181 @@ class _MonthlyBreakdownTab extends StatelessWidget {
 💡 공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.''',
             ),
           ],
-          if (month.teachingAllowanceBonuses > 0) ...[
+          if (month.specialEducationAllowance > 0) ...[
             const SizedBox(height: 4),
             _buildTappableDetailRow(
               context,
-              '그 외 교직수당 가산금',
-              month.teachingAllowanceBonuses,
-              detailedInfo: '''💼 그 외 교직수당 가산금
+              '특수교사 가산금',
+              month.specialEducationAllowance,
+              detailedInfo: '''🎓 특수교사 가산금
 
-【포함 항목 예시】
-• 특수교사 가산금: 120,000원
-• 보건교사 가산금: 40,000원
-• 사서교사 가산금: 30,000원
-• 영양교사 가산금: 40,000원
-• 전문상담교사 가산금: 30,000원
-• 특성화교사 가산금: 25,000~50,000원 (호봉별)
-• 겸직수당: 50,000~100,000원
-• 기타 특수 업무 가산금
+【지급 기준】
+• 월 120,000원
+• 교직수당 가산금 2 해당
+
+【지급 대상】
+• 특수학교 교사
+• 일반학교 특수학급 담당 교사
+• 특수교육 자격증 소지자
 
 【지급 방식】
-• 해당 직무 수행 시 지급
 • 매월 급여와 함께 지급
 • 담임수당, 보직교사수당과 중복 수령 가능
 
-💡 특수 직무나 자격에 따라 추가로 지급되는 가산금입니다.''',
+💡 특수교육 대상 학생을 위한 전문성에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.vocationalEducationAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '특성화교사 가산금',
+              month.vocationalEducationAllowance,
+              detailedInfo: '''🏫 특성화교사 가산금
+
+【지급 기준】
+• 교직수당 가산금 5 해당
+• 호봉에 따라 차등 지급
+
+【호봉별 지급액】
+• 1~4호봉: 25,000원
+• 5~30호봉: 호봉별 선형 증가
+• 31~40호봉: 50,000원
+
+【지급 대상】
+• 특성화고등학교 교사
+• 마이스터고 교사
+• 실업계 고교 실습 지도 교사
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 직업교육을 담당하는 교사에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.healthTeacherAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '보건교사 가산금',
+              month.healthTeacherAllowance,
+              detailedInfo: '''⚕️ 보건교사 가산금
+
+【지급 기준】
+• 월 40,000원
+• 교직수당 가산금 8 해당
+
+【지급 대상】
+• 학교 보건교사
+• 보건실 전담 교사
+• 간호사 자격 소지 교사
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 학생 건강관리 업무를 담당하는 교사에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.concurrentPositionAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '겸직수당',
+              month.concurrentPositionAllowance,
+              detailedInfo: '''💼 겸직수당
+
+【지급 기준】
+• 교직수당 가산금 6 해당
+• 겸직 업무에 따라 차등 지급
+
+【지급액】
+• 일반 겸직: 50,000원
+• 중요 겸직: 100,000원
+
+【지급 대상】
+• 타 학교 겸임교사
+• 교육청 겸직 발령 교사
+• 대학 겸임교수 등
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 본직 외 추가 업무를 겸하는 교사에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.nutritionTeacherAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '영양교사 가산금',
+              month.nutritionTeacherAllowance,
+              detailedInfo: '''🍽️ 영양교사 가산금
+
+【지급 기준】
+• 월 40,000원
+• 교직수당 가산금 8 해당
+
+【지급 대상】
+• 학교 영양교사
+• 급식 전담 교사
+• 영양사 자격 소지 교사
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 학생 급식 및 영양관리를 담당하는 교사에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.librarianAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '사서교사 가산금',
+              month.librarianAllowance,
+              detailedInfo: '''📚 사서교사 가산금
+
+【지급 기준】
+• 월 30,000원
+• 교직수당 가산금 9 해당
+
+【지급 대상】
+• 학교 사서교사
+• 도서관 전담 교사
+• 사서 자격증 소지 교사
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 학교 도서관 운영 및 독서교육을 담당하는 교사에 대한 수당입니다.''',
+            ),
+          ],
+          if (month.counselorAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '전문상담교사 가산금',
+              month.counselorAllowance,
+              detailedInfo: '''💬 전문상담교사 가산금
+
+【지급 기준】
+• 월 30,000원
+• 교직수당 가산금 9 해당
+
+【지급 대상】
+• 전문상담교사
+• 상담실 전담 교사
+• 상담 자격증 소지 교사
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임수당, 보직교사수당과 중복 수령 가능
+
+💡 학생 상담 및 진로지도를 전담하는 교사에 대한 수당입니다.''',
             ),
           ],
         ],

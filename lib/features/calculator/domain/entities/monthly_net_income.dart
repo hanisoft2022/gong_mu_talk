@@ -9,12 +9,18 @@ class MonthlyNetIncome extends Equatable {
     this.teachingAllowance = 0,
     this.homeroomAllowance = 0,
     this.positionAllowance = 0,
-    this.teachingAllowanceBonuses = 0,
     this.longevityMonthly = 0,
     this.veteranAllowance = 0,
     this.familyAllowance = 0,
     this.researchAllowance = 0,
     this.overtimeAllowance = 0,
+    this.specialEducationAllowance = 0,
+    this.vocationalEducationAllowance = 0,
+    this.healthTeacherAllowance = 0,
+    this.concurrentPositionAllowance = 0,
+    this.nutritionTeacherAllowance = 0,
+    this.librarianAllowance = 0,
+    this.counselorAllowance = 0,
     required this.performanceBonus,
     required this.longevityBonus,
     required this.holidayBonus,
@@ -48,9 +54,6 @@ class MonthlyNetIncome extends Equatable {
   /// 보직교사 수당 (가산금 3)
   final int positionAllowance;
 
-  /// 그 외 교직수당 가산금
-  final int teachingAllowanceBonuses;
-
   /// 정근수당 가산금 (매월)
   final int longevityMonthly;
 
@@ -65,6 +68,27 @@ class MonthlyNetIncome extends Equatable {
 
   /// 시간외근무수당
   final int overtimeAllowance;
+
+  /// 특수교사 가산금
+  final int specialEducationAllowance;
+
+  /// 특성화교사 가산금
+  final int vocationalEducationAllowance;
+
+  /// 보건교사 가산금
+  final int healthTeacherAllowance;
+
+  /// 겸직수당
+  final int concurrentPositionAllowance;
+
+  /// 영양교사 가산금
+  final int nutritionTeacherAllowance;
+
+  /// 사서교사 가산금
+  final int librarianAllowance;
+
+  /// 전문상담교사 가산금
+  final int counselorAllowance;
 
   /// 성과상여금 (3월만)
   final int performanceBonus;
@@ -128,12 +152,18 @@ class MonthlyNetIncome extends Equatable {
     teachingAllowance,
     homeroomAllowance,
     positionAllowance,
-    teachingAllowanceBonuses,
     longevityMonthly,
     veteranAllowance,
     familyAllowance,
     researchAllowance,
     overtimeAllowance,
+    specialEducationAllowance,
+    vocationalEducationAllowance,
+    healthTeacherAllowance,
+    concurrentPositionAllowance,
+    nutritionTeacherAllowance,
+    librarianAllowance,
+    counselorAllowance,
     performanceBonus,
     longevityBonus,
     holidayBonus,
@@ -156,12 +186,18 @@ class MonthlyNetIncome extends Equatable {
     int? teachingAllowance,
     int? homeroomAllowance,
     int? positionAllowance,
-    int? teachingAllowanceBonuses,
     int? longevityMonthly,
     int? veteranAllowance,
     int? familyAllowance,
     int? researchAllowance,
     int? overtimeAllowance,
+    int? specialEducationAllowance,
+    int? vocationalEducationAllowance,
+    int? healthTeacherAllowance,
+    int? concurrentPositionAllowance,
+    int? nutritionTeacherAllowance,
+    int? librarianAllowance,
+    int? counselorAllowance,
     int? performanceBonus,
     int? longevityBonus,
     int? holidayBonus,
@@ -183,13 +219,18 @@ class MonthlyNetIncome extends Equatable {
       teachingAllowance: teachingAllowance ?? this.teachingAllowance,
       homeroomAllowance: homeroomAllowance ?? this.homeroomAllowance,
       positionAllowance: positionAllowance ?? this.positionAllowance,
-      teachingAllowanceBonuses:
-          teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
       longevityMonthly: longevityMonthly ?? this.longevityMonthly,
       veteranAllowance: veteranAllowance ?? this.veteranAllowance,
       familyAllowance: familyAllowance ?? this.familyAllowance,
       researchAllowance: researchAllowance ?? this.researchAllowance,
       overtimeAllowance: overtimeAllowance ?? this.overtimeAllowance,
+      specialEducationAllowance: specialEducationAllowance ?? this.specialEducationAllowance,
+      vocationalEducationAllowance: vocationalEducationAllowance ?? this.vocationalEducationAllowance,
+      healthTeacherAllowance: healthTeacherAllowance ?? this.healthTeacherAllowance,
+      concurrentPositionAllowance: concurrentPositionAllowance ?? this.concurrentPositionAllowance,
+      nutritionTeacherAllowance: nutritionTeacherAllowance ?? this.nutritionTeacherAllowance,
+      librarianAllowance: librarianAllowance ?? this.librarianAllowance,
+      counselorAllowance: counselorAllowance ?? this.counselorAllowance,
       performanceBonus: performanceBonus ?? this.performanceBonus,
       longevityBonus: longevityBonus ?? this.longevityBonus,
       holidayBonus: holidayBonus ?? this.holidayBonus,
