@@ -36,22 +36,11 @@ class SearchResultsHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                "'${searchState.query}' 검색 결과",
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: onClose,
-              icon: const Icon(Icons.close),
-              label: const Text('검색 닫기'),
-            ),
-          ],
+        Text(
+          "'${searchState.query}' 검색 결과",
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const Gap(4),
         Container(
@@ -315,7 +304,7 @@ class SearchResultsSection extends StatelessWidget {
         widgets.addAll(
           searchState.postResults.map(
             (Post post) => Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: MemoizedWidget(
                 key: ValueKey('search_post_${post.id}'),
                 dependencies: [
@@ -343,7 +332,6 @@ class SearchResultsSection extends StatelessWidget {
           ),
         );
       }
-      widgets.add(const Gap(12));
     }
 
     if (showComments) {
@@ -367,7 +355,7 @@ class SearchResultsSection extends StatelessWidget {
         widgets.addAll(
           searchState.commentResults.map(
             (CommentSearchResult result) => Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: CommentSearchResultCard(result: result),
             ),
           ),

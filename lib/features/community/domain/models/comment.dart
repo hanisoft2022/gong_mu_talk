@@ -77,6 +77,8 @@ class Comment extends Equatable {
     required Map<String, Object?> data,
     bool isLiked = false,
   }) {
+    final imageUrls = (data['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [];
+
     return Comment(
       id: id,
       postId: postId,
@@ -91,8 +93,7 @@ class Comment extends Equatable {
       parentCommentId: data['parentCommentId'] as String?,
       deleted: data['deleted'] as bool? ?? false,
       isLiked: isLiked,
-
-      imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
+      imageUrls: imageUrls,
     );
   }
 
@@ -103,6 +104,7 @@ class Comment extends Equatable {
     bool? isLiked,
     CareerTrack? authorTrack,
     bool? authorSerialVisible,
+    List<String>? imageUrls,
   }) {
     return Comment(
       id: id,
@@ -118,6 +120,7 @@ class Comment extends Equatable {
       parentCommentId: parentCommentId,
       deleted: deleted ?? this.deleted,
       isLiked: isLiked ?? this.isLiked,
+      imageUrls: imageUrls ?? this.imageUrls,
     );
   }
 
@@ -152,6 +155,7 @@ class Comment extends Equatable {
     parentCommentId,
     deleted,
     isLiked,
+    imageUrls,
   ];
 
   static CareerTrack _parseTrack(Object? raw) {

@@ -158,6 +158,7 @@ class CommentRepository {
       likeCount: 0,
       createdAt: now,
       parentCommentId: parentCommentId,
+      imageUrls: imageUrls ?? [],
     );
   }
 

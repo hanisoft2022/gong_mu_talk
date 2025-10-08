@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -191,6 +192,43 @@ class _CommentCard extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
+
+              // Comment image preview
+              if (comment.imageUrls.isNotEmpty) ...[
+                const Gap(12),
+                GestureDetector(
+                  onTap: () => _showCommentImageViewer(
+                    context,
+                    comment.imageUrls.first,
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: comment.imageUrls.first,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        maxWidthDiskCache: 600,
+                        maxHeightDiskCache: 400,
+                        placeholder: (context, url) => Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const Gap(16),
 
               // Metadata row
@@ -244,5 +282,66 @@ class _CommentCard extends StatelessWidget {
     } else {
       return '방금 전';
     }
+  }
+}
+
+/// Show full-screen comment image viewer
+void _showCommentImageViewer(BuildContext context, String imageUrl) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (context) => _CommentImageViewerPage(imageUrl: imageUrl),
+    ),
+  );
+}
+
+/// Full-screen image viewer for comment images
+class _CommentImageViewerPage extends StatelessWidget {
+  const _CommentImageViewerPage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Image with zoom capability
+          Center(
+            child: InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Close button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

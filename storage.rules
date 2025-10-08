@@ -53,7 +53,9 @@ service firebase.storage {
 
     // Comment images (댓글 이미지)
     // Note: Max 1 image per comment (enforced at app level)
-    match /comment_images/{userId}/{commentId}/{fileName} {
+    // Path: comment_images/{userId}/{postId or commentId}/{fileName}
+    // postId is used temporarily during upload, then commentId after creation
+    match /comment_images/{userId}/{allPaths=**} {
       allow write: if isOwner(userId)
                    && isValidSize()
                    && isImageFile();

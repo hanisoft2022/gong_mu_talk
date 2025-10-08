@@ -437,13 +437,16 @@ class _CommunityFeedPageState extends State<CommunityFeedPage>
         ),
       ),
       const Gap(12),
-      BlocBuilder<SearchCubit, SearchState>(
-        builder: (context, searchState) {
+      BlocSelector<SearchCubit, SearchState, ({SearchScope scope, bool isLoading, String query})>(
+        selector: (state) => (scope: state.scope, isLoading: state.isLoading, query: state.query),
+        builder: (context, searchData) {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SearchAndSortRow(
               feedState: feedState,
-              searchState: searchState,
+              searchScope: searchData.scope,
+              searchIsLoading: searchData.isLoading,
+              searchQuery: searchData.query,
               isSearchExpanded: _isSearchExpanded,
               searchController: _searchController,
               searchFocusNode: _searchFocusNode,

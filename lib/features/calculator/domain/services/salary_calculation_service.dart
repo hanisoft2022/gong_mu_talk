@@ -4,6 +4,7 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.d
 import 'package:gong_mu_talk/features/calculator/domain/entities/annual_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_detail.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/performance_bonus_projection.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
@@ -27,6 +28,9 @@ class SalaryCalculationService {
     final birthYear = profile.employmentStartDate.year - 25; // 대략적인 출생년도 (25세 입직 가정)
     final retirementYear = birthYear + retirementAge;
 
+    // 성과상여금 예측 계산기
+    final performanceBonusProjection = PerformanceBonusProjection();
+
     int grade = profile.currentGrade;
 
     for (int year = currentYear; year <= retirementYear; year++) {
@@ -46,21 +50,27 @@ class SalaryCalculationService {
           profile.allowances.other1 +
           profile.allowances.other2;
 
-      // 3. 총 급여 (세전)
+      // 3. 성과상여금 계산 (미래 예측 포함)
+      final performanceBonus = performanceBonusProjection.calculateFutureBonus(
+        targetYear: year,
+      );
+
+      // 4. 총 급여 (세전)
       final grossPay =
           basePay + positionAllowance + homeroomAllowance + familyAllowance + otherAllowances;
 
-      // 4. 세금 및 4대보험
+      // 5. 세금 및 4대보험
       final incomeTax = _taxService.calculateIncomeTax(grossPay);
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
       final insurance = _taxService.calculateTotalInsurance(grossPay);
       final totalDeductions = incomeTax + localTax + insurance;
 
-      // 5. 실수령액
+      // 6. 실수령액 (월급)
       final netPay = grossPay - totalDeductions;
 
-      // 6. 연간 총 급여 (월급 * 12 + 보너스 등)
-      final annualTotalPay = netPay * 13; // 13개월 기준 (보너스 포함)
+      // 7. 연간 총 급여 (월급 * 12 + 성과상여금)
+      // 성과상여금은 3월에 지급되므로 연간 1회만 포함
+      final annualTotalPay = (netPay * 12) + performanceBonus;
 
       results.add(
         AnnualSalary(
@@ -71,6 +81,7 @@ class SalaryCalculationService {
           homeroomAllowance: homeroomAllowance,
           familyAllowance: familyAllowance,
           otherAllowances: otherAllowances,
+          performanceBonus: performanceBonus,
           incomeTax: incomeTax + localTax,
           insurance: insurance,
           netPay: netPay,

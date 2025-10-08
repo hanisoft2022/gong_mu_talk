@@ -9,6 +9,7 @@
 
 library;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -60,6 +61,40 @@ class CommentTile extends StatelessWidget {
             _buildHeader(context, theme, displayName, timestamp),
             const Gap(8),
             Text(comment.text, style: theme.textTheme.bodyMedium),
+
+            // Comment images
+            if (comment.imageUrls.isNotEmpty) ...[
+              const Gap(8),
+              GestureDetector(
+                onTap: () => _showCommentImageViewer(
+                  context,
+                  comment.imageUrls.first,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: comment.imageUrls.first,
+                    fit: BoxFit.cover,
+                    maxWidthDiskCache: 800,
+                    maxHeightDiskCache: 800,
+                    placeholder: (context, url) => Container(
+                      height: 150,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 150,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             const Gap(12),
             _buildActionButtons(theme),
           ],
@@ -70,12 +105,7 @@ class CommentTile extends StatelessWidget {
 
   // ==================== Header ====================
 
-  Widget _buildHeader(
-    BuildContext context,
-    ThemeData theme,
-    String displayName,
-    String timestamp,
-  ) {
+  Widget _buildHeader(BuildContext context, ThemeData theme, String displayName, String timestamp) {
     return InkWell(
       onTap: () => _openProfile(context, comment.authorUid),
       borderRadius: BorderRadius.circular(12),
@@ -93,9 +123,7 @@ class CommentTile extends StatelessWidget {
           const Gap(8),
           Text(
             timestamp,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -116,15 +144,10 @@ class CommentTile extends StatelessWidget {
             child: Icon(
               comment.isLiked ? Icons.favorite : Icons.favorite_border,
               size: 16,
-              color: comment.isLiked
-                  ? Colors.pink[400]
-                  : theme.colorScheme.onSurfaceVariant,
+              color: comment.isLiked ? Colors.pink[400] : theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          label: Text(
-            '${comment.likeCount}',
-            style: theme.textTheme.labelSmall,
-          ),
+          label: Text('${comment.likeCount}', style: theme.textTheme.labelSmall),
           style: TextButton.styleFrom(
             minimumSize: Size.zero,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -167,9 +190,67 @@ class CommentTile extends StatelessWidget {
     if (uid.isEmpty || uid == 'dummy_user') {
       return;
     }
-    context.pushNamed(
-      MemberProfileRoute.name,
-      pathParameters: <String, String>{'uid': uid},
+    context.pushNamed(MemberProfileRoute.name, pathParameters: <String, String>{'uid': uid});
+  }
+}
+
+/// Show full-screen comment image viewer
+void _showCommentImageViewer(BuildContext context, String imageUrl) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (context) => _CommentImageViewerPage(imageUrl: imageUrl),
+    ),
+  );
+}
+
+/// Full-screen image viewer for comment images
+class _CommentImageViewerPage extends StatelessWidget {
+  const _CommentImageViewerPage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Image with zoom capability
+          Center(
+            child: InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Close button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -32,6 +32,10 @@ class LifetimeEarningsPage extends StatelessWidget {
           children: [
             // 요약 카드
             _buildSummaryCard(theme),
+            const SizedBox(height: 16),
+
+            // 성과상여금 안내
+            _buildPerformanceBonusNotice(theme),
             const SizedBox(height: 24),
 
             // 누적 소득 차트
@@ -108,6 +112,83 @@ class LifetimeEarningsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPerformanceBonusNotice(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '📌 성과상여금 예측 안내',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '• 평가 등급: A등급 고정 (중위 50% 배정으로 확률상 가장 높음)\n'
+            '• 차등지급률: 50% 고정 (2025년 정부 정책 기준)\n'
+            '• 물가상승률: 연 2.3% 적용 (최근 10년 평균)\n'
+            '• 지급 시기: 매년 3월',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.shade800,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                  color: Colors.amber.shade700,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '본 예측은 현재 정책 기준으로 산정된 참고값이며, 실제 지급액은 개인 평가 결과, 학교별 차등지급률, 정부 정책 변경에 따라 달라질 수 있습니다.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade800,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '※ 성과상여금은 공무원연금 기준소득월액 산정 시 개인 금액이 차감되고 직종별 평균액이 가산됩니다.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.shade600,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }

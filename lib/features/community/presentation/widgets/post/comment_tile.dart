@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -155,6 +156,41 @@ class _CommentTileState extends State<CommentTile>
                 ),
               ),
 
+              // Comment images
+              if (!isDeleted && widget.comment.imageUrls.isNotEmpty) ...[
+                const Gap(8),
+                GestureDetector(
+                  onTap: () => _showCommentImageViewer(
+                    context,
+                    widget.comment.imageUrls.first,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: widget.comment.imageUrls.first,
+                      fit: BoxFit.cover,
+                      maxWidthDiskCache: 800,
+                      maxHeightDiskCache: 800,
+                      placeholder: (context, url) => Container(
+                        height: 150,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 150,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
               // Add spacing after deleted comment
               if (isDeleted) const Gap(16),
 
@@ -284,5 +320,66 @@ class _CommentTileState extends State<CommentTile>
       return '${difference.inHours}시간 전';
     }
     return '${createdAt.month}월 ${createdAt.day}일';
+  }
+}
+
+/// Show full-screen comment image viewer
+void _showCommentImageViewer(BuildContext context, String imageUrl) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (context) => _CommentImageViewerPage(imageUrl: imageUrl),
+    ),
+  );
+}
+
+/// Full-screen image viewer for comment images
+class _CommentImageViewerPage extends StatelessWidget {
+  const _CommentImageViewerPage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Image with zoom capability
+          Center(
+            child: InteractiveViewer(
+              minScale: 1.0,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Close button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

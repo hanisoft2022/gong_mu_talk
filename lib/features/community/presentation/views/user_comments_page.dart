@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -18,12 +19,27 @@ class UserCommentsPage extends StatefulWidget {
 
 class _UserCommentsPageState extends State<UserCommentsPage> {
   late final ScrollController _scrollController;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
+    _loadComments();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when navigating back to this page
+    if (_hasLoadedOnce && ModalRoute.of(context)?.isCurrent == true) {
+      context.read<UserCommentsCubit>().refresh(widget.authorUid);
+    }
+  }
+
+  void _loadComments() {
     context.read<UserCommentsCubit>().loadInitial(widget.authorUid);
+    _hasLoadedOnce = true;
   }
 
   @override
@@ -131,8 +147,8 @@ class _CommentCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          // Navigate to post detail
-          context.push('/community/post/${commentWithPost.postId}');
+          // Navigate to post detail with commentId to scroll to the comment
+          context.push('/community/posts/${commentWithPost.postId}?commentId=${comment.id}');
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -191,6 +207,37 @@ class _CommentCard extends StatelessWidget {
 
               // Comment content
               Text(comment.text, style: theme.textTheme.bodyMedium),
+
+              // Comment image preview
+              if (comment.imageUrls.isNotEmpty) ...[
+                const Gap(8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: comment.imageUrls.first,
+                    fit: BoxFit.cover,
+                    height: 120,
+                    width: double.infinity,
+                    maxWidthDiskCache: 400,
+                    maxHeightDiskCache: 400,
+                    placeholder: (context, url) => Container(
+                      height: 120,
+                      color: colorScheme.surfaceContainerHighest,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 120,
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const Gap(12),
 
               // Comment metadata

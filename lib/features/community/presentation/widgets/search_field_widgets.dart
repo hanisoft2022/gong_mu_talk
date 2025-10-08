@@ -93,7 +93,9 @@ class ExpandedSearchField extends StatelessWidget {
   const ExpandedSearchField({
     required this.searchController,
     required this.searchFocusNode,
-    required this.searchState,
+    required this.scope,
+    required this.isLoading,
+    required this.query,
     required this.onCollapse,
     required this.onSubmitted,
     required this.onChanged,
@@ -104,7 +106,9 @@ class ExpandedSearchField extends StatelessWidget {
 
   final TextEditingController searchController;
   final FocusNode searchFocusNode;
-  final SearchState searchState;
+  final SearchScope scope;
+  final bool isLoading;
+  final String query;
   final VoidCallback onCollapse;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<String> onChanged;
@@ -133,9 +137,7 @@ class ExpandedSearchField extends StatelessWidget {
     return SizedBox(
       height: 44,
       child: ClipRRect(
-        key: ValueKey<String>(
-          'expanded_${searchState.scope.name}_${hasText ? 'filled' : 'empty'}',
-        ),
+        key: ValueKey<String>('expanded_${scope.name}'),
         borderRadius: radius,
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -158,7 +160,7 @@ class ExpandedSearchField extends StatelessWidget {
                   onChanged: onChanged,
                   style: theme.textTheme.bodyMedium,
                   decoration: InputDecoration(
-                    hintText: _getHintText(searchState.scope),
+                    hintText: _getHintText(scope),
                     hintStyle: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -171,7 +173,7 @@ class ExpandedSearchField extends StatelessWidget {
                   cursorColor: theme.colorScheme.primary,
                 ),
               ),
-              if (searchState.isLoading && searchState.query.isNotEmpty)
+              if (isLoading && query.isNotEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: SizedBox(

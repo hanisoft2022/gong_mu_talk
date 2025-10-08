@@ -154,24 +154,16 @@ class CommentImageUploader {
         final XFile image = images[i];
         final DateTime now = DateTime.now();
 
-        // 이미지 압축 (WebP 포맷, 80% 품질)
-        final XFile? compressedImage = await ImageCompressionUtil.compressImage(
-          image,
-          ImageCompressionType.comment,
-        );
-        final XFile finalImage = compressedImage ?? image;
-
         // 파일명 생성 (.webp 확장자)
         final String fileName = '${userId}_${now.millisecondsSinceEpoch}.webp';
 
-        // 올바른 경로 사용: comment_images/{userId}/{commentId}/{fileName}
-        // postId를 commentId로 사용 (실제로는 댓글 ID가 들어와야 함)
+        // 올바른 경로 사용: comment_images/{userId}/{postId}/{fileName}
         final String filePath = 'comment_images/$userId/$postId/$fileName';
 
         final Reference ref = FirebaseStorage.instance.ref().child(filePath);
 
         // 파일 데이터 읽기
-        final Uint8List bytes = await finalImage.readAsBytes();
+        final Uint8List bytes = await image.readAsBytes();
 
         // CDN 캐싱 설정: 7일
         final UploadTask uploadTask = ref.putData(
@@ -197,6 +189,7 @@ class CommentImageUploader {
 
       return imageUrls;
     } on FirebaseException catch (e) {
+
       String errorMessage = '이미지 업로드 중 오류가 발생했습니다';
       if (e.code == 'permission-denied' || e.code == 'unauthorized') {
         errorMessage = '이미지 업로드 권한이 없습니다.\n앱을 재시작하거나 다시 로그인해주세요.';
@@ -204,6 +197,9 @@ class CommentImageUploader {
         errorMessage = '저장 공간이 부족합니다. 잠시 후 다시 시도해주세요.';
       } else if (e.code == 'unauthenticated') {
         errorMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
+      } else {
+        // 개발 중에는 더 자세한 에러 메시지 표시
+        errorMessage = '이미지 업로드 실패\n오류 코드: ${e.code}';
       }
 
       if (context != null && context.mounted) {
@@ -213,7 +209,13 @@ class CommentImageUploader {
             SnackBar(
               content: Text(errorMessage),
               behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: '다시 시도',
+                onPressed: () {
+                  // User can retry manually
+                },
+              ),
             ),
           );
       }
@@ -223,9 +225,10 @@ class CommentImageUploader {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              content: Text('이미지 업로드 중 오류가 발생했습니다'),
+            SnackBar(
+              content: Text('이미지 업로드 중 오류가 발생했습니다\n오류: ${e.toString()}'),
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
             ),
           );
       }

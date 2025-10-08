@@ -1018,30 +1018,35 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   void _scrollToHighlightedComment() {
     if (_highlightedCommentId == null) return;
 
-    // Wait for build to complete
+    // Wait for build to complete AND images to load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _highlightedCommentId == null) return;
 
-      final commentKey = _commentKeys[_highlightedCommentId!];
-      if (commentKey?.currentContext != null) {
-        // Scroll to the comment with animation
-        Scrollable.ensureVisible(
-          commentKey!.currentContext!,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          alignment: 0.2, // Position comment at 20% from top of viewport
-        );
+      // Add additional delay for images to load
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted || _highlightedCommentId == null) return;
 
-        // Remove highlight after 3 seconds
-        _highlightTimer?.cancel();
-        _highlightTimer = Timer(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-              _highlightedCommentId = null;
-            });
-          }
-        });
-      }
+        final commentKey = _commentKeys[_highlightedCommentId!];
+        if (commentKey?.currentContext != null) {
+          // Scroll to the comment with animation
+          Scrollable.ensureVisible(
+            commentKey!.currentContext!,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            alignment: 0.2, // Position comment at 20% from top of viewport
+          );
+
+          // Remove highlight after 3 seconds
+          _highlightTimer?.cancel();
+          _highlightTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _highlightedCommentId = null;
+              });
+            }
+          });
+        }
+      });
     });
   }
 

@@ -333,16 +333,57 @@ class SalaryBreakdownWidget extends StatelessWidget {
         BreakdownItem(
           label: '🏛️ 담임수당 × 12개월',
           amount: annualHomeroomAllowance,
-          detailedInfo: '''
-【지급 기준】
-• 월 200,000원 (연 2,400,000원)
-• 담임교사에게 지급
-
-【지급 대상】
-• 학급 담임을 맡은 교사
-• 초·중·고등학교 전 학년
-
-💡 담임 배정 시 매월 지급되며, 담임 변경 시 해당 월부터 적용됩니다.''',
+          detailedWidget: DetailedInfoWidget(
+            sections: [
+              DetailSection(
+                title: '지급 기준',
+                icon: Icons.account_balance_wallet,
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
+                  DetailTable(
+                    headers: ['구분', '금액'],
+                    rows: [
+                      ['월 지급액', '200,000원'],
+                      ['연 지급액', '2,400,000원'],
+                      ['지급 대상', '담임교사'],
+                    ],
+                  ),
+                ],
+              ),
+              DetailSection(
+                title: '지급 대상',
+                icon: Icons.people,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
+                children: const [
+                  DetailListItem(
+                    text: '학급 담임을 맡은 교사',
+                    isChecked: true,
+                  ),
+                  DetailListItem(
+                    text: '초·중·고등학교 전 학년',
+                    isChecked: true,
+                  ),
+                ],
+              ),
+              const DetailSection(
+                title: '지급 방식',
+                icon: Icons.calendar_month,
+                children: [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content: '매월 급여와 함께 지급',
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.tip,
+                    content: '담임 배정 시 매월 지급되며, 담임 변경 시 해당 월부터 적용됩니다.',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       if (profile?.hasPosition ?? false)
         BreakdownItem(
@@ -545,20 +586,59 @@ class SalaryBreakdownWidget extends StatelessWidget {
         BreakdownItem(
           label: '👨‍👩‍👧‍👦 가족수당 × 12개월',
           amount: annualFamilyAllowance,
-          detailedInfo: '''👨‍👩‍👧‍👦 가족수당
-
-【지급 기준】
-• 배우자: 40,000원
-• 첫째 자녀: 50,000원
-• 둘째 자녀: 80,000원
-• 셋째 이상 자녀: 각 120,000원
-• 60세 이상 직계존속: 1인당 20,000원 (최대 4명)
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 가족관계증명서 제출 필요
-
-💡 자녀 수가 많을수록 가산금이 증가합니다.''',
+          detailedWidget: DetailedInfoWidget(
+            sections: [
+              DetailSection(
+                title: '👨‍👩‍👧‍👦 가족수당',
+                icon: Icons.family_restroom,
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content: '가족 구성원에 따라 차등 지급되는 수당입니다.',
+                  ),
+                ],
+              ),
+              DetailSection(
+                title: '지급 기준',
+                icon: Icons.account_balance_wallet,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
+                children: const [
+                  DetailTable(
+                    headers: ['구분', '월 지급액'],
+                    rows: [
+                      ['배우자', '40,000원'],
+                      ['첫째 자녀', '50,000원'],
+                      ['둘째 자녀', '80,000원'],
+                      ['셋째 이상 자녀', '각 120,000원'],
+                      ['60세 이상 직계존속', '1인당 20,000원 (최대 4명)'],
+                    ],
+                  ),
+                ],
+              ),
+              const DetailSection(
+                title: '지급 방식',
+                icon: Icons.payments,
+                children: [
+                  DetailListItem(
+                    text: '매월 급여와 함께 지급',
+                    isChecked: true,
+                  ),
+                  DetailListItem(
+                    text: '가족관계증명서 제출 필요',
+                    isChecked: true,
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.tip,
+                    content: '자녀 수가 많을수록 가산금이 증가합니다.',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       BreakdownItem(
         label: '📖 연구비 × 12개월',
@@ -629,46 +709,123 @@ class SalaryBreakdownWidget extends StatelessWidget {
       BreakdownItem(
         label: '🕓 시간외근무수당 × 12개월',
         amount: annualOvertimeAllowance,
-        detailedInfo: '''🕓 시간외근무수당
-
-【지급 기준】
-• 호봉에 따라 차등 지급
-• 정액으로 매월 지급 (실제 근무시간 무관)
-
-【호봉별 지급액】
-• 1~10호봉: 30,000원
-• 11~20호봉: 40,000원
-• 21~30호봉: 50,000원
-• 31~40호봉: 60,000원
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 실제 초과근무 시간과 무관하게 정액 지급
-
-💡 공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.''',
+        detailedWidget: DetailedInfoWidget(
+          sections: [
+            DetailSection(
+              title: '시간외근무수당 지급 기준',
+              icon: Icons.access_time,
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
+                DetailTable(
+                  headers: ['항목', '내용'],
+                  rows: [
+                    ['지급 방식', '정액 지급'],
+                    ['지급 기준', '호봉별 차등'],
+                    ['실제 근무시간', '무관'],
+                  ],
+                ),
+              ],
+            ),
+            DetailSection(
+              title: '호봉별 지급액',
+              icon: Icons.table_chart,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
+              children: const [
+                DetailTable(
+                  headers: ['호봉 범위', '월 지급액'],
+                  rows: [
+                    ['1~10호봉', '30,000원'],
+                    ['11~20호봉', '40,000원'],
+                    ['21~30호봉', '50,000원'],
+                    ['31~40호봉', '60,000원'],
+                  ],
+                ),
+              ],
+            ),
+            const DetailSection(
+              title: '지급 방식',
+              icon: Icons.payments,
+              children: [
+                DetailListItem(
+                  text: '매월 급여와 함께 지급',
+                  isChecked: true,
+                ),
+                DetailListItem(
+                  text: '실제 초과근무 시간과 무관하게 정액 지급',
+                  isChecked: true,
+                ),
+                SizedBox(height: 8),
+                DetailInfoBox(
+                  type: DetailInfoBoxType.tip,
+                  content: '공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       BreakdownItem(
         label: '🎖 정근수당 가산금 × 12개월',
         amount: annualLongevityMonthly,
-        detailedInfo: '''🎖 정근수당 가산금
-
-【지급 기준】
-• 매월 지급 (연 12회)
-• 재직연수에 따라 차등 지급
-
-【재직연수별 지급액】
-• 5년 미만: 30,000원
-• 5~10년: 50,000원
-• 10~15년: 60,000원
-• 15~20년: 80,000원
-• 20~25년: 110,000원 (기본 10만원 + 가산금 1만원)
-• 25년 이상: 130,000원 (기본 10만원 + 가산금 3만원)
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 정근수당(1월/7월)과는 별도
-
-💡 정근수당(1월/7월)은 특별 지급이며, 정근수당 가산금은 매월 지급됩니다.''',
+        detailedWidget: DetailedInfoWidget(
+          sections: [
+            DetailSection(
+              title: '🎖 정근수당 가산금',
+              icon: Icons.military_tech,
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
+                DetailTable(
+                  headers: ['항목', '내용'],
+                  rows: [
+                    ['지급 횟수', '매월 (연 12회)'],
+                    ['지급 기준', '재직연수별 차등'],
+                  ],
+                ),
+              ],
+            ),
+            DetailSection(
+              title: '재직연수별 지급액',
+              icon: Icons.trending_up,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
+              children: const [
+                DetailTable(
+                  headers: ['재직연수', '월 지급액'],
+                  rows: [
+                    ['5년 미만', '30,000원'],
+                    ['5~10년', '50,000원'],
+                    ['10~15년', '60,000원'],
+                    ['15~20년', '80,000원'],
+                    ['20~25년', '110,000원 (기본 10만원 + 가산금 1만원)'],
+                    ['25년 이상', '130,000원 (기본 10만원 + 가산금 3만원)'],
+                  ],
+                ),
+              ],
+            ),
+            const DetailSection(
+              title: '지급 방식',
+              icon: Icons.calendar_month,
+              children: [
+                DetailListItem(
+                  text: '매월 급여와 함께 지급',
+                  isChecked: true,
+                ),
+                DetailListItem(
+                  text: '정근수당(1월/7월)과는 별도',
+                  isChecked: true,
+                ),
+                SizedBox(height: 8),
+                DetailInfoBox(
+                  type: DetailInfoBoxType.tip,
+                  content: '정근수당(1월/7월)은 특별 지급이며, 정근수당 가산금은 매월 지급됩니다.',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
 
       // 특별 지급 섹션 헤더

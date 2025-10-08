@@ -12,8 +12,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
 import '../../domain/models/feed_filters.dart';
+import '../../domain/models/search_result.dart';
 import '../cubit/community_feed_cubit.dart';
-import '../cubit/search_cubit.dart';
 import '../../../../core/utils/performance_optimizations.dart';
 import 'sort_button.dart';
 import 'search_field_widgets.dart';
@@ -22,7 +22,9 @@ import 'search_field_widgets.dart';
 class SearchAndSortRow extends StatelessWidget {
   const SearchAndSortRow({
     required this.feedState,
-    required this.searchState,
+    required this.searchScope,
+    required this.searchIsLoading,
+    required this.searchQuery,
     required this.isSearchExpanded,
     required this.searchController,
     required this.searchFocusNode,
@@ -36,7 +38,9 @@ class SearchAndSortRow extends StatelessWidget {
   });
 
   final CommunityFeedState feedState;
-  final SearchState searchState;
+  final SearchScope searchScope;
+  final bool searchIsLoading;
+  final String searchQuery;
   final bool isSearchExpanded;
   final TextEditingController searchController;
   final FocusNode searchFocusNode;
@@ -65,7 +69,9 @@ class SearchAndSortRow extends StatelessWidget {
               child: ExpandedSearchField(
                 searchController: searchController,
                 searchFocusNode: searchFocusNode,
-                searchState: searchState,
+                scope: searchScope,
+                isLoading: searchIsLoading,
+                query: searchQuery,
                 onCollapse: onCollapseSearch,
                 onSubmitted: onSearchSubmitted,
                 onChanged: onSearchChanged,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 import '../../domain/models/search_result.dart';
 
+/// Comment search result card styled like profile comment card
 class CommentSearchResultCard extends StatelessWidget {
   const CommentSearchResultCard({super.key, required this.result});
 
@@ -12,131 +14,124 @@ class CommentSearchResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final Comment comment = result.comment;
     final Post? post = result.post;
-    final String timestamp = _formatTimestamp(comment.createdAt);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  color: theme.colorScheme.primary,
-                  size: 32,
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        comment.authorNickname,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        timestamp,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0.5,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: post != null
+            ? () {
+                // Navigate to post detail with commentId to auto-scroll and highlight
+                context.push(
+                  '/community/posts/${post.id}?commentId=${comment.id}',
+                );
+              }
+            : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Original post reference
+              if (post != null)
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    AnimatedScale(
-                      duration: const Duration(milliseconds: 200),
-                      scale: comment.isLiked ? 1.3 : 1,
-                      curve: Curves.elasticOut,
-                      child: Icon(
-                        comment.isLiked
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        size: 16,
-                        color: comment.isLiked
-                            ? Colors.pink[400]
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(
-                      '${comment.likeCount}',
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Gap(12),
-            Text(comment.text, style: theme.textTheme.bodyMedium),
-            if (post != null) ...[
-              const Gap(16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.6,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '원글 · ${post.authorNickname}',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                    Icon(
+                      Icons.subdirectory_arrow_right,
+                      size: 14,
+                      color: colorScheme.primary.withValues(alpha: 0.7),
                     ),
                     const Gap(6),
-                    Text(
-                      post.text,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
+                    Expanded(
+                      child: Text(
+                        post.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
+                )
+              else
+                Text(
+                  '원글을 찾을 수 없습니다.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              const Gap(12),
+
+              // Comment content
+              Text(
+                comment.text,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
                 ),
               ),
-            ] else ...[
               const Gap(16),
-              Text(
-                '원글을 찾을 수 없습니다.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+
+              // Metadata row
+              Row(
+                children: [
+                  Text(
+                    '좋아요 ${comment.likeCount}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const Gap(8),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.4,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Gap(8),
+                  Text(
+                    _formatDate(comment.createdAt),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  String _formatTimestamp(DateTime createdAt) {
-    final DateTime now = DateTime.now();
-    final Duration diff = now.difference(createdAt);
-    if (diff.inMinutes < 1) {
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 7) {
+      return '${date.year}.${date.month}.${date.day}';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
       return '방금 전';
     }
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}분 전';
-    }
-    if (diff.inHours < 24) {
-      return '${diff.inHours}시간 전';
-    }
-    return '${createdAt.month}월 ${createdAt.day}일';
   }
 }
