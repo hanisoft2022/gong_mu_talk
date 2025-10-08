@@ -24,16 +24,19 @@ class MemberProfilePage extends StatefulWidget {
   State<MemberProfilePage> createState() => _MemberProfilePageState();
 }
 
-class _MemberProfilePageState extends State<MemberProfilePage> {
+class _MemberProfilePageState extends State<MemberProfilePage>
+    with SingleTickerProviderStateMixin {
   late final ProfileTimelineCubit _timelineCubit;
   late final UserCommentsCubit _commentsCubit;
   late final UserProfileRepository _profileRepository;
   late final FollowRepository _followRepository;
+  late TabController _tabController;
   bool _isFollowActionPending = false;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _profileRepository = getIt<UserProfileRepository>();
     _followRepository = getIt<FollowRepository>();
     _timelineCubit = ProfileTimelineCubit(
@@ -48,6 +51,7 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _timelineCubit.close();
     _commentsCubit.close();
     super.dispose();
@@ -61,73 +65,76 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
         BlocProvider<ProfileTimelineCubit>.value(value: _timelineCubit),
         BlocProvider<UserCommentsCubit>.value(value: _commentsCubit),
       ],
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('사용자 프로필'),
-            actions: [
-              IconButton(
-                tooltip: '내 프로필',
-                icon: const Icon(Icons.person_outline),
-                onPressed: () => context.pushNamed(ProfileRoute.name),
-              ),
-            ],
-          ),
-          body: StreamBuilder<UserProfile?>(
-            stream: _profileRepository.watchProfile(widget.uid),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final UserProfile? profile = snapshot.data;
-              if (profile == null) {
-                return const _ProfileNotFoundView();
-              }
-              final bool isSelf = authState.userId == profile.uid;
-              return Column(
-                children: [
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('사용자 프로필'),
+          actions: [
+            IconButton(
+              tooltip: '내 프로필',
+              icon: const Icon(Icons.person_outline),
+              onPressed: () => context.pushNamed(ProfileRoute.name),
+            ),
+          ],
+        ),
+        body: StreamBuilder<UserProfile?>(
+          stream: _profileRepository.watchProfile(widget.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final UserProfile? profile = snapshot.data;
+            if (profile == null) {
+              return const _ProfileNotFoundView();
+            }
+            final bool isSelf = authState.userId == profile.uid;
+            return NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
                   // Profile Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: ProfileHeader(
-                      profile: profile,
-                      isOwnProfile: isSelf,
-                      currentUserId: authState.userId,
-                      followButton: isSelf
-                          ? null
-                          : _FollowButton(
-                              targetUid: profile.uid,
-                              followerUid: authState.userId,
-                              followRepository: _followRepository,
-                              onToggle: _handleFollowToggle,
-                              isPending: _isFollowActionPending,
-                            ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ProfileHeader(
+                        profile: profile,
+                        isOwnProfile: isSelf,
+                        currentUserId: authState.userId,
+                        followButton: isSelf
+                            ? null
+                            : _FollowButton(
+                                targetUid: profile.uid,
+                                followerUid: authState.userId,
+                                followRepository: _followRepository,
+                                onToggle: _handleFollowToggle,
+                                isPending: _isFollowActionPending,
+                              ),
+                      ),
                     ),
                   ),
-                  const Gap(20),
-
-                  // TabBar
-                  const TabBar(
-                    tabs: [
-                      Tab(text: '작성한 글'),
-                      Tab(text: '작성한 댓글'),
-                    ],
-                  ),
-
-                  // TabBarView
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        const ProfilePostsTabContent(),
-                        ProfileCommentsTabContent(authorUid: widget.uid),
-                      ],
+                  // TabBar as pinned header
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverTabBarDelegate(
+                      TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(text: '작성한 글'),
+                          Tab(text: '작성한 댓글'),
+                        ],
+                      ),
                     ),
                   ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  const ProfilePostsTabContent(),
+                  ProfileCommentsTabContent(authorUid: widget.uid),
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -250,5 +257,33 @@ class _FollowButton extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }

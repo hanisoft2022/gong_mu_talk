@@ -286,21 +286,23 @@ class SalaryCalculationService {
         : 0;
   }
 
-  /// 특성화교사 가산금 계산
+  /// 특성화교사 가산금 계산 (전문교과)
   int calculateVocationalEducationAllowance(Set<TeachingAllowanceBonus> bonuses, int currentGrade) {
     if (!bonuses.contains(TeachingAllowanceBonus.vocationalEducation)) return 0;
 
-    if (currentGrade <= 4) {
-      return AllowanceTable.allowance5VocationalMin;
-    } else if (currentGrade >= 31) {
-      return AllowanceTable.allowance5VocationalMax;
+    // 호봉별 구간 금액 (2025년 기준)
+    if (currentGrade >= 31) {
+      return 50000; // 31~40호봉
+    } else if (currentGrade >= 22) {
+      return 45000; // 22~30호봉
+    } else if (currentGrade >= 14) {
+      return 40000; // 14~21호봉
+    } else if (currentGrade >= 9) {
+      return 35000; // 9~13호봉
+    } else if (currentGrade >= 5) {
+      return 30000; // 5~8호봉
     } else {
-      // 5~30호봉: 선형 보간
-      final ratio = (currentGrade - 4) / (31 - 4);
-      return (AllowanceTable.allowance5VocationalMin +
-              (AllowanceTable.allowance5VocationalMax - AllowanceTable.allowance5VocationalMin) *
-                  ratio)
-          .round();
+      return 25000; // 1~4호봉
     }
   }
 
