@@ -1,7 +1,7 @@
 /// 직렬 그룹 정보
 library;
 
-import '../models/lounge_definitions.dart';
+import 'lounge_loader.dart';
 
 class CareerGroup {
   const CareerGroup({required this.name, required this.careerIds});
@@ -12,16 +12,16 @@ class CareerGroup {
 
 /// 직렬 ID를 한글 표시명으로 변환하는 헬퍼 클래스
 ///
-/// **Single Source of Truth**: LoungeDefinitions를 사용합니다.
-/// 직렬명과 이모지는 LoungeDefinitions에서만 관리되며, 이 클래스는 조회 헬퍼입니다.
+/// **Single Source of Truth**: LoungeLoader를 사용합니다.
+/// 직렬명과 이모지는 assets/data/lounges.json에서만 관리되며, 이 클래스는 조회 헬퍼입니다.
 class CareerDisplayHelper {
   /// 직렬 ID를 한글 이름으로 변환
   ///
-  /// LoungeDefinitions에서 해당 직렬의 name을 찾아 반환합니다.
+  /// LoungeLoader에서 해당 직렬의 name을 찾아 반환합니다.
   static String getCareerDisplayName(String careerId) {
-    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+    final lounge = LoungeLoader.lounges.firstWhere(
       (l) => l.id == careerId,
-      orElse: () => LoungeDefinitions.defaultLounges.first,
+      orElse: () => LoungeLoader.lounges.first,
     );
 
     // 매칭되는 라운지를 찾았으면 그 이름 반환, 아니면 careerId 그대로 반환
@@ -30,11 +30,11 @@ class CareerDisplayHelper {
 
   /// 직렬 ID를 이모지로 변환
   ///
-  /// LoungeDefinitions에서 해당 직렬의 emoji를 찾아 반환합니다.
+  /// LoungeLoader에서 해당 직렬의 emoji를 찾아 반환합니다.
   static String getCareerEmoji(String careerId) {
-    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+    final lounge = LoungeLoader.lounges.firstWhere(
       (l) => l.id == careerId,
-      orElse: () => LoungeDefinitions.defaultLounges.first,
+      orElse: () => LoungeLoader.lounges.first,
     );
 
     // 매칭되는 라운지를 찾았으면 그 이모지 반환, 아니면 기본 이모지 반환

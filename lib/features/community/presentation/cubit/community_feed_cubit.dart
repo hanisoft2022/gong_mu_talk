@@ -12,7 +12,6 @@ import '../../../../core/firebase/paginated_query.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
-import '../../../notifications/data/notification_repository.dart';
 
 part 'community_feed_state.dart';
 
@@ -20,10 +19,8 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   CommunityFeedCubit({
     required CommunityRepository repository,
     required AuthCubit authCubit,
-    required NotificationRepository notificationRepository,
   }) : _repository = repository,
        _authCubit = authCubit,
-       _notificationRepository = notificationRepository,
        super(const CommunityFeedState()) {
     _authSubscription = _authCubit.stream.listen(_handleAuthChanged);
     emit(
@@ -36,7 +33,6 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
   final CommunityRepository _repository;
   final AuthCubit _authCubit;
-  final NotificationRepository _notificationRepository;
   late final StreamSubscription<AuthState> _authSubscription;
 
   // Undo state for scrap toggle
@@ -134,12 +130,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       );
 
       _cursors[_cursorKey(targetScope, targetSort)] = result.lastDocument;
-      unawaited(
-        _notificationRepository.maybeShowWeeklySerialDigest(
-          track: _authCubit.state.careerTrack,
-          posts: result.items,
-        ),
-      );
+
+      // NOTE: Weekly digest notifications are now handled by Firebase Functions
+      // (weeklySerialDigest scheduled function) instead of client-side logic.
     } catch (_) {
       emit(
         state.copyWith(
@@ -193,12 +186,9 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
         ),
       );
       _cursors[_cursorKey(state.scope, state.sort)] = result.lastDocument;
-      unawaited(
-        _notificationRepository.maybeShowWeeklySerialDigest(
-          track: _authCubit.state.careerTrack,
-          posts: result.items,
-        ),
-      );
+
+      // NOTE: Weekly digest notifications are now handled by Firebase Functions
+      // (weeklySerialDigest scheduled function) instead of client-side logic.
     } catch (_) {
       emit(
         state.copyWith(
@@ -499,10 +489,6 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
 
     _pendingScrapPostId = null;
     _pendingScrapPreviousState = null;
-  }
-
-  Future<void> incrementViewCount(String postId) async {
-    unawaited(_repository.incrementViewCount(postId));
   }
 
   /// Refresh like/scrap states from cache (no network call)

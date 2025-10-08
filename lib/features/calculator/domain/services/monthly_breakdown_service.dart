@@ -145,10 +145,13 @@ class MonthlyBreakdownService {
       final grossSalary =
           baseSalary + totalAllowances + longevityBonus + holidayBonus + performanceBonus;
 
-      // 소득세
-      final incomeTax = _taxService.calculateIncomeTax(grossSalary);
+      // 부양가족 수 계산 (본인 제외)
+      final dependents = (hasSpouse ? 1 : 0) + numberOfChildren + profile.numberOfParents;
 
-      // 주민세
+      // 소득세 (부양가족 수 반영)
+      final incomeTax = _taxService.calculateIncomeTax(grossSalary, dependents: dependents);
+
+      // 지방소득세 (소득세의 10%)
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
 
       // 국민연금 (일반 근로자용, 공무원은 미사용)

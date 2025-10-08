@@ -2,7 +2,7 @@
 
 import 'package:gong_mu_talk/features/profile/domain/career_hierarchy.dart';
 import 'package:gong_mu_talk/features/community/domain/models/lounge_model.dart';
-import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/community/domain/services/lounge_loader.dart';
 
 /// 직렬-라운지 매핑 검증 스크립트
 ///
@@ -31,7 +31,7 @@ void main() {
 
   // 2. 모든 라운지의 requiredCareerIds 검증
   print('\n2️⃣  라운지 requiredCareerIds 검증');
-  final lounges = LoungeDefinitions.defaultLounges;
+  final lounges = LoungeLoader.lounges;
   for (final lounge in lounges) {
     // public 라운지는 스킵
     if (lounge.accessType == LoungeAccessType.public) {

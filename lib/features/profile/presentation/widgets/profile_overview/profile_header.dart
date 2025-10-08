@@ -37,7 +37,7 @@ import 'package:gap/gap.dart';
 
 import '../../../domain/career_track.dart';
 import '../../../domain/user_profile.dart';
-import '../../../../community/domain/models/lounge_definitions.dart';
+import '../../../../community/domain/services/lounge_loader.dart';
 import '../../cubit/profile_relations_cubit.dart';
 import '../../views/profile_edit_page.dart';
 import 'profile_relations_sheet.dart';
@@ -135,10 +135,10 @@ class ProfileHeader extends StatelessWidget {
         profile.careerHierarchy!.specificCareer != 'none') {
       final specificCareer = profile.careerHierarchy!.specificCareer;
 
-      // Find matching lounge in LoungeDefinitions
-      final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+      // Find matching lounge in LoungeLoader
+      final lounge = LoungeLoader.lounges.firstWhere(
         (l) => l.id == specificCareer,
-        orElse: () => LoungeDefinitions.defaultLounges.first,
+        orElse: () => LoungeLoader.lounges.first,
       );
 
       // If found and not the fallback 'all' lounge

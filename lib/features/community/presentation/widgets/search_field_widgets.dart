@@ -151,7 +151,6 @@ class ExpandedSearchField extends StatelessWidget {
               ),
               Expanded(
                 child: TextField(
-                  key: ValueKey('search_field_${searchState.scope.name}'),
                   controller: searchController,
                   focusNode: searchFocusNode,
                   textInputAction: TextInputAction.search,

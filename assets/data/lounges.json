@@ -1,0 +1,1940 @@
+{
+  "lounges": [
+    {
+      "id": "all",
+      "name": "전체",
+      "emoji": "🏛️",
+      "shortName": "전체",
+      "type": "all",
+      "accessType": "public",
+      "requiredCareerIds": [],
+      "memberCount": 1000000,
+      "description": "모든 공무원이 참여하는 라운지",
+      "order": 0
+    },
+    {
+      "id": "teacher",
+      "name": "교사",
+      "emoji": "📚",
+      "shortName": "교사",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "elementary_teacher",
+        "kindergarten_teacher",
+        "special_education_teacher",
+        "secondary_math_teacher",
+        "secondary_korean_teacher",
+        "secondary_english_teacher",
+        "secondary_science_teacher",
+        "secondary_social_teacher",
+        "secondary_arts_teacher",
+        "counselor_teacher",
+        "health_teacher",
+        "librarian_teacher",
+        "nutrition_teacher"
+      ],
+      "memberCount": 430000,
+      "description": "모든 교사가 참여하는 라운지",
+      "order": 1
+    },
+    {
+      "id": "elementary_teacher",
+      "name": "초등교사",
+      "emoji": "🏫",
+      "shortName": "초등교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "elementary_teacher"
+      ],
+      "parentLoungeId": "teacher",
+      "memberCount": 180000,
+      "description": "초등교사 전용 라운지",
+      "order": 11
+    },
+    {
+      "id": "kindergarten_teacher",
+      "name": "유치원교사",
+      "emoji": "👶",
+      "shortName": "유치원교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "kindergarten_teacher"
+      ],
+      "parentLoungeId": "teacher",
+      "memberCount": 5000,
+      "description": "유치원교사 전용 라운지",
+      "order": 12
+    },
+    {
+      "id": "special_education_teacher",
+      "name": "특수교육교사",
+      "emoji": "🤝",
+      "shortName": "특수교육교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "special_education_teacher"
+      ],
+      "parentLoungeId": "teacher",
+      "memberCount": 4000,
+      "description": "특수교육교사 전용 라운지",
+      "order": 13
+    },
+    {
+      "id": "secondary_teacher",
+      "name": "중등교사",
+      "emoji": "🎓",
+      "shortName": "중등교사",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_math_teacher",
+        "secondary_korean_teacher",
+        "secondary_english_teacher",
+        "secondary_science_teacher",
+        "secondary_social_teacher",
+        "secondary_arts_teacher"
+      ],
+      "parentLoungeId": "teacher",
+      "memberCount": 200000,
+      "description": "중등교사 전용 라운지",
+      "order": 14
+    },
+    {
+      "id": "secondary_math_teacher",
+      "name": "중등수학교사",
+      "emoji": "📐",
+      "shortName": "중등수학교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_math_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 30000,
+      "description": "중등 수학교사 전용 라운지",
+      "order": 141
+    },
+    {
+      "id": "secondary_korean_teacher",
+      "name": "중등국어교사",
+      "emoji": "📖",
+      "shortName": "중등국어교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_korean_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 30000,
+      "description": "중등 국어교사 전용 라운지",
+      "order": 142
+    },
+    {
+      "id": "secondary_english_teacher",
+      "name": "중등영어교사",
+      "emoji": "🌍",
+      "shortName": "중등영어교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_english_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 25000,
+      "description": "중등 영어교사 전용 라운지",
+      "order": 143
+    },
+    {
+      "id": "secondary_science_teacher",
+      "name": "중등과학교사",
+      "emoji": "🔬",
+      "shortName": "중등과학교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_science_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 30000,
+      "description": "중등 과학교사 전용 라운지",
+      "order": 144
+    },
+    {
+      "id": "secondary_social_teacher",
+      "name": "중등사회교사",
+      "emoji": "🌏",
+      "shortName": "중등사회교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_social_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 25000,
+      "description": "중등 사회교사 전용 라운지",
+      "order": 145
+    },
+    {
+      "id": "secondary_arts_teacher",
+      "name": "중등예체능교사",
+      "emoji": "🎨",
+      "shortName": "중등예체능교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "secondary_arts_teacher"
+      ],
+      "parentLoungeId": "secondary_teacher",
+      "memberCount": 60000,
+      "description": "중등 예체능교사 전용 라운지",
+      "order": 146
+    },
+    {
+      "id": "non_subject_teacher",
+      "name": "비교과교사",
+      "emoji": "💼",
+      "shortName": "비교과교사",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "counselor_teacher",
+        "health_teacher",
+        "librarian_teacher",
+        "nutrition_teacher"
+      ],
+      "parentLoungeId": "teacher",
+      "memberCount": 15000,
+      "description": "상담·보건·사서·영양 교사 라운지",
+      "order": 15
+    },
+    {
+      "id": "counselor_teacher",
+      "name": "상담교사",
+      "emoji": "🗨️",
+      "shortName": "상담교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "counselor_teacher"
+      ],
+      "parentLoungeId": "non_subject_teacher",
+      "memberCount": 5000,
+      "description": "상담교사 전용 라운지",
+      "order": 151
+    },
+    {
+      "id": "health_teacher",
+      "name": "보건교사",
+      "emoji": "⚕️",
+      "shortName": "보건교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "health_teacher"
+      ],
+      "parentLoungeId": "non_subject_teacher",
+      "memberCount": 5000,
+      "description": "보건교사 전용 라운지",
+      "order": 152
+    },
+    {
+      "id": "librarian_teacher",
+      "name": "사서교사",
+      "emoji": "📚",
+      "shortName": "사서교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "librarian_teacher"
+      ],
+      "parentLoungeId": "non_subject_teacher",
+      "memberCount": 3000,
+      "description": "사서교사 전용 라운지",
+      "order": 153
+    },
+    {
+      "id": "nutrition_teacher",
+      "name": "영양교사",
+      "emoji": "🍎",
+      "shortName": "영양교사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "nutrition_teacher"
+      ],
+      "parentLoungeId": "non_subject_teacher",
+      "memberCount": 2000,
+      "description": "영양교사 전용 라운지",
+      "order": 154
+    },
+    {
+      "id": "education_admin",
+      "name": "교육행정직",
+      "emoji": "📋",
+      "shortName": "교육행정직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_9th_national",
+        "education_admin_7th_national",
+        "education_admin_9th_local",
+        "education_admin_7th_local"
+      ],
+      "memberCount": 18000,
+      "description": "교육행정직 공무원 라운지",
+      "order": 16
+    },
+    {
+      "id": "national_education_admin",
+      "name": "국가 교육행정직",
+      "emoji": "🏛️",
+      "shortName": "국가 교육행정",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_9th_national",
+        "education_admin_7th_national"
+      ],
+      "parentLoungeId": "education_admin",
+      "memberCount": 5000,
+      "description": "국가 교육행정직 공무원 라운지",
+      "order": 161
+    },
+    {
+      "id": "education_admin_9th_national",
+      "name": "9급 국가 교육행정직",
+      "emoji": "📋",
+      "shortName": "9급 국가교육행정",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_9th_national"
+      ],
+      "parentLoungeId": "national_education_admin",
+      "memberCount": 2500,
+      "description": "9급 국가 교육행정직 공무원 라운지",
+      "order": 1611
+    },
+    {
+      "id": "education_admin_7th_national",
+      "name": "7급 국가 교육행정직",
+      "emoji": "📊",
+      "shortName": "7급 국가교육행정",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_7th_national"
+      ],
+      "parentLoungeId": "national_education_admin",
+      "memberCount": 2500,
+      "description": "7급 국가 교육행정직 공무원 라운지",
+      "order": 1612
+    },
+    {
+      "id": "local_education_admin",
+      "name": "지방 교육행정직",
+      "emoji": "🏢",
+      "shortName": "지방 교육행정",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_9th_local",
+        "education_admin_7th_local"
+      ],
+      "parentLoungeId": "education_admin",
+      "memberCount": 13000,
+      "description": "지방 교육행정직 공무원 라운지",
+      "order": 162
+    },
+    {
+      "id": "education_admin_9th_local",
+      "name": "9급 지방 교육행정직",
+      "emoji": "📋",
+      "shortName": "9급 지방교육행정",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_9th_local"
+      ],
+      "parentLoungeId": "local_education_admin",
+      "memberCount": 8000,
+      "description": "9급 지방 교육행정직 공무원 라운지",
+      "order": 1621
+    },
+    {
+      "id": "education_admin_7th_local",
+      "name": "7급 지방 교육행정직",
+      "emoji": "📊",
+      "shortName": "7급 지방교육행정",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "education_admin_7th_local"
+      ],
+      "parentLoungeId": "local_education_admin",
+      "memberCount": 5000,
+      "description": "7급 지방 교육행정직 공무원 라운지",
+      "order": 1622
+    },
+    {
+      "id": "admin",
+      "name": "행정직",
+      "emoji": "🗂️",
+      "shortName": "행정직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_9th_national",
+        "admin_7th_national",
+        "admin_5th_national",
+        "admin_9th_local",
+        "admin_7th_local",
+        "admin_5th_local",
+        "tax_officer",
+        "customs_officer",
+        "job_counselor",
+        "statistics_officer",
+        "librarian",
+        "auditor",
+        "security_officer"
+      ],
+      "memberCount": 280000,
+      "description": "행정직 공무원 라운지",
+      "order": 2
+    },
+    {
+      "id": "national_admin",
+      "name": "국가행정직",
+      "emoji": "🏛️",
+      "shortName": "국가행정직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_9th_national",
+        "admin_7th_national",
+        "admin_5th_national"
+      ],
+      "parentLoungeId": "admin",
+      "memberCount": 80000,
+      "description": "국가직 행정공무원 라운지",
+      "order": 21
+    },
+    {
+      "id": "admin_9th_national",
+      "name": "9급 국가행정직",
+      "emoji": "📋",
+      "shortName": "9급 국가행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_9th_national"
+      ],
+      "parentLoungeId": "national_admin",
+      "memberCount": 30000,
+      "description": "9급 국가직 행정공무원 라운지",
+      "order": 211
+    },
+    {
+      "id": "admin_7th_national",
+      "name": "7급 국가행정직",
+      "emoji": "📊",
+      "shortName": "7급 국가행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_7th_national"
+      ],
+      "parentLoungeId": "national_admin",
+      "memberCount": 30000,
+      "description": "7급 국가직 행정공무원 라운지",
+      "order": 212
+    },
+    {
+      "id": "admin_5th_national",
+      "name": "5급 국가행정직",
+      "emoji": "💼",
+      "shortName": "5급 국가행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_5th_national"
+      ],
+      "parentLoungeId": "national_admin",
+      "memberCount": 20000,
+      "description": "5급 국가직 행정공무원 라운지",
+      "order": 213
+    },
+    {
+      "id": "local_admin",
+      "name": "지방행정직",
+      "emoji": "🏢",
+      "shortName": "지방행정직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_9th_local",
+        "admin_7th_local",
+        "admin_5th_local"
+      ],
+      "parentLoungeId": "admin",
+      "memberCount": 150000,
+      "description": "지방직 행정공무원 라운지",
+      "order": 22
+    },
+    {
+      "id": "admin_9th_local",
+      "name": "9급 지방행정직",
+      "emoji": "📋",
+      "shortName": "9급 지방행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_9th_local"
+      ],
+      "parentLoungeId": "local_admin",
+      "memberCount": 80000,
+      "description": "9급 지방직 행정공무원 라운지",
+      "order": 221
+    },
+    {
+      "id": "admin_7th_local",
+      "name": "7급 지방행정직",
+      "emoji": "📊",
+      "shortName": "7급 지방행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_7th_local"
+      ],
+      "parentLoungeId": "local_admin",
+      "memberCount": 50000,
+      "description": "7급 지방직 행정공무원 라운지",
+      "order": 222
+    },
+    {
+      "id": "admin_5th_local",
+      "name": "5급 지방행정직",
+      "emoji": "💼",
+      "shortName": "5급 지방행정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "admin_5th_local"
+      ],
+      "parentLoungeId": "local_admin",
+      "memberCount": 20000,
+      "description": "5급 지방직 행정공무원 라운지",
+      "order": 223
+    },
+    {
+      "id": "tax_customs",
+      "name": "세무·관세직",
+      "emoji": "💰",
+      "shortName": "세무·관세직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "tax_officer",
+        "customs_officer"
+      ],
+      "parentLoungeId": "admin",
+      "memberCount": 25000,
+      "description": "세무직 및 관세직 공무원 라운지",
+      "order": 23
+    },
+    {
+      "id": "tax_officer",
+      "name": "세무직",
+      "emoji": "💸",
+      "shortName": "세무직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "tax_officer"
+      ],
+      "parentLoungeId": "tax_customs",
+      "memberCount": 18000,
+      "description": "세무직 공무원 전용 라운지",
+      "order": 231
+    },
+    {
+      "id": "customs_officer",
+      "name": "관세직",
+      "emoji": "🛃",
+      "shortName": "관세직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "customs_officer"
+      ],
+      "parentLoungeId": "tax_customs",
+      "memberCount": 7000,
+      "description": "관세직 공무원 전용 라운지",
+      "order": 232
+    },
+    {
+      "id": "specialized_admin",
+      "name": "전문행정직",
+      "emoji": "📋",
+      "shortName": "전문행정직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "job_counselor",
+        "statistics_officer",
+        "librarian",
+        "auditor",
+        "security_officer"
+      ],
+      "parentLoungeId": "admin",
+      "memberCount": 30000,
+      "description": "고용노동·통계·사서·감사·방호직 라운지",
+      "order": 24
+    },
+    {
+      "id": "job_counselor",
+      "name": "고용노동직",
+      "emoji": "💼",
+      "shortName": "고용노동직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "job_counselor"
+      ],
+      "parentLoungeId": "specialized_admin",
+      "memberCount": 8000,
+      "description": "고용노동직 공무원 전용 라운지",
+      "order": 241
+    },
+    {
+      "id": "statistics_officer",
+      "name": "통계직",
+      "emoji": "📊",
+      "shortName": "통계직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "statistics_officer"
+      ],
+      "parentLoungeId": "specialized_admin",
+      "memberCount": 3000,
+      "description": "통계직 공무원 전용 라운지",
+      "order": 242
+    },
+    {
+      "id": "librarian",
+      "name": "사서직",
+      "emoji": "📚",
+      "shortName": "사서직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "librarian"
+      ],
+      "parentLoungeId": "specialized_admin",
+      "memberCount": 5000,
+      "description": "사서직 공무원 전용 라운지",
+      "order": 243
+    },
+    {
+      "id": "auditor",
+      "name": "감사직",
+      "emoji": "🔍",
+      "shortName": "감사직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "auditor"
+      ],
+      "parentLoungeId": "specialized_admin",
+      "memberCount": 6000,
+      "description": "감사직 공무원 전용 라운지",
+      "order": 244
+    },
+    {
+      "id": "security_officer",
+      "name": "방호직",
+      "emoji": "🛡️",
+      "shortName": "방호직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "security_officer"
+      ],
+      "parentLoungeId": "specialized_admin",
+      "memberCount": 8000,
+      "description": "방호직 공무원 전용 라운지",
+      "order": 245
+    },
+    {
+      "id": "police",
+      "name": "경찰관",
+      "emoji": "👮‍♂️",
+      "shortName": "경찰관",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "police"
+      ],
+      "memberCount": 120000,
+      "description": "경찰관 전용 라운지",
+      "order": 3
+    },
+    {
+      "id": "firefighter",
+      "name": "소방관",
+      "emoji": "👨‍🚒",
+      "shortName": "소방관",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "firefighter"
+      ],
+      "memberCount": 50000,
+      "description": "소방관 전용 라운지",
+      "order": 4
+    },
+    {
+      "id": "coast_guard",
+      "name": "해양경찰",
+      "emoji": "🌊",
+      "shortName": "해양경찰",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "coast_guard"
+      ],
+      "memberCount": 10000,
+      "description": "해양경찰 전용 라운지",
+      "order": 41
+    },
+    {
+      "id": "health_welfare",
+      "name": "보건복지직",
+      "emoji": "🏥",
+      "shortName": "보건복지직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "public_health_officer",
+        "medical_technician",
+        "nurse",
+        "medical_officer",
+        "pharmacist",
+        "food_sanitation",
+        "social_worker"
+      ],
+      "memberCount": 80000,
+      "description": "보건·의료·간호·약무·복지직 라운지",
+      "order": 5
+    },
+    {
+      "id": "public_health_officer",
+      "name": "보건직",
+      "emoji": "🩺",
+      "shortName": "보건직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "public_health_officer"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 15000,
+      "description": "보건직 공무원 전용 라운지",
+      "order": 51
+    },
+    {
+      "id": "medical_technician",
+      "name": "의료기술직",
+      "emoji": "🔬",
+      "shortName": "의료기술직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "medical_technician"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 10000,
+      "description": "의료기술직 공무원 전용 라운지",
+      "order": 52
+    },
+    {
+      "id": "nurse",
+      "name": "간호직",
+      "emoji": "👩‍⚕️",
+      "shortName": "간호직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "nurse"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 25000,
+      "description": "간호직 공무원 전용 라운지",
+      "order": 53
+    },
+    {
+      "id": "medical_officer",
+      "name": "의무직",
+      "emoji": "⚕️",
+      "shortName": "의무직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "medical_officer"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 8000,
+      "description": "의무직 공무원 전용 라운지",
+      "order": 54
+    },
+    {
+      "id": "pharmacist",
+      "name": "약무직",
+      "emoji": "💊",
+      "shortName": "약무직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "pharmacist"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 5000,
+      "description": "약무직 공무원 전용 라운지",
+      "order": 55
+    },
+    {
+      "id": "food_sanitation",
+      "name": "식품위생직",
+      "emoji": "🍽️",
+      "shortName": "식품위생직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "food_sanitation"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 7000,
+      "description": "식품위생직 공무원 전용 라운지",
+      "order": 56
+    },
+    {
+      "id": "social_worker",
+      "name": "사회복지직",
+      "emoji": "🤝",
+      "shortName": "사회복지직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "social_worker"
+      ],
+      "parentLoungeId": "health_welfare",
+      "memberCount": 10000,
+      "description": "사회복지직 공무원 전용 라운지",
+      "order": 57
+    },
+    {
+      "id": "public_security",
+      "name": "공안직",
+      "emoji": "⚖️",
+      "shortName": "공안직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "correction_officer",
+        "probation_officer",
+        "prosecution_officer",
+        "drug_investigation_officer",
+        "immigration_officer",
+        "railroad_police",
+        "security_guard"
+      ],
+      "memberCount": 50000,
+      "description": "교정·검찰·마약수사·출입국관리직 라운지",
+      "order": 6
+    },
+    {
+      "id": "correction_officer",
+      "name": "교정직",
+      "emoji": "🔒",
+      "shortName": "교정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "correction_officer"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 8000,
+      "description": "교정직 공무원 전용 라운지",
+      "order": 61
+    },
+    {
+      "id": "probation_officer",
+      "name": "보호직",
+      "emoji": "🤝",
+      "shortName": "보호직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "probation_officer"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 1500,
+      "description": "보호직 공무원 전용 라운지",
+      "order": 62
+    },
+    {
+      "id": "prosecution_officer",
+      "name": "검찰직",
+      "emoji": "⚖️",
+      "shortName": "검찰직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "prosecution_officer"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 5000,
+      "description": "검찰직 공무원 전용 라운지",
+      "order": 63
+    },
+    {
+      "id": "drug_investigation_officer",
+      "name": "마약수사직",
+      "emoji": "🔍",
+      "shortName": "마약수사직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "drug_investigation_officer"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 1000,
+      "description": "마약수사직 공무원 전용 라운지",
+      "order": 64
+    },
+    {
+      "id": "immigration_officer",
+      "name": "출입국관리직",
+      "emoji": "🛂",
+      "shortName": "출입국관리직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "immigration_officer"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 3000,
+      "description": "출입국관리직 공무원 전용 라운지",
+      "order": 65
+    },
+    {
+      "id": "railroad_police",
+      "name": "철도경찰",
+      "emoji": "🚂",
+      "shortName": "철도경찰",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "railroad_police"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 2000,
+      "description": "철도경찰 전용 라운지",
+      "order": 66
+    },
+    {
+      "id": "security_guard",
+      "name": "교도관",
+      "emoji": "🛡️",
+      "shortName": "교도관",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "security_guard"
+      ],
+      "parentLoungeId": "public_security",
+      "memberCount": 12000,
+      "description": "교도관 전용 라운지",
+      "order": 67
+    },
+    {
+      "id": "military",
+      "name": "군인",
+      "emoji": "🎖️",
+      "shortName": "군인",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "army",
+        "navy",
+        "air_force",
+        "military_civilian"
+      ],
+      "memberCount": 80000,
+      "description": "군인 전용 라운지",
+      "order": 7
+    },
+    {
+      "id": "army",
+      "name": "육군",
+      "emoji": "🪖",
+      "shortName": "육군",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "army"
+      ],
+      "parentLoungeId": "military",
+      "memberCount": 50000,
+      "description": "육군 전용 라운지",
+      "order": 71
+    },
+    {
+      "id": "navy",
+      "name": "해군",
+      "emoji": "⚓",
+      "shortName": "해군",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "navy"
+      ],
+      "parentLoungeId": "military",
+      "memberCount": 15000,
+      "description": "해군 전용 라운지",
+      "order": 72
+    },
+    {
+      "id": "air_force",
+      "name": "공군",
+      "emoji": "✈️",
+      "shortName": "공군",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "air_force"
+      ],
+      "parentLoungeId": "military",
+      "memberCount": 15000,
+      "description": "공군 전용 라운지",
+      "order": 73
+    },
+    {
+      "id": "military_civilian",
+      "name": "군무원",
+      "emoji": "🎖️",
+      "shortName": "군무원",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "military_civilian"
+      ],
+      "parentLoungeId": "military",
+      "memberCount": 30000,
+      "description": "군무원 전용 라운지",
+      "order": 74
+    },
+    {
+      "id": "technical",
+      "name": "기술직",
+      "emoji": "⚙️",
+      "shortName": "기술직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "mechanical_engineer",
+        "electrical_engineer",
+        "electronics_engineer",
+        "chemical_engineer",
+        "shipbuilding_engineer",
+        "nuclear_engineer",
+        "metal_engineer",
+        "textile_engineer",
+        "civil_engineer",
+        "architect",
+        "landscape_architect",
+        "traffic_engineer",
+        "cadastral_officer",
+        "designer",
+        "environmental_officer",
+        "agriculture_officer",
+        "plant_quarantine",
+        "livestock_officer",
+        "forestry_officer",
+        "marine_officer",
+        "fisheries_officer",
+        "ship_officer",
+        "veterinarian",
+        "agricultural_extension",
+        "computer_officer",
+        "broadcasting_communication",
+        "facility_management",
+        "sanitation_worker",
+        "cook"
+      ],
+      "memberCount": 300000,
+      "description": "모든 기술직 공무원 라운지",
+      "order": 8
+    },
+    {
+      "id": "industrial_engineer",
+      "name": "공업직",
+      "emoji": "⚙️",
+      "shortName": "공업직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "mechanical_engineer",
+        "electrical_engineer",
+        "electronics_engineer",
+        "chemical_engineer",
+        "shipbuilding_engineer",
+        "nuclear_engineer",
+        "metal_engineer",
+        "textile_engineer"
+      ],
+      "parentLoungeId": "technical",
+      "memberCount": 50000,
+      "description": "기계·전기·전자·화공직 등 공업 기술직",
+      "order": 81
+    },
+    {
+      "id": "mechanical_engineer",
+      "name": "기계직",
+      "emoji": "⚙️",
+      "shortName": "기계직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "mechanical_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 8000,
+      "description": "기계직 공무원 전용 라운지",
+      "order": 811
+    },
+    {
+      "id": "electrical_engineer",
+      "name": "전기직",
+      "emoji": "⚡",
+      "shortName": "전기직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "electrical_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 10000,
+      "description": "전기직 공무원 전용 라운지",
+      "order": 812
+    },
+    {
+      "id": "electronics_engineer",
+      "name": "전자직",
+      "emoji": "🔌",
+      "shortName": "전자직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "electronics_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 8000,
+      "description": "전자직 공무원 전용 라운지",
+      "order": 813
+    },
+    {
+      "id": "chemical_engineer",
+      "name": "화공직",
+      "emoji": "🧪",
+      "shortName": "화공직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "chemical_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 5000,
+      "description": "화공직 공무원 전용 라운지",
+      "order": 814
+    },
+    {
+      "id": "shipbuilding_engineer",
+      "name": "조선직",
+      "emoji": "🚢",
+      "shortName": "조선직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "shipbuilding_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 3000,
+      "description": "조선직 공무원 전용 라운지",
+      "order": 815
+    },
+    {
+      "id": "nuclear_engineer",
+      "name": "원자력직",
+      "emoji": "☢️",
+      "shortName": "원자력직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "nuclear_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 2000,
+      "description": "원자력직 공무원 전용 라운지",
+      "order": 816
+    },
+    {
+      "id": "metal_engineer",
+      "name": "금속직",
+      "emoji": "🔩",
+      "shortName": "금속직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "metal_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 2000,
+      "description": "금속직 공무원 전용 라운지",
+      "order": 817
+    },
+    {
+      "id": "textile_engineer",
+      "name": "섬유직",
+      "emoji": "🧵",
+      "shortName": "섬유직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "textile_engineer"
+      ],
+      "parentLoungeId": "industrial_engineer",
+      "memberCount": 1500,
+      "description": "섬유직 공무원 전용 라운지",
+      "order": 818
+    },
+    {
+      "id": "facilities_environment",
+      "name": "시설환경직",
+      "emoji": "🏗️",
+      "shortName": "시설환경직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "civil_engineer",
+        "architect",
+        "landscape_architect",
+        "traffic_engineer",
+        "cadastral_officer",
+        "designer",
+        "environmental_officer"
+      ],
+      "parentLoungeId": "technical",
+      "memberCount": 47000,
+      "description": "토목·건축·환경직 등 시설환경 기술직",
+      "order": 82
+    },
+    {
+      "id": "civil_engineer",
+      "name": "토목직",
+      "emoji": "🏗️",
+      "shortName": "토목직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "civil_engineer"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 12000,
+      "description": "토목직 공무원 전용 라운지",
+      "order": 821
+    },
+    {
+      "id": "architect",
+      "name": "건축직",
+      "emoji": "🏛️",
+      "shortName": "건축직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "architect"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 10000,
+      "description": "건축직 공무원 전용 라운지",
+      "order": 822
+    },
+    {
+      "id": "landscape_architect",
+      "name": "조경직",
+      "emoji": "🌳",
+      "shortName": "조경직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "landscape_architect"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 5000,
+      "description": "조경직 공무원 전용 라운지",
+      "order": 823
+    },
+    {
+      "id": "traffic_engineer",
+      "name": "교통직",
+      "emoji": "🚦",
+      "shortName": "교통직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "traffic_engineer"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 6000,
+      "description": "교통직 공무원 전용 라운지",
+      "order": 824
+    },
+    {
+      "id": "cadastral_officer",
+      "name": "지적직",
+      "emoji": "📐",
+      "shortName": "지적직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "cadastral_officer"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 8000,
+      "description": "지적직 공무원 전용 라운지",
+      "order": 825
+    },
+    {
+      "id": "designer",
+      "name": "디자인직",
+      "emoji": "🎨",
+      "shortName": "디자인직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "designer"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 2000,
+      "description": "디자인직 공무원 전용 라운지",
+      "order": 826
+    },
+    {
+      "id": "environmental_officer",
+      "name": "환경직",
+      "emoji": "🌿",
+      "shortName": "환경직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "environmental_officer"
+      ],
+      "parentLoungeId": "facilities_environment",
+      "memberCount": 4000,
+      "description": "환경직 공무원 전용 라운지",
+      "order": 827
+    },
+    {
+      "id": "agriculture_forestry_fisheries",
+      "name": "농림수산직",
+      "emoji": "🌾",
+      "shortName": "농림수산직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "agriculture_officer",
+        "plant_quarantine",
+        "livestock_officer",
+        "forestry_officer",
+        "marine_officer",
+        "fisheries_officer",
+        "ship_officer",
+        "veterinarian",
+        "agricultural_extension"
+      ],
+      "parentLoungeId": "technical",
+      "memberCount": 70000,
+      "description": "농업·수산·축산·수의직 등",
+      "order": 83
+    },
+    {
+      "id": "agriculture_officer",
+      "name": "농업직",
+      "emoji": "🌾",
+      "shortName": "농업직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "agriculture_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 15000,
+      "description": "농업직 공무원 전용 라운지",
+      "order": 831
+    },
+    {
+      "id": "plant_quarantine",
+      "name": "식물검역직",
+      "emoji": "🌱",
+      "shortName": "식물검역직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "plant_quarantine"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 2000,
+      "description": "식물검역직 공무원 전용 라운지",
+      "order": 832
+    },
+    {
+      "id": "livestock_officer",
+      "name": "축산직",
+      "emoji": "🐄",
+      "shortName": "축산직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "livestock_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 8000,
+      "description": "축산직 공무원 전용 라운지",
+      "order": 833
+    },
+    {
+      "id": "forestry_officer",
+      "name": "임업직",
+      "emoji": "🌲",
+      "shortName": "임업직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "forestry_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 5000,
+      "description": "임업직 공무원 전용 라운지",
+      "order": 834
+    },
+    {
+      "id": "marine_officer",
+      "name": "해양수산직",
+      "emoji": "🌊",
+      "shortName": "해양수산직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "marine_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 10000,
+      "description": "해양수산직 공무원 전용 라운지",
+      "order": 835
+    },
+    {
+      "id": "fisheries_officer",
+      "name": "수산직",
+      "emoji": "🐟",
+      "shortName": "수산직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "fisheries_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 8000,
+      "description": "수산직 공무원 전용 라운지",
+      "order": 836
+    },
+    {
+      "id": "ship_officer",
+      "name": "항해직",
+      "emoji": "⚓",
+      "shortName": "항해직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "ship_officer"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 3000,
+      "description": "항해직 공무원 전용 라운지",
+      "order": 837
+    },
+    {
+      "id": "veterinarian",
+      "name": "수의직",
+      "emoji": "🐾",
+      "shortName": "수의직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "veterinarian"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 3000,
+      "description": "수의직 공무원 전용 라운지",
+      "order": 838
+    },
+    {
+      "id": "agricultural_extension",
+      "name": "농촌지도직",
+      "emoji": "🚜",
+      "shortName": "농촌지도직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "agricultural_extension"
+      ],
+      "parentLoungeId": "agriculture_forestry_fisheries",
+      "memberCount": 4000,
+      "description": "농촌지도직 공무원 전용 라운지",
+      "order": 839
+    },
+    {
+      "id": "it_communications",
+      "name": "IT통신직",
+      "emoji": "💻",
+      "shortName": "IT통신직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "computer_officer",
+        "broadcasting_communication"
+      ],
+      "parentLoungeId": "technical",
+      "memberCount": 20000,
+      "description": "전산·방송통신직 라운지",
+      "order": 84
+    },
+    {
+      "id": "computer_officer",
+      "name": "전산직",
+      "emoji": "💻",
+      "shortName": "전산직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "computer_officer"
+      ],
+      "parentLoungeId": "it_communications",
+      "memberCount": 15000,
+      "description": "전산직 공무원 전용 라운지",
+      "order": 841
+    },
+    {
+      "id": "broadcasting_communication",
+      "name": "방송통신직",
+      "emoji": "📡",
+      "shortName": "방송통신직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "broadcasting_communication"
+      ],
+      "parentLoungeId": "it_communications",
+      "memberCount": 5000,
+      "description": "방송통신직 공무원 전용 라운지",
+      "order": 842
+    },
+    {
+      "id": "management_operations",
+      "name": "관리운영직",
+      "emoji": "🏢",
+      "shortName": "관리운영직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "facility_management",
+        "sanitation_worker",
+        "cook"
+      ],
+      "parentLoungeId": "technical",
+      "memberCount": 35000,
+      "description": "시설관리·위생·조리직 라운지",
+      "order": 85
+    },
+    {
+      "id": "facility_management",
+      "name": "시설관리직",
+      "emoji": "🏢",
+      "shortName": "시설관리직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "facility_management"
+      ],
+      "parentLoungeId": "management_operations",
+      "memberCount": 20000,
+      "description": "시설관리직 공무원 전용 라운지",
+      "order": 851
+    },
+    {
+      "id": "sanitation_worker",
+      "name": "위생직",
+      "emoji": "🧹",
+      "shortName": "위생직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "sanitation_worker"
+      ],
+      "parentLoungeId": "management_operations",
+      "memberCount": 10000,
+      "description": "위생직 공무원 전용 라운지",
+      "order": 852
+    },
+    {
+      "id": "cook",
+      "name": "조리직",
+      "emoji": "👨‍🍳",
+      "shortName": "조리직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "cook"
+      ],
+      "parentLoungeId": "management_operations",
+      "memberCount": 5000,
+      "description": "조리직 공무원 전용 라운지",
+      "order": 853
+    },
+    {
+      "id": "postal_service",
+      "name": "우정직",
+      "emoji": "📮",
+      "shortName": "우정직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "postal_service"
+      ],
+      "memberCount": 50000,
+      "description": "우정직 공무원 라운지",
+      "order": 9
+    },
+    {
+      "id": "researcher",
+      "name": "연구직",
+      "emoji": "🔬",
+      "shortName": "연구직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "researcher"
+      ],
+      "memberCount": 20000,
+      "description": "연구직 공무원 라운지",
+      "order": 10
+    },
+    {
+      "id": "legal_profession",
+      "name": "법조직",
+      "emoji": "⚖️",
+      "shortName": "법조직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "judge",
+        "prosecutor"
+      ],
+      "memberCount": 5000,
+      "description": "판사·검사 전용 라운지",
+      "order": 11
+    },
+    {
+      "id": "judge",
+      "name": "법관",
+      "emoji": "⚖️",
+      "shortName": "법관",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "judge"
+      ],
+      "parentLoungeId": "legal_profession",
+      "memberCount": 3000,
+      "description": "법관 전용 라운지",
+      "order": 111
+    },
+    {
+      "id": "prosecutor",
+      "name": "검사",
+      "emoji": "⚖️",
+      "shortName": "검사",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "prosecutor"
+      ],
+      "parentLoungeId": "legal_profession",
+      "memberCount": 2000,
+      "description": "검사 전용 라운지",
+      "order": 112
+    },
+    {
+      "id": "diplomat",
+      "name": "외교관",
+      "emoji": "🌐",
+      "shortName": "외교관",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "diplomat_5th",
+        "diplomat_consular",
+        "diplomat_3rd"
+      ],
+      "memberCount": 4000,
+      "description": "외교관 전용 라운지",
+      "order": 12
+    },
+    {
+      "id": "diplomat_consular",
+      "name": "외무영사직",
+      "emoji": "🌐",
+      "shortName": "외무영사직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "diplomat_consular"
+      ],
+      "parentLoungeId": "diplomat",
+      "memberCount": 4000,
+      "description": "외무영사직 공무원 전용 라운지",
+      "order": 121
+    },
+    {
+      "id": "culture_arts",
+      "name": "문화예술직",
+      "emoji": "🎨",
+      "shortName": "문화예술직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "curator",
+        "cultural_heritage"
+      ],
+      "memberCount": 3000,
+      "description": "학예직·문화재직 라운지",
+      "order": 13
+    },
+    {
+      "id": "curator",
+      "name": "학예직",
+      "emoji": "🎭",
+      "shortName": "학예직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "curator"
+      ],
+      "parentLoungeId": "culture_arts",
+      "memberCount": 2000,
+      "description": "학예직 공무원 전용 라운지",
+      "order": 131
+    },
+    {
+      "id": "cultural_heritage",
+      "name": "문화재직",
+      "emoji": "🏺",
+      "shortName": "문화재직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "cultural_heritage"
+      ],
+      "parentLoungeId": "culture_arts",
+      "memberCount": 1000,
+      "description": "문화재직 공무원 전용 라운지",
+      "order": 132
+    },
+    {
+      "id": "science_technology_specialized",
+      "name": "과학기술 전문직",
+      "emoji": "🔬",
+      "shortName": "과학기술 전문직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "meteorologist",
+        "disaster_safety",
+        "nursing_assistant",
+        "health_care"
+      ],
+      "memberCount": 7500,
+      "description": "기상·방재안전·간호조무·보건진료직 라운지",
+      "order": 14
+    },
+    {
+      "id": "meteorologist",
+      "name": "기상직",
+      "emoji": "🌤️",
+      "shortName": "기상직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "meteorologist"
+      ],
+      "parentLoungeId": "science_technology_specialized",
+      "memberCount": 2000,
+      "description": "기상직 공무원 전용 라운지",
+      "order": 141
+    },
+    {
+      "id": "disaster_safety",
+      "name": "방재안전직",
+      "emoji": "🚨",
+      "shortName": "방재안전직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "disaster_safety"
+      ],
+      "parentLoungeId": "science_technology_specialized",
+      "memberCount": 3000,
+      "description": "방재안전직 공무원 전용 라운지",
+      "order": 142
+    },
+    {
+      "id": "nursing_assistant",
+      "name": "간호조무직",
+      "emoji": "💉",
+      "shortName": "간호조무직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "nursing_assistant"
+      ],
+      "parentLoungeId": "science_technology_specialized",
+      "memberCount": 1500,
+      "description": "간호조무직 공무원 전용 라운지",
+      "order": 143
+    },
+    {
+      "id": "health_care",
+      "name": "보건진료직",
+      "emoji": "🏥",
+      "shortName": "보건진료직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "health_care"
+      ],
+      "parentLoungeId": "science_technology_specialized",
+      "memberCount": 1000,
+      "description": "보건진료직 공무원 전용 라운지",
+      "order": 144
+    },
+    {
+      "id": "independent_agencies",
+      "name": "독립기관직",
+      "emoji": "🏛️",
+      "shortName": "독립기관직",
+      "type": "category",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "national_assembly",
+        "constitutional_court",
+        "election_commission",
+        "audit_board",
+        "human_rights_commission"
+      ],
+      "memberCount": 6000,
+      "description": "국회·헌법재판소·선관위·감사원·인권위 라운지",
+      "order": 15
+    },
+    {
+      "id": "national_assembly",
+      "name": "국회직",
+      "emoji": "🏛️",
+      "shortName": "국회직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "national_assembly"
+      ],
+      "parentLoungeId": "independent_agencies",
+      "memberCount": 2000,
+      "description": "국회 공무원 전용 라운지",
+      "order": 145
+    },
+    {
+      "id": "constitutional_court",
+      "name": "헌법재판소직",
+      "emoji": "⚖️",
+      "shortName": "헌재직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "constitutional_court"
+      ],
+      "parentLoungeId": "independent_agencies",
+      "memberCount": 500,
+      "description": "헌법재판소 공무원 전용 라운지",
+      "order": 146
+    },
+    {
+      "id": "election_commission",
+      "name": "선거관리위원회직",
+      "emoji": "🗳️",
+      "shortName": "선관위직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "election_commission"
+      ],
+      "parentLoungeId": "independent_agencies",
+      "memberCount": 1500,
+      "description": "선거관리위원회 공무원 전용 라운지",
+      "order": 147
+    },
+    {
+      "id": "audit_board",
+      "name": "감사원직",
+      "emoji": "🔍",
+      "shortName": "감사원직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "audit_board"
+      ],
+      "parentLoungeId": "independent_agencies",
+      "memberCount": 1500,
+      "description": "감사원 공무원 전용 라운지",
+      "order": 148
+    },
+    {
+      "id": "human_rights_commission",
+      "name": "인권위원회직",
+      "emoji": "🤝",
+      "shortName": "인권위직",
+      "type": "specific",
+      "accessType": "careerOnly",
+      "requiredCareerIds": [
+        "human_rights_commission"
+      ],
+      "parentLoungeId": "independent_agencies",
+      "memberCount": 500,
+      "description": "국가인권위원회 공무원 전용 라운지",
+      "order": 149
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-08"
+}

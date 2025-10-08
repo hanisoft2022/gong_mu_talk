@@ -107,8 +107,6 @@ abstract class ICommunityRepository {
 
   Future<AppResult<void>> togglePostScrap(String postId);
 
-  Future<AppResult<void>> incrementViewCount(String postId);
-
   // Search operations
   Future<AppResult<CommunitySearchResults>> searchCommunity({
     required String query,

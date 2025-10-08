@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/result.dart';
-import '../../notifications/data/notification_repository.dart';
 import '../../profile/domain/career_track.dart';
 import '../domain/models/comment.dart';
 import '../domain/models/comment_with_post.dart';
@@ -53,13 +52,11 @@ class CommunityRepository {
     FirebaseStorage? storage,
     required UserSession userSession,
     required UserProfileRepository userProfileRepository,
-    required NotificationRepository notificationRepository,
     required AuthCubit authCubit,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _storage = storage ?? FirebaseStorage.instance,
        _userSession = userSession,
        _userProfileRepository = userProfileRepository,
-       _notificationRepository = notificationRepository,
        _authCubit = authCubit {
     // Initialize specialized repositories
     _postRepository = PostRepository(
@@ -70,7 +67,6 @@ class CommunityRepository {
     _commentRepository = CommentRepository(
       firestore: _firestore,
       userProfileRepository: _userProfileRepository,
-      notificationRepository: _notificationRepository,
     );
     _interactionRepository = InteractionRepository(
       firestore: _firestore,
@@ -112,7 +108,6 @@ class CommunityRepository {
   final FirebaseStorage _storage;
   final UserSession _userSession;
   final UserProfileRepository _userProfileRepository;
-  final NotificationRepository _notificationRepository;
   final AuthCubit _authCubit;
 
   // 검색 Rate Limiting (비용 최적화)
@@ -249,10 +244,6 @@ class CommunityRepository {
       startAfter: startAfter,
     );
     return _enrichmentService.enrichPostPage(result, currentUid: currentUid);
-  }
-
-  Future<void> incrementViewCount(String postId) {
-    return _postRepository.incrementViewCount(postId);
   }
 
   Future<PostMedia> uploadPostImage({

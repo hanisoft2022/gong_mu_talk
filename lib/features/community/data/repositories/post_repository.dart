@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -40,22 +39,12 @@ class PostRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
   final UserProfileRepository _userProfileRepository;
-  final Random _random = Random();
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
   final HotScoreCalculator _hotScoreCalculator = const HotScoreCalculator();
-  static const int _counterShardCount = 20;
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
 
   DocumentReference<JsonMap> _postDoc(String postId) => _postsRef.doc(postId);
-
-  CollectionReference<JsonMap> _postCounterShard(String postId) =>
-      _firestore.collection(Fs.postCounters).doc(postId).collection(Fs.shards);
-
-  DocumentReference<JsonMap> _counterShardRef(String postId) {
-    final int shardIndex = _random.nextInt(_counterShardCount);
-    return _postCounterShard(postId).doc('shard_$shardIndex');
-  }
 
   /// Generate a new post ID without creating the document
   String generatePostId() {
@@ -298,22 +287,6 @@ class PostRepository {
         lastDocument: null,
       );
     }
-  }
-
-  Future<void> incrementViewCount(String postId) async {
-    final DocumentReference<JsonMap> doc = _postDoc(postId);
-    try {
-      await doc.update(<String, Object?>{'viewCount': FieldValue.increment(1)});
-    } on FirebaseException catch (error) {
-      if (error.code == 'not-found') {
-        return;
-      }
-      rethrow;
-    }
-
-    await _counterShardRef(postId).set(<String, Object?>{
-      'views': FieldValue.increment(1),
-    }, SetOptions(merge: true));
   }
 
   Future<PostMedia> uploadPostImage({

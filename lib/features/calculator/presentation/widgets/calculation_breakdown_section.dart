@@ -223,8 +223,12 @@ class CalculationBreakdownSection extends StatelessWidget {
       return;
     }
 
-    // 기타 항목들의 상세 정보
-    if (item.detailedInfo != null) {
+    // 1. 구조화된 위젯이 있으면 우선 사용
+    if (item.detailedWidget != null) {
+      content = item.detailedWidget!;
+    }
+    // 2. 텍스트 기반 detailedInfo가 있으면 사용 (하위 호환)
+    else if (item.detailedInfo != null) {
       content = SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -232,8 +236,9 @@ class CalculationBreakdownSection extends StatelessWidget {
           children: [_buildDetailedInfoText(item.detailedInfo!)],
         ),
       );
-    } else {
-      // detailedInfo가 없으면 기본 정보만 표시
+    }
+    // 3. 둘 다 없으면 기본 정보만 표시
+    else {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +458,10 @@ class BreakdownItem {
   final Color? iconColor;
   final bool isHighlight;
   final bool isDeduction;
-  final String? detailedInfo; // 상세 정보 (다이얼로그용)
+  final String? detailedInfo; // 상세 정보 (다이얼로그용 - 텍스트 기반, 하위 호환)
+  final Widget? detailedWidget; // 상세 정보 (다이얼로그용 - 구조화된 위젯)
+  final String? calculationFormula; // 계산 공식
+  final Map<String, dynamic>? userData; // 사용자 실제 값
   final bool isDivider; // 구분선 여부
   final bool isSpacer; // 공백 여부
 
@@ -466,6 +474,9 @@ class BreakdownItem {
     this.isHighlight = false,
     this.isDeduction = false,
     this.detailedInfo,
+    this.detailedWidget,
+    this.calculationFormula,
+    this.userData,
     this.isDivider = false,
     this.isSpacer = false,
   });
@@ -480,6 +491,9 @@ class BreakdownItem {
         isHighlight = false,
         isDeduction = false,
         detailedInfo = null,
+        detailedWidget = null,
+        calculationFormula = null,
+        userData = null,
         isDivider = true,
         isSpacer = false;
 
@@ -493,6 +507,9 @@ class BreakdownItem {
         isHighlight = false,
         isDeduction = false,
         detailedInfo = null,
+        detailedWidget = null,
+        calculationFormula = null,
+        userData = null,
         isDivider = false,
         isSpacer = true;
 
@@ -506,6 +523,9 @@ class BreakdownItem {
         isHighlight = false,
         isDeduction = false,
         detailedInfo = null,
+        detailedWidget = null,
+        calculationFormula = null,
+        userData = null,
         isDivider = false,
         isSpacer = false;
 

@@ -41,15 +41,17 @@ import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
 import '../features/notifications/presentation/views/notification_history_page.dart';
 import '../features/notifications/presentation/views/notification_settings_page.dart';
+import '../features/notifications/presentation/cubit/notification_history_cubit.dart';
 import 'router_refresh_stream.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+/// Global navigator key for accessing navigation from services
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createRouter() {
   final AuthCubit authCubit = getIt<AuthCubit>();
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: CommunityRoute.path,
     refreshListenable: GoRouterRefreshStream(authCubit.stream),
     redirect: (context, state) {
@@ -109,49 +111,49 @@ GoRouter createRouter() {
         ],
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: ProfileRoute.path,
         name: ProfileRoute.name,
         builder: (context, state) => const ProfilePage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: ProfileSettingsRoute.path,
         name: ProfileSettingsRoute.name,
         builder: (context, state) => const ProfileSettingsPage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/verify-paystub',
         name: PaystubVerificationRoute.name,
         builder: (context, state) => const PaystubVerificationPage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/blocked-users',
         name: BlockedUsersRoute.name,
         builder: (context, state) => const BlockedUsersPage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/licenses',
         name: LicensesRoute.name,
         builder: (context, state) => const CustomLicensePage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/privacy',
         name: PrivacyPolicyRoute.name,
         builder: (context, state) => const PrivacyPolicyPage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/terms',
         name: TermsOfServiceRoute.name,
         builder: (context, state) => const TermsOfServicePage(),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/scraps',
         name: ScrapRoute.name,
         builder: (context, state) => BlocProvider<ScrapCubit>(
@@ -160,7 +162,7 @@ GoRouter createRouter() {
         ),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/liked-posts',
         name: LikedPostsRoute.name,
         builder: (context, state) => BlocProvider<LikedPostsCubit>(
@@ -169,7 +171,7 @@ GoRouter createRouter() {
         ),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/user/:uid/comments',
         name: UserCommentsRoute.name,
         builder: (context, state) {
@@ -181,7 +183,7 @@ GoRouter createRouter() {
         },
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${ProfileRoute.path}/user/:uid',
         name: MemberProfileRoute.name,
         builder: (context, state) {
@@ -190,7 +192,7 @@ GoRouter createRouter() {
         },
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: LoginRoute.path,
         name: LoginRoute.name,
         builder: (context, state) {
@@ -201,7 +203,7 @@ GoRouter createRouter() {
         },
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: CommunityRoute.searchPath,
         name: CommunitySearchRoute.name,
         builder: (context, state) => BlocProvider<SearchCubit>(
@@ -210,7 +212,7 @@ GoRouter createRouter() {
         ),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${CommunityRoute.editPath}/:postId',
         name: 'post-edit',
         builder: (context, state) {
@@ -219,7 +221,7 @@ GoRouter createRouter() {
         },
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: '${CommunityRoute.path}/posts/:postId',
         name: PostDetailRoute.name,
         builder: (context, state) {
@@ -232,33 +234,43 @@ GoRouter createRouter() {
         },
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: NotificationHistoryRoute.path,
         name: NotificationHistoryRoute.name,
-        builder: (context, state) => const NotificationHistoryPage(),
+        builder: (context, state) => BlocProvider(
+          create: (context) {
+            final cubit = getIt<NotificationHistoryCubit>();
+            final authState = context.read<AuthCubit>().state;
+            if (authState.userId != null) {
+              cubit.loadNotifications(authState.userId!);
+            }
+            return cubit;
+          },
+          child: const NotificationHistoryPage(),
+        ),
       ),
       GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         path: NotificationSettingsRoute.path,
         name: NotificationSettingsRoute.name,
         builder: (context, state) => const NotificationSettingsPage(),
       ),
       // CALCULATOR ROUTES TEMPORARILY DISABLED - UNDER REDESIGN
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/salary/detail',
       //   name: 'calculator-salary-detail',
       //   builder: (context, state) => const SalaryCalculatorPage(),
       // ),
       // TEMPORARILY DISABLED DUE TO IOS BUILD ISSUE
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/pension',
       //   name: 'calculator-pension',
       //   builder: (context, state) => const PensionCalculatorGatePage(),
       // ),
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/pension/calculate',
       //   name: 'calculator-pension-calculate',
       //   builder: (context, state) => BlocProvider<PensionCalculatorCubit>(
@@ -267,7 +279,7 @@ GoRouter createRouter() {
       //   ),
       // ),
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/pension/quick',
       //   name: 'calculator-pension-quick',
       //   builder: (context, state) => BlocProvider<PensionCubit>(
@@ -276,7 +288,7 @@ GoRouter createRouter() {
       //   ),
       // ),
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/pension/result',
       //   name: 'calculator-pension-result',
       //   builder: (context, state) {
@@ -285,7 +297,7 @@ GoRouter createRouter() {
       //   },
       // ),
       // GoRoute(
-      //   parentNavigatorKey: _rootNavigatorKey,
+      //   parentNavigatorKey: rootNavigatorKey,
       //   path: '/calculator/career-simulator',
       //   name: 'calculator-career-simulator',
       //   builder: (context, state) => const CareerSimulatorPage(),

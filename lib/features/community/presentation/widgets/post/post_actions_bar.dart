@@ -1,7 +1,7 @@
-/// Post actions bar with like, comment, view buttons
+/// Post actions bar with like and comment buttons
 ///
 /// Responsibilities:
-/// - Display like, comment, and view count buttons
+/// - Display like and comment count buttons
 /// - Handle button taps and visual feedback
 /// - Animated highlighting for liked state
 ///
@@ -48,15 +48,6 @@ class PostActionsBar extends StatelessWidget {
           icon: Icons.mode_comment_outlined,
           label: formatCompactNumber(post.commentCount),
           onPressed: onCommentTap,
-        ),
-        const Gap(12),
-
-        // View count (read-only)
-        PostActionButton(
-          icon: Icons.visibility_outlined,
-          label: formatCompactNumber(post.viewCount),
-          onPressed: null,
-          alwaysGray: true,
         ),
 
         const Spacer(),

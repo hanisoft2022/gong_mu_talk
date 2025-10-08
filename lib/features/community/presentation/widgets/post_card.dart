@@ -89,7 +89,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   OverlayEntry? _menuOverlayEntry;
   late final ValueNotifier<bool> _isExpandedNotifier;
   late final ValueNotifier<bool> _showCommentsNotifier;
-  bool _hasTrackedInteraction = false;
 
   // Comments State
   bool _isLoadingComments = false;
@@ -211,7 +210,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         _commentsLoaded = false;
         _featuredComments = const <Comment>[];
         _timelineComments = const <Comment>[];
-        _hasTrackedInteraction = false;
         _commentController.clear();
         _canSubmitComment = false;
         _isSubmittingComment = false;
@@ -398,7 +396,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   // ==================== Event Handlers ====================
 
   void _handleExpand() {
-    _registerInteraction();
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _isExpandedNotifier.value = true;
@@ -407,27 +404,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _handleLikeTap() {
-    _registerInteraction();
     widget.onToggleLike();
   }
 
   void _handleCommentButton() {
-    _registerInteraction();
     unawaited(_toggleComments());
   }
 
   void _handleScrapTap() {
-    _registerInteraction();
     widget.onToggleScrap();
   }
 
   void _handleShare(Post post) {
-    _registerInteraction();
     PostShareHandler.showShareOptions(context, post);
   }
 
   Future<void> _handleReport() async {
-    _registerInteraction();
 
     if (_isSynthetic(widget.post)) {
       _showSnack('프리뷰 게시물은 신고할 수 없어요.');
@@ -657,8 +649,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Future<void> _handleDeleteComment(Comment comment) async {
-    _registerInteraction();
-
     if (_isSynthetic(widget.post)) {
       _showSnack('프리뷰 게시물의 댓글은 삭제할 수 없어요.');
       return;
@@ -838,7 +828,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
 
-    _registerInteraction();
     setState(() => _isSubmittingComment = true);
 
     try {
@@ -879,8 +868,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Future<void> _handleCommentLike(Comment comment) async {
-    _registerInteraction();
-
     // Skip for synthetic posts
     if (_isSynthetic(widget.post)) return;
 
@@ -889,7 +876,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _handleReplyTap(Comment comment) {
-    _registerInteraction();
     if (_isSynthetic(widget.post)) {
       _showSnack('프리뷰 게시물에는 답글을 남길 수 없어요.');
       return;
@@ -1027,16 +1013,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   // ==================== Helper Methods ====================
-
-  void _registerInteraction() {
-    if (_hasTrackedInteraction || _isSynthetic(widget.post)) {
-      return;
-    }
-    _hasTrackedInteraction = true;
-
-    // Use Cubit for view tracking
-    _postCardCubit.trackView();
-  }
 
   /// Phase 3: Scroll to highlighted comment and remove highlight after delay
   void _scrollToHighlightedComment() {

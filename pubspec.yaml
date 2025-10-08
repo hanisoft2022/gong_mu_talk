@@ -68,7 +68,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/data/salary_tables.json
+    - assets/data/
     - assets/logo/
     - assets/images/
     - assets/animations/

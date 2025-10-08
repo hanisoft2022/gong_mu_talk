@@ -194,24 +194,6 @@ class PostCardCubit extends Cubit<PostCardState> {
     }
   }
 
-  /// Track view interaction (only once)
-  ///
-  /// Increments view count in Firestore.
-  /// Only called once per PostCard lifecycle.
-  void trackView() {
-    if (state.hasTrackedView) {
-      return; // Already tracked
-    }
-
-    emit(state.copyWith(hasTrackedView: true));
-
-    // Fire and forget - don't await
-    _repository.incrementViewCount(_postId).catchError((e) {
-      debugPrint('❌ Error tracking view for post $_postId: $e');
-      // Silent fail - view tracking is non-critical
-    });
-  }
-
   /// Delete a comment (soft delete)
   ///
   /// Marks the comment as deleted. Firebase Functions will handle commentCount decrement.

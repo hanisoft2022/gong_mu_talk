@@ -129,7 +129,8 @@
       "Bash(bash -c:*)",
       "mcp__serena__read_memory",
       "WebFetch(domain:www.ilsok.com)",
-      "WebFetch(domain:info.smartjj.co.kr)"
+      "WebFetch(domain:info.smartjj.co.kr)",
+      "Bash(wc:*)"
     ],
     "deny": [
       "Read(./node_modules/**)",

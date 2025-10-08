@@ -480,30 +480,6 @@ void main() {
       );
     });
 
-    group('trackView', () {
-      blocTest<PostCardCubit, PostCardState>(
-        'tracks view only once',
-        build: () {
-          when(
-            () => mockRepository.incrementViewCount(testPostId),
-          ).thenAnswer((_) async => {});
-          return cubit;
-        },
-        act: (cubit) async {
-          cubit.trackView();
-          cubit.trackView(); // Second call should be ignored
-        },
-        expect: () => [
-          predicate<PostCardState>((state) => state.hasTrackedView == true),
-        ],
-        verify: (_) {
-          verify(
-            () => mockRepository.incrementViewCount(testPostId),
-          ).called(1); // Only once
-        },
-      );
-    });
-
     group('clearError', () {
       blocTest<PostCardCubit, PostCardState>(
         'clears error state',

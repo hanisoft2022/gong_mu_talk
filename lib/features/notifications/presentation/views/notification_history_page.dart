@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/services/notification_service.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/notification_repository.dart';
 import '../../domain/entities/notification.dart';
@@ -31,9 +30,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
 
   Future<void> _initRepository() async {
     final prefs = await SharedPreferences.getInstance();
-    final notificationService = NotificationService();
     _repository = NotificationRepository(
-      notificationService: notificationService,
       preferences: prefs,
     );
     await _loadNotifications();
@@ -167,10 +164,20 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     switch (kind) {
       case NotificationKind.commentReply:
         return Icons.comment_outlined;
+      case NotificationKind.postComment:
+        return Icons.comment_outlined;
       case NotificationKind.scrappedPostComment:
         return Icons.bookmark_outlined;
       case NotificationKind.weeklySerialDigest:
         return Icons.summarize_outlined;
+      case NotificationKind.postLike:
+      case NotificationKind.commentLike:
+        return Icons.favorite_outline;
+      case NotificationKind.verificationApproved:
+      case NotificationKind.verificationRejected:
+      case NotificationKind.reportProcessed:
+      case NotificationKind.mentionInComment:
+        return Icons.notifications_outlined;
     }
   }
 
@@ -178,10 +185,19 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
     final theme = Theme.of(context);
     switch (kind) {
       case NotificationKind.commentReply:
+      case NotificationKind.postComment:
         return theme.colorScheme.primary;
       case NotificationKind.scrappedPostComment:
         return theme.colorScheme.tertiary;
+      case NotificationKind.postLike:
+      case NotificationKind.commentLike:
+        return theme.colorScheme.error;
       case NotificationKind.weeklySerialDigest:
+        return theme.colorScheme.secondary;
+      case NotificationKind.verificationApproved:
+      case NotificationKind.verificationRejected:
+      case NotificationKind.reportProcessed:
+      case NotificationKind.mentionInComment:
         return theme.colorScheme.secondary;
     }
   }

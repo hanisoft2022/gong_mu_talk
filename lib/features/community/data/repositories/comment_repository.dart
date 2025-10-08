@@ -9,7 +9,6 @@ import '../../../../core/constants/engagement_points.dart';
 import '../../../../core/firebase/firestore_refs.dart';
 import '../../../profile/domain/career_track.dart';
 import '../../../profile/data/user_profile_repository.dart';
-import '../../../notifications/data/notification_repository.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 
@@ -22,22 +21,20 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 /// - Create, read, delete comments
 /// - Fetch comments for posts with pagination
 /// - Load top/featured comments
-/// - Dispatch comment notifications
 /// - Update post comment counts
 ///
-/// Dependencies: UserProfileRepository, NotificationRepository, FirebaseFirestore
+/// Note: Comment notifications are now handled by Firebase Functions (onCommentNotification)
+///
+/// Dependencies: UserProfileRepository, FirebaseFirestore
 class CommentRepository {
   CommentRepository({
     FirebaseFirestore? firestore,
     required UserProfileRepository userProfileRepository,
-    required NotificationRepository notificationRepository,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _userProfileRepository = userProfileRepository,
-       _notificationRepository = notificationRepository;
+       _userProfileRepository = userProfileRepository;
 
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
-  final NotificationRepository _notificationRepository;
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
 
   // NOTE: Counter shard related fields removed as commentCount is now managed
@@ -142,18 +139,12 @@ class CommentRepository {
         );
       }
 
-      try {
-        await _dispatchCommentNotifications(
-          postId: postId,
-          commentText: text,
-          commenterNickname: authorNickname,
-          commenterUid: authorUid,
-        );
-      } catch (error, stackTrace) {
-        debugPrint(
-          'Failed to dispatch comment notifications: $error\n$stackTrace',
-        );
-      }
+      // NOTE: Comment notifications are now handled by Firebase Functions
+      // (onCommentNotification). This includes:
+      // - Reply notifications (commentReply)
+      // - Post comment notifications (postComment)
+      // - Scrapped post notifications (scrappedPostComment)
+      // No client-side notification dispatch needed.
     }
 
     return Comment(
@@ -324,37 +315,6 @@ class CommentRepository {
           return Comment.fromMap(id: doc.id, postId: postId, data: doc.data());
         })
         .toList(growable: false);
-  }
-
-  Future<void> _dispatchCommentNotifications({
-    required String postId,
-    required String commentText,
-    required String commenterNickname,
-    required String commenterUid,
-  }) async {
-    try {
-      final postDoc = await _postsRef.doc(postId).get();
-      if (!postDoc.exists) return;
-
-      final postData = postDoc.data();
-      if (postData == null) return;
-
-      final authorUid = postData['authorUid'] as String?;
-      if (authorUid == null || authorUid == commenterUid) return;
-
-      final excerpt = commentText.length > 50
-          ? '${commentText.substring(0, 50)}...'
-          : commentText;
-
-      await _notificationRepository.notifyScrappedPostComment(
-        targetUid: authorUid,
-        postId: postId,
-        commenterNickname: commenterNickname,
-        excerpt: excerpt,
-      );
-    } catch (e) {
-      debugPrint('Error dispatching comment notifications: $e');
-    }
   }
 
   /// Fetch comments by author with pagination

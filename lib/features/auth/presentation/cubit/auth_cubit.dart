@@ -17,6 +17,7 @@ import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../../notifications/data/notification_repository.dart';
+import '../../../../core/services/notification_service.dart';
 import 'auth_cubit_helpers.dart';
 import 'auth_profile_manager.dart';
 
@@ -28,10 +29,12 @@ class AuthCubit extends Cubit<AuthState> {
     required LoginSessionStore sessionStore,
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
+    required NotificationService notificationService,
   }) : _authRepository = authRepository,
        _sessionStore = sessionStore,
        _userProfileRepository = userProfileRepository,
        _notificationRepository = notificationRepository,
+       _notificationService = notificationService,
        _profileManager = AuthProfileManager(
          userProfileRepository: userProfileRepository,
          notificationRepository: notificationRepository,
@@ -46,6 +49,7 @@ class AuthCubit extends Cubit<AuthState> {
   final LoginSessionStore _sessionStore;
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
+  final NotificationService _notificationService;
   final AuthProfileManager _profileManager;
   late final StreamSubscription<AuthUser?> _authSubscription;
   static const Duration _sessionMaxAge = Duration(days: 30);
@@ -494,6 +498,27 @@ class AuthCubit extends Cubit<AuthState> {
       getCurrentState: () => state,
     );
     unawaited(_notificationRepository.startListening(user.uid));
+
+    // Save FCM token to Firestore for push notifications
+    unawaited(_saveFcmToken(user.uid));
+  }
+
+  Future<void> _saveFcmToken(String uid) async {
+    try {
+      final String? token = await _notificationService.getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('FCM token is null or empty, skipping save');
+        return;
+      }
+
+      await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        fcmToken: token,
+      );
+      debugPrint('FCM token saved successfully for user: $uid');
+    } catch (error, stackTrace) {
+      debugPrint('Failed to save FCM token: $error\n$stackTrace');
+    }
   }
 
   @override

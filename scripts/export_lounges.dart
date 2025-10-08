@@ -2,11 +2,11 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/community/domain/services/lounge_loader.dart';
 
 /// 라운지 데이터를 JSON 파일로 내보내기
 void main() {
-  final lounges = LoungeDefinitions.defaultLounges;
+  final lounges = LoungeLoader.lounges;
   final jsonData = lounges.map((l) => {'id': l.id, ...l.toMap()}).toList();
 
   final file = File('lounges_export.json');

@@ -38,6 +38,7 @@ import '../features/community/presentation/cubit/scrap_cubit.dart';
 import '../features/community/presentation/cubit/liked_posts_cubit.dart';
 import '../features/community/presentation/cubit/user_comments_cubit.dart';
 import '../features/notifications/data/notification_repository.dart';
+import '../features/notifications/presentation/cubit/notification_history_cubit.dart';
 
 import '../routing/app_router.dart';
 import '../features/profile/data/user_profile_repository.dart';
@@ -83,7 +84,6 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton<NotificationRepository>(
       () => NotificationRepository(
-        notificationService: getIt(),
         preferences: getIt(),
       ),
     )
@@ -93,6 +93,7 @@ Future<void> configureDependencies() async {
         sessionStore: getIt(),
         userProfileRepository: getIt(),
         notificationRepository: getIt(),
+        notificationService: getIt(),
       ),
     )
     ..registerLazySingleton<PaystubVerificationRepository>(
@@ -105,7 +106,6 @@ Future<void> configureDependencies() async {
       () => CommunityRepository(
         userSession: getIt(),
         userProfileRepository: getIt(),
-        notificationRepository: getIt(),
         authCubit: getIt(),
       ),
     )
@@ -117,7 +117,6 @@ Future<void> configureDependencies() async {
       () => CommunityFeedCubit(
         repository: getIt(),
         authCubit: getIt(),
-        notificationRepository: getIt(),
       ),
     )
     ..registerFactory<ProfileTimelineCubit>(
@@ -129,6 +128,9 @@ Future<void> configureDependencies() async {
     )
     ..registerLazySingleton<NotificationPreferencesCubit>(
       NotificationPreferencesCubit.new,
+    )
+    ..registerFactory<NotificationHistoryCubit>(
+      () => NotificationHistoryCubit(getIt()),
     )
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
     ..registerFactory<ScrapCubit>(() => ScrapCubit(getIt()))

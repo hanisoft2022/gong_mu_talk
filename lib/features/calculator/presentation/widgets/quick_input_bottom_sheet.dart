@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gong_mu_talk/common/widgets/cupertino_picker_modal.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
@@ -849,656 +850,82 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   }
 
   Future<void> _showGradePicker() async {
-    int tempGrade = _currentGrade ?? 15; // 기본값 15호봉
-
-    await showCupertinoModalPopup(
+    final selectedGrade = await CupertinoPickerModal.show<int>(
       context: context,
-      builder: (BuildContext context) {
-        return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
-          child: Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
-                      ),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        '호봉 선택',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '완료',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
-                          setState(() {
-                            _currentGrade = tempGrade;
-                          });
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // Picker
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(
-                        initialItem: tempGrade - 6, // 6호봉부터 시작
-                      ),
-                      itemExtent: 40,
-                      backgroundColor: Colors.white,
-                      diameterRatio: 1.5, // 곡률 조정 (더 평평하게)
-                      squeeze: 1.2, // 항목 간격 조정
-                      magnification: 1.1, // 선택된 항목 확대
-                      useMagnifier: true, // 확대 효과 사용
-                      selectionOverlay: Container(
-                        decoration: BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      onSelectedItemChanged: (int index) {
-                        HapticFeedback.selectionClick(); // 햅틱 피드백
-                        tempGrade = index + 6; // 6호봉부터 시작
-                      },
-                      children: List.generate(35, (index) {
-                        final grade = index + 6;
-                        return Center(child: Text('$grade호봉'));
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      title: '호봉 선택',
+      items: List.generate(35, (i) => i + 6), // 6-40호봉
+      initialItem: _currentGrade ?? 15,
+      itemBuilder: (grade) => '$grade호봉',
     );
+
+    if (selectedGrade != null) {
+      setState(() {
+        _currentGrade = selectedGrade;
+      });
+    }
   }
 
   Future<void> _showRetirementAgePicker() async {
-    int tempAge = _retirementAge;
-
-    await showCupertinoModalPopup(
+    final selectedAge = await CupertinoPickerModal.show<int>(
       context: context,
-      builder: (BuildContext context) {
-        return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
-          child: Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
-                      ),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        '퇴직 예정 연령',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '완료',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
-                          setState(() {
-                            _retirementAge = tempAge;
-                          });
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // Picker
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(
-                        initialItem: tempAge - 60, // 60세부터 시작
-                      ),
-                      itemExtent: 40,
-                      backgroundColor: Colors.white,
-                      diameterRatio: 1.5, // 곡률 조정 (더 평평하게)
-                      squeeze: 1.2, // 항목 간격 조정
-                      magnification: 1.1, // 선택된 항목 확대
-                      useMagnifier: true, // 확대 효과 사용
-                      selectionOverlay: Container(
-                        decoration: BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      onSelectedItemChanged: (int index) {
-                        HapticFeedback.selectionClick(); // 햅틱 피드백
-                        tempAge = index + 60; // 60세부터 시작
-                      },
-                      children: List.generate(6, (index) {
-                        final age = index + 60;
-                        return Center(child: Text('$age세'));
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      title: '퇴직 예정 연령',
+      items: List.generate(6, (i) => i + 60), // 60-65세
+      initialItem: _retirementAge,
+      itemBuilder: (age) => '$age세',
     );
+
+    if (selectedAge != null) {
+      setState(() {
+        _retirementAge = selectedAge;
+      });
+    }
   }
 
   Future<void> _showGradePromotionMonthPicker() async {
-    int tempMonth = _gradePromotionMonth;
-
-    await showCupertinoModalPopup(
+    final selectedMonth = await CupertinoPickerModal.show<int>(
       context: context,
-      builder: (BuildContext context) {
-        return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
-          child: Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
-                      ),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        '호봉 승급월',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '완료',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          setState(() {
-                            _gradePromotionMonth = tempMonth;
-                          });
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // Picker
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(
-                        initialItem: tempMonth - 1,
-                      ),
-                      itemExtent: 40,
-                      backgroundColor: Colors.white,
-                      diameterRatio: 1.5,
-                      squeeze: 1.2,
-                      magnification: 1.1,
-                      useMagnifier: true,
-                      selectionOverlay: Container(
-                        decoration: BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      onSelectedItemChanged: (int index) {
-                        HapticFeedback.selectionClick();
-                        tempMonth = index + 1;
-                      },
-                      children: List.generate(12, (index) {
-                        final month = index + 1;
-                        return Center(child: Text('$month월'));
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      title: '호봉 승급월',
+      items: List.generate(12, (i) => i + 1), // 1-12월
+      initialItem: _gradePromotionMonth,
+      itemBuilder: (month) => '$month월',
     );
+
+    if (selectedMonth != null) {
+      setState(() {
+        _gradePromotionMonth = selectedMonth;
+      });
+    }
   }
 
   Future<void> _showNumberOfChildrenPicker() async {
-    int tempChildren = _numberOfChildren;
-
-    await showCupertinoModalPopup(
+    final selectedChildren = await CupertinoPickerModal.show<int>(
       context: context,
-      builder: (BuildContext context) {
-        return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
-          child: Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
-                      ),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        '자녀 수 선택',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '완료',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          setState(() {
-                            _numberOfChildren = tempChildren;
-                          });
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // Picker
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(
-                        initialItem: tempChildren,
-                      ),
-                      itemExtent: 40,
-                      backgroundColor: Colors.white,
-                      diameterRatio: 1.5,
-                      squeeze: 1.2,
-                      magnification: 1.1,
-                      useMagnifier: true,
-                      selectionOverlay: Container(
-                        decoration: BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      onSelectedItemChanged: (int index) {
-                        HapticFeedback.selectionClick();
-                        tempChildren = index;
-                      },
-                      children: List.generate(6, (index) {
-                        return Center(child: Text('$index명'));
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      title: '자녀 수 선택',
+      items: List.generate(6, (i) => i), // 0-5명
+      initialItem: _numberOfChildren,
+      itemBuilder: (count) => '$count명',
     );
+
+    if (selectedChildren != null) {
+      setState(() {
+        _numberOfChildren = selectedChildren;
+      });
+    }
   }
 
   Future<void> _showNumberOfParentsPicker() async {
-    int tempParents = _numberOfParents;
-
-    await showCupertinoModalPopup(
+    final selectedParents = await CupertinoPickerModal.show<int>(
       context: context,
-      builder: (BuildContext context) {
-        return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
-          child: Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
-                      ),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '취소',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        '60세 이상 부모님',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      CupertinoButton(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '완료',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          setState(() {
-                            _numberOfParents = tempParents;
-                          });
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // Picker
-                Expanded(
-                  child: CupertinoTheme(
-                    data: CupertinoThemeData(
-                      textTheme: CupertinoTextThemeData(
-                        pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                    child: CupertinoPicker(
-                      scrollController: FixedExtentScrollController(
-                        initialItem: tempParents,
-                      ),
-                      itemExtent: 40,
-                      backgroundColor: Colors.white,
-                      diameterRatio: 1.5,
-                      squeeze: 1.2,
-                      magnification: 1.1,
-                      useMagnifier: true,
-                      selectionOverlay: Container(
-                        decoration: BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      onSelectedItemChanged: (int index) {
-                        HapticFeedback.selectionClick();
-                        tempParents = index;
-                      },
-                      children: List.generate(5, (index) {
-                        return Center(child: Text('$index명'));
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      title: '60세 이상 부모님',
+      items: List.generate(5, (i) => i), // 0-4명
+      initialItem: _numberOfParents,
+      itemBuilder: (count) => '$count명',
     );
+    if (selectedParents != null) {
+      setState(() {
+        _numberOfParents = selectedParents;
+      });
+    }
   }
 
   void _handleSubmit() {

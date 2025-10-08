@@ -9,6 +9,7 @@ import '../core/config/app_config.dart';
 import '../core/firebase/firebase_initializer.dart';
 import '../core/observers/app_bloc_observer.dart';
 import '../di/di.dart';
+import '../features/community/domain/services/lounge_loader.dart';
 
 typedef AppBuilder = Widget Function();
 
@@ -22,9 +23,10 @@ Future<void> bootstrap(AppBuilder builder) async {
 
       final Future<void> localeFuture = initializeDateFormatting('ko_KR');
       final Future<void> diFuture = configureDependencies();
+      final Future<void> loungeFuture = LoungeLoader.init();
       // Ads removed
 
-      await Future.wait(<Future<void>>[localeFuture, diFuture]);
+      await Future.wait(<Future<void>>[localeFuture, diFuture, loungeFuture]);
       Bloc.observer = AppBlocObserver();
       runApp(builder());
     },

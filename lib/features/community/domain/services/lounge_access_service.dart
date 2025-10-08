@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../../profile/domain/career_hierarchy.dart';
 import '../../../profile/domain/lounge_info.dart';
 import '../models/lounge_model.dart';
-import '../models/lounge_definitions.dart';
+import 'lounge_loader.dart';
 
 /// 라운지 접근 권한 관리 서비스
 class LoungeAccessService {
@@ -12,7 +12,7 @@ class LoungeAccessService {
   static List<Lounge> getAccessibleLounges(CareerHierarchy careerHierarchy) {
     final accessibleIds = _getAccessibleLoungeIds(careerHierarchy);
 
-    return LoungeDefinitions.defaultLounges
+    return LoungeLoader.lounges
         .where((lounge) => accessibleIds.contains(lounge.id))
         .toList()
       ..sort((a, b) => a.order.compareTo(b.order));
@@ -86,9 +86,9 @@ class LoungeAccessService {
 
   /// Lounge 정보에서 접근 가능한 직렬 목록 가져오기 (UI용)
   static List<String> getRequiredCareerIds(String loungeId) {
-    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+    final lounge = LoungeLoader.lounges.firstWhere(
       (l) => l.id == loungeId,
-      orElse: () => LoungeDefinitions.defaultLounges.first,
+      orElse: () => LoungeLoader.lounges.first,
     );
     return lounge.requiredCareerIds;
   }
@@ -309,7 +309,7 @@ class LoungeAccessService {
     String loungeId,
     List<String> accessibleLoungeIds,
   ) {
-    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+    final lounge = LoungeLoader.lounges.firstWhere(
       (l) => l.id == loungeId,
       orElse: () => const Lounge(
         id: '',

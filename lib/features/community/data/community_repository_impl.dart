@@ -254,13 +254,6 @@ class CommunityRepositoryImpl implements ICommunityRepository {
   }
 
   @override
-  Future<AppResult<void>> incrementViewCount(String postId) async {
-    return AppResultHelpers.tryCallAsync(() async {
-      return _repository.incrementViewCount(postId);
-    });
-  }
-
-  @override
   Future<AppResult<CommunitySearchResults>> searchCommunity({
     required String query,
     required SearchScope scope,

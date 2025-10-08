@@ -233,6 +233,7 @@ class UserProfileRepository {
     bool? serialVisible,
     String? governmentEmail,
     DateTime? governmentEmailVerifiedAt,
+    String? fcmToken,
   }) async {
     final DocumentReference<JsonMap> doc = _userDoc(uid);
     final Map<String, Object?> updates = <String, Object?>{};
@@ -282,6 +283,9 @@ class UserProfileRepository {
       updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(
         governmentEmailVerifiedAt,
       );
+    }
+    if (fcmToken != null) {
+      updates['fcmToken'] = fcmToken;
     }
     updates['updatedAt'] = Timestamp.now();
 

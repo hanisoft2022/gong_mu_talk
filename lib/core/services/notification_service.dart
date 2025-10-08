@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+
+import '../../routing/app_router.dart';
 
 /// Singleton managed manually via service locator registration.
 class NotificationService {
@@ -171,36 +175,73 @@ class NotificationService {
 
   void _navigateBasedOnNotification(Map<String, dynamic> data) {
     final String? type = data['type'];
-    final String? targetId = data['targetId'];
     final String? postId = data['postId'];
+    final String? commentId = data['commentId'];
+
+    _logger.d('Navigate based on notification type: $type, postId: $postId');
+
+    // Get GoRouter context from global navigator key
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      _logger.w('Navigation context not available, cannot navigate');
+      return;
+    }
 
     switch (type) {
-      case 'like':
-      case 'comment':
-        if (targetId != null) {
-          // Navigate to community feed (PostDetailPage removed)
-          _logger.d('Navigate to community feed for post: $targetId');
-        }
-        break;
-      case 'reply':
+      case 'commentReply':
+      case 'postComment':
+      case 'scrappedPostComment':
         if (postId != null) {
-          // Navigate to community feed where the replied post is
-          _logger.d('Navigate to community feed for reply in post: $postId');
+          _logger.d(
+            'Navigate to post detail: $postId'
+            '${commentId != null ? ", highlight comment: $commentId" : ""}',
+          );
+          // Navigate to post detail with optional comment highlight
+          final uri = Uri(
+            path: '${CommunityRoute.path}/posts/$postId',
+            queryParameters: commentId != null ? {'commentId': commentId} : null,
+          );
+          context.go(uri.toString());
         }
         break;
-      case 'badge':
-        // Navigate to profile/achievements
-        _logger.d('Navigate to profile');
+      case 'postLike':
+      case 'commentLike':
+        if (postId != null) {
+          _logger.d('Navigate to post detail: $postId');
+          context.go('${CommunityRoute.path}/posts/$postId');
+        }
+        break;
+      case 'weeklySerialDigest':
+        final String? track = data['track'];
+        if (track != null) {
+          _logger.d('Navigate to community feed with serial filter: $track');
+          // Navigate to community feed (serial filtering handled by the feed page itself)
+          context.go(CommunityRoute.path);
+        }
+        break;
+      case 'verificationApproved':
+      case 'verificationRejected':
+        _logger.d('Navigate to profile verification status');
+        context.go('${ProfileRoute.path}/verify-paystub');
+        break;
+      case 'reportProcessed':
+        _logger.d('Navigate to notification history');
+        context.go(NotificationHistoryRoute.path);
         break;
       default:
-        // Navigate to home
-        _logger.d('Navigate to home');
+        _logger.d('Navigate to notification history (default)');
+        context.go(NotificationHistoryRoute.path);
     }
   }
 
   void _navigateBasedOnPayload(String payload) {
-    // Parse JSON payload and navigate accordingly
-    _logger.d('Handle payload: $payload');
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(payload) as Map<String, dynamic>;
+      _navigateBasedOnNotification(data);
+    } catch (error) {
+      _logger.e('Failed to parse notification payload: $error');
+    }
   }
 
   String _getChannelId(String? type) {

@@ -28,7 +28,6 @@ const COUNTER_SHARD_COUNT = 20;
 const HOT_SCORE_WEIGHTS = {
   likeLogScale: 10.0, // Multiplier for log10(likes + 1)
   comment: 3.0, // Linear weight for comments
-  viewLogScale: 0.5, // Multiplier for log10(views + 1)
   timeDecayHours: 24,
   decayFactor: 0.8,
 };
@@ -36,18 +35,17 @@ const HOT_SCORE_WEIGHTS = {
 /**
  * Calculate a time-decayed hot score based on post engagement.
  *
- * Uses logarithmic scaling for likes and views to reduce gaming/bot abuse:
+ * Uses logarithmic scaling for likes to reduce gaming/bot abuse:
  * - First 10 likes have same weight as next 100 likes
  * - Prioritizes early engagement (Reddit/HackerNews style)
  * - Comments remain linear (discussion is valuable)
  *
  * Formula:
- *   baseScore = log10(likes+1)*10 + comments*3 + log10(views+1)*0.5
+ *   baseScore = log10(likes+1)*10 + comments*3
  *   hotScore = baseScore * (0.8 ^ (hoursAgo / 24))
  *
  * @param {number} likeCount Total likes for the post.
  * @param {number} commentCount Total comments for the post.
- * @param {number} viewCount Total views for the post.
  * @param {Timestamp} createdAt Creation timestamp.
  * @param {Timestamp=} now Optional override for current time.
  * @return {number} Decayed hot score.
@@ -55,7 +53,6 @@ const HOT_SCORE_WEIGHTS = {
 function calculateHotScore(
   likeCount: number,
   commentCount: number,
-  viewCount: number,
   createdAt: Timestamp,
   now?: Timestamp
 ): number {
@@ -69,10 +66,7 @@ function calculateHotScore(
   // Linear scaling for comments (discussion value)
   const commentScore = commentCount * HOT_SCORE_WEIGHTS.comment;
 
-  // Logarithmic scaling for views (engagement signal)
-  const viewScore = Math.log10(viewCount + 1) * HOT_SCORE_WEIGHTS.viewLogScale;
-
-  const baseScore = voteScore + commentScore + viewScore;
+  const baseScore = voteScore + commentScore;
 
   // Exponential time decay
   const timeDecayFactor = Math.pow(
@@ -83,7 +77,67 @@ function calculateHotScore(
   return baseScore * timeDecayFactor;
 }
 
-/** Update post counters and hot score when like is added or removed. */
+/**
+ * Get FCM token for a user from Firestore.
+ *
+ * @param {string} uid User ID
+ * @return {Promise<string | null>} FCM token or null if not found
+ */
+async function getUserFcmToken(uid: string): Promise<string | null> {
+  try {
+    const userDoc = await db.doc(`users/${uid}`).get();
+    if (!userDoc.exists) {
+      return null;
+    }
+    const fcmToken = userDoc.data()?.fcmToken as string | undefined;
+    return fcmToken ?? null;
+  } catch (error) {
+    console.error(`Error getting FCM token for user ${uid}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Save notification history to Firestore.
+ *
+ * @param {string} targetUid User ID to receive notification
+ * @param {string} type Notification type (e.g., "commentReply")
+ * @param {string} title Notification title
+ * @param {string} body Notification body
+ * @param {Record<string, unknown>} data Additional data
+ */
+async function saveNotificationHistory(
+  targetUid: string,
+  type: string,
+  title: string,
+  body: string,
+  data: Record<string, unknown>
+): Promise<void> {
+  try {
+    await db.collection(`users/${targetUid}/notifications`).add({
+      type,
+      title,
+      body,
+      data,
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error(
+      `Error saving notification history for user ${targetUid}:`,
+      error
+    );
+  }
+}
+
+/**
+ * Update post hot score when like is added or removed.
+ *
+ * NOTE: likeCount is updated client-side using FieldValue.increment()
+ * in the transaction. This function only calculates and updates the
+ * derived hotScore value. This prevents double-increment race
+ * conditions between client and server.
+ */
 export const onLikeWrite = onDocumentWritten(
   {
     document: "likes/{likeId}",
@@ -120,22 +174,16 @@ export const onLikeWrite = onDocumentWritten(
       return;
     }
 
-    let newLikeCount = currentLikes;
-    if (isCreate) {
-      newLikeCount = currentLikes + 1;
-    } else if (isDelete) {
-      newLikeCount = Math.max(0, currentLikes - 1);
-    }
-
+    // Calculate hotScore using current likeCount (already updated by client)
+    // Client-side transaction handles likeCount with FieldValue.increment()
     const newHotScore = calculateHotScore(
-      newLikeCount,
+      currentLikes,
       (postData.commentCount as number | undefined) ?? 0,
-      (postData.viewCount as number | undefined) ?? 0,
       createdAt
     );
 
+    // Only update hotScore (likeCount is handled client-side)
     await postRef.update({
-      likeCount: newLikeCount,
       hotScore: newHotScore,
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -220,7 +268,6 @@ export const onCommentWrite = onDocumentWritten(
     const newHotScore = calculateHotScore(
       (postData.likeCount as number | undefined) ?? 0,
       estimatedNewCount,
-      (postData.viewCount as number | undefined) ?? 0,
       createdAt
     );
 
@@ -298,7 +345,6 @@ export const recalculateHotScores = onSchedule(
       const newHotScore = calculateHotScore(
         postData.likeCount ?? 0,
         postData.commentCount ?? 0,
-        postData.viewCount ?? 0,
         createdAt
       );
 
@@ -317,6 +363,161 @@ export const recalculateHotScores = onSchedule(
 
     console.log(
       `Recalculated hot scores for ${postsSnap.size} posts`
+    );
+  }
+);
+
+/**
+ * Weekly digest of popular posts by career track.
+ * Runs every Sunday at 9:00 AM KST.
+ *
+ * For each career track:
+ * 1. Find top 3 posts from the past 7 days
+ * 2. Send FCM notification to all users with that track
+ * 3. Save notification history to Firestore
+ */
+export const weeklySerialDigest = onSchedule(
+  {
+    schedule: "0 9 * * 0", // Every Sunday at 9:00 AM
+    timeZone: "Asia/Seoul",
+    region: "us-central1",
+  },
+  async () => {
+    const careerTracks = [
+      "teacher",
+      "police",
+      "educationAdmin",
+      "firefighter",
+      "lawmaker",
+      "publicAdministration",
+      "customs",
+      "itSpecialist",
+    ];
+
+    const careerTrackDisplayNames: Record<string, string> = {
+      teacher: "교사",
+      police: "경찰",
+      educationAdmin: "교육행정직",
+      firefighter: "소방",
+      lawmaker: "국회의원",
+      publicAdministration: "행정직",
+      customs: "관세직",
+      itSpecialist: "정보화전문직",
+    };
+
+    const sevenDaysAgo = Timestamp.fromMillis(
+      Date.now() - (7 * 24 * 60 * 60 * 1000)
+    );
+
+    let totalNotificationsSent = 0;
+
+    for (const track of careerTracks) {
+      try {
+        // Find top 3 posts for this track from the past week
+        const postsSnap = await db.collection("posts")
+          .where("audience", "==", "serial")
+          .where("serial", "==", track)
+          .where("createdAt", ">=", sevenDaysAgo)
+          .where("visibility", "==", "public")
+          .orderBy("createdAt", "desc")
+          .orderBy("likeCount", "desc")
+          .limit(3)
+          .get();
+
+        if (postsSnap.empty) {
+          console.log(`No posts found for track: ${track}`);
+          continue;
+        }
+
+        // Build notification body with top posts
+        const postSummaries: string[] = [];
+        postsSnap.docs.forEach((doc, index) => {
+          const postData = doc.data();
+          const text = postData.text as string | undefined ?? "";
+          const preview = text.trim();
+          const shortened = preview.length <= 30 ?
+            preview :
+            `${preview.substring(0, 30)}...`;
+          const likeCount = postData.likeCount ?? 0;
+          postSummaries.push(`${index + 1}. ${shortened} (${likeCount} 좋아요)`);
+        });
+
+        const displayName = careerTrackDisplayNames[track] ?? track;
+        const title = `${displayName} 인기글 요약`;
+        const body = postSummaries.join("\n");
+
+        // Find all users with this career track
+        const usersSnap = await db.collection("users")
+          .where("careerTrack", "==", track)
+          .get();
+
+        if (usersSnap.empty) {
+          console.log(`No users found for track: ${track}`);
+          continue;
+        }
+
+        // Send notification to each user
+        const promises = usersSnap.docs.map(async (userDoc) => {
+          const uid = userDoc.id;
+          const fcmToken = await getUserFcmToken(uid);
+
+          if (!fcmToken) {
+            console.log(`No FCM token for user: ${uid}`);
+            return;
+          }
+
+          const message = {
+            token: fcmToken,
+            notification: {
+              title: title,
+              body: body,
+            },
+            data: {
+              type: "weeklySerialDigest",
+              track: track,
+            },
+            android: {
+              notification: {
+                channelId: "general_channel",
+                sound: "default",
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  sound: "default",
+                },
+              },
+            },
+          };
+
+          try {
+            await getMessaging().send(message);
+            await saveNotificationHistory(
+              uid,
+              "weeklySerialDigest",
+              title,
+              body,
+              {track}
+            );
+            totalNotificationsSent++;
+          } catch (error) {
+            console.error(`Failed to send notification to user ${uid}:`, error);
+          }
+        });
+
+        await Promise.all(promises);
+        console.log(
+          `Sent ${usersSnap.size} digest notifications for track: ${track}`
+        );
+      } catch (error) {
+        console.error(`Error processing digest for track ${track}:`, error);
+      }
+    }
+
+    console.log(
+      // eslint-disable-next-line max-len
+      `Weekly digest completed. Total notifications sent: ${totalNotificationsSent}`
     );
   }
 );
@@ -418,115 +619,8 @@ export const onPostWrite = onDocumentWritten(
   }
 );
 
-/**
- * Send push notification when someone replies to a comment.
- * Triggers when a new comment is created with a parentCommentId.
- */
-export const onReplyNotification = onDocumentCreated(
-  {
-    document: "posts/{postId}/comments/{commentId}",
-    region: "us-central1",
-  },
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) {
-      return;
-    }
-
-    const commentData = snapshot.data();
-    if (!commentData) {
-      return;
-    }
-
-    const {postId} = event.params;
-    const parentCommentId = commentData.parentCommentId as string | undefined;
-
-    // Only proceed if this is a reply (has parentCommentId)
-    if (!parentCommentId) {
-      return;
-    }
-
-    try {
-      // Get parent comment to find the original author
-      const parentCommentRef = db.doc(
-        `posts/${postId}/comments/${parentCommentId}`
-      );
-      const parentCommentSnap = await parentCommentRef.get();
-
-      if (!parentCommentSnap.exists) {
-        console.log(`Parent comment ${parentCommentId} not found`);
-        return;
-      }
-
-      const parentCommentData = parentCommentSnap.data();
-      if (!parentCommentData) {
-        return;
-      }
-
-      const parentAuthorUid = parentCommentData.authorUid as string;
-      const replyAuthorNickname = commentData.authorNickname as string;
-      const replyText = commentData.text as string;
-
-      // Don't send notification if user replies to their own comment
-      if (parentAuthorUid === commentData.authorUid) {
-        return;
-      }
-
-      // Get FCM token for the parent comment author
-      const userRef = db.doc(`users/${parentAuthorUid}`);
-      const userSnap = await userRef.get();
-
-      if (!userSnap.exists) {
-        console.log(`User ${parentAuthorUid} not found`);
-        return;
-      }
-
-      const userData = userSnap.data();
-      const fcmToken = userData?.fcmToken as string | undefined;
-
-      if (!fcmToken) {
-        console.log(`No FCM token for user ${parentAuthorUid}`);
-        return;
-      }
-
-      // Truncate reply text for notification
-      const truncatedText = replyText.length > 100 ?
-        `${replyText.substring(0, 100)}...` :
-        replyText;
-
-      // Send FCM notification
-      const message = {
-        token: fcmToken,
-        notification: {
-          title: `${replyAuthorNickname}님이 답글을 남겼습니다`,
-          body: truncatedText,
-        },
-        data: {
-          type: "reply",
-          postId: postId,
-          commentId: snapshot.id,
-          parentCommentId: parentCommentId,
-        },
-        android: {
-          priority: "high" as const,
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-            },
-          },
-        },
-      };
-
-      await getMessaging().send(message);
-      console.log(
-        `Reply notification sent to ${parentAuthorUid} for comment ` +
-        `${snapshot.id}`
-      );
-    } catch (error) {
-      console.error("Error sending reply notification:", error);
-    }
-  }
-);
+// NOTE: onReplyNotification removed - replaced by onCommentNotification
+// The new onCommentNotification handles all comment notifications:
+// - Reply notifications (commentReply)
+// - Post comment notifications (postComment)
+// - Scrapped post notifications (scrappedPostComment)

@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:gong_mu_talk/features/community/domain/models/lounge_definitions.dart';
+import 'package:gong_mu_talk/features/community/domain/services/lounge_loader.dart';
 import 'package:gong_mu_talk/features/community/domain/models/lounge_model.dart';
 
 /// Firestore 라운지 데이터 마이그레이션 스크립트
@@ -37,7 +37,7 @@ void main(List<String> arguments) async {
     }
 
     // 2. 새로운 라운지 정의 가져오기
-    final newLounges = LoungeDefinitions.defaultLounges;
+    final newLounges = LoungeLoader.lounges;
     print('\n📋 신규 라운지 정의: ${newLounges.length}개');
 
     // 3. 기존 라운지 목록 가져오기

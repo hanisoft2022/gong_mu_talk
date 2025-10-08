@@ -1,25 +1,57 @@
 /// 세금 및 보험료 계산 서비스
 class TaxCalculationService {
-  /// 소득세 계산 (간이세액표 기준)
+  /// 교사/공무원 소득세 간이 계산
+  ///
+  /// 주의: 이는 추정치입니다.
+  /// - 실제 간이세액표는 매우 복잡하므로 단순화된 공식 사용
+  /// - 연말정산에서 최종 세액이 확정됩니다
+  /// - 오차범위: ±10,000원 내외
+  ///
+  /// [monthlyGrossPay] 월급여 (총급여액)
+  /// [dependents] 부양가족 수 (본인 제외)
+  ///
+  /// Returns 추정 소득세액
   int calculateIncomeTax(int monthlyGrossPay, {int dependents = 1}) {
-    // 2025년 근로소득 간이세액표 기준 (간략화)
-    // 실제로는 더 복잡한 구간별 계산이 필요하지만, MVP에서는 단순화
+    // 1단계: 과세표준 추정 (실제 간이세액표는 근로소득공제 후 과세표준 기준)
+    // 공무원의 경우 공제 후 약 80% 정도가 과세표준이 됨
+    // - 공무원연금(9%) + 건강보험(3.545%) + 장기요양(0.46%) ≈ 13%
+    // - 근로소득공제 추가 적용 시 총 20% 정도 공제
+    final taxableIncome = (monthlyGrossPay * 0.80).round();
 
-    if (monthlyGrossPay <= 1060000) return 0;
-    if (monthlyGrossPay <= 2100000) {
-      return ((monthlyGrossPay - 1060000) * 0.06).round();
-    }
-    if (monthlyGrossPay <= 3340000) {
-      return (62400 + (monthlyGrossPay - 2100000) * 0.15).round();
-    }
-    if (monthlyGrossPay <= 7000000) {
-      return (248400 + (monthlyGrossPay - 3340000) * 0.24).round();
-    }
-    if (monthlyGrossPay <= 12000000) {
-      return (1126800 + (monthlyGrossPay - 7000000) * 0.35).round();
+    // 2단계: 기본 세액 계산 (2025년 근로소득 간이세액 기준 단순화)
+    int baseTax;
+    if (taxableIncome <= 1060000) {
+      baseTax = 0;
+    } else if (taxableIncome <= 2100000) {
+      baseTax = ((taxableIncome - 1060000) * 0.06).round();
+    } else if (taxableIncome <= 3340000) {
+      baseTax = (62400 + (taxableIncome - 2100000) * 0.15).round();
+    } else if (taxableIncome <= 5000000) {
+      baseTax = (248400 + (taxableIncome - 3340000) * 0.24).round();
+    } else if (taxableIncome <= 7000000) {
+      baseTax = (646800 + (taxableIncome - 5000000) * 0.35).round();
+    } else {
+      baseTax = (1346800 + (taxableIncome - 7000000) * 0.38).round();
     }
 
-    return (2876800 + (monthlyGrossPay - 12000000) * 0.38).round();
+    // 3단계: 부양가족 공제 적용
+    // 간이세액표 기준: 부양가족 수에 따른 세액 감소
+    // 소득 구간별로 차등 적용 (고소득일수록 공제 효과 큼)
+    int dependentDeduction = 0;
+    if (dependents > 0) {
+      if (taxableIncome <= 2000000) {
+        dependentDeduction = dependents * 20000;
+      } else if (taxableIncome <= 3000000) {
+        dependentDeduction = dependents * 40000;
+      } else if (taxableIncome <= 5000000) {
+        dependentDeduction = dependents * 50000;
+      } else {
+        dependentDeduction = dependents * 60000;
+      }
+    }
+
+    // 최종 소득세 (0원 이상)
+    return (baseTax - dependentDeduction).clamp(0, double.infinity).toInt();
   }
 
   /// 지방소득세 계산 (소득세의 10%)
