@@ -69,14 +69,52 @@ class AllowanceTable {
   /// 교직수당 (모든 교사)
   static const int teachingAllowance = 250000;
 
-  /// 담임수당
-  static const int homeroomAllowance = 200000;
+  // ========== 교직수당 가산금 (10가지) ==========
 
-  /// 보직교사수당 (부장 등)
-  static const int headTeacherAllowance = 150000;
+  /// 가산금 1: 원로교사수당 (30년 이상 재직 + 55세 이상)
+  static const int allowance1VeteranTeacher = 50000;
 
-  /// 원로교사수당 (30년 이상 재직 + 55세 이상)
-  static const int veteranAllowance = 50000;
+  /// 가산금 2: 특수교사수당
+  static const int allowance2SpecialEducation = 120000;
+
+  /// 가산금 3: 보직교사수당 (부장 등)
+  static const int allowance3HeadTeacher = 150000;
+
+  /// 가산금 4: 담임수당
+  static const int allowance4Homeroom = 200000;
+
+  /// 가산금 5: 특성화교사수당 (호봉별 차등)
+  static const int allowance5VocationalMin = 25000; // 1~4호봉
+  static const int allowance5VocationalMax = 50000; // 31~40호봉
+
+  /// 가산금 6: 보건교사수당 (2025년 1만원 인상)
+  static const int allowance6HealthTeacher = 40000;
+
+  /// 가산금 7: 겸직수당 (병설유치원 겸임)
+  static const int allowance7ConcurrentPrincipal = 100000; // 교장
+  static const int allowance7ConcurrentVice = 50000; // 교감
+
+  /// 가산금 8: 영양교사수당 (2025년 1만원 인상)
+  static const int allowance8Nutrition = 40000;
+
+  /// 가산금 9: 사서교사수당 (2025년 1만원 인상)
+  static const int allowance9Librarian = 30000;
+
+  /// 가산금 10: 전문상담교사수당 (2025년 1만원 인상)
+  static const int allowance10Counselor = 30000;
+
+  // ========== 기존 호환성을 위한 별칭 (Deprecated) ==========
+
+  /// @deprecated Use allowance4Homeroom instead
+  static const int homeroomAllowance = allowance4Homeroom;
+
+  /// @deprecated Use allowance3HeadTeacher instead
+  static const int headTeacherAllowance = allowance3HeadTeacher;
+
+  /// @deprecated Use allowance1VeteranTeacher instead
+  static const int veteranAllowance = allowance1VeteranTeacher;
+
+  // ========== 기타 수당 ==========
 
   /// 교감 관리수당
   static const int vicePrincipalManagementAllowance = 300000;
@@ -90,17 +128,18 @@ class AllowanceTable {
   /// 정액급식비
   static const int mealAllowance = 140000;
 
-  /// 시간외근무수당 정액분 (호봉별)
+  /// 시간외근무수당 정액분 (호봉별, 2025년 기준)
+  /// 시간당 단가 × 10시간 = 월 정액분
   static const Map<int, int> overtimeAllowanceByGrade = {
-    10: 120000, // 1~10호봉
-    20: 140000, // 11~20호봉
-    40: 160000, // 21호봉 이상
+    19: 123130, // 1~19호봉: 12,313원/시간 × 10
+    29: 137330, // 20~29호봉: 13,733원/시간 × 10
+    40: 147410, // 30호봉 이상: 14,741원/시간 × 10
   };
 
   /// 호봉별 시간외근무수당 조회
   static int getOvertimeAllowance(int grade) {
-    if (grade <= 10) return overtimeAllowanceByGrade[10]!;
-    if (grade <= 20) return overtimeAllowanceByGrade[20]!;
+    if (grade <= 19) return overtimeAllowanceByGrade[19]!;
+    if (grade <= 29) return overtimeAllowanceByGrade[29]!;
     return overtimeAllowanceByGrade[40]!;
   }
 }

@@ -130,39 +130,78 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
+        final theme = Theme.of(context);
         return AlertDialog(
+          icon: Icon(
+            Icons.warning_amber_rounded,
+            color: theme.colorScheme.error,
+            size: 48,
+          ),
           title: const Text('회원 탈퇴'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                '회원 탈퇴 시 다음 정보가 영구 삭제됩니다:',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Gap(8),
+              Text(
+                '• 프로필 정보\n'
+                '• 작성한 게시물 및 댓글\n'
+                '• 좋아요 및 스크랩 내역\n'
+                '• 팔로우/팔로워 관계',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Gap(16),
               const Text('탈퇴를 진행하려면 비밀번호를 입력해주세요.'),
               const Gap(12),
               TextField(
                 controller: _deletePasswordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: '비밀번호'),
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: '비밀번호',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                _deletePasswordController.clear();
+                Navigator.of(context).pop();
+              },
               child: const Text('취소'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                foregroundColor: Theme.of(context).colorScheme.error,
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
               ),
               onPressed: () async {
                 final String password = _deletePasswordController.text.trim();
+
+                if (password.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('비밀번호를 입력해주세요.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
+
                 final AuthCubit authCubit = context.read<AuthCubit>();
                 final NavigatorState navigator = Navigator.of(context);
 
-                await authCubit.deleteAccount(
-                  currentPassword: password.isEmpty ? null : password,
-                );
+                await authCubit.deleteAccount(currentPassword: password);
 
                 if (!mounted) {
                   return;

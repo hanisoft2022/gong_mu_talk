@@ -32,6 +32,8 @@ import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
 import '../features/profile/presentation/views/blocked_users_page.dart';
+import '../features/profile/presentation/views/profile_settings_page.dart';
+import '../features/profile/presentation/widgets/profile_settings/custom_license_page.dart';
 import '../features/calculator/presentation/views/calculator_home_page.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
@@ -112,6 +114,12 @@ GoRouter createRouter() {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: ProfileSettingsRoute.path,
+        name: ProfileSettingsRoute.name,
+        builder: (context, state) => const ProfileSettingsPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '${ProfileRoute.path}/verify-paystub',
         name: PaystubVerificationRoute.name,
         builder: (context, state) => const PaystubVerificationPage(),
@@ -121,6 +129,12 @@ GoRouter createRouter() {
         path: '${ProfileRoute.path}/blocked-users',
         name: BlockedUsersRoute.name,
         builder: (context, state) => const BlockedUsersPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${ProfileRoute.path}/licenses',
+        name: LicensesRoute.name,
+        builder: (context, state) => const CustomLicensePage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -196,7 +210,11 @@ GoRouter createRouter() {
         name: PostDetailRoute.name,
         builder: (context, state) {
           final postId = state.pathParameters['postId']!;
-          return PostDetailView(postId: postId);
+          final commentId = state.uri.queryParameters['commentId'];
+          return PostDetailView(
+            postId: postId,
+            highlightCommentId: commentId,
+          );
         },
       ),
       GoRoute(
@@ -297,6 +315,13 @@ class ProfileRoute {
   static const String path = '/profile';
 }
 
+class ProfileSettingsRoute {
+  const ProfileSettingsRoute._();
+
+  static const String name = 'profile-settings';
+  static const String path = '/profile/settings';
+}
+
 class MemberProfileRoute {
   const MemberProfileRoute._();
 
@@ -315,6 +340,13 @@ class BlockedUsersRoute {
 
   static const String name = 'blocked-users';
   static const String path = '${ProfileRoute.path}/blocked-users';
+}
+
+class LicensesRoute {
+  const LicensesRoute._();
+
+  static const String name = 'licenses';
+  static const String path = '${ProfileRoute.path}/licenses';
 }
 
 class ScrapRoute {

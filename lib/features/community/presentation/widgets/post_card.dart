@@ -65,6 +65,7 @@ class PostCard extends StatefulWidget {
     this.trailing,
     this.showShare = true,
     this.showScrap = true,
+    this.highlightCommentId,
   });
 
   final Post post;
@@ -74,6 +75,7 @@ class PostCard extends StatefulWidget {
   final Widget? trailing;
   final bool showShare;
   final bool showScrap;
+  final String? highlightCommentId;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -96,6 +98,23 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   List<Comment> _timelineComments = const <Comment>[];
   late int _commentCount;
 
+  /// Filter out deleted comments without replies
+  /// - Show deleted comments only if they have replies (to maintain thread structure)
+  /// - Hide deleted comments without replies completely
+  List<Comment> get _visibleTimelineComments {
+    final Set<String> parentIdsWithReplies = _timelineComments
+        .where((c) => c.parentCommentId != null)
+        .map((c) => c.parentCommentId!)
+        .toSet();
+
+    return _timelineComments.where((comment) {
+      if (!comment.deleted) return true; // Always show active comments
+
+      // For deleted comments, only show if they have replies
+      return parentIdsWithReplies.contains(comment.id);
+    }).toList();
+  }
+
   // Comment Input State
   late final TextEditingController _commentController;
   late final FocusNode _commentFocusNode;
@@ -107,6 +126,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CommentImageUploader _imageUploader = CommentImageUploader();
+
+  // Delete Undo State
+  Timer? _deleteUndoTimer;
+  String? _deletedCommentId;
+  String? _deletedCommentText;
+
+  // Highlight State (Phase 3)
+  String? _highlightedCommentId;
+  Timer? _highlightTimer;
+  final Map<String, GlobalKey> _commentKeys = {};
 
   // Dependencies
   late final CommunityRepository _repository;
@@ -134,6 +163,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _commentFocusNode = FocusNode();
     _isExpandedNotifier = ValueNotifier<bool>(false);
     _showCommentsNotifier = ValueNotifier<bool>(false);
+
+    // Phase 3: Auto-expand comments if highlightCommentId is provided
+    if (widget.highlightCommentId != null) {
+      _showCommentsNotifier.value = true;
+      _highlightedCommentId = widget.highlightCommentId;
+      // Load comments immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadComments();
+      });
+    }
   }
 
   @override
@@ -147,6 +186,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         _menuOverlayEntry = null;
       }
     }
+    _deleteUndoTimer?.cancel();
+    _highlightTimer?.cancel();
     _commentController
       ..removeListener(_handleCommentInputChanged)
       ..dispose();
@@ -198,6 +239,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       listener: (context, state) {
         // Sync Cubit state to local state for synthetic post handling
         if (!_isSynthetic(post) && mounted) {
+          final wasLoading = _isLoadingComments;
+
           setState(() {
             _isLoadingComments = state.isLoadingComments;
             _featuredComments = state.featuredComments;
@@ -205,6 +248,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             _commentCount = state.commentCount;
             _isSubmittingComment = state.isSubmittingComment;
           });
+
+          // Phase 3: Scroll to highlighted comment when loading completes
+          if (wasLoading &&
+              !state.isLoadingComments &&
+              _highlightedCommentId != null) {
+            _scrollToHighlightedComment();
+          }
 
           // Show error if any
           if (state.error != null) {
@@ -323,12 +373,16 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                           child: RepaintBoundary(
                             child: PostCommentsSection(
                               isLoading: _isLoadingComments,
-                              timelineComments: _timelineComments,
+                              timelineComments: _visibleTimelineComments,
                               featuredComments: _featuredComments,
                               onToggleCommentLike: _handleCommentLike,
                               onReplyTap: _handleReplyTap,
                               onOpenCommentAuthorProfile:
                                   _showCommentAuthorMenu,
+                              onDeleteComment: _handleDeleteComment,
+                              currentUserId: _authCubit.state.userId,
+                              highlightedCommentId: _highlightedCommentId,
+                              commentKeys: _commentKeys,
                             ),
                           ),
                         ),
@@ -364,22 +418,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   void _handleScrapTap() {
     _registerInteraction();
-    final bool isCurrentlyScrapped = widget.post.isScrapped;
     widget.onToggleScrap();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              isCurrentlyScrapped ? '스크랩가 해제되었습니다' : '스크랩에 추가되었습니다',
-            ),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-    }
   }
 
   void _handleShare(Post post) {
@@ -615,6 +654,99 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
         break;
     }
+  }
+
+  Future<void> _handleDeleteComment(Comment comment) async {
+    _registerInteraction();
+
+    if (_isSynthetic(widget.post)) {
+      _showSnack('프리뷰 게시물의 댓글은 삭제할 수 없어요.');
+      return;
+    }
+
+    final String? currentUid = _authCubit.state.userId;
+    if (currentUid == null) {
+      _showSnack('로그인이 필요합니다.');
+      return;
+    }
+
+    // Cancel any existing undo timer
+    _deleteUndoTimer?.cancel();
+
+    // Delete comment via Cubit
+    final String? originalText =
+        await _postCardCubit.deleteComment(comment, currentUid);
+
+    if (originalText == null || !mounted) {
+      return; // Failed to delete
+    }
+
+    // Store for undo
+    _deletedCommentId = comment.id;
+    _deletedCommentText = originalText;
+
+    // Show SnackBar with undo option
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('댓글이 삭제되었습니다'),
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '실행 취소',
+            onPressed: () {
+              _deleteUndoTimer?.cancel();
+              _handleUndoDelete();
+            },
+          ),
+        ),
+      );
+
+    // Set timer to clear undo data after 5 seconds
+    _deleteUndoTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _deletedCommentId = null;
+        _deletedCommentText = null;
+      }
+    });
+  }
+
+  Future<void> _handleUndoDelete() async {
+    if (_deletedCommentId == null || _deletedCommentText == null) {
+      return;
+    }
+
+    final String? currentUid = _authCubit.state.userId;
+    if (currentUid == null) {
+      return;
+    }
+
+    final String commentId = _deletedCommentId!;
+    final String originalText = _deletedCommentText!;
+
+    // Clear undo data
+    _deletedCommentId = null;
+    _deletedCommentText = null;
+
+    // Restore comment via Cubit
+    await _postCardCubit.undoDeleteComment(
+      commentId,
+      currentUid,
+      originalText,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('댓글이 복구되었습니다'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   // ==================== Comments ====================
@@ -904,6 +1036,37 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     // Use Cubit for view tracking
     _postCardCubit.trackView();
+  }
+
+  /// Phase 3: Scroll to highlighted comment and remove highlight after delay
+  void _scrollToHighlightedComment() {
+    if (_highlightedCommentId == null) return;
+
+    // Wait for build to complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _highlightedCommentId == null) return;
+
+      final commentKey = _commentKeys[_highlightedCommentId!];
+      if (commentKey?.currentContext != null) {
+        // Scroll to the comment with animation
+        Scrollable.ensureVisible(
+          commentKey!.currentContext!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.2, // Position comment at 20% from top of viewport
+        );
+
+        // Remove highlight after 3 seconds
+        _highlightTimer?.cancel();
+        _highlightTimer = Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() {
+              _highlightedCommentId = null;
+            });
+          }
+        });
+      }
+    });
   }
 
   bool _isSynthetic(Post post) {

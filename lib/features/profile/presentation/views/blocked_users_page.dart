@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../community/data/community_repository.dart';
@@ -113,14 +114,14 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
             size: 64,
             color: theme.colorScheme.outline,
           ),
-          const SizedBox(height: 16),
+          const Gap(16),
           Text(
             '차단한 사용자가 없습니다',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 8),
+          const Gap(8),
           Text(
             '차단한 사용자의 게시글과 댓글이\n표시되지 않습니다',
             textAlign: TextAlign.center,

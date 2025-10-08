@@ -1,6 +1,8 @@
 /// 직렬 그룹 정보
 library;
 
+import '../models/lounge_definitions.dart';
+
 class CareerGroup {
   const CareerGroup({required this.name, required this.careerIds});
 
@@ -9,15 +11,34 @@ class CareerGroup {
 }
 
 /// 직렬 ID를 한글 표시명으로 변환하는 헬퍼 클래스
+///
+/// **Single Source of Truth**: LoungeDefinitions를 사용합니다.
+/// 직렬명과 이모지는 LoungeDefinitions에서만 관리되며, 이 클래스는 조회 헬퍼입니다.
 class CareerDisplayHelper {
   /// 직렬 ID를 한글 이름으로 변환
+  ///
+  /// LoungeDefinitions에서 해당 직렬의 name을 찾아 반환합니다.
   static String getCareerDisplayName(String careerId) {
-    return _careerIdToName[careerId] ?? careerId;
+    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+      (l) => l.id == careerId,
+      orElse: () => LoungeDefinitions.defaultLounges.first,
+    );
+
+    // 매칭되는 라운지를 찾았으면 그 이름 반환, 아니면 careerId 그대로 반환
+    return lounge.id == careerId ? lounge.name : careerId;
   }
 
   /// 직렬 ID를 이모지로 변환
+  ///
+  /// LoungeDefinitions에서 해당 직렬의 emoji를 찾아 반환합니다.
   static String getCareerEmoji(String careerId) {
-    return _careerIdToEmoji[careerId] ?? '👤';
+    final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+      (l) => l.id == careerId,
+      orElse: () => LoungeDefinitions.defaultLounges.first,
+    );
+
+    // 매칭되는 라운지를 찾았으면 그 이모지 반환, 아니면 기본 이모지 반환
+    return lounge.id == careerId ? lounge.emoji : '👤';
   }
 
   /// 여러 직렬 ID를 간략하게 표시 (최대 3개 + "외 N개")
@@ -255,205 +276,15 @@ class CareerDisplayHelper {
     return groups;
   }
 
-  /// 직렬 ID → 한글 이름 매핑
-  static const Map<String, String> _careerIdToName = {
-    // 교육공무원
-    'elementary_teacher': '초등교사',
-    'secondary_math_teacher': '중등수학교사',
-    'secondary_korean_teacher': '중등국어교사',
-    'secondary_english_teacher': '중등영어교사',
-    'secondary_science_teacher': '중등과학교사',
-    'secondary_social_teacher': '중등사회교사',
-    'secondary_arts_teacher': '중등예체능교사',
-    'kindergarten_teacher': '유치원교사',
-    'special_education_teacher': '특수교육교사',
-    'counselor_teacher': '상담교사',
-    'health_teacher': '보건교사',
-    'librarian_teacher': '사서교사',
-    'nutrition_teacher': '영양교사',
-
-    // 행정직
-    'admin_9th_national': '9급 국가행정직',
-    'admin_7th_national': '7급 국가행정직',
-    'admin_5th_national': '5급 국가행정직',
-    'admin_9th_local': '9급 지방행정직',
-    'admin_7th_local': '7급 지방행정직',
-    'admin_5th_local': '5급 지방행정직',
-    'tax_officer': '세무직',
-    'customs_officer': '관세직',
-    'job_counselor': '고용노동직',
-    'statistics_officer': '통계직',
-    'librarian': '사서직',
-    'auditor': '감사직',
-    'security_officer': '방호직',
-
-    // 보건복지직
-    'public_health_officer': '보건직',
-    'medical_technician': '의료기술직',
-    'nurse': '간호직',
-    'medical_officer': '의무직',
-    'pharmacist': '약무직',
-    'food_sanitation': '식품위생직',
-    'social_worker': '사회복지직',
-
-    // 공안직
-    'correction_officer': '교정직',
-    'probation_officer': '보호직',
-    'prosecution_officer': '검찰직',
-    'drug_investigation_officer': '마약수사직',
-    'immigration_officer': '출입국관리직',
-    'railroad_police': '철도경찰',
-    'security_guard': '경비직',
-
-    // 치안/안전
-    'police': '경찰',
-    'firefighter': '소방',
-    'coast_guard': '해양경찰',
-
-    // 군인
-    'army': '육군',
-    'navy': '해군',
-    'air_force': '공군',
-    'military_civilian': '군무원',
-
-    // 기술직
-    'mechanical_engineer': '기계직',
-    'electrical_engineer': '전기직',
-    'electronics_engineer': '전자직',
-    'chemical_engineer': '화공직',
-    'shipbuilding_engineer': '조선직',
-    'nuclear_engineer': '원자력직',
-    'metal_engineer': '금속직',
-    'textile_engineer': '섬유직',
-    'civil_engineer': '토목직',
-    'architect': '건축직',
-    'landscape_architect': '조경직',
-    'traffic_engineer': '교통직',
-    'cadastral_officer': '지적직',
-    'designer': '디자인직',
-    'environmental_officer': '환경직',
-    'agriculture_officer': '농업직',
-    'plant_quarantine': '식물검역직',
-    'livestock_officer': '축산직',
-    'forestry_officer': '산림직',
-    'marine_officer': '해양수산직',
-    'fisheries_officer': '수산직',
-    'ship_officer': '항해직',
-    'veterinarian': '수의직',
-    'agricultural_extension': '농촌지도직',
-    'computer_officer': '전산직',
-    'broadcasting_communication': '방송통신직',
-    'facility_management': '시설관리직',
-    'sanitation_worker': '위생직',
-    'cook': '조리직',
-
-    // 기타
-    'postal_service': '우정직',
-    'researcher': '연구직',
-  };
-
-  /// 직렬 ID → 이모지 매핑
-  static const Map<String, String> _careerIdToEmoji = {
-    // 교육공무원
-    'elementary_teacher': '🏫',
-    'secondary_math_teacher': '📐',
-    'secondary_korean_teacher': '📖',
-    'secondary_english_teacher': '🌍',
-    'secondary_science_teacher': '🔬',
-    'secondary_social_teacher': '🌏',
-    'secondary_arts_teacher': '🎨',
-    'kindergarten_teacher': '👶',
-    'special_education_teacher': '🤝',
-    'counselor_teacher': '💬',
-    'health_teacher': '🏥',
-    'librarian_teacher': '📚',
-    'nutrition_teacher': '🍎',
-
-    // 행정직
-    'admin_9th_national': '🏛️',
-    'admin_7th_national': '🏛️',
-    'admin_5th_national': '🏛️',
-    'admin_9th_local': '🏢',
-    'admin_7th_local': '🏢',
-    'admin_5th_local': '🏢',
-    'tax_officer': '💰',
-    'customs_officer': '🛃',
-    'job_counselor': '💼',
-    'statistics_officer': '📊',
-    'librarian': '📚',
-    'auditor': '🔍',
-    'security_officer': '🔒',
-
-    // 보건복지직
-    'public_health_officer': '🏥',
-    'medical_technician': '🩺',
-    'nurse': '💉',
-    'medical_officer': '⚕️',
-    'pharmacist': '💊',
-    'food_sanitation': '🍴',
-    'social_worker': '🤲',
-
-    // 공안직
-    'correction_officer': '⚖️',
-    'probation_officer': '⚖️',
-    'prosecution_officer': '⚖️',
-    'drug_investigation_officer': '🚨',
-    'immigration_officer': '🛂',
-    'railroad_police': '🚂',
-    'security_guard': '🛡️',
-
-    // 치안/안전
-    'police': '👮‍♂️',
-    'firefighter': '👨‍🚒',
-    'coast_guard': '🌊',
-
-    // 군인
-    'army': '🪖',
-    'navy': '⚓',
-    'air_force': '✈️',
-    'military_civilian': '🎖️',
-
-    // 기술직 - 공업
-    'mechanical_engineer': '⚙️',
-    'electrical_engineer': '⚡',
-    'electronics_engineer': '🔌',
-    'chemical_engineer': '🧪',
-    'shipbuilding_engineer': '🚢',
-    'nuclear_engineer': '⚛️',
-    'metal_engineer': '🔩',
-    'textile_engineer': '🧵',
-
-    // 기술직 - 시설환경
-    'civil_engineer': '🏗️',
-    'architect': '🏛️',
-    'landscape_architect': '🌳',
-    'traffic_engineer': '🚦',
-    'cadastral_officer': '🗺️',
-    'designer': '🎨',
-    'environmental_officer': '♻️',
-
-    // 기술직 - 농림수산
-    'agriculture_officer': '🌾',
-    'plant_quarantine': '🌱',
-    'livestock_officer': '🐄',
-    'forestry_officer': '🌲',
-    'marine_officer': '🌊',
-    'fisheries_officer': '🐟',
-    'ship_officer': '⛴️',
-    'veterinarian': '🐕',
-    'agricultural_extension': '👨‍🌾',
-
-    // 기술직 - IT통신
-    'computer_officer': '💻',
-    'broadcasting_communication': '📡',
-
-    // 기술직 - 관리운영
-    'facility_management': '🔧',
-    'sanitation_worker': '🧹',
-    'cook': '👨‍🍳',
-
-    // 기타
-    'postal_service': '📮',
-    'researcher': '🔬',
-  };
+  // ============================================================================
+  // Single Source of Truth: LoungeDefinitions
+  // ============================================================================
+  //
+  // 직렬명과 이모지는 LoungeDefinitions에서만 관리됩니다.
+  // - getCareerDisplayName() → LoungeDefinitions 조회
+  // - getCareerEmoji() → LoungeDefinitions 조회
+  //
+  // 이전에 사용되던 _careerIdToName, _careerIdToEmoji 맵은 제거되었습니다.
+  // 모든 직렬 정보는 lib/features/community/domain/models/lounge_definitions.dart에서 관리합니다.
+  // ============================================================================
 }

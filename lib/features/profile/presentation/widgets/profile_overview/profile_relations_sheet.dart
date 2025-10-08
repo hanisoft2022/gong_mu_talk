@@ -36,58 +36,61 @@ void showProfileRelationsSheet(BuildContext context, ProfileRelationType type) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    builder: (BuildContext context) {
-      return DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.9,
-        minChildSize: 0.4,
-        builder: (BuildContext context, ScrollController controller) {
-          return BlocBuilder<ProfileRelationsCubit, ProfileRelationsState>(
-            builder: (BuildContext context, ProfileRelationsState state) {
-              return Column(
-                children: [
-                  // Drag handle
-                  Container(
-                    width: 48,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
+    builder: (BuildContext modalContext) {
+      return BlocProvider<ProfileRelationsCubit>.value(
+        value: cubit,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          builder: (BuildContext context, ScrollController controller) {
+            return BlocBuilder<ProfileRelationsCubit, ProfileRelationsState>(
+              builder: (BuildContext context, ProfileRelationsState state) {
+                return Column(
+                  children: [
+                    // Drag handle
+                    Container(
+                      width: 48,
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
 
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          state.type == ProfileRelationType.followers
-                              ? '팔로워'
-                              : '팔로잉',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            state.type == ProfileRelationType.followers
+                                ? '팔로워'
+                                : '팔로잉',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // Content
-                  Expanded(
-                    child: _buildContent(context, state, cubit, controller),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                    // Content
+                    Expanded(
+                      child: _buildContent(context, state, cubit, controller),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       );
     },
   );

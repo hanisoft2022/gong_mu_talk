@@ -20,6 +20,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 /// Settings section container with title and children
 class SettingsSection extends StatelessWidget {
@@ -57,7 +58,7 @@ class SettingsSection extends StatelessWidget {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
+            const Gap(16),
             ...children,
           ],
         ),

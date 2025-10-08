@@ -34,10 +34,10 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../domain/career_track.dart';
 import '../../../domain/user_profile.dart';
+import '../../../../community/domain/models/lounge_definitions.dart';
 import '../../cubit/profile_relations_cubit.dart';
 import '../../views/profile_edit_page.dart';
 import 'profile_relations_sheet.dart';
@@ -109,9 +109,6 @@ class ProfileHeader extends StatelessWidget {
             // Follower/Following Stats (Instagram-style inline)
             _buildInlineStats(context),
 
-            // Activity Stats (Posts, Scraps, Likes, Comments)
-            if (isOwnProfile) ...[const Gap(16), _buildActivityStats(context)],
-
             // Bio
             if (profile.bio != null && profile.bio!.trim().isNotEmpty) ...[
               const Gap(16),
@@ -132,12 +129,35 @@ class ProfileHeader extends StatelessWidget {
   // Career Track + Emoji + Nickname + Join Date + Verification Icons
   Widget _buildCareerAndNickname(BuildContext context, ThemeData theme) {
     final String displayText;
-    if (profile.careerTrack != CareerTrack.none) {
-      // Show: [직렬명] [이모지] [닉네임]
+
+    // Try to get specific career name from careerHierarchy
+    if (profile.careerHierarchy != null &&
+        profile.careerHierarchy!.specificCareer != 'none') {
+      final specificCareer = profile.careerHierarchy!.specificCareer;
+
+      // Find matching lounge in LoungeDefinitions
+      final lounge = LoungeDefinitions.defaultLounges.firstWhere(
+        (l) => l.id == specificCareer,
+        orElse: () => LoungeDefinitions.defaultLounges.first,
+      );
+
+      // If found and not the fallback 'all' lounge
+      if (lounge.id == specificCareer) {
+        // Show: [구체적 직렬명] [이모지] [닉네임]
+        displayText = '${lounge.name} ${lounge.emoji} ${profile.nickname}';
+      } else if (profile.careerTrack != CareerTrack.none) {
+        // Fallback to careerTrack
+        displayText =
+            '${profile.careerTrack.displayName} ${profile.careerTrack.emoji} ${profile.nickname}';
+      } else {
+        displayText = profile.nickname;
+      }
+    } else if (profile.careerTrack != CareerTrack.none) {
+      // Legacy: Use careerTrack if careerHierarchy not available
       displayText =
           '${profile.careerTrack.displayName} ${profile.careerTrack.emoji} ${profile.nickname}';
     } else {
-      // Fallback: Just nickname
+      // No career info: Just nickname
       displayText = profile.nickname;
     }
 
@@ -173,12 +193,38 @@ class ProfileHeader extends StatelessWidget {
     return '${createdAt.year}년 ${createdAt.month}월 ${createdAt.day}일 가입';
   }
 
-  // Inline Stats (Instagram-style: "355k followers · 77 following")
+  // Inline Stats (Instagram-style: "23 posts · 355k followers · 77 following")
   Widget _buildInlineStats(BuildContext context) {
     final theme = Theme.of(context);
 
     return Row(
       children: [
+        // Posts count
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: RichText(
+            text: TextSpan(
+              style: theme.textTheme.bodyMedium,
+              children: [
+                TextSpan(
+                  text: '${profile.postCount}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const TextSpan(text: ' 게시물'),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '·',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        // Followers count
         InkWell(
           onTap: isOwnProfile
               ? () => showProfileRelationsSheet(
@@ -219,6 +265,7 @@ class ProfileHeader extends StatelessWidget {
             ),
           ),
         ),
+        // Following count
         InkWell(
           onTap: isOwnProfile
               ? () => showProfileRelationsSheet(
@@ -304,102 +351,6 @@ class ProfileHeader extends StatelessWidget {
             child: const Text('임시 직렬 선택'),
           ),
         ],
-      ),
-    );
-  }
-
-  // Activity Stats Row (Posts, Scraps, Likes, Comments)
-  Widget _buildActivityStats(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _ActivityStatCard(
-            icon: Icons.article_outlined,
-            label: '작성한 글',
-            onTap: () {
-              // Navigate to authored posts (ProfileTimeline already exists)
-              // Note: This is handled by ProfileTimelineTab
-            },
-          ),
-          const Gap(8),
-          _ActivityStatCard(
-            icon: Icons.bookmark_outline,
-            label: '스크랩',
-            onTap: () {
-              context.push('/profile/scraps');
-            },
-          ),
-          const Gap(8),
-          _ActivityStatCard(
-            icon: Icons.favorite_outline,
-            label: '좋아요',
-            onTap: () {
-              context.push('/profile/liked-posts');
-            },
-          ),
-          const Gap(8),
-          _ActivityStatCard(
-            icon: Icons.comment_outlined,
-            label: '작성한 댓글',
-            onTap: () {
-              context.push('/profile/user/${profile.uid}/comments');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Activity Stat Card Widget
-class _ActivityStatCard extends StatelessWidget {
-  const _ActivityStatCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 110,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 24, color: colorScheme.primary),
-            const Gap(8),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -10,10 +10,18 @@ import '../widgets/post_card.dart';
 ///
 /// Displays a single post when accessed via deep link.
 /// Used for sharing posts with other users.
+///
+/// If [highlightCommentId] is provided, automatically scrolls to and highlights
+/// that specific comment.
 class PostDetailView extends StatefulWidget {
-  const PostDetailView({required this.postId, super.key});
+  const PostDetailView({
+    required this.postId,
+    this.highlightCommentId,
+    super.key,
+  });
 
   final String postId;
+  final String? highlightCommentId;
 
   @override
   State<PostDetailView> createState() => _PostDetailViewState();
@@ -113,6 +121,7 @@ class _PostDetailViewState extends State<PostDetailView> {
         value: _repository,
         child: PostCard(
           post: _post!,
+          highlightCommentId: widget.highlightCommentId,
           onToggleLike: () async {
             // Optimistic update
             setState(() {

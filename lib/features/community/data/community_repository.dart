@@ -133,7 +133,6 @@ class CommunityRepository {
 
   // Legacy cache variables (TODO: migrate to services)
   final Map<String, Set<String>> _likedPostsCache = {};
-  final Map<String, Set<String>> _scrappedPostsCache = {};
   final Map<String, Map<String, Set<String>>> _likedCommentsCache = {};
   final Map<String, List<Comment>> _topCommentsCache = {};
 
@@ -437,6 +436,25 @@ class CommunityRepository {
     debugPrint('🗑️  Top Comment 캐시 무효화 - postId: $postId (댓글 삭제)');
   }
 
+  /// Undo comment deletion (restore)
+  Future<void> undoDeleteComment({
+    required String postId,
+    required String commentId,
+    required String requesterUid,
+    required String originalText,
+  }) async {
+    await _commentRepository.undoDeleteComment(
+      postId: postId,
+      commentId: commentId,
+      requesterUid: requesterUid,
+      originalText: originalText,
+    );
+
+    // Top Comment 캐시 무효화 (복구된 댓글이 top이 될 수 있음)
+    _topCommentsCache.remove(postId);
+    debugPrint('🔄 Top Comment 캐시 무효화 - postId: $postId (댓글 복구)');
+  }
+
   Future<List<Comment>> getComments(String postId) async {
     final comments = await _commentRepository.getComments(postId);
     final Set<String> likedIds = await _interactionRepository
@@ -553,16 +571,8 @@ class CommunityRepository {
   }) async {
     await _interactionRepository.toggleScrap(uid: uid, postId: postId);
 
-    // 캐시 즉시 업데이트 (토글이므로 존재 여부 확인)
-    if (_scrappedPostsCache.containsKey(uid)) {
-      if (_scrappedPostsCache[uid]!.contains(postId)) {
-        _scrappedPostsCache[uid]!.remove(postId);
-        debugPrint('💾 Scrap 캐시 업데이트 - postId: $postId, scrapped: false');
-      } else {
-        _scrappedPostsCache[uid]!.add(postId);
-        debugPrint('💾 Scrap 캐시 업데이트 - postId: $postId, scrapped: true');
-      }
-    }
+    // Update cache using InteractionCacheManager
+    _cacheManager.toggleScrapInCache(uid: uid, postId: postId);
   }
 
   Future<Set<String>> fetchScrappedPostIds(String uid) {
@@ -850,5 +860,15 @@ class CommunityRepository {
   /// Get cache statistics
   Map<String, int> getCacheStats() {
     return _cacheManager.getCacheStats();
+  }
+
+  /// Get scrapped post IDs from cache (no network call)
+  Set<String>? getCachedScrappedIds(String uid, List<String> postIds) {
+    return _cacheManager.getScrappedPostIds(uid, postIds);
+  }
+
+  /// Get liked post IDs from cache (no network call)
+  Set<String>? getCachedLikedIds(String uid, List<String> postIds) {
+    return _cacheManager.getLikedPostIds(uid, postIds);
   }
 }

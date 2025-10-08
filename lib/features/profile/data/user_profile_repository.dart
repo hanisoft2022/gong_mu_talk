@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import '../../../core/firebase/paginated_query.dart';
 import '../../../core/utils/prefix_tokenizer.dart';
+import '../../../core/utils/nickname_validator.dart';
 import '../domain/user_profile.dart';
 import '../domain/career_track.dart';
 
@@ -109,6 +110,7 @@ class UserProfileRepository {
         lastLoginAt: now,
         followerCount: 0,
         followingCount: 0,
+        postCount: 0,
         notificationsEnabled: true,
         supporterBadgeVisible: true,
         serialVisible: true,
@@ -124,8 +126,13 @@ class UserProfileRepository {
     required String newNickname,
   }) async {
     final String trimmedNickname = newNickname.trim();
-    if (trimmedNickname.isEmpty) {
-      throw ArgumentError('닉네임은 비워둘 수 없습니다.');
+
+    // 닉네임 검증
+    final validationResult = NicknameValidator.validate(trimmedNickname);
+    if (!validationResult.isValid) {
+      throw ArgumentError(
+        validationResult.errorMessage ?? '유효하지 않은 닉네임입니다.',
+      );
     }
 
     return _firestore.runTransaction<UserProfile>((
@@ -141,8 +148,16 @@ class UserProfileRepository {
 
       final UserProfile profile = UserProfile.fromSnapshot(userSnapshot);
       final DateTime now = DateTime.now();
+
+      // 30일 기준 변경 제한 체크
       if (!profile.canChangeNickname) {
-        throw StateError('닉네임은 한 달에 한 번만 변경할 수 있어요. 다음 달에 다시 시도해주세요.');
+        final DateTime? lastChanged = profile.nicknameLastChangedAt;
+        if (lastChanged != null) {
+          final DateTime nextChangeDate = lastChanged.add(const Duration(days: 30));
+          final int daysRemaining = nextChangeDate.difference(now).inDays + 1;
+          throw StateError('닉네임은 30일마다 변경할 수 있어요. $daysRemaining일 후에 다시 시도해주세요.');
+        }
+        throw StateError('닉네임은 30일마다 변경할 수 있어요.');
       }
 
       final String newHandle = _normalizeHandle(trimmedNickname, fallback: uid);
@@ -159,28 +174,11 @@ class UserProfileRepository {
         transaction.delete(_handleDoc(profile.handle));
       }
 
-      int changeCount = profile.nicknameChangeCount;
-      final DateTime? previousReset = profile.nicknameResetAt;
-      if (previousReset == null ||
-          previousReset.year != now.year ||
-          previousReset.month != now.month) {
-        changeCount = 0;
-      }
-
-      if (changeCount >= 1) {
-        throw StateError('닉네임은 한 달에 한 번만 변경할 수 있어요. 다음 달에 다시 시도해주세요.');
-      }
-
-      changeCount += 1;
-      final DateTime resetAnchor = DateTime(now.year, now.month);
-
       final Map<String, Object?> updates = <String, Object?>{
         'nickname': trimmedNickname,
         'handle': newHandle,
         'updatedAt': Timestamp.fromDate(now),
         'nicknameLastChangedAt': Timestamp.fromDate(now),
-        'nicknameResetAt': Timestamp.fromDate(resetAnchor),
-        'nicknameChangeCount': changeCount,
         'keywords': _tokenizer.buildPrefixes(title: trimmedNickname),
       };
 
@@ -190,11 +188,32 @@ class UserProfileRepository {
         handle: newHandle,
         updatedAt: now,
         nicknameLastChangedAt: now,
-        nicknameResetAt: resetAnchor,
-        nicknameChangeCount: changeCount,
         extraNicknameTickets: profile.extraNicknameTickets,
       );
     });
+  }
+
+  /// 디버그/테스트용: 닉네임 변경 제한 초기화
+  /// nicknameLastChangedAt를 오래된 날짜로 설정하여 즉시 변경 가능하게 함
+  Future<UserProfile> resetNicknameChangeLimit({
+    required String uid,
+  }) async {
+    final DocumentReference<JsonMap> doc = _userDoc(uid);
+
+    // 30일 이전 날짜로 설정
+    final DateTime oldDate = DateTime.now().subtract(const Duration(days: 31));
+
+    await doc.update(<String, Object?>{
+      'nicknameLastChangedAt': Timestamp.fromDate(oldDate),
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+
+    final DocumentSnapshot<JsonMap> snapshot = await doc.get();
+    if (!snapshot.exists) {
+      throw StateError('사용자 프로필을 찾을 수 없습니다.');
+    }
+
+    return UserProfile.fromSnapshot(snapshot);
   }
 
   Future<UserProfile> updateProfileFields({

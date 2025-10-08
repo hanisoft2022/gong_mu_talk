@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -39,9 +38,11 @@ class CommentRepository {
   final FirebaseFirestore _firestore;
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
-  final Random _random = Random();
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
-  static const int _counterShardCount = 20;
+
+  // NOTE: Counter shard related fields removed as commentCount is now managed
+  // by Firebase Functions. If needed, can be restored from git history.
+  // Previously: _random, _counterShardCount, _counterShardRef, _postCounterShard
 
   CollectionReference<JsonMap> get _postsRef => _firestore.collection(Fs.posts);
 
@@ -49,14 +50,6 @@ class CommentRepository {
 
   CollectionReference<JsonMap> _commentsRef(String postId) =>
       _postDoc(postId).collection(Fs.comments);
-
-  CollectionReference<JsonMap> _postCounterShard(String postId) =>
-      _firestore.collection(Fs.postCounters).doc(postId).collection(Fs.shards);
-
-  DocumentReference<JsonMap> _counterShardRef(String postId) {
-    final int shardIndex = _random.nextInt(_counterShardCount);
-    return _postCounterShard(postId).doc('shard_$shardIndex');
-  }
 
   Future<PaginatedQueryResult<Comment>> fetchComments({
     required String postId,
@@ -126,16 +119,15 @@ class CommentRepository {
         'imageUrls': imageUrls ?? [],
       });
 
+      // NOTE: commentCount is now handled by Firebase Functions (onCommentWrite)
+      // This prevents double-counting race condition between client and server.
+      // Functions will detect comment creation and increment commentCount atomically.
+
+      // Update post's updatedAt timestamp only
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
       transaction.update(postRef, <String, Object?>{
-        'commentCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
-
-      final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(shardRef, <String, Object?>{
-        'comments': FieldValue.increment(1),
-      }, SetOptions(merge: true));
     });
 
     if (awardPoints) {
@@ -197,20 +189,62 @@ class CommentRepository {
         throw StateError('댓글 삭제 권한이 없습니다.');
       }
 
+      // Soft delete: Mark as deleted but keep the document
       transaction.update(commentDoc, <String, Object?>{
         'deleted': true,
         'text': '[삭제된 댓글]',
       });
 
+      // NOTE: commentCount decrement is now handled by Firebase Functions (onCommentWrite)
+      // Functions will detect deleted: false → true change and decrement commentCount.
+      // This prevents race conditions and ensures consistency.
+
+      // Update post's updatedAt timestamp only
       final DocumentReference<JsonMap> postRef = _postDoc(postId);
       transaction.update(postRef, <String, Object?>{
-        'commentCount': FieldValue.increment(-1),
         'updatedAt': Timestamp.now(),
       });
-      final DocumentReference<JsonMap> shardRef = _counterShardRef(postId);
-      transaction.set(shardRef, <String, Object?>{
-        'comments': FieldValue.increment(-1),
-      }, SetOptions(merge: true));
+    });
+  }
+
+  /// Undo comment deletion (restore)
+  ///
+  /// Restores a soft-deleted comment by setting deleted: false.
+  /// Firebase Functions will detect this and increment commentCount back.
+  Future<void> undoDeleteComment({
+    required String postId,
+    required String commentId,
+    required String requesterUid,
+    required String originalText,
+  }) async {
+    final DocumentReference<JsonMap> commentDoc = _commentsRef(
+      postId,
+    ).doc(commentId);
+    await _firestore.runTransaction<void>((Transaction transaction) async {
+      final DocSnapshotJson snapshot = await transaction.get(commentDoc);
+      if (!snapshot.exists) {
+        return;
+      }
+
+      final Map<String, Object?> data = snapshot.data()!;
+      if (data['authorUid'] != requesterUid) {
+        throw StateError('댓글 복구 권한이 없습니다.');
+      }
+
+      // Restore: Set deleted back to false
+      transaction.update(commentDoc, <String, Object?>{
+        'deleted': false,
+        'text': originalText, // Restore original text
+      });
+
+      // NOTE: commentCount increment is handled by Firebase Functions (onCommentWrite)
+      // Functions will detect deleted: true → false change and increment commentCount.
+
+      // Update post's updatedAt timestamp
+      final DocumentReference<JsonMap> postRef = _postDoc(postId);
+      transaction.update(postRef, <String, Object?>{
+        'updatedAt': Timestamp.now(),
+      });
     });
   }
 

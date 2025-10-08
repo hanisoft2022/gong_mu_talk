@@ -31,6 +31,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
@@ -78,7 +79,7 @@ class CustomerSupportSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('개선 사항이나 문제점을 알려주세요.'),
-                    const SizedBox(height: 16),
+                    const Gap(16),
                     TextFormField(
                       controller: feedbackController,
                       maxLines: 5,

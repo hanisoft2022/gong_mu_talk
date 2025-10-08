@@ -139,4 +139,7 @@ abstract class ICommunityRepository {
   Future<List<Comment>> getComments(String postId);
   Future<List<Comment>> getTopComments(String postId, {int limit = 3});
   Future<bool> toggleCommentLikeById(String postId, String commentId);
+
+  // Cache management
+  void clearInteractionCache({String? uid});
 }

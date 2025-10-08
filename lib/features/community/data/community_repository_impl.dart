@@ -343,4 +343,9 @@ class CommunityRepositoryImpl implements ICommunityRepository {
     );
     return result.fold((error) => false, (success) => success);
   }
+
+  @override
+  void clearInteractionCache({String? uid}) {
+    _repository.clearInteractionCache(uid: uid);
+  }
 }

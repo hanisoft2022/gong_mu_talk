@@ -150,13 +150,41 @@ export const onCommentWrite = onDocumentWritten(
     const after = event.data?.after;
     const beforeExists = before?.exists ?? false;
     const afterExists = after?.exists ?? false;
-    const isCreate = !beforeExists && afterExists;
-    const isDelete = beforeExists && !afterExists;
 
-    if (!isCreate && !isDelete) {
+    // Hard delete: document completely removed
+    const isHardDelete = beforeExists && !afterExists;
+
+    // Soft delete: deleted field changed from false to true
+    const isSoftDelete =
+      beforeExists &&
+      afterExists &&
+      before?.data()?.deleted === false &&
+      after?.data()?.deleted === true;
+
+    // Restore: deleted field changed from true to false (undo)
+    const isRestore =
+      beforeExists &&
+      afterExists &&
+      before?.data()?.deleted === true &&
+      after?.data()?.deleted === false;
+
+    // Create: new comment added
+    const isCreate = !beforeExists && afterExists;
+
+    // Determine increment value
+    let increment = 0;
+    if (isCreate) {
+      increment = 1;
+    } else if (isHardDelete || isSoftDelete) {
+      increment = -1;
+    } else if (isRestore) {
+      increment = 1;
+    } else {
+      // Just an update (e.g., like count changed), no count change needed
       return;
     }
 
+    // Update post with FieldValue.increment for atomic operation
     const postRef = db.doc(`posts/${postId}`);
     const postSnap = await postRef.get();
     if (!postSnap.exists) {
@@ -164,28 +192,24 @@ export const onCommentWrite = onDocumentWritten(
     }
 
     const postData = postSnap.data() ?? {};
-    const currentComments = (postData.commentCount as number | undefined) ?? 0;
     const createdAt = postData.createdAt as Timestamp | undefined;
     if (!createdAt) {
       return;
     }
 
-    let newCommentCount = currentComments;
-    if (isCreate) {
-      newCommentCount = currentComments + 1;
-    } else if (isDelete) {
-      newCommentCount = Math.max(0, currentComments - 1);
-    }
+    // Calculate new comment count (for hot score calculation only)
+    const currentComments = (postData.commentCount as number | undefined) ?? 0;
+    const estimatedNewCount = Math.max(0, currentComments + increment);
 
     const newHotScore = calculateHotScore(
       (postData.likeCount as number | undefined) ?? 0,
-      newCommentCount,
+      estimatedNewCount,
       (postData.viewCount as number | undefined) ?? 0,
       createdAt
     );
 
     let topComment: Record<string, unknown> | null = null;
-    if (newCommentCount > 0) {
+    if (estimatedNewCount > 0) {
       const topCommentsSnap = await db.collection(`posts/${postId}/comments`)
         .where("deleted", "==", false)
         .orderBy("likeCount", "desc")
@@ -205,7 +229,7 @@ export const onCommentWrite = onDocumentWritten(
     }
 
     await postRef.update({
-      commentCount: newCommentCount,
+      commentCount: FieldValue.increment(increment),
       hotScore: newHotScore,
       topComment,
       updatedAt: FieldValue.serverTimestamp(),
@@ -213,7 +237,6 @@ export const onCommentWrite = onDocumentWritten(
 
     const shardId = `shard_${Math.floor(Math.random() * COUNTER_SHARD_COUNT)}`;
     const shardRef = db.doc(`post_counters/${postId}/shards/${shardId}`);
-    const increment = isDelete ? -1 : 1;
 
     await shardRef.set(
       {
@@ -323,6 +346,59 @@ export const processReports = onDocumentCreated(
       `Processed report for ${targetType}:${targetId}, total reports:` +
       ` ${reportCount}`;
     console.log(message);
+  }
+);
+
+/**
+ * Update user's post count when a post is created or deleted.
+ * Automatically increments/decrements postCount in users collection.
+ */
+export const onPostWrite = onDocumentWritten(
+  {
+    document: "posts/{postId}",
+    region: "us-central1",
+  },
+  async (event) => {
+    const before = event.data?.before;
+    const after = event.data?.after;
+    const beforeExists = before?.exists ?? false;
+    const afterExists = after?.exists ?? false;
+
+    const isCreate = !beforeExists && afterExists;
+    const isDelete = beforeExists && !afterExists;
+
+    // Only handle create or delete events
+    if (!isCreate && !isDelete) {
+      return;
+    }
+
+    // Get authorUid from the post data
+    const postData = isCreate ? after?.data() : before?.data();
+    const authorUid = postData?.authorUid as string | undefined;
+
+    if (!authorUid) {
+      console.log("No authorUid found in post data");
+      return;
+    }
+
+    // Update user's post count
+    const increment = isCreate ? 1 : -1;
+    const userRef = db.doc(`users/${authorUid}`);
+
+    try {
+      await userRef.update({
+        postCount: FieldValue.increment(increment),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      const action = isCreate ? "incremented" : "decremented";
+      const sign = increment > 0 ? "+" : "";
+      console.log(
+        `Post count ${action} for user ${authorUid} (${sign}${increment})`
+      );
+    } catch (error) {
+      console.error(`Error updating post count for user ${authorUid}:`, error);
+    }
   }
 );
 

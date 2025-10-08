@@ -173,4 +173,52 @@ class InteractionCacheManager {
       'savedCost': calculateSavedCost(),
     };
   }
+
+  /// Toggle scrap state in cache
+  /// Returns true if now scrapped, false if unscrapped
+  bool toggleScrapInCache({
+    required String uid,
+    required String postId,
+  }) {
+    if (!_scrappedPostsCache.containsKey(uid)) {
+      _scrappedPostsCache[uid] = {};
+    }
+
+    final scraps = _scrappedPostsCache[uid]!;
+    final wasScrapped = scraps.contains(postId);
+
+    if (wasScrapped) {
+      scraps.remove(postId);
+      debugPrint('🔄 Cache: Removed scrap for post $postId');
+    } else {
+      scraps.add(postId);
+      debugPrint('🔄 Cache: Added scrap for post $postId');
+    }
+
+    return !wasScrapped; // Return new state
+  }
+
+  /// Toggle like state in cache
+  /// Returns true if now liked, false if unliked
+  bool toggleLikeInCache({
+    required String uid,
+    required String postId,
+  }) {
+    if (!_likedPostsCache.containsKey(uid)) {
+      _likedPostsCache[uid] = {};
+    }
+
+    final likes = _likedPostsCache[uid]!;
+    final wasLiked = likes.contains(postId);
+
+    if (wasLiked) {
+      likes.remove(postId);
+      debugPrint('🔄 Cache: Removed like for post $postId');
+    } else {
+      likes.add(postId);
+      debugPrint('🔄 Cache: Added like for post $postId');
+    }
+
+    return !wasLiked; // Return new state
+  }
 }

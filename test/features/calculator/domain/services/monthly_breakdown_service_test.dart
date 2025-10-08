@@ -4,13 +4,18 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
+import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 
 void main() {
   late MonthlyBreakdownService service;
 
   setUp(() {
-    service = MonthlyBreakdownService(TaxCalculationService());
+    final taxService = TaxCalculationService();
+    service = MonthlyBreakdownService(
+      taxService,
+      SalaryCalculationService(taxService),
+    );
   });
 
   group('MonthlyBreakdownService - 호봉표 검증', () {

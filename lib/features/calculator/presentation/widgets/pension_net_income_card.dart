@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/pension_detail_page.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_source_badge.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
 
 /// 퇴직 후 연금 실수령액 카드 (세전 + 세후 통합)
@@ -65,7 +65,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                         color: isLocked ? Colors.grey : Colors.green,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const Gap(12),
                     Expanded(
                       child: Text(
                         '퇴직 후 연금 실수령액',
@@ -81,13 +81,9 @@ class PensionNetIncomeCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const Gap(12),
 
-                // 신뢰 배지
-                if (!isLocked)
-                  const CalculationSourceBadge(source: '공무원연금법', year: '2025'),
-
-                const SizedBox(height: 20),
+                const Gap(20),
 
                 if (isLocked)
                   // 잠금 상태
@@ -99,7 +95,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                           size: 48,
                           color: Colors.grey[400],
                         ),
-                        const SizedBox(height: 8),
+                        const Gap(8),
                         Text(
                           '정보 입력 후 이용 가능',
                           style: TextStyle(
@@ -143,7 +139,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                                   color: Colors.green[800],
                                   size: 24,
                                 ),
-                                const SizedBox(width: 8),
+                                const Gap(8),
                                 Text(
                                   '월 실수령액 (세후)',
                                   style: Theme.of(context).textTheme.titleMedium
@@ -154,7 +150,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            const Gap(12),
                             Text(
                               NumberFormatter.formatCurrency(
                                 afterTaxPension!.monthlyPensionAfterTax,
@@ -169,7 +165,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const Gap(20),
 
                       // 수령 기간 및 총액
                       _buildInfoRow(
@@ -178,7 +174,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                         '${pensionEstimate!.retirementAge}세~${pensionEstimate!.lifeExpectancy}세 (${pensionEstimate!.receivingYears}년)',
                       ),
 
-                      const SizedBox(height: 12),
+                      const Gap(12),
 
                       _buildInfoRow(
                         context,
@@ -189,13 +185,13 @@ class PensionNetIncomeCard extends StatelessWidget {
                         isHighlight: true,
                       ),
 
-                      const SizedBox(height: 16),
+                      const Gap(16),
 
                       // 계산 근거 섹션
                       if (pensionEstimate != null && afterTaxPension != null)
                         _buildCalculationBreakdown(context),
 
-                      const SizedBox(height: 20),
+                      const Gap(20),
 
                       // 상세 정보 (Expandable)
                       ExpansionTile(
@@ -207,7 +203,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                               size: 20,
                               color: Colors.grey[700],
                             ),
-                            const SizedBox(width: 8),
+                            const Gap(8),
                             Text(
                               '세전/공제 상세 보기',
                               style: Theme.of(context).textTheme.bodyMedium
@@ -236,9 +232,9 @@ class PensionNetIncomeCard extends StatelessWidget {
                                   ),
                                 ),
 
-                                const SizedBox(height: 12),
+                                const Gap(12),
                                 const Divider(height: 1),
-                                const SizedBox(height: 12),
+                                const Gap(12),
 
                                 // 공제 항목
                                 Text(
@@ -249,35 +245,35 @@ class PensionNetIncomeCard extends StatelessWidget {
                                         fontWeight: FontWeight.w500,
                                       ),
                                 ),
-                                const SizedBox(height: 8),
+                                const Gap(8),
 
                                 _buildDeductionRow(
                                   context,
                                   '소득세',
                                   afterTaxPension!.incomeTax,
                                 ),
-                                const SizedBox(height: 4),
+                                const Gap(4),
                                 _buildDeductionRow(
                                   context,
                                   '지방세',
                                   afterTaxPension!.localTax,
                                 ),
-                                const SizedBox(height: 4),
+                                const Gap(4),
                                 _buildDeductionRow(
                                   context,
                                   '건강보험',
                                   afterTaxPension!.healthInsurance,
                                 ),
-                                const SizedBox(height: 4),
+                                const Gap(4),
                                 _buildDeductionRow(
                                   context,
                                   '장기요양보험',
                                   afterTaxPension!.longTermCareInsurance,
                                 ),
 
-                                const SizedBox(height: 12),
+                                const Gap(12),
                                 const Divider(height: 1),
-                                const SizedBox(height: 12),
+                                const Gap(12),
 
                                 // 총 공제액
                                 Row(
@@ -306,7 +302,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                                   ],
                                 ),
 
-                                const SizedBox(height: 12),
+                                const Gap(12),
 
                                 // 연간 실수령액
                                 _buildDetailRow(
@@ -322,7 +318,7 @@ class PensionNetIncomeCard extends StatelessWidget {
                         ],
                       ),
 
-                      const SizedBox(height: 16),
+                      const Gap(16),
 
                       // 연금 공백 경고 (62세 정년인 경우)
                       if (pensionEstimate!.retirementAge == 62)
@@ -505,7 +501,7 @@ class PensionNetIncomeCard extends StatelessWidget {
             size: 20,
             color: Colors.orange[700],
           ),
-          const SizedBox(width: 8),
+          const Gap(8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

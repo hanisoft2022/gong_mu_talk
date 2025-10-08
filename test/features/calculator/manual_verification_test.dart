@@ -7,6 +7,7 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
+import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
 
 /// 수동 검증용 테스트
 ///
@@ -15,7 +16,11 @@ void main() {
   late MonthlyBreakdownService service;
 
   setUp(() {
-    service = MonthlyBreakdownService(TaxCalculationService());
+    final taxService = TaxCalculationService();
+    service = MonthlyBreakdownService(
+      taxService,
+      SalaryCalculationService(taxService),
+    );
   });
 
   group('실제 급여 계산 예시 검증', () {

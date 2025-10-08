@@ -45,6 +45,7 @@ class UserProfile extends Equatable {
     this.lastLoginAt,
     this.followerCount = 0,
     this.followingCount = 0,
+    this.postCount = 0,
     this.notificationsEnabled = true,
     this.supporterBadgeVisible = true,
     this.serialVisible = true,
@@ -90,6 +91,7 @@ class UserProfile extends Equatable {
   final DateTime? lastLoginAt;
   final int followerCount;
   final int followingCount;
+  final int postCount;
   final bool notificationsEnabled;
   final bool supporterBadgeVisible;
   final bool serialVisible;
@@ -107,14 +109,14 @@ class UserProfile extends Equatable {
   bool get hasNicknameTickets => extraNicknameTickets > 0;
 
   bool get canChangeNickname {
-    final DateTime now = DateTime.now();
-    final DateTime? resetAnchor = nicknameResetAt;
-    if (resetAnchor == null ||
-        resetAnchor.year != now.year ||
-        resetAnchor.month != now.month) {
+    // 30일 기준 변경 제한
+    if (nicknameLastChangedAt == null) {
       return true;
     }
-    return nicknameChangeCount < 1;
+
+    final DateTime now = DateTime.now();
+    final DateTime nextChangeDate = nicknameLastChangedAt!.add(const Duration(days: 30));
+    return now.isAfter(nextChangeDate) || now.isAtSameMomentAs(nextChangeDate);
   }
 
   bool get isGovernmentEmailVerified =>
@@ -155,6 +157,7 @@ class UserProfile extends Equatable {
     DateTime? lastLoginAt,
     int? followerCount,
     int? followingCount,
+    int? postCount,
     bool? notificationsEnabled,
     bool? supporterBadgeVisible,
     bool? serialVisible,
@@ -202,6 +205,7 @@ class UserProfile extends Equatable {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       followerCount: followerCount ?? this.followerCount,
       followingCount: followingCount ?? this.followingCount,
+      postCount: postCount ?? this.postCount,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       supporterBadgeVisible:
           supporterBadgeVisible ?? this.supporterBadgeVisible,
@@ -259,6 +263,7 @@ class UserProfile extends Equatable {
           : null,
       'followerCount': followerCount,
       'followingCount': followingCount,
+      'postCount': postCount,
       'notificationsEnabled': notificationsEnabled,
       'supporterBadgeVisible': supporterBadgeVisible,
       'serialVisible': serialVisible,
@@ -319,6 +324,7 @@ class UserProfile extends Equatable {
       lastLoginAt: _parseTimestamp(data['lastLoginAt']),
       followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
       followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
+      postCount: (data['postCount'] as num?)?.toInt() ?? 0,
       notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
       supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
       serialVisible: data['serialVisible'] as bool? ?? true,
@@ -438,6 +444,7 @@ class UserProfile extends Equatable {
     lastLoginAt,
     followerCount,
     followingCount,
+    postCount,
     notificationsEnabled,
     supporterBadgeVisible,
     serialVisible,

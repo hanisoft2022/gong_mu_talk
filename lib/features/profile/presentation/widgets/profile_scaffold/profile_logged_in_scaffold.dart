@@ -1,7 +1,8 @@
 /// Profile Logged In Scaffold
 ///
 /// Main scaffold for authenticated profile view.
-/// - TabBar with Overview and Settings tabs
+/// - Shows profile overview with tabs
+/// - Settings accessible via top-right icon
 /// - Message display with debouncing logic
 /// - BLoC listener for auth state messages
 ///
@@ -12,9 +13,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../routing/app_router.dart';
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../profile_overview/profile_overview_tab.dart';
-import '../profile_settings/profile_settings_tab.dart';
 
 class ProfileLoggedInScaffold extends StatefulWidget {
   const ProfileLoggedInScaffold({super.key});
@@ -69,23 +70,19 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
         _showMessageIfDifferent(context, message);
         context.read<AuthCubit>().clearLastMessage();
       },
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-            leading: BackButton(onPressed: () => context.pop()),
-            title: const Text('마이페이지'),
-            bottom: const TabBar(
-              tabs: [
-                Tab(text: '프로필'),
-                Tab(text: '앱 설정'),
-              ],
+      child: Scaffold(
+        appBar: AppBar(
+          leading: BackButton(onPressed: () => context.pop()),
+          title: const Text('마이페이지'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => context.push(ProfileSettingsRoute.path),
+              tooltip: '앱 설정',
             ),
-          ),
-          body: const TabBarView(
-            children: [ProfileOverviewTab(), ProfileSettingsTab()],
-          ),
+          ],
         ),
+        body: const ProfileOverviewTab(),
       ),
     );
   }

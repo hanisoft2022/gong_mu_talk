@@ -27,6 +27,10 @@ class PostCommentsSection extends StatelessWidget {
     required this.onToggleCommentLike,
     required this.onReplyTap,
     required this.onOpenCommentAuthorProfile,
+    this.onDeleteComment,
+    this.currentUserId,
+    this.highlightedCommentId,
+    this.commentKeys,
   });
 
   final bool isLoading;
@@ -35,6 +39,10 @@ class PostCommentsSection extends StatelessWidget {
   final void Function(Comment) onToggleCommentLike;
   final void Function(Comment) onReplyTap;
   final void Function(Comment, GlobalKey) onOpenCommentAuthorProfile;
+  final void Function(Comment)? onDeleteComment;
+  final String? currentUserId;
+  final String? highlightedCommentId;
+  final Map<String, GlobalKey>? commentKeys;
 
   @override
   Widget build(BuildContext context) {
@@ -100,15 +108,25 @@ class PostCommentsSection extends StatelessWidget {
                 replies[comment.id] ?? const <Comment>[];
             final GlobalKey commentAuthorKey = GlobalKey();
 
+            // Create or retrieve comment key for scrolling
+            final commentKey = commentKeys != null
+                ? (commentKeys![comment.id] ??= GlobalKey())
+                : null;
+            final isHighlighted = highlightedCommentId == comment.id;
+
             return Column(
+              key: commentKey,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Parent comment
                 CommentTile(
                   comment: comment,
                   highlight: _isFeatured(comment),
+                  isHighlighted: isHighlighted,
                   onToggleLike: onToggleCommentLike,
                   onReply: onReplyTap,
+                  onDelete: onDeleteComment,
+                  currentUserId: currentUserId,
                   authorKey: commentAuthorKey,
                   onOpenProfile: () =>
                       onOpenCommentAuthorProfile(comment, commentAuthorKey),
@@ -122,17 +140,31 @@ class PostCommentsSection extends StatelessWidget {
                       children: children
                           .map((Comment reply) {
                             final GlobalKey replyAuthorKey = GlobalKey();
-                            return CommentTile(
-                              comment: reply,
-                              highlight: _isFeatured(reply),
-                              isReply: true,
-                              onToggleLike: onToggleCommentLike,
-                              onReply: onReplyTap,
-                              authorKey: replyAuthorKey,
-                              onOpenProfile: () => onOpenCommentAuthorProfile(
-                                reply,
-                                replyAuthorKey,
-                              ),
+                            final replyKey = commentKeys != null
+                                ? (commentKeys![reply.id] ??= GlobalKey())
+                                : null;
+                            final isReplyHighlighted =
+                                highlightedCommentId == reply.id;
+
+                            return Column(
+                              key: replyKey,
+                              children: [
+                                CommentTile(
+                                  comment: reply,
+                                  highlight: _isFeatured(reply),
+                                  isHighlighted: isReplyHighlighted,
+                                  isReply: true,
+                                  onToggleLike: onToggleCommentLike,
+                                  onReply: onReplyTap,
+                                  onDelete: onDeleteComment,
+                                  currentUserId: currentUserId,
+                                  authorKey: replyAuthorKey,
+                                  onOpenProfile: () => onOpenCommentAuthorProfile(
+                                    reply,
+                                    replyAuthorKey,
+                                  ),
+                                ),
+                              ],
                             );
                           })
                           .toList(growable: false),

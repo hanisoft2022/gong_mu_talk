@@ -17,16 +17,22 @@
 ///
 /// **Sections**:
 /// 1. NotificationSettingsSection: Notification preferences
-/// 2. PasswordChangeSection: Password change form
-/// 3. CustomerSupportSection: Feedback and support
-/// 4. PrivacyTermsSection: Privacy policy and terms
-/// 5. AppInfoSection: App version and info
-/// 6. AccountManagementSection: Account deletion
+/// 2. BlockedUsersSection: Blocked users management
+/// 3. PasswordChangeSection: Password change form
+/// 4. CustomerSupportSection: Feedback and support
+/// 5. PrivacyTermsSection: Privacy policy and terms
+/// 6. AppInfoSection: App version and info
+/// 7. AccountManagementSection: Account deletion
 ///
 /// **State Management**:
 /// - Uses AuthCubit for user authentication state
 /// - Timer-based SnackBar management to prevent overlaps
 /// - StatefulWidget for managing controllers and timers
+///
+/// **Improvements**:
+/// - Sections managed as data (easy to reorder/add/remove)
+/// - ListView.separated for cleaner Gap handling
+/// - No hardcoded indices
 ///
 /// **Related**:
 /// - All section widgets in profile_settings/ directory
@@ -37,9 +43,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 
-import '../../../../../core/utils/performance_optimizations.dart';
 import 'notification_settings_section.dart';
 import 'blocked_users_section.dart';
 import 'password_change_section.dart';
@@ -67,81 +71,22 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return OptimizedListView(
-      itemCount: 14,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: NotificationSettingsSection(),
-          );
-        } else if (index == 1) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 2) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: BlockedUsersSection(),
-          );
-        } else if (index == 3) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 4) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PasswordChangeSection(showMessage: _showMessage),
-          );
-        } else if (index == 5) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 6) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: CustomerSupportSection(showMessage: _showMessage),
-          );
-        } else if (index == 7) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 8) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PrivacyTermsSection(showMessage: _showMessage),
-          );
-        } else if (index == 9) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 10) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: AppInfoSection(),
-          );
-        } else if (index == 11) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Gap(16),
-          );
-        } else if (index == 12) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: AccountManagementSection(),
-          );
-        } else {
-          return const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Gap(16),
-          );
-        }
-      },
+    // Settings sections as a list (easy to reorder/add/remove)
+    final List<Widget> sections = [
+      const NotificationSettingsSection(),
+      const BlockedUsersSection(),
+      PasswordChangeSection(showMessage: _showMessage),
+      CustomerSupportSection(showMessage: _showMessage),
+      PrivacyTermsSection(showMessage: _showMessage),
+      const AppInfoSection(),
+      const AccountManagementSection(),
+    ];
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: sections.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) => sections[index],
     );
   }
 

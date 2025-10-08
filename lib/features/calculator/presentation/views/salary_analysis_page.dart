@@ -34,6 +34,7 @@ class SalaryAnalysisPage extends StatelessWidget {
           ),
         ),
         body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
             // 탭 1: 월별 급여명세
             _MonthlyBreakdownTab(monthlyBreakdown: monthlyBreakdown),
@@ -118,7 +119,9 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: month.hasLongevityBonus
+                          color: (month.hasPerformanceBonus ||
+                                  month.hasLongevityBonus ||
+                                  month.hasHolidayBonus)
                               ? Colors.orange.shade100
                               : Colors.teal.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -126,7 +129,9 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                         child: Text(
                           '${month.month}월',
                           style: TextStyle(
-                            color: month.hasLongevityBonus
+                            color: (month.hasPerformanceBonus ||
+                                    month.hasLongevityBonus ||
+                                    month.hasHolidayBonus)
                                 ? Colors.orange.shade900
                                 : Colors.teal.shade900,
                             fontWeight: FontWeight.bold,
@@ -134,6 +139,34 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (month.hasPerformanceBonus) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                '성과상여금',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (month.hasLongevityBonus) ...[
                         const SizedBox(width: 8),
                         Container(
@@ -142,16 +175,51 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange,
+                            color: Colors.teal,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            '정근수당',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.celebration, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                '정근수당',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (month.hasHolidayBonus) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.pink,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.card_giftcard, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                '명절휴가비',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -174,13 +242,33 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                         children: [
                           _buildDetailRow('기본급', month.baseSalary),
                           const SizedBox(height: 8),
-                          _buildDetailRow('각종 수당', month.totalAllowances),
+                          // 교직 수당 (확장 가능)
+                          _buildExpandableAllowanceSection(context, month),
+                          if (month.performanceBonus > 0) ...[
+                            const SizedBox(height: 8),
+                            _buildDetailRow(
+                              '성과상여금 (${month.month}월)',
+                              month.performanceBonus,
+                              highlight: true,
+                              color: Colors.amber.shade900,
+                            ),
+                          ],
                           if (month.longevityBonus > 0) ...[
                             const SizedBox(height: 8),
                             _buildDetailRow(
                               '정근수당 (${month.month}월)',
                               month.longevityBonus,
                               highlight: true,
+                              color: Colors.teal.shade700,
+                            ),
+                          ],
+                          if (month.holidayBonus > 0) ...[
+                            const SizedBox(height: 8),
+                            _buildDetailRow(
+                              '명절휴가비 (${month.month}월)',
+                              month.holidayBonus,
+                              highlight: true,
+                              color: Colors.pink.shade700,
                             ),
                           ],
                           const Divider(height: 24),
@@ -247,6 +335,241 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                       ? Colors.teal[700]
                       : (highlight ? Colors.orange.shade900 : null)),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandableAllowanceSection(
+    BuildContext context,
+    MonthlyNetIncome month,
+  ) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(left: 16, bottom: 8),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('교직 수당'),
+            Text(
+              NumberFormatter.formatCurrency(month.totalAllowances),
+              style: const TextStyle(fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+        children: [
+          if (month.teachingAllowance > 0)
+            _buildTappableDetailRow(
+              context,
+              '교직수당 (모든 교사)',
+              month.teachingAllowance,
+              detailedInfo: '''📚 교직수당
+
+【지급 대상】
+• 모든 교육공무원
+
+【지급액】
+• 250,000원 (고정)
+
+【지급 방식】
+• 매월 급여와 함께 지급
+
+💡 교직수당은 모든 교사에게 동일하게 지급되는 기본 수당입니다.''',
+            ),
+          if (month.homeroomAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '담임 수당 (가산금 4)',
+              month.homeroomAllowance,
+              detailedInfo: '''🏛️ 담임수당
+
+【지급 대상】
+• 학급 담임을 맡은 교사
+
+【지급액】
+• 교직수당 가산금 4 해당
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 담임 기간 동안만 지급
+
+💡 학급 담임을 맡으면 추가로 지급되는 수당입니다.''',
+            ),
+          ],
+          if (month.positionAllowance > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '보직교사 수당 (가산금 3)',
+              month.positionAllowance,
+              detailedInfo: '''👔 보직교사수당
+
+【지급 대상】
+• 보직교사 (부장, 교무, 연구부장 등)
+
+【지급액】
+• 교직수당 가산금 3 해당
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 보직 기간 동안만 지급
+
+💡 보직을 맡은 교사에게 추가로 지급되는 수당입니다.''',
+            ),
+          ],
+          if (month.longevityMonthly > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '정근수당 가산금',
+              month.longevityMonthly,
+              detailedInfo: '''🎖 정근수당 가산금
+
+【지급 기준】
+• 매월 지급 (연 12회)
+• 재직연수에 따라 차등 지급
+
+【재직연수별 지급액】
+• 5년 미만: 30,000원
+• 5~10년: 50,000원
+• 10~15년: 60,000원
+• 15~20년: 80,000원
+• 20~25년: 110,000원 (기본 10만원 + 가산금 1만원)
+• 25년 이상: 130,000원 (기본 10만원 + 가산금 3만원)
+
+【지급 방식】
+• 매월 급여와 함께 지급
+• 정근수당(1월/7월)과는 별도
+
+💡 정근수당(1월/7월)은 특별 지급이며, 정근수당 가산금은 매월 지급됩니다.''',
+            ),
+          ],
+          if (month.teachingAllowanceBonuses > 0) ...[
+            const SizedBox(height: 4),
+            _buildTappableDetailRow(
+              context,
+              '그 외 교직수당 가산금',
+              month.teachingAllowanceBonuses,
+              detailedInfo: '''💼 그 외 교직수당 가산금
+
+【포함 항목 예시】
+• 특수교사 가산금
+• 보건교사 가산금
+• 사서교사 가산금
+• 영양교사 가산금
+• 전문상담교사 가산금
+• 기타 특수 업무 가산금
+
+【지급 방식】
+• 해당 직무 수행 시 지급
+• 매월 급여와 함께 지급
+
+💡 특수 직무나 자격에 따라 추가로 지급되는 가산금입니다.''',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 탭 가능한 상세 정보 행
+  Widget _buildTappableDetailRow(
+    BuildContext context,
+    String label,
+    int amount, {
+    String? detailedInfo,
+  }) {
+    return InkWell(
+      onTap: detailedInfo != null
+          ? () => _showDetailDialog(context, label, amount, detailedInfo)
+          : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: Text(label)),
+                  if (detailedInfo != null) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Text(
+              NumberFormatter.formatCurrency(amount),
+              style: const TextStyle(fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 상세 정보 다이얼로그 표시
+  void _showDetailDialog(
+    BuildContext context,
+    String title,
+    int amount,
+    String detailedInfo,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '월 지급액',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      NumberFormatter.formatCurrency(amount),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.teal.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                detailedInfo,
+                style: const TextStyle(height: 1.6),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
           ),
         ],
       ),

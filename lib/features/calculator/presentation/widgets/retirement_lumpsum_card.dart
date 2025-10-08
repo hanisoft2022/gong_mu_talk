@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/retirement_benefit.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/early_retirement_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/retirement_lumpsum_detail_page.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_source_badge.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
 
 /// 퇴직 시 일시금 총액 카드 (퇴직급여 + 명예퇴직금 통합)
@@ -58,7 +58,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                       color: isLocked ? Colors.grey : Colors.orange,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const Gap(12),
                   Expanded(
                     child: Text(
                       '퇴직 시 일시금 총액',
@@ -71,16 +71,9 @@ class RetirementLumpsumCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const Gap(12),
 
-              // 신뢰 배지
-              if (!isLocked)
-                const CalculationSourceBadge(
-                  source: '공무원 보수규정 퇴직급여',
-                  year: '2025',
-                ),
-
-              const SizedBox(height: 20),
+              const Gap(20),
 
               if (isLocked)
                 // 잠금 상태
@@ -92,7 +85,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                         size: 48,
                         color: Colors.grey[400],
                       ),
-                      const SizedBox(height: 8),
+                      const Gap(8),
                       Text(
                         '정보 입력 후 이용 가능',
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
@@ -133,7 +126,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                                 color: Colors.orange[800],
                                 size: 24,
                               ),
-                              const SizedBox(width: 8),
+                              const Gap(8),
                               Text(
                                 '퇴직 시 수령 총액',
                                 style: Theme.of(context).textTheme.titleMedium
@@ -144,7 +137,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const Gap(12),
                           Text(
                             NumberFormatter.formatCurrency(totalLumpsum),
                             style: Theme.of(context).textTheme.headlineLarge
@@ -157,7 +150,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const Gap(20),
 
                     // 상세 내역 (Expandable)
                     ExpansionTile(
@@ -169,7 +162,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                             size: 20,
                             color: Colors.grey[700],
                           ),
-                          const SizedBox(width: 8),
+                          const Gap(8),
                           Text(
                             '상세 내역 보기',
                             style: Theme.of(context).textTheme.bodyMedium
@@ -224,7 +217,7 @@ class RetirementLumpsumCard extends StatelessWidget {
 
                               // 명예퇴직금 (있는 경우만)
                               if (hasEarlyBonus) ...[
-                                const SizedBox(height: 16),
+                                const Gap(16),
                                 _buildDetailSection(
                                   context,
                                   title: '🎁 명예퇴직금',
@@ -242,7 +235,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                                         '가산금 (10%)',
                                         earlyRetirementBonus!.bonusAmount,
                                       ),
-                                    const SizedBox(height: 8),
+                                    const Gap(8),
                                     Row(
                                       children: [
                                         Icon(
@@ -250,7 +243,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                                           size: 14,
                                           color: Colors.purple[700],
                                         ),
-                                        const SizedBox(width: 4),
+                                        const Gap(4),
                                         Expanded(
                                           child: Text(
                                             '정년까지 ${earlyRetirementBonus!.remainingYears}년 ${earlyRetirementBonus!.remainingMonths}개월 잔여',
@@ -271,13 +264,13 @@ class RetirementLumpsumCard extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const Gap(16),
 
                     // 계산 근거 섹션
                     if (retirementBenefit != null)
                       _buildCalculationBreakdown(context),
 
-                    const SizedBox(height: 16),
+                    const Gap(16),
 
                     // 안내 메시지
                     Container(
@@ -297,7 +290,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                             size: 16,
                             color: Colors.blue[700],
                           ),
-                          const SizedBox(width: 8),
+                          const Gap(8),
                           Expanded(
                             child: Text(
                               '퇴직 시점에 일시금으로 수령하는 금액입니다.',
@@ -311,7 +304,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const Gap(16),
 
                     // 상세 페이지 버튼
                     SizedBox(
@@ -448,7 +441,7 @@ class RetirementLumpsumCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const Gap(12),
         ...children,
       ],
     );

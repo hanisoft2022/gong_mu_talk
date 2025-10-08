@@ -29,7 +29,8 @@ class CommunityFeedPage extends StatefulWidget {
   State<CommunityFeedPage> createState() => _CommunityFeedPageState();
 }
 
-class _CommunityFeedPageState extends State<CommunityFeedPage> {
+class _CommunityFeedPageState extends State<CommunityFeedPage>
+    with WidgetsBindingObserver {
   // ==================== State Variables ====================
   late final ScrollController _scrollController;
   late final TextEditingController _searchController;
@@ -45,6 +46,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController = ScrollController()..addListener(_onScroll);
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode()
@@ -63,11 +65,21 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchFocusNode.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh from cache when app resumes (e.g., returning from ScrapPage)
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<CommunityFeedCubit>().refreshFromCache();
+    }
   }
 
   // ==================== Event Handlers ====================
@@ -199,11 +211,39 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
         });
         return cubit;
       },
-      child: BlocSelector<AuthCubit, AuthState, bool>(
-        selector: (state) => state.hasLoungeReadAccess,
-        builder: (context, hasLoungeReadAccess) {
-          return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
-            builder: (context, feedState) {
+      child: BlocListener<CommunityFeedCubit, CommunityFeedState>(
+        listenWhen: (previous, current) {
+          final shouldShow = previous.lastScrapUndoNotificationTime != current.lastScrapUndoNotificationTime &&
+              current.lastScrapUndoNotificationTime != null;
+          if (shouldShow) {
+            debugPrint('✅ CommunityFeedPage: listenWhen triggered at ${current.lastScrapUndoNotificationTime}, showing SnackBar');
+          }
+          return shouldShow;
+        },
+        listener: (context, state) {
+          debugPrint('📢 CommunityFeedPage: Showing scrap undo SnackBar');
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: const Text('스크랩 상태가 변경되었습니다'),
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: '실행 취소',
+                  textColor: Colors.yellow,
+                  onPressed: () {
+                    debugPrint('↩️ CommunityFeedPage: Undo button pressed');
+                    context.read<CommunityFeedCubit>().undoScrapToggle();
+                  },
+                ),
+              ),
+            );
+        },
+        child: BlocSelector<AuthCubit, AuthState, bool>(
+          selector: (state) => state.hasLoungeReadAccess,
+          builder: (context, hasLoungeReadAccess) {
+            return BlocBuilder<CommunityFeedCubit, CommunityFeedState>(
+              builder: (context, feedState) {
               return BlocSelector<
                 SearchCubit,
                 SearchState,
@@ -243,6 +283,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage> {
             },
           );
         },
+      ),
       ),
     );
   }

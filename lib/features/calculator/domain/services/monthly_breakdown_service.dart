@@ -1,13 +1,16 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
+import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
 
 /// 월별 실수령액 계산 서비스
 class MonthlyBreakdownService {
   final TaxCalculationService _taxService;
+  final SalaryCalculationService _salaryService;
 
-  MonthlyBreakdownService(this._taxService);
+  MonthlyBreakdownService(this._taxService, this._salaryService);
 
   /// 12개월 실수령액 계산
   ///
@@ -17,6 +20,7 @@ class MonthlyBreakdownService {
   /// [numberOfChildren] 자녀 수
   /// [isHomeroom] 담임 여부
   /// [hasPosition] 보직 여부
+  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
   ///
   /// Returns: 12개월 실수령액 목록
   List<MonthlyNetIncome> calculateMonthlyBreakdown({
@@ -26,6 +30,7 @@ class MonthlyBreakdownService {
     required int numberOfChildren,
     bool isHomeroom = false,
     bool hasPosition = false,
+    PerformanceGrade performanceGrade = PerformanceGrade.A,
   }) {
     final monthlyIncomes = <MonthlyNetIncome>[];
 
@@ -46,6 +51,13 @@ class MonthlyBreakdownService {
         ? AllowanceTable.headTeacherAllowance
         : 0;
 
+    // 그 외 교직수당 가산금
+    final teachingAllowanceBonuses = _salaryService.calculateTeachingAllowanceBonuses(
+      bonuses: profile.teachingAllowanceBonuses,
+      currentGrade: profile.currentGrade,
+      position: profile.position,
+    );
+
     // 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = _calculateVeteranAllowance(
       serviceYears: serviceYears,
@@ -57,6 +69,7 @@ class MonthlyBreakdownService {
     final familyAllowance = _calculateFamilyAllowance(
       hasSpouse: hasSpouse,
       numberOfChildren: numberOfChildren,
+      numberOfParents: profile.numberOfParents,
     );
 
     // 연구비
@@ -77,6 +90,7 @@ class MonthlyBreakdownService {
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +
+          teachingAllowanceBonuses +
           veteranAllowance +
           familyAllowance +
           researchAllowance +
@@ -90,15 +104,22 @@ class MonthlyBreakdownService {
         month: month,
       );
 
-      // 명절상여금 (2월 설날, 9월 추석)
+      // 명절상여금 (설날/추석, 음력 기준)
       final holidayBonus = _calculateHolidayBonus(
         baseSalary: baseSalary,
+        month: month,
+        year: year,
+      );
+
+      // 성과상여금 (3월만)
+      final performanceBonus = _calculatePerformanceBonus(
+        grade: performanceGrade,
         month: month,
       );
 
       // 총 지급액 (세전)
       final grossSalary =
-          baseSalary + totalAllowances + longevityBonus + holidayBonus;
+          baseSalary + totalAllowances + longevityBonus + holidayBonus + performanceBonus;
 
       // 소득세
       final incomeTax = _taxService.calculateIncomeTax(grossSalary);
@@ -106,23 +127,40 @@ class MonthlyBreakdownService {
       // 주민세
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
 
-      // 국민연금 (9%)
-      final nationalPension = (grossSalary * 0.045).round(); // 본인부담 4.5%
+      // 국민연금 (일반 근로자용, 공무원은 미사용)
+      final nationalPension = 0; // 공무원은 공무원연금 적용
 
-      // 건강보험 (6.99%)
+      // 공무원연금 기여금 계산 (9%)
+      // 기준소득월액 = 본봉 + 정기수당 + 정근수당 + 명절휴가비
+      // 제외: 시간외근무수당, 성과상여금
+      final pensionBaseIncome =
+          baseSalary +
+          teachingAllowance +
+          homeroomAllowance +
+          positionAllowance +
+          veteranAllowance +
+          familyAllowance +
+          researchAllowance +
+          longevityMonthly +
+          longevityBonus +
+          holidayBonus;
+
+      final pensionContribution = (pensionBaseIncome * 0.09).round();
+
+      // 건강보험 (2025년 요율: 7.09%)
       final healthInsurance = (grossSalary * 0.03545).round(); // 본인부담 3.545%
 
-      // 장기요양보험 (건강보험료의 12.95%)
+      // 장기요양보험 (건강보험료의 12.95%, 2025년 요율)
       final longTermCareInsurance = (healthInsurance * 0.1295).round();
 
-      // 고용보험 (0.9%)
-      final employmentInsurance = (grossSalary * 0.009).round();
+      // 고용보험 (공무원 제외)
+      final employmentInsurance = 0; // 공무원은 고용보험 적용 제외
 
       // 총 공제액
       final totalDeductions =
           incomeTax +
           localTax +
-          nationalPension +
+          pensionContribution +
           healthInsurance +
           longTermCareInsurance +
           employmentInsurance;
@@ -135,12 +173,19 @@ class MonthlyBreakdownService {
           month: month,
           baseSalary: baseSalary,
           totalAllowances: totalAllowances,
+          teachingAllowance: teachingAllowance,
+          homeroomAllowance: homeroomAllowance,
+          positionAllowance: positionAllowance,
+          teachingAllowanceBonuses: teachingAllowanceBonuses,
+          longevityMonthly: longevityMonthly,
+          performanceBonus: performanceBonus,
           longevityBonus: longevityBonus,
           holidayBonus: holidayBonus,
           grossSalary: grossSalary,
           incomeTax: incomeTax,
           localTax: localTax,
           nationalPension: nationalPension,
+          pensionContribution: pensionContribution,
           healthInsurance: healthInsurance,
           longTermCareInsurance: longTermCareInsurance,
           employmentInsurance: employmentInsurance,
@@ -168,18 +213,18 @@ class MonthlyBreakdownService {
     // 1월/7월만 지급
     if (month != 1 && month != 7) return 0;
 
-    // 재직 년수별 지급률
+    // 재직 년수별 지급률 (2025년 개정 기준)
     double rate;
     if (serviceYears < 1) {
       rate = 0.10; // 1년 미만: 10%
     } else if (serviceYears < 2) {
-      rate = 0.15; // 1년 이상: 15%
+      rate = 0.10; // 1년 이상 2년 미만: 10%
     } else if (serviceYears < 3) {
-      rate = 0.20; // 2년 이상: 20%
+      rate = 0.20; // 2년 이상 3년 미만: 20%
     } else if (serviceYears < 5) {
-      rate = 0.30; // 3년 이상: 30%
+      rate = 0.20; // 3년 이상 5년 미만: 20%
     } else if (serviceYears < 10) {
-      rate = 0.40; // 5년 이상: 40%
+      rate = 0.40; // 5년 이상 10년 미만: 40%
     } else {
       rate = 0.50; // 10년 이상: 50%
     }
@@ -193,12 +238,12 @@ class MonthlyBreakdownService {
   ///
   /// Returns: 정근수당 가산금
   int _calculateLongevityMonthlyAllowance(int serviceYears) {
-    if (serviceYears < 1) return 30000;
-    if (serviceYears < 2) return 40000;
-    if (serviceYears < 3) return 50000;
-    if (serviceYears < 5) return 70000;
-    if (serviceYears < 10) return 100000;
-    return 130000;
+    if (serviceYears < 5) return 30000; // 5년 미만: 3만원
+    if (serviceYears < 10) return 50000; // 5년 이상 10년 미만: 5만원
+    if (serviceYears < 15) return 60000; // 10년 이상 15년 미만: 6만원
+    if (serviceYears < 20) return 80000; // 15년 이상 20년 미만: 8만원
+    if (serviceYears < 25) return 110000; // 20년 이상 25년 미만: 11만원 (10만원 + 가산금 1만원)
+    return 130000; // 25년 이상: 13만원 (10만원 + 가산금 3만원)
   }
 
   /// 원로교사수당 계산
@@ -227,11 +272,13 @@ class MonthlyBreakdownService {
   ///
   /// [hasSpouse] 배우자 유무
   /// [numberOfChildren] 자녀 수
+  /// [numberOfParents] 60세 이상 직계존속 수
   ///
   /// Returns: 가족수당
   int _calculateFamilyAllowance({
     required bool hasSpouse,
     required int numberOfChildren,
+    required int numberOfParents,
   }) {
     int total = 0;
 
@@ -249,6 +296,10 @@ class MonthlyBreakdownService {
       total += (numberOfChildren - 2) * 120000;
     }
 
+    // 60세 이상 직계존속: 1인당 2만원 (최대 4명)
+    final parentsCount = numberOfParents > 4 ? 4 : numberOfParents;
+    total += parentsCount * 20000;
+
     return total;
   }
 
@@ -261,18 +312,51 @@ class MonthlyBreakdownService {
     return serviceYears < 5 ? 70000 : 60000;
   }
 
-  /// 명절상여금 계산 (설날/추석)
+  /// 명절상여금 계산 (설날/추석, 음력 기준)
   ///
   /// [baseSalary] 본봉
   /// [month] 월
+  /// [year] 년도
   ///
-  /// Returns: 명절상여금 (2월 설날, 9월 추석에 본봉의 60%)
-  int _calculateHolidayBonus({required int baseSalary, required int month}) {
-    // 2월 (설날), 9월 (추석)에만 지급
-    if (month == 2 || month == 9) {
+  /// Returns: 명절상여금 (설날/추석 월에 본봉의 60%)
+  int _calculateHolidayBonus({
+    required int baseSalary,
+    required int month,
+    required int year,
+  }) {
+    // 2025-2030년 설날/추석 양력 날짜 매핑 (음력 기준)
+    final lunarHolidays = {
+      2025: [1, 10], // 설날 1월 29일, 추석 10월 6일
+      2026: [2, 9], // 설날 2월 17일, 추석 9월 25일
+      2027: [2, 9], // 설날 2월 6일, 추석 9월 15일
+      2028: [1, 9], // 설날 1월 26일, 추석 10월 3일
+      2029: [2, 9], // 설날 2월 13일, 추석 9월 23일
+      2030: [2, 9], // 설날 2월 3일, 추석 9월 12일
+    };
+
+    final months = lunarHolidays[year];
+    if (months != null && months.contains(month)) {
       return (baseSalary * 0.6).round();
     }
+
     return 0;
+  }
+
+  /// 성과상여금 계산 (교육공무원 기준)
+  ///
+  /// [grade] 성과등급 (S/A/B)
+  /// [month] 현재 월
+  ///
+  /// Returns: 성과상여금 (3월만 지급, 그 외 0)
+  int _calculatePerformanceBonus({
+    required PerformanceGrade grade,
+    required int month,
+  }) {
+    // 3월만 지급
+    if (month != 3) return 0;
+
+    // 2025년 교육공무원 성과상여금 (차등지급률 50% 기준)
+    return grade.amount;
   }
 
   /// 연간 총 실수령액 계산

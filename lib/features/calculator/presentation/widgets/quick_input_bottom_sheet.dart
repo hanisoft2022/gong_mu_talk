@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/teaching_allowance_selector_dialog.dart';
 
 /// 빠른 입력 Bottom Sheet
 class QuickInputBottomSheet extends StatefulWidget {
@@ -27,14 +30,14 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   late Position _position;
   late DateTime _employmentStartDate;
   late int _retirementAge;
+  late int _gradePromotionMonth;
 
   // 새로운 입력 방식
   bool _isHomeroom = false;
-  bool _hasPosition = false;
   bool _hasSpouse = false;
   int _numberOfChildren = 0;
-  bool _retirementExtension = false;
-  bool _includeMealAllowance = false;
+  int _numberOfParents = 0; // 60세 이상 직계존속
+  Set<TeachingAllowanceBonus> _teachingAllowanceBonuses = {};
 
   @override
   void initState() {
@@ -62,10 +65,23 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
     _retirementAge = widget.initialProfile?.retirementAge ?? 62;
 
+    // 호봉 승급월: 기본 3월
+    _gradePromotionMonth = widget.initialProfile?.gradePromotionMonth ?? 3;
+
     // 기존 allowances가 있으면 추정
     if (widget.initialProfile != null) {
       _isHomeroom = widget.initialProfile!.allowances.homeroom > 0;
-      _hasPosition = widget.initialProfile!.allowances.headTeacher > 0;
+      _teachingAllowanceBonuses =
+          widget.initialProfile!.teachingAllowanceBonuses;
+
+      // 기존 allowances에 headTeacher가 있으면 teachingAllowanceBonuses에 추가
+      if (widget.initialProfile!.allowances.headTeacher > 0 &&
+          !_teachingAllowanceBonuses.contains(TeachingAllowanceBonus.headTeacher)) {
+        _teachingAllowanceBonuses = {
+          ..._teachingAllowanceBonuses,
+          TeachingAllowanceBonus.headTeacher,
+        };
+      }
     }
   }
 
@@ -104,7 +120,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                 child: Row(
                   children: [
                     const Icon(Icons.rocket_launch, color: Colors.blue),
-                    const SizedBox(width: 12),
+                    const Gap(12),
                     Text(
                       '빠른 계산 (3초 완성!)',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -125,10 +141,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                   children: [
                     // 생년월
                     _buildSectionTitle('📍 출생 연월'),
-                    const SizedBox(height: 8),
+                    const Gap(8),
                     InkWell(
                       onTap: () async {
-                        DateTime tempDate = _birthDate ?? DateTime(1990, 1, 1);
+                        final initialDate = _birthDate ?? DateTime(1990, 1, 1);
+                        int tempYear = initialDate.year;
+                        int tempMonth = initialDate.month;
 
                         await showCupertinoModalPopup(
                           context: context,
@@ -206,12 +224,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                               ),
                                             ),
                                             onPressed: () {
-                                              HapticFeedback.mediumImpact(); // 완료 버튼 햅틱
+                                              HapticFeedback.mediumImpact();
                                               setState(() {
-                                                // 일자는 항상 1일로 설정
                                                 _birthDate = DateTime(
-                                                  tempDate.year,
-                                                  tempDate.month,
+                                                  tempYear,
+                                                  tempMonth,
                                                   1,
                                                 );
                                               });
@@ -221,30 +238,114 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         ],
                                       ),
                                     ),
-                                    // Date Picker
+                                    // Year and Month Pickers
                                     Expanded(
                                       child: CupertinoTheme(
                                         data: CupertinoThemeData(
                                           textTheme: CupertinoTextThemeData(
-                                            dateTimePickerTextStyle:
+                                            pickerTextStyle:
                                                 GoogleFonts.notoSansKr(
                                                   color: Colors.black87,
                                                   fontSize: 20,
                                                 ),
                                           ),
                                         ),
-                                        child: CupertinoDatePicker(
-                                          mode: CupertinoDatePickerMode.date,
-                                          backgroundColor: Colors.white,
-                                          initialDateTime:
-                                              _birthDate ??
-                                              DateTime(1990, 1, 1),
-                                          minimumYear: 1960,
-                                          maximumDate: DateTime.now(),
-                                          onDateTimeChanged: (DateTime picked) {
-                                            HapticFeedback.selectionClick(); // 날짜 변경 시 햅틱
-                                            tempDate = picked;
-                                          },
+                                        child: Row(
+                                          children: [
+                                            // Year Picker
+                                            Expanded(
+                                              child: CupertinoPicker(
+                                                scrollController:
+                                                    FixedExtentScrollController(
+                                                  initialItem:
+                                                      initialDate.year - 1960,
+                                                ),
+                                                itemExtent: 40,
+                                                backgroundColor: Colors.white,
+                                                diameterRatio: 1.5,
+                                                squeeze: 1.2,
+                                                magnification: 1.1,
+                                                useMagnifier: true,
+                                                selectionOverlay: Container(
+                                                  decoration: BoxDecoration(
+                                                    border: Border.symmetric(
+                                                      horizontal: BorderSide(
+                                                        color: Theme.of(context)
+                                                            .primaryColor
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
+                                                        width: 1.5,
+                                                      ),
+                                                    ),
+                                                    color: Theme.of(context)
+                                                        .primaryColor
+                                                        .withValues(alpha: 0.05),
+                                                  ),
+                                                ),
+                                                onSelectedItemChanged: (index) {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                  tempYear = 1960 + index;
+                                                },
+                                                children: List.generate(
+                                                  DateTime.now().year -
+                                                      1960 +
+                                                      1,
+                                                  (index) {
+                                                    final year = 1960 + index;
+                                                    return Center(
+                                                      child: Text('$year년'),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                            // Month Picker
+                                            Expanded(
+                                              child: CupertinoPicker(
+                                                scrollController:
+                                                    FixedExtentScrollController(
+                                                  initialItem:
+                                                      initialDate.month - 1,
+                                                ),
+                                                itemExtent: 40,
+                                                backgroundColor: Colors.white,
+                                                diameterRatio: 1.5,
+                                                squeeze: 1.2,
+                                                magnification: 1.1,
+                                                useMagnifier: true,
+                                                selectionOverlay: Container(
+                                                  decoration: BoxDecoration(
+                                                    border: Border.symmetric(
+                                                      horizontal: BorderSide(
+                                                        color: Theme.of(context)
+                                                            .primaryColor
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
+                                                        width: 1.5,
+                                                      ),
+                                                    ),
+                                                    color: Theme.of(context)
+                                                        .primaryColor
+                                                        .withValues(alpha: 0.05),
+                                                  ),
+                                                ),
+                                                onSelectedItemChanged: (index) {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                  tempMonth = index + 1;
+                                                },
+                                                children: List.generate(12, (index) {
+                                                  final month = index + 1;
+                                                  return Center(
+                                                    child: Text('$month월'),
+                                                  );
+                                                }),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -272,11 +373,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const Gap(24),
 
                     // 현재 호봉
                     _buildSectionTitle('📍 현재 호봉'),
-                    const SizedBox(height: 8),
+                    const Gap(8),
                     InkWell(
                       onTap: _showGradePicker,
                       child: InputDecorator(
@@ -296,11 +397,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const Gap(24),
 
                     // 임용일
                     _buildSectionTitle('📍 임용일'),
-                    const SizedBox(height: 8),
+                    const Gap(8),
                     InkWell(
                       onTap: () async {
                         DateTime tempDate = _employmentStartDate;
@@ -434,77 +535,43 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-
-                    // 퇴직 예정 연령
-                    Row(
-                      children: [
-                        _buildSectionTitle('📍 퇴직 예정 연령'),
-                        const SizedBox(width: 4),
-                        Tooltip(
-                          message: '만 나이 기준입니다',
-                          child: Icon(
-                            Icons.info_outline,
-                            size: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _showRetirementAgePicker,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.cake),
-                        ),
-                        child: Text('$_retirementAge세'),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
+                    const Gap(32),
 
                     // 선택 입력 (접을 수 있는 섹션)
                     ExpansionTile(
                       title: const Text('⚙️ 더 정확하게 계산하기 (선택)'),
                       children: [
-                        // 직급 선택
+                        // 호봉 승급월
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                '직급',
+                                '호봉 승급월',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              SegmentedButton<Position>(
-                                segments: const [
-                                  ButtonSegment(
-                                    value: Position.teacher,
-                                    label: Text('교사'),
+                              const Gap(8),
+                              InkWell(
+                                onTap: _showGradePromotionMonthPicker,
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.calendar_month),
                                   ),
-                                  ButtonSegment(
-                                    value: Position.vicePrincipal,
-                                    label: Text('교감'),
-                                  ),
-                                  ButtonSegment(
-                                    value: Position.principal,
-                                    label: Text('교장'),
-                                  ),
-                                ],
-                                selected: {_position},
-                                onSelectionChanged:
-                                    (Set<Position> newSelection) {
-                                      setState(
-                                        () => _position = newSelection.first,
-                                      );
-                                    },
+                                  child: Text('$_gradePromotionMonth월'),
+                                ),
+                              ),
+                              const Gap(4),
+                              Text(
+                                '호봉이 승급되는 월을 선택하세요 (일반적으로 3월)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                             ],
                           ),
@@ -512,21 +579,44 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
                         const Divider(),
 
-                        // 담임 여부
-                        SwitchListTile(
-                          title: const Text('담임 여부'),
-                          subtitle: const Text('담임일 경우 월 20만원 지급'),
-                          value: _isHomeroom,
-                          onChanged: (val) => setState(() => _isHomeroom = val),
-                        ),
-
-                        // 보직교사 여부
-                        SwitchListTile(
-                          title: const Text('보직교사 (부장 등)'),
-                          subtitle: const Text('보직교사일 경우 월 15만원 지급'),
-                          value: _hasPosition,
-                          onChanged: (val) =>
-                              setState(() => _hasPosition = val),
+                        // 교직 수당
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '교직 수당',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Gap(12),
+                              SwitchListTile(
+                                title: const Text('담임 수당 (가산금 4)'),
+                                subtitle: const Text('담임일 경우 월 20만원 지급'),
+                                value: _isHomeroom,
+                                onChanged: (val) => setState(() => _isHomeroom = val),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              const Gap(8),
+                              // 교직수당 가산금 선택 (보직교사 포함)
+                              ListTile(
+                                title: const Text('교직수당 가산금'),
+                                subtitle: _teachingAllowanceBonuses.isEmpty
+                                    ? const Text('보직교사, 특수교사 등 선택')
+                                    : Text(
+                                        _teachingAllowanceBonuses
+                                            .map((b) => b.displayName)
+                                            .join(', '),
+                                      ),
+                                trailing: const Icon(Icons.chevron_right),
+                                contentPadding: EdgeInsets.zero,
+                                onTap: _showTeachingAllowanceBonusesSelector,
+                              ),
+                            ],
+                          ),
                         ),
 
                         const Divider(),
@@ -544,7 +634,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const Gap(12),
                               SwitchListTile(
                                 title: const Text('배우자'),
                                 subtitle: const Text('월 4만원'),
@@ -553,33 +643,63 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     setState(() => _hasSpouse = val),
                                 contentPadding: EdgeInsets.zero,
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Text('자녀 수'),
-                                  const SizedBox(width: 8),
-                                  const Spacer(),
-                                  DropdownButton<int>(
-                                    value: _numberOfChildren,
-                                    items: List.generate(6, (i) => i)
-                                        .map(
-                                          (n) => DropdownMenuItem(
-                                            value: n,
-                                            child: Text('$n명'),
-                                          ),
-                                        )
-                                        .toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        setState(() => _numberOfChildren = val);
-                                      }
-                                    },
-                                  ),
-                                ],
+                              const Gap(8),
+                              const Text(
+                                '자녀 수',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              const SizedBox(height: 4),
+                              const Gap(8),
+                              InkWell(
+                                onTap: _showNumberOfChildrenPicker,
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.family_restroom),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text('$_numberOfChildren명'),
+                                ),
+                              ),
+                              const Gap(4),
                               Text(
                                 '첫째 5만원, 둘째 8만원, 셋째 이상 각 12만원',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const Gap(16),
+                              const Text(
+                                '60세 이상 부모님 (직계존속)',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Gap(8),
+                              InkWell(
+                                onTap: _showNumberOfParentsPicker,
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.elderly),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text('$_numberOfParents명'),
+                                ),
+                              ),
+                              const Gap(4),
+                              Text(
+                                '1인당 2만원 (최대 4명)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -589,60 +709,77 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           ),
                         ),
 
-                        const Divider(height: 32),
+                        const Gap(16),
 
-                        // 정년 연장 시나리오
-                        ListTile(
-                          title: Row(
+                        const Divider(),
+
+                        // 퇴직 예정 연령
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Expanded(
-                                child: Text('정년 연장 적용 (62세 → 65세)'),
+                              Row(
+                                children: [
+                                  const Text(
+                                    '퇴직 예정 연령',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const Gap(4),
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('퇴직 예정 연령 안내'),
+                                          content: const Text(
+                                            '현재 법정 정년: 만 62세\n\n'
+                                            '• 60세: 조기 퇴직 (연금 감액 가능)\n'
+                                            '• 62세: 현행 법정 정년 (기본값)\n'
+                                            '• 65세: 정년 연장 시나리오 (미확정)',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('확인'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      size: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.info_outline),
-                                iconSize: 20,
-                                color: Colors.blue,
-                                onPressed: () =>
-                                    _showRetirementExtensionDialog(context),
-                                tooltip: '정년 연장 제도 상세 안내',
+                              const Gap(8),
+                              InkWell(
+                                onTap: _showRetirementAgePicker,
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.cake),
+                                  ),
+                                  child: Text('$_retirementAge세'),
+                                ),
                               ),
+                              const Gap(4),
+                              _buildRetirementAgeDescription(),
                             ],
                           ),
-                          subtitle: Text(
-                            _retirementExtension
-                                ? '정년: 65세'
-                                : '정년: 62세 (2027년 이후 연금 공백 가능)',
-                            style: TextStyle(
-                              color: _retirementExtension
-                                  ? Colors.blue
-                                  : Colors.orange,
-                            ),
-                          ),
-                          trailing: Switch(
-                            value: _retirementExtension,
-                            onChanged: (val) {
-                              setState(() {
-                                _retirementExtension = val;
-                                _retirementAge = val ? 65 : 62;
-                              });
-                            },
-                          ),
                         ),
 
-                        // 정액급식비 포함 여부
-                        SwitchListTile(
-                          title: const Text('정액급식비 포함'),
-                          subtitle: const Text('월 14만원'),
-                          value: _includeMealAllowance,
-                          onChanged: (val) =>
-                              setState(() => _includeMealAllowance = val),
-                        ),
-
-                        const SizedBox(height: 16),
+                        const Gap(16),
                       ],
                     ),
 
-                    const SizedBox(height: 32),
+                    const Gap(32),
 
                     // 계산 버튼
                     ElevatedButton(
@@ -657,7 +794,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       child: const Text('📊 바로 계산하기'),
                     ),
 
-                    const SizedBox(height: 24),
+                    const Gap(24),
                   ],
                 ),
               ),
@@ -672,6 +809,42 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     return Text(
       title,
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    );
+  }
+
+  Widget _buildRetirementAgeDescription() {
+    String description;
+    Color color;
+
+    switch (_retirementAge) {
+      case 60:
+        description = '조기 퇴직 (연금 감액 가능)';
+        color = Colors.orange;
+        break;
+      case 62:
+        description = '현행 법정 정년';
+        color = Colors.green;
+        break;
+      case 65:
+        description = '정년 연장 시나리오 (미확정)';
+        color = Colors.blue;
+        break;
+      default:
+        description = '';
+        color = Colors.grey;
+    }
+
+    if (description.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Icon(Icons.info_outline, size: 14, color: color),
+        const Gap(4),
+        Text(
+          description,
+          style: TextStyle(fontSize: 12, color: color),
+        ),
+      ],
     );
   }
 
@@ -922,7 +1095,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                         HapticFeedback.selectionClick(); // 햅틱 피드백
                         tempAge = index + 60; // 60세부터 시작
                       },
-                      children: List.generate(11, (index) {
+                      children: List.generate(6, (index) {
                         final age = index + 60;
                         return Center(child: Text('$age세'));
                       }),
@@ -937,191 +1110,394 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     );
   }
 
-  void _showRetirementExtensionDialog(BuildContext context) {
-    showDialog(
+  Future<void> _showGradePromotionMonthPicker() async {
+    int tempMonth = _gradePromotionMonth;
+
+    await showCupertinoModalPopup(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          '정년 연장 제도 안내',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDialogSection('📌 현재 상황 (2025년)', [
-                '• 교원 법정 정년: 만 62세',
-                '• 연금 수령 시작 연령:',
-                '  └ 2024~2026년 퇴직자: 62세',
-                '  └ 2027~2029년 퇴직자: 63세',
-                '  └ 2030~2032년 퇴직자: 64세',
-                '  └ 2033년 이후 퇴직자: 65세',
-              ]),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber,
-                          color: Colors.orange[700],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '핵심 문제: 소득 공백기',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '2033년 이후 62세에 정년퇴직하면\n65세까지 3년간 무소득 기간 발생!',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'OECD 국가 중 유일하게 정년과\n연금 수령 연령이 불일치합니다.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildDialogSection('🏛️ 정년 연장 논의 현황', [
-                '▪️ 현재 상태: 아직 확정되지 않음',
-                '  - 13개 법안이 국회에 계류 중',
-                '  - 입법 여부 불투명',
-                '',
-                '▪️ 정부 추진 일정 (계획안):',
-                '  - 2025년: 법안 통과 목표',
-                '  - 2027년: 만 63세 시행',
-                '  - 2028~2032년: 만 64세',
-                '  - 2033년: 만 65세 완전 시행',
-                '',
-                '▪️ 교원 특수성:',
-                '  과거 65세 정년이었으나',
-                '  IMF 이후 62세로 단축',
-              ]),
-              const SizedBox(height: 16),
-              _buildDialogSection('💭 주요 찬반 의견', [
-                '✅ 찬성',
-                '• 연금 공백기 해소',
-                '• 노동인력 부족 대응',
-                '• 퇴직 후 재취업 어려움 해결',
-                '',
-                '❌ 반대',
-                '• 학령인구 감소로 교사 과잉',
-                '• 청년 교사 일자리 감소',
-                '• 인사 적체 심화',
-                '• 고령 교사의 교육 효과성 논란',
-              ]),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline,
-                          color: Colors.blue[700],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '이 옵션을 켜면?',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '계산기는 정년 65세를 가정하여\n퇴직금 및 연금을 계산합니다.',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '주의사항',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '아직 확정되지 않은 사항이므로\n참고용으로만 활용하시기 바랍니다.\n\n실제 정년은 현행 62세입니다.',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ],
+      builder: (BuildContext context) {
+        return DefaultTextStyle(
+          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          child: Container(
+            height: 300,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
                       ),
                     ),
-                  ],
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        '호봉 승급월',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          setState(() {
+                            _gradePromotionMonth = tempMonth;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                // Picker
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      textTheme: CupertinoTextThemeData(
+                        pickerTextStyle: GoogleFonts.notoSansKr(
+                          color: Colors.black87,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempMonth - 1,
+                      ),
+                      itemExtent: 40,
+                      backgroundColor: Colors.white,
+                      diameterRatio: 1.5,
+                      squeeze: 1.2,
+                      magnification: 1.1,
+                      useMagnifier: true,
+                      selectionOverlay: Container(
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      onSelectedItemChanged: (int index) {
+                        HapticFeedback.selectionClick();
+                        tempMonth = index + 1;
+                      },
+                      children: List.generate(12, (index) {
+                        final month = index + 1;
+                        return Center(child: Text('$month월'));
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildDialogSection(String title, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        ...items.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              item,
-              style: const TextStyle(fontSize: 13, height: 1.4),
+  Future<void> _showNumberOfChildrenPicker() async {
+    int tempChildren = _numberOfChildren;
+
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return DefaultTextStyle(
+          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          child: Container(
+            height: 300,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
+                      ),
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        '자녀 수 선택',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          setState(() {
+                            _numberOfChildren = tempChildren;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Picker
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      textTheme: CupertinoTextThemeData(
+                        pickerTextStyle: GoogleFonts.notoSansKr(
+                          color: Colors.black87,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempChildren,
+                      ),
+                      itemExtent: 40,
+                      backgroundColor: Colors.white,
+                      diameterRatio: 1.5,
+                      squeeze: 1.2,
+                      magnification: 1.1,
+                      useMagnifier: true,
+                      selectionOverlay: Container(
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      onSelectedItemChanged: (int index) {
+                        HapticFeedback.selectionClick();
+                        tempChildren = index;
+                      },
+                      children: List.generate(6, (index) {
+                        return Center(child: Text('$index명'));
+                      }),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showNumberOfParentsPicker() async {
+    int tempParents = _numberOfParents;
+
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return DefaultTextStyle(
+          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          child: Container(
+            height: 300,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
+                      ),
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        '60세 이상 부모님',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      CupertinoButton(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '완료',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          setState(() {
+                            _numberOfParents = tempParents;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Picker
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      textTheme: CupertinoTextThemeData(
+                        pickerTextStyle: GoogleFonts.notoSansKr(
+                          color: Colors.black87,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempParents,
+                      ),
+                      itemExtent: 40,
+                      backgroundColor: Colors.white,
+                      diameterRatio: 1.5,
+                      squeeze: 1.2,
+                      magnification: 1.1,
+                      useMagnifier: true,
+                      selectionOverlay: Container(
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      onSelectedItemChanged: (int index) {
+                        HapticFeedback.selectionClick();
+                        tempParents = index;
+                      },
+                      children: List.generate(5, (index) {
+                        return Center(child: Text('$index명'));
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1150,6 +1526,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
     // 새로운 방식: Allowance는 기본값으로 설정
     // 실제 수당 계산은 SalaryCalculationService에서 처리
+
+    // 보직교사 여부는 teachingAllowanceBonuses에서 판단
+    final hasPosition = _teachingAllowanceBonuses.contains(
+      TeachingAllowanceBonus.headTeacher,
+    );
+
     final profile = TeacherProfile(
       birthYear: _birthDate!.year,
       birthMonth: _birthDate!.month,
@@ -1157,19 +1539,35 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
       position: _position,
       employmentStartDate: _employmentStartDate,
       retirementAge: _retirementAge,
+      gradePromotionMonth: _gradePromotionMonth,
       allowances: Allowance(
         homeroom: _isHomeroom ? 200000 : 0,
-        headTeacher: _hasPosition ? 150000 : 0,
-        family: 0, // SalaryCalculationService.calculateFamilyAllowance 사용
-        veteran: 0, // SalaryCalculationService.calculateVeteranAllowance 사용
+        headTeacher: hasPosition ? 150000 : 0,
+        family: 0, // MonthlyBreakdownService._calculateFamilyAllowance 사용
+        veteran: 0, // MonthlyBreakdownService._calculateVeteranAllowance 사용
       ),
       hasSpouse: _hasSpouse,
       numberOfChildren: _numberOfChildren,
+      numberOfParents: _numberOfParents,
       isHomeroom: _isHomeroom,
-      hasPosition: _hasPosition,
+      hasPosition: hasPosition,
+      teachingAllowanceBonuses: _teachingAllowanceBonuses,
     );
 
     widget.onSubmit(profile);
     Navigator.pop(context);
+  }
+
+  Future<void> _showTeachingAllowanceBonusesSelector() async {
+    final result = await TeachingAllowanceSelectorDialog.show(
+      context,
+      initialSelection: _teachingAllowanceBonuses,
+    );
+
+    if (result != null) {
+      setState(() {
+        _teachingAllowanceBonuses = result;
+      });
+    }
   }
 }

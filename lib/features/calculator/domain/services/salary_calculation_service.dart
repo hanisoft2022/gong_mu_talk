@@ -4,8 +4,10 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.d
 import 'package:gong_mu_talk/features/calculator/domain/entities/annual_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_detail.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 
 /// 급여 계산 서비스
@@ -164,16 +166,16 @@ class SalaryCalculationService {
     // 1월/7월만 지급
     if (month != 1 && month != 7) return 0;
 
-    // 재직 년수별 지급률
+    // 재직 년수별 지급률 (2025년 개정 기준)
     double rate;
     if (serviceYears < 1) {
       rate = 0.10; // 1년 미만: 10%
     } else if (serviceYears < 2) {
-      rate = 0.15; // 1년 이상 2년 미만: 15%
+      rate = 0.10; // 1년 이상 2년 미만: 10%
     } else if (serviceYears < 3) {
       rate = 0.20; // 2년 이상 3년 미만: 20%
     } else if (serviceYears < 5) {
-      rate = 0.30; // 3년 이상 5년 미만: 30%
+      rate = 0.20; // 3년 이상 5년 미만: 20%
     } else if (serviceYears < 10) {
       rate = 0.40; // 5년 이상 10년 미만: 40%
     } else {
@@ -189,12 +191,11 @@ class SalaryCalculationService {
   ///
   /// Returns: 정근수당 가산금 (월 3~13만원)
   int calculateLongevityMonthlyAllowance(int serviceYears) {
-    if (serviceYears < 1) return 30000; // 1년 미만: 3만원
-    if (serviceYears < 2) return 40000; // 1년 이상: 4만원
-    if (serviceYears < 3) return 50000; // 2년 이상: 5만원
-    if (serviceYears < 5) return 70000; // 3년 이상: 7만원
-    if (serviceYears < 10) return 100000; // 5년 이상: 10만원
-    return 130000; // 10년 이상: 13만원
+    if (serviceYears < 5) return 30000; // 5년 미만: 3만원
+    if (serviceYears < 10) return 100000; // 5년 이상 10년 미만: 10만원
+    if (serviceYears < 20) return 100000; // 10년 이상 20년 미만: 10만원
+    if (serviceYears < 25) return 110000; // 20년 이상 25년 미만: 11만원
+    return 130000; // 25년 이상: 13만원
   }
 
   /// 교원연구비 계산
@@ -210,11 +211,26 @@ class SalaryCalculationService {
   ///
   /// [currentGrade] 현재 호봉
   ///
-  /// Returns: 시간외근무수당 정액분 (호봉별 12~16만원)
+  /// Returns: 시간외근무수당 정액분 (2025년 기준)
   int calculateOvertimeAllowance(int currentGrade) {
-    if (currentGrade <= 10) return 120000; // 1~10호봉: 12만원
-    if (currentGrade <= 20) return 140000; // 11~20호봉: 14만원
-    return 160000; // 21호봉 이상: 16만원
+    return AllowanceTable.getOvertimeAllowance(currentGrade);
+  }
+
+  /// 성과상여금 계산 (교육공무원 기준)
+  ///
+  /// [grade] 성과등급 (S/A/B)
+  /// [month] 현재 월 (3월에만 지급)
+  ///
+  /// Returns: 성과상여금 (3월만 지급, 그 외 0)
+  int calculatePerformanceBonus({
+    required PerformanceGrade grade,
+    required int month,
+  }) {
+    // 3월만 지급
+    if (month != 3) return 0;
+
+    // 2025년 교육공무원 성과상여금 (차등지급률 50% 기준)
+    return grade.amount;
   }
 
   /// 원로교사수당 계산
@@ -273,6 +289,73 @@ class SalaryCalculationService {
     return total;
   }
 
+  /// 교직수당 가산금 계산 (담임/보직 제외)
+  ///
+  /// [bonuses] 선택된 교직수당 가산금 목록
+  /// [currentGrade] 현재 호봉 (특성화교사 수당 계산용)
+  /// [position] 직급 (겸직수당 계산용)
+  ///
+  /// Returns: 총 교직수당 가산금
+  int calculateTeachingAllowanceBonuses({
+    required Set<TeachingAllowanceBonus> bonuses,
+    required int currentGrade,
+    required Position position,
+  }) {
+    int total = 0;
+
+    for (final bonus in bonuses) {
+      switch (bonus) {
+        case TeachingAllowanceBonus.headTeacher:
+          total += AllowanceTable.headTeacherAllowance;
+          break;
+        case TeachingAllowanceBonus.specialEducation:
+          total += AllowanceTable.allowance2SpecialEducation;
+          break;
+        case TeachingAllowanceBonus.vocationalEducation:
+          // 특성화교사 수당은 호봉별 차등
+          if (currentGrade <= 4) {
+            total += AllowanceTable.allowance5VocationalMin;
+          } else if (currentGrade >= 31) {
+            total += AllowanceTable.allowance5VocationalMax;
+          } else {
+            // 5~30호봉: 선형 보간
+            final ratio = (currentGrade - 4) / (31 - 4);
+            total += (AllowanceTable.allowance5VocationalMin +
+                    (AllowanceTable.allowance5VocationalMax -
+                            AllowanceTable.allowance5VocationalMin) *
+                        ratio)
+                .round();
+          }
+          break;
+        case TeachingAllowanceBonus.healthTeacher:
+          total += AllowanceTable.allowance6HealthTeacher;
+          break;
+        case TeachingAllowanceBonus.concurrentPosition:
+          // 겸직수당은 직급에 따라 다름
+          if (position == Position.principal) {
+            total += AllowanceTable.allowance7ConcurrentPrincipal;
+          } else if (position == Position.vicePrincipal) {
+            total += AllowanceTable.allowance7ConcurrentVice;
+          } else {
+            // 교사는 겸직수당 없음
+            total += 0;
+          }
+          break;
+        case TeachingAllowanceBonus.nutritionTeacher:
+          total += AllowanceTable.allowance8Nutrition;
+          break;
+        case TeachingAllowanceBonus.librarian:
+          total += AllowanceTable.allowance9Librarian;
+          break;
+        case TeachingAllowanceBonus.counselor:
+          total += AllowanceTable.allowance10Counselor;
+          break;
+      }
+    }
+
+    return total;
+  }
+
   /// 월별 급여명세서 계산 (12개월)
   ///
   /// [profile] 교사 프로필
@@ -310,6 +393,13 @@ class SalaryCalculationService {
     // 4. 보직교사수당 (15만원, 보직교사만)
     final positionAllowance = hasPosition ? 150000 : 0;
 
+    // 4-1. 그 외 교직수당 가산금
+    final teachingAllowanceBonuses = calculateTeachingAllowanceBonuses(
+      bonuses: profile.teachingAllowanceBonuses,
+      currentGrade: profile.currentGrade,
+      position: profile.position,
+    );
+
     // 5. 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = calculateVeteranAllowance(
       serviceYears: serviceYears,
@@ -345,6 +435,7 @@ class SalaryCalculationService {
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +
+          teachingAllowanceBonuses +
           veteranAllowance +
           familyAllowance +
           researchAllowance +
@@ -369,6 +460,7 @@ class SalaryCalculationService {
           teachingAllowance: teachingAllowance,
           homeroomAllowance: homeroomAllowance,
           positionAllowance: positionAllowance,
+          teachingAllowanceBonuses: teachingAllowanceBonuses,
           veteranAllowance: veteranAllowance,
           familyAllowance: familyAllowance,
           researchAllowance: researchAllowance,

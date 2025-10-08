@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/services/notification_service.dart';
+import '../core/services/profile_storage_service.dart';
 import '../core/theme/theme_cubit.dart';
 import '../features/auth/data/firebase_auth_repository.dart';
 import '../features/auth/data/government_email_repository.dart';
@@ -45,6 +46,7 @@ import '../features/profile/data/paystub_verification_repository.dart';
 import '../features/profile/data/user_sensitive_info_repository.dart';
 import '../features/profile/presentation/cubit/profile_timeline_cubit.dart';
 import '../features/profile/presentation/cubit/profile_relations_cubit.dart';
+import '../features/profile/presentation/cubit/notification_preferences_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -66,6 +68,9 @@ Future<void> configureDependencies() async {
     )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
     ..registerLazySingleton<NotificationService>(NotificationService.new)
+    ..registerLazySingleton<ProfileStorageService>(
+      () => ProfileStorageService(sharedPreferences),
+    )
     ..registerLazySingleton<LoginSessionStore>(
       () => LoginSessionStore(sharedPreferences),
     )
@@ -122,6 +127,9 @@ Future<void> configureDependencies() async {
       () =>
           ProfileRelationsCubit(followRepository: getIt(), authCubit: getIt()),
     )
+    ..registerLazySingleton<NotificationPreferencesCubit>(
+      NotificationPreferencesCubit.new,
+    )
     ..registerFactory<SearchCubit>(() => SearchCubit(getIt(), getIt(), getIt()))
     ..registerFactory<ScrapCubit>(() => ScrapCubit(getIt()))
     ..registerFactory<LikedPostsCubit>(() => LikedPostsCubit(getIt()))
@@ -144,7 +152,7 @@ Future<void> configureDependencies() async {
       EarlyRetirementCalculationService.new,
     )
     ..registerLazySingleton<MonthlyBreakdownService>(
-      () => MonthlyBreakdownService(getIt()),
+      () => MonthlyBreakdownService(getIt(), getIt()),
     )
     // Calculator usecases
     ..registerLazySingleton<CalculateLifetimeSalaryUseCase>(
@@ -165,8 +173,8 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<CalculateMonthlyBreakdownUseCase>(
       () => CalculateMonthlyBreakdownUseCase(getIt()),
     )
-    // Calculator cubit
-    ..registerFactory<CalculatorCubit>(
+    // Calculator cubit - LazySingleton으로 앱 전체에서 단일 인스턴스 유지
+    ..registerLazySingleton<CalculatorCubit>(
       () => CalculatorCubit(
         calculateLifetimeSalaryUseCase: getIt(),
         calculatePensionUseCase: getIt(),
@@ -174,6 +182,7 @@ Future<void> configureDependencies() async {
         calculateEarlyRetirementUseCase: getIt(),
         calculateAfterTaxPensionUseCase: getIt(),
         calculateMonthlyBreakdownUseCase: getIt(),
+        profileStorageService: getIt(),
       ),
     )
     ..registerLazySingleton<GoRouter>(createRouter)

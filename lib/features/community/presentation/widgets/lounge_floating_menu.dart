@@ -564,7 +564,7 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                     color: theme.colorScheme.onSurfaceVariant,
                     size: 24,
                   ),
-                  const SizedBox(height: 8),
+                  const Gap(8),
                   Text(
                     '라운지 정보 로딩 중...',
                     style: theme.textTheme.bodyMedium?.copyWith(

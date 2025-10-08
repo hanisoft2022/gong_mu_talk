@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gap/gap.dart';
 
 import '../../../profile/domain/lounge_info.dart';
 
@@ -233,7 +234,7 @@ class LoungeIndicator extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(lounge.emoji, style: const TextStyle(fontSize: 12)),
-            const SizedBox(width: 4),
+            const Gap(4),
             Text(
               lounge.shortName,
               style: theme.textTheme.labelSmall?.copyWith(

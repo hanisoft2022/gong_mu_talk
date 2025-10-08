@@ -1,0 +1,20 @@
+Searching for test post...
+
+Found 4 posts with "테스트" or "댓글"
+
+1 ID: 7Q4uMysFEIEUX76KpgzX
+   Text: 전체 라운지 테스트
+   Comments: 0
+
+2 ID: LYXOeIrzKUFJxRTWxUFq
+   Text: 중등영어교사 전체 라운지 테스트
+   Comments: 0
+
+3 ID: fDAupUE0AsK7tgMGJ1Pe
+   Text: 댓글 테스트용 글
+   Comments: 2
+
+4 ID: zgP3wItnGt7rmlrGd6L7
+   Text: 전체 라운지 테스트
+   Comments: 0
+

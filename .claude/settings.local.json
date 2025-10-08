@@ -131,7 +131,22 @@
       "WebFetch(domain:www.ilsok.com)",
       "WebFetch(domain:info.smartjj.co.kr)"
     ],
-    "deny": [],
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./paystub-functions/node_modules/**)",
+      "Read(./functions/node_modules/**)",
+      "Read(./build/**)",
+      "Read(./.dart_tool/**)",
+      "Read(./coverage/**)",
+      "Read(./docs/**)",
+      "Read(./android/app/build/**)",
+      "Read(./ios/Pods/**)",
+      "Read(./**/*.g.dart)",
+      "Read(./**/*.freezed.dart)",
+      "Read(./COMMENT_COUNT_FIX_DEPLOYMENT.md)",
+      "Read(./IMPLEMENTATION_SUMMARY.md)",
+      "Read(./SALARY_CALCULATOR_ANALYSIS.md)"
+    ],
     "ask": []
   }
 }

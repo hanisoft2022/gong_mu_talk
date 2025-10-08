@@ -202,7 +202,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     if (!state.canChangeNickname) {
-      emit(state.copyWith(lastMessage: '닉네임은 한 달에 한 번만 변경할 수 있어요.'));
+      emit(state.copyWith(lastMessage: '닉네임은 30일마다 변경할 수 있어요.'));
       return;
     }
 
@@ -219,11 +219,11 @@ class AuthCubit extends Cubit<AuthState> {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
     } on ArgumentError catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           isProcessing: false,
-          lastMessage: '닉네임 변경 중 오류가 발생했습니다. 다시 시도해주세요.',
+          lastMessage: '닉네임 변경 중 오류가 발생했습니다: $error',
         ),
       );
     }
@@ -250,6 +250,23 @@ class AuthCubit extends Cubit<AuthState> {
           lastMessage: '자기소개를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.',
         ),
       );
+    }
+  }
+
+  /// 디버그/테스트용: 닉네임 변경 제한 초기화
+  Future<void> resetNicknameChangeLimit() async {
+    final String? uid = state.userId;
+    if (uid == null) {
+      return;
+    }
+
+    try {
+      final UserProfile profile =
+          await _userProfileRepository.resetNicknameChangeLimit(uid: uid);
+      _profileManager.applyProfile(profile, emit: emit);
+      emit(state.copyWith(lastMessage: '닉네임 변경 제한이 초기화되었습니다.'));
+    } catch (_) {
+      emit(state.copyWith(lastMessage: '제한 초기화에 실패했습니다.'));
     }
   }
 
@@ -458,6 +475,7 @@ class AuthCubit extends Cubit<AuthState> {
         isAuthenticating: false,
         isGovernmentEmailVerificationInProgress: false,
         isEmailVerified: user.isEmailVerified,
+        isPasswordProvider: user.isPasswordProvider,
         authError: null,
         lastMessage: state.lastMessage,
       ),

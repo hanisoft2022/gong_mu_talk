@@ -1,0 +1,40 @@
+Post: 댓글 테스트용 글
+Stored commentCount: 2
+
+All comments (4 total):
+
+1.
+  ID: dSQNoKvRvWjEeJmHNl9e
+  Text: [삭제된 댓글]
+  Deleted: true
+  Parent: none
+  Created: 2025. 10. 7. 오후 8:51:29
+
+2.
+  ID: 3z9acGIpf387VFPPmthd
+  Text: 댓글 테스트 2
+  Deleted: false
+  Parent: none
+  Created: 2025. 10. 7. 오후 8:51:35
+
+3.
+  ID: nYAfNeFB2BYQBhte8sTR
+  Text: @jhk.g.one.ar 대댓글 테스트레스 1
+  Deleted: false
+  Parent: dSQNoKvRvWjEeJmHNl9e
+  Created: 2025. 10. 7. 오후 8:51:42
+
+4.
+  ID: w8iw8DUTRksWoVU8Gpq9
+  Text: 댓글 테스트 3
+  Deleted: undefined
+  Parent: none
+  Created: 2025. 10. 7. 오후 9:26:34
+
+Summary:
+  Total comments: 4
+  Active (deleted=false): 2
+  Deleted (deleted=true): 2
+  Stored commentCount: 2
+
+✅ Comment count is correct

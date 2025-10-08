@@ -21,14 +21,39 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../../routing/app_router.dart';
 import 'settings_section.dart';
-import 'custom_license_page.dart';
 
 /// App information section with version, developer, and licenses
-class AppInfoSection extends StatelessWidget {
+class AppInfoSection extends StatefulWidget {
   const AppInfoSection({super.key});
+
+  @override
+  State<AppInfoSection> createState() => _AppInfoSectionState();
+}
+
+class _AppInfoSectionState extends State<AppInfoSection> {
+  PackageInfo? _cachedPackageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  /// Loads and caches package info
+  Future<void> _loadPackageInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _cachedPackageInfo = packageInfo;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,20 +61,16 @@ class AppInfoSection extends StatelessWidget {
       title: '앱 정보',
       children: [
         // 버전 정보
-        FutureBuilder<PackageInfo>(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, snapshot) {
-            final String versionText = snapshot.hasData
-                ? '${snapshot.data!.version} (빌드 ${snapshot.data!.buildNumber})'
-                : '1.0.0 (빌드 1)';
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.info_outline),
-              title: const Text('버전 정보'),
-              subtitle: Text(versionText),
-              onTap: () => _showVersionInfo(context),
-            );
-          },
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.info_outline),
+          title: const Text('버전 정보'),
+          subtitle: Text(
+            _cachedPackageInfo != null
+                ? '${_cachedPackageInfo!.version} (빌드 ${_cachedPackageInfo!.buildNumber})'
+                : '1.0.0 (빌드 1)',
+          ),
+          onTap: () => _showVersionInfo(context),
         ),
 
         // 개발자 정보
@@ -79,35 +100,30 @@ class AppInfoSection extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return FutureBuilder<PackageInfo>(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, snapshot) {
-            final PackageInfo? packageInfo = snapshot.data;
+        final packageInfo = _cachedPackageInfo;
 
-            return AlertDialog(
-              title: const Text('버전 정보'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('앱 이름: ${packageInfo?.appName ?? '공무톡'}'),
-                  Text('앱 버전: ${packageInfo?.version ?? '1.0.0'}'),
-                  Text('빌드 번호: ${packageInfo?.buildNumber ?? '1'}'),
-                  Text(
-                    '패키지명: ${packageInfo?.packageName ?? 'kr.hanisoft.gong_mu_talk'}',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('최신 버전을 사용 중입니다.'),
-                ],
+        return AlertDialog(
+          title: const Text('버전 정보'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('앱 이름: ${packageInfo?.appName ?? '공무톡'}'),
+              Text('앱 버전: ${packageInfo?.version ?? '1.0.0'}'),
+              Text('빌드 번호: ${packageInfo?.buildNumber ?? '1'}'),
+              Text(
+                '패키지명: ${packageInfo?.packageName ?? 'kr.hanisoft.gong_mu_talk'}',
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('확인'),
-                ),
-              ],
-            );
-          },
+              const Gap(16),
+              const Text('최신 버전을 사용 중입니다.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
         );
       },
     );
@@ -126,7 +142,7 @@ class AppInfoSection extends StatelessWidget {
             children: [
               Text('개발사: HANISOFT'),
               Text('이메일: contact@hanisoft.kr'),
-              SizedBox(height: 16),
+              Gap(16),
               Text('공무톡은 공무원을 위한 종합 서비스 플랫폼입니다.'),
             ],
           ),
@@ -143,10 +159,6 @@ class AppInfoSection extends StatelessWidget {
 
   /// Shows custom license page
   void _showLicenses(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const CustomLicensePage(),
-      ),
-    );
+    context.pushNamed(LicensesRoute.name);
   }
 }

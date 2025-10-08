@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -30,8 +31,12 @@ class UserCommentsCubit extends Cubit<UserCommentsState> {
           lastDocument: result.lastDocument,
         ),
       );
-    } catch (e) {
-      emit(state.copyWith(isLoading: false, error: '댓글을 불러오는 중 오류가 발생했습니다.'));
+    } catch (e, stackTrace) {
+      debugPrint('Error loading user comments: $e\n$stackTrace');
+      final errorMessage = e.toString().contains('FAILED_PRECONDITION')
+          ? '데이터베이스 인덱스가 준비 중입니다.\n잠시 후 다시 시도해주세요.'
+          : '댓글을 불러오는 중 오류가 발생했습니다.\n$e';
+      emit(state.copyWith(isLoading: false, error: errorMessage));
     }
   }
 
@@ -57,9 +62,13 @@ class UserCommentsCubit extends Cubit<UserCommentsState> {
           lastDocument: result.lastDocument,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error loading more comments: $e\n$stackTrace');
       emit(
-        state.copyWith(isLoading: false, error: '추가 댓글을 불러오는 중 오류가 발생했습니다.'),
+        state.copyWith(
+          isLoading: false,
+          error: '추가 댓글을 불러오는 중 오류가 발생했습니다.\n$e',
+        ),
       );
     }
   }

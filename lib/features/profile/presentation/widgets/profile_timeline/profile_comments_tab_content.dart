@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../community/domain/models/comment_with_post.dart';
+import '../../../../community/presentation/cubit/user_comments_cubit.dart';
+
+/// Tab content for user's authored comments.
+///
+/// Displays loading, error, or success states with infinite scroll support.
+/// Uses NotificationListener for scroll detection (NestedScrollView compatible).
+class ProfileCommentsTabContent extends StatelessWidget {
+  const ProfileCommentsTabContent({super.key, required this.authorUid});
+
+  final String authorUid;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<UserCommentsCubit, UserCommentsState>(
+      builder: (context, state) {
+        // Show error state
+        if (state.error != null && state.comments.isEmpty) {
+          return _buildErrorState(context, state.error!);
+        }
+
+        if (state.isLoading && state.comments.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state.comments.isEmpty && !state.isLoading) {
+          return _buildEmptyState(context);
+        }
+
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollUpdateNotification) {
+              final metrics = notification.metrics;
+              if (metrics.pixels >= metrics.maxScrollExtent - 200) {
+                context.read<UserCommentsCubit>().loadMore(authorUid);
+              }
+            }
+            return false;
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: state.comments.length + (state.hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index >= state.comments.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final CommentWithPost commentWithPost = state.comments[index];
+              return _CommentCard(commentWithPost: commentWithPost);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.comment_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const Gap(16),
+            Text(
+              '작성한 댓글이 없습니다',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const Gap(8),
+            Text(
+              '커뮤니티 게시글에 댓글을 남겨보세요.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
+            ),
+            const Gap(16),
+            Text(
+              '오류가 발생했습니다',
+              style: theme.textTheme.titleMedium,
+            ),
+            const Gap(8),
+            Text(
+              error,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const Gap(16),
+            FilledButton.tonal(
+              onPressed: () {
+                context.read<UserCommentsCubit>().refresh(authorUid);
+              },
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentCard extends StatelessWidget {
+  const _CommentCard({required this.commentWithPost});
+
+  final CommentWithPost commentWithPost;
+
+  @override
+  Widget build(BuildContext context) {
+    final comment = commentWithPost.comment;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0.5,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () {
+          // Navigate to post detail with commentId to auto-scroll and highlight
+          context.push(
+            '/community/posts/${commentWithPost.postId}?commentId=${comment.id}',
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Original post reference
+              Row(
+                children: [
+                  Icon(
+                    Icons.subdirectory_arrow_right,
+                    size: 14,
+                    color: colorScheme.primary.withValues(alpha: 0.7),
+                  ),
+                  const Gap(6),
+                  Expanded(
+                    child: Text(
+                      commentWithPost.postText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(12),
+
+              // Comment content
+              Text(
+                comment.text,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
+                ),
+              ),
+              const Gap(16),
+
+              // Metadata row
+              Row(
+                children: [
+                  Icon(
+                    Icons.favorite_border,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const Gap(4),
+                  Text(
+                    comment.likeCount.toString(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const Gap(8),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.4,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Gap(8),
+                  Text(
+                    _formatDate(comment.createdAt),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 7) {
+      return '${date.year}.${date.month}.${date.day}';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금 전';
+    }
+  }
+}

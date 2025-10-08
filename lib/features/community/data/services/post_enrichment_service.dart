@@ -39,14 +39,32 @@ class PostEnrichmentService {
   Future<Post> enrichPost(Post post, {String? currentUid}) async {
     if (currentUid == null) return post;
 
-    final likedIds = await _interactionRepository.fetchLikedPostIds(
-      uid: currentUid,
-      postIds: [post.id],
-    );
-    final scrappedIds = await _interactionRepository.fetchScrappedIds(
-      uid: currentUid,
-      postIds: [post.id],
-    );
+    Set<String> likedIds;
+    Set<String> scrappedIds;
+
+    // Use cache for single post enrichment (consistent with enrichPosts)
+    if (_cacheManager.shouldRefreshCache() ||
+        !_cacheManager.hasLikedCache(currentUid)) {
+      // Fetch from Firestore and update cache
+      likedIds = await _interactionRepository.fetchLikedPostIds(
+        uid: currentUid,
+        postIds: [post.id],
+      );
+      scrappedIds = await _interactionRepository.fetchScrappedIds(
+        uid: currentUid,
+        postIds: [post.id],
+      );
+
+      _cacheManager.updateCache(
+        uid: currentUid,
+        likedIds: likedIds,
+        scrappedIds: scrappedIds,
+      );
+    } else {
+      // Get from cache
+      likedIds = _cacheManager.getLikedPostIds(currentUid, [post.id]) ?? {};
+      scrappedIds = _cacheManager.getScrappedPostIds(currentUid, [post.id]) ?? {};
+    }
 
     Post enriched = post.copyWith(
       isLiked: likedIds.contains(post.id),

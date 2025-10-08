@@ -212,6 +212,108 @@ class PostCardCubit extends Cubit<PostCardState> {
     });
   }
 
+  /// Delete a comment (soft delete)
+  ///
+  /// Marks the comment as deleted. Firebase Functions will handle commentCount decrement.
+  /// Returns the original comment text for potential undo operation.
+  Future<String?> deleteComment(Comment comment, String requesterUid) async {
+    try {
+      // Store original text for potential undo
+      final String originalText = comment.text;
+
+      // Optimistic UI update - mark as deleted immediately
+      _updateCommentInLists(
+        comment.id,
+        comment.copyWith(deleted: true, text: '[삭제된 댓글]'),
+      );
+
+      // Call repository to soft delete
+      await _repository.deleteComment(
+        postId: _postId,
+        commentId: comment.id,
+        requesterUid: requesterUid,
+      );
+
+      // Optimistic commentCount decrement (will be corrected by Functions)
+      emit(state.copyWith(commentCount: max(0, state.commentCount - 1)));
+
+      return originalText; // Return for undo functionality
+    } catch (e) {
+      debugPrint('❌ Error deleting comment ${comment.id}: $e');
+
+      // Rollback optimistic update on error
+      _updateCommentInLists(comment.id, comment);
+      emit(state.copyWith(
+        error: '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      ));
+
+      return null;
+    }
+  }
+
+  /// Undo comment deletion (restore)
+  ///
+  /// Restores a deleted comment. Firebase Functions will handle commentCount increment.
+  Future<void> undoDeleteComment(
+    String commentId,
+    String requesterUid,
+    String originalText,
+  ) async {
+    try {
+      // Find the deleted comment
+      Comment? deletedComment;
+      try {
+        deletedComment = state.timelineComments.firstWhere(
+          (c) => c.id == commentId,
+        );
+      } catch (e) {
+        deletedComment = null;
+      }
+
+      if (deletedComment == null) {
+        debugPrint('❌ Cannot find deleted comment $commentId for undo');
+        return;
+      }
+
+      // Optimistic UI update - restore immediately
+      _updateCommentInLists(
+        commentId,
+        deletedComment.copyWith(deleted: false, text: originalText),
+      );
+
+      // Call repository to restore
+      await _repository.undoDeleteComment(
+        postId: _postId,
+        commentId: commentId,
+        requesterUid: requesterUid,
+        originalText: originalText,
+      );
+
+      // Optimistic commentCount increment (will be corrected by Functions)
+      emit(state.copyWith(commentCount: state.commentCount + 1));
+    } catch (e) {
+      debugPrint('❌ Error undoing comment deletion $commentId: $e');
+
+      // Rollback - mark as deleted again
+      Comment? comment;
+      try {
+        comment = state.timelineComments.firstWhere(
+          (c) => c.id == commentId,
+        );
+        _updateCommentInLists(
+          commentId,
+          comment.copyWith(deleted: true, text: '[삭제된 댓글]'),
+        );
+      } catch (e) {
+        // Comment not found in list, ignore rollback
+      }
+
+      emit(state.copyWith(
+        error: '댓글 복구에 실패했습니다.',
+      ));
+    }
+  }
+
   /// Clear error state
   void clearError() {
     emit(state.copyWith(clearError: true));

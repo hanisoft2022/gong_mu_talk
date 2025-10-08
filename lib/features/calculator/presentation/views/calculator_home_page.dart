@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gong_mu_talk/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_cubit.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_state.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_info_input_card.dart';
@@ -86,6 +87,7 @@ class CalculatorHomePage extends StatelessWidget {
                   monthlyBreakdown: state.monthlyBreakdown,
                   lifetimeSalary: state.lifetimeSalary,
                   profile: state.profile,
+                  nickname: context.read<AuthCubit>().state.nickname,
                 ),
 
                 const SizedBox(height: 16),

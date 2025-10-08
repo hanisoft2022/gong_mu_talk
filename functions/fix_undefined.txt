@@ -1,0 +1,30 @@
+Fixing undefined deleted fields...
+
+Fixing comment: lzZ5ApEWyjeVb1KqVGWH
+  Text: 조회수 테스트 1
+Fixing comment: N4kk9Wp8aIP2sb6oy2nL
+  Text: 조회수 테스트
+Fixing comment: UJvf5jdDVftmMO1Nc7eM
+  Text: 조회수 테스트 2
+Fixing comment: w8iw8DUTRksWoVU8Gpq9
+  Text: 댓글 테스트 3
+Fixing comment: c4TXUVMBMDwLI5Lx9cep
+  Text: 조회수 테스트 3
+
+Total fixed: 5
+
+Re-running comment count verification...
+
+Mismatch in post: SVbelZnxPaDG3cYOWiOY
+  Stored: 0 Actual: 1
+Mismatch in post: bbt9sAyCXv9ZzlyPnLA3
+  Stored: 0 Actual: 2
+Mismatch in post: fDAupUE0AsK7tgMGJ1Pe
+  Stored: 2 Actual: 3
+Mismatch in post: glSoen1JN9rw4cPUuzU0
+  Stored: 3 Actual: 4
+
+Mismatches found: 4
+Fixed: 4
+
+✅ Done!

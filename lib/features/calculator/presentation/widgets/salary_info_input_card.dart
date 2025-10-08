@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_cubit.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/quick_input_bottom_sheet.dart';
@@ -44,7 +45,7 @@ class SalaryInfoInputCard extends StatelessWidget {
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const Gap(12),
                   Text(
                     '급여 정보 입력',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -54,7 +55,7 @@ class SalaryInfoInputCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const Gap(16),
 
               // 입력 상태에 따른 UI 변경
               if (!isDataEntered)
@@ -67,7 +68,7 @@ class SalaryInfoInputCard extends StatelessWidget {
                         context,
                       ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
-                    const SizedBox(height: 16),
+                    const Gap(16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -98,7 +99,7 @@ class SalaryInfoInputCard extends StatelessWidget {
                                     color: Colors.green,
                                     size: 20,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const Gap(8),
                                   Text(
                                     '입력 완료',
                                     style: TextStyle(
@@ -108,11 +109,10 @@ class SalaryInfoInputCard extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const Gap(8),
                               if (profile != null)
                                 Text(
-                                  '${profile!.currentGrade}호봉 · ${profile!.position.displayName} · '
-                                  '${_calculateServiceYears(profile!)}년 재직',
+                                  '${profile!.currentGrade}호봉 · ${profile!.position.displayName}',
                                   style: Theme.of(context).textTheme.bodyLarge
                                       ?.copyWith(fontWeight: FontWeight.w500),
                                 ),
@@ -147,10 +147,5 @@ class SalaryInfoInputCard extends StatelessWidget {
         onSubmit: (profile) => cubit.saveProfile(profile),
       ),
     );
-  }
-
-  int _calculateServiceYears(TeacherProfile profile) {
-    final now = DateTime.now();
-    return now.year - profile.employmentStartDate.year;
   }
 }

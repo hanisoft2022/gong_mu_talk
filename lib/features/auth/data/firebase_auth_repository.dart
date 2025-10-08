@@ -28,11 +28,13 @@ class AuthUser {
     required this.uid,
     this.email,
     required this.isEmailVerified,
+    this.isPasswordProvider = true,
   });
 
   final String uid;
   final String? email;
   final bool isEmailVerified;
+  final bool isPasswordProvider; // true if email/password, false if Google/etc
 }
 
 class FirebaseAuthRepository {
@@ -395,10 +397,17 @@ class FirebaseAuthRepository {
       return null;
     }
 
+    // Check if user signed in with password (email/password provider)
+    // If user has google.com provider, they used Google Sign-In
+    final bool hasPasswordProvider = firebaseUser.providerData.any(
+      (info) => info.providerId == 'password',
+    );
+
     return AuthUser(
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       isEmailVerified: firebaseUser.emailVerified,
+      isPasswordProvider: hasPasswordProvider,
     );
   }
 

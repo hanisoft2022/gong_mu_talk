@@ -8,10 +8,11 @@
 /// - Provide visual feedback for notification states
 ///
 /// **Features**:
-/// - Master toggle for all notifications
-/// - Individual toggles for specific notification types
+/// - Master toggle for all notifications (AuthCubit)
+/// - Individual toggles for specific notification types (NotificationPreferencesCubit)
 /// - Disabled state for sub-toggles when master toggle is off
 /// - Visual indicators (icons, colors) for enabled/disabled states
+/// - Persistent storage using SharedPreferences
 ///
 /// **Notification Types**:
 /// - Global notifications: Master control for all notifications
@@ -19,10 +20,13 @@
 /// - Comment notifications: When posts receive comments
 /// - Follow notifications: When new followers are gained
 ///
-/// **Future Improvements**:
-/// - SharedPreferences integration for sub-notification persistence
-/// - Backend sync for notification preferences
-/// - Push notification token management
+/// **State Management**:
+/// - AuthCubit: Global notifications toggle (master switch)
+/// - NotificationPreferencesCubit: Individual notification toggles
+///
+/// **Related**:
+/// - NotificationPreferencesCubit: Manages individual preferences
+/// - AuthCubit: Manages global notification toggle
 
 library;
 
@@ -30,99 +34,83 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../cubit/notification_preferences_cubit.dart';
 import 'settings_section.dart';
 
 /// Notification settings section with master and individual toggles
-class NotificationSettingsSection extends StatefulWidget {
+class NotificationSettingsSection extends StatelessWidget {
   const NotificationSettingsSection({super.key});
-
-  @override
-  State<NotificationSettingsSection> createState() =>
-      _NotificationSettingsSectionState();
-}
-
-class _NotificationSettingsSectionState
-    extends State<NotificationSettingsSection> {
-  // 알림 설정 상태 (향후 SharedPreferences로 저장 예정)
-  bool _likeNotifications = true;
-  bool _commentNotifications = true;
-  bool _followNotifications = true;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
-      builder: (BuildContext context, AuthState state) {
-        final bool isProcessing = state.isProcessing;
-        final bool notificationsEnabled = state.notificationsEnabled;
+      builder: (BuildContext context, AuthState authState) {
+        final bool isProcessing = authState.isProcessing;
+        final bool notificationsEnabled = authState.notificationsEnabled;
 
-        return SettingsSection(
-          title: '알림 설정',
-          children: [
-            // 전체 알림 토글 (마스터 스위치)
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 16),
-              leading: const Icon(Icons.notifications_outlined, size: 20),
-              title: const Text('전체 알림'),
-              subtitle: const Text('모든 알림을 받을지 설정합니다.'),
-              trailing: Switch.adaptive(
-                value: notificationsEnabled,
-                onChanged: isProcessing
-                    ? null
-                    : (bool value) => context
-                          .read<AuthCubit>()
-                          .updateNotificationsEnabled(value),
-              ),
-            ),
-            const Divider(),
+        return BlocBuilder<NotificationPreferencesCubit, NotificationPreferencesState>(
+          builder: (BuildContext context, NotificationPreferencesState prefState) {
+            return SettingsSection(
+              title: '알림 설정',
+              children: [
+                // 전체 알림 토글 (마스터 스위치)
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 16),
+                  leading: const Icon(Icons.notifications_outlined, size: 20),
+                  title: const Text('전체 알림'),
+                  subtitle: const Text('모든 알림을 받을지 설정합니다.'),
+                  trailing: Switch.adaptive(
+                    value: notificationsEnabled,
+                    onChanged: isProcessing
+                        ? null
+                        : (bool value) => context
+                              .read<AuthCubit>()
+                              .updateNotificationsEnabled(value),
+                  ),
+                ),
+                const Divider(),
 
-            // 좋아요 알림
-            _buildSubNotificationTile(
-              context: context,
-              icon: Icons.favorite_outline,
-              title: '좋아요 알림',
-              subtitle: '내 게시물에 좋아요가 달렸을 때',
-              value: _likeNotifications,
-              enabled: notificationsEnabled && !isProcessing,
-              onChanged: (value) {
-                setState(() {
-                  _likeNotifications = value;
-                });
-                // SharedPreferences 저장 로직은 향후 구현 예정
-              },
-            ),
+                // 좋아요 알림
+                _buildSubNotificationTile(
+                  context: context,
+                  icon: Icons.favorite_outline,
+                  title: '좋아요 알림',
+                  subtitle: '내 게시물에 좋아요가 달렸을 때',
+                  value: prefState.likeNotifications,
+                  enabled: notificationsEnabled && !isProcessing && !prefState.isLoading,
+                  onChanged: (value) => context
+                      .read<NotificationPreferencesCubit>()
+                      .setLikeNotifications(value),
+                ),
 
-            // 댓글 알림
-            _buildSubNotificationTile(
-              context: context,
-              icon: Icons.comment_outlined,
-              title: '댓글 알림',
-              subtitle: '내 게시물에 댓글이 달렸을 때',
-              value: _commentNotifications,
-              enabled: notificationsEnabled && !isProcessing,
-              onChanged: (value) {
-                setState(() {
-                  _commentNotifications = value;
-                });
-                // SharedPreferences 저장 로직은 향후 구현 예정
-              },
-            ),
+                // 댓글 알림
+                _buildSubNotificationTile(
+                  context: context,
+                  icon: Icons.comment_outlined,
+                  title: '댓글 알림',
+                  subtitle: '내 게시물에 댓글이 달렸을 때',
+                  value: prefState.commentNotifications,
+                  enabled: notificationsEnabled && !isProcessing && !prefState.isLoading,
+                  onChanged: (value) => context
+                      .read<NotificationPreferencesCubit>()
+                      .setCommentNotifications(value),
+                ),
 
-            // 팔로우 알림
-            _buildSubNotificationTile(
-              context: context,
-              icon: Icons.person_add_outlined,
-              title: '팔로우 알림',
-              subtitle: '새로운 팔로워가 생겼을 때',
-              value: _followNotifications,
-              enabled: notificationsEnabled && !isProcessing,
-              onChanged: (value) {
-                setState(() {
-                  _followNotifications = value;
-                });
-                // SharedPreferences 저장 로직은 향후 구현 예정
-              },
-            ),
-          ],
+                // 팔로우 알림
+                _buildSubNotificationTile(
+                  context: context,
+                  icon: Icons.person_add_outlined,
+                  title: '팔로우 알림',
+                  subtitle: '새로운 팔로워가 생겼을 때',
+                  value: prefState.followNotifications,
+                  enabled: notificationsEnabled && !isProcessing && !prefState.isLoading,
+                  onChanged: (value) => context
+                      .read<NotificationPreferencesCubit>()
+                      .setFollowNotifications(value),
+                ),
+              ],
+            );
+          },
         );
       },
     );

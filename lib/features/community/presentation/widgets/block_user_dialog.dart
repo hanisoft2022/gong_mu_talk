@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 /// Block User Confirmation Dialog
 ///
@@ -37,26 +38,26 @@ class BlockUserDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$targetNickname님을 차단하시겠습니까?', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 16),
+          const Gap(16),
           Text(
             '차단하면:',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          const Gap(8),
           _buildInfoItem(
             context,
             icon: Icons.visibility_off_outlined,
             text: '이 사용자의 게시글과 댓글이 보이지 않습니다',
           ),
-          const SizedBox(height: 6),
+          const Gap(6),
           _buildInfoItem(
             context,
             icon: Icons.chat_bubble_outline,
             text: '이 사용자가 회원님의 게시글에 댓글을 남길 수 없습니다',
           ),
-          const SizedBox(height: 6),
+          const Gap(6),
           _buildInfoItem(
             context,
             icon: Icons.undo_outlined,
@@ -94,7 +95,7 @@ class BlockUserDialog extends StatelessWidget {
           size: 16,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(width: 8),
+        const Gap(8),
         Expanded(
           child: Text(
             text,

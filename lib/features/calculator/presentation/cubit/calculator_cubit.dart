@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gong_mu_talk/core/services/profile_storage_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_lifetime_salary_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_pension_usecase.dart';
@@ -15,6 +16,7 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   final CalculateEarlyRetirementUseCase _calculateEarlyRetirementUseCase;
   final CalculateAfterTaxPensionUseCase _calculateAfterTaxPensionUseCase;
   final CalculateMonthlyBreakdownUseCase _calculateMonthlyBreakdownUseCase;
+  final ProfileStorageService _profileStorageService;
 
   CalculatorCubit({
     required CalculateLifetimeSalaryUseCase calculateLifetimeSalaryUseCase,
@@ -24,17 +26,35 @@ class CalculatorCubit extends Cubit<CalculatorState> {
     required CalculateEarlyRetirementUseCase calculateEarlyRetirementUseCase,
     required CalculateAfterTaxPensionUseCase calculateAfterTaxPensionUseCase,
     required CalculateMonthlyBreakdownUseCase calculateMonthlyBreakdownUseCase,
+    required ProfileStorageService profileStorageService,
   }) : _calculateLifetimeSalaryUseCase = calculateLifetimeSalaryUseCase,
        _calculatePensionUseCase = calculatePensionUseCase,
        _calculateRetirementBenefitUseCase = calculateRetirementBenefitUseCase,
        _calculateEarlyRetirementUseCase = calculateEarlyRetirementUseCase,
        _calculateAfterTaxPensionUseCase = calculateAfterTaxPensionUseCase,
        _calculateMonthlyBreakdownUseCase = calculateMonthlyBreakdownUseCase,
-       super(const CalculatorState());
+       _profileStorageService = profileStorageService,
+       super(const CalculatorState()) {
+    // 저장된 프로필 불러오기
+    loadSavedProfile();
+  }
+
+  /// 저장된 프로필 불러오기
+  void loadSavedProfile() {
+    final savedProfile = _profileStorageService.loadProfile();
+    if (savedProfile != null) {
+      emit(state.copyWith(profile: savedProfile, isDataEntered: true));
+      // 자동으로 계산 실행
+      calculate();
+    }
+  }
 
   /// 교사 프로필 저장
-  void saveProfile(TeacherProfile profile) {
+  Future<void> saveProfile(TeacherProfile profile) async {
     emit(state.copyWith(profile: profile, isDataEntered: true));
+
+    // 로컬 저장 (await 추가로 확실하게 저장)
+    await _profileStorageService.saveProfile(profile);
 
     // 자동으로 계산 실행
     calculate();
@@ -200,7 +220,9 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   }
 
   /// 프로필 초기화
-  void clearProfile() {
+  Future<void> clearProfile() async {
+    // 로컬 저장소도 삭제 (await 추가로 확실하게 삭제)
+    await _profileStorageService.clearProfile();
     emit(const CalculatorState());
   }
 }

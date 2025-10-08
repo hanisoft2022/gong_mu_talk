@@ -274,7 +274,7 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
           title: const Row(
             children: [
               Icon(Icons.verified_user),
-              SizedBox(width: 8),
+              Gap(8),
               Text('허용되는 공무원 이메일'),
             ],
           ),

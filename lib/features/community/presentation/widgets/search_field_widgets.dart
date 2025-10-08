@@ -377,7 +377,7 @@ void showSearchOptionsBottomSheet({
                     },
                   );
                 }),
-            const SizedBox(height: 16),
+            const Gap(16),
           ],
         ),
       );

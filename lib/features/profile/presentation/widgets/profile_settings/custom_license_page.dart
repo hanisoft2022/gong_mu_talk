@@ -239,7 +239,7 @@ class _CustomLicensePageState extends State<CustomLicensePage> {
                   ),
 
                   // 하단 여백
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  const SliverToBoxAdapter(child: Gap(16)),
                 ],
               );
             },

@@ -1,5 +1,6 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 
 /// 월별 실수령액 계산 UseCase
@@ -16,6 +17,7 @@ class CalculateMonthlyBreakdownUseCase {
   /// [numberOfChildren] 자녀 수
   /// [isHomeroom] 담임 여부
   /// [hasPosition] 보직 여부
+  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
   ///
   /// Returns: 12개월 실수령액 목록
   List<MonthlyNetIncome> call({
@@ -25,6 +27,7 @@ class CalculateMonthlyBreakdownUseCase {
     required int numberOfChildren,
     bool isHomeroom = false,
     bool hasPosition = false,
+    PerformanceGrade performanceGrade = PerformanceGrade.A,
   }) {
     return _service.calculateMonthlyBreakdown(
       profile: profile,
@@ -33,6 +36,7 @@ class CalculateMonthlyBreakdownUseCase {
       numberOfChildren: numberOfChildren,
       isHomeroom: isHomeroom,
       hasPosition: hasPosition,
+      performanceGrade: performanceGrade,
     );
   }
 
@@ -63,6 +67,7 @@ class CalculateMonthlyBreakdownUseCase {
   /// [numberOfChildren] 자녀 수
   /// [isHomeroom] 담임 여부
   /// [hasPosition] 보직 여부
+  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
   ///
   /// Returns: 연도별 월별 실수령액 맵
   Map<int, List<MonthlyNetIncome>> compareByYear({
@@ -73,6 +78,7 @@ class CalculateMonthlyBreakdownUseCase {
     required int numberOfChildren,
     bool isHomeroom = false,
     bool hasPosition = false,
+    PerformanceGrade performanceGrade = PerformanceGrade.A,
   }) {
     final results = <int, List<MonthlyNetIncome>>{};
 
@@ -84,6 +90,7 @@ class CalculateMonthlyBreakdownUseCase {
         numberOfChildren: numberOfChildren,
         isHomeroom: isHomeroom,
         hasPosition: hasPosition,
+        performanceGrade: performanceGrade,
       );
       results[year] = monthlyIncomes;
     }

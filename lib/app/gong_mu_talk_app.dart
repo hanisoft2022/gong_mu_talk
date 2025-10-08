@@ -11,6 +11,7 @@ import '../core/theme/theme_cubit.dart';
 import '../di/di.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../features/community/data/community_repository.dart';
+import '../features/profile/presentation/cubit/notification_preferences_cubit.dart';
 
 class GongMuTalkApp extends StatefulWidget {
   const GongMuTalkApp({super.key});
@@ -82,6 +83,9 @@ class _GongMuTalkAppState extends State<GongMuTalkApp> {
         providers: [
           BlocProvider<ThemeCubit>.value(value: getIt<ThemeCubit>()),
           BlocProvider<AuthCubit>.value(value: getIt<AuthCubit>()),
+          BlocProvider<NotificationPreferencesCubit>.value(
+            value: getIt<NotificationPreferencesCubit>(),
+          ),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, themeMode) {

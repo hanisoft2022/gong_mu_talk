@@ -159,7 +159,8 @@ match /notifications/{notificationId} {
       allow create: if isSignedIn() &&
         request.resource.data.keys().hasOnly(['uid']) &&
         request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
 match /government_email_index/{docId} {
@@ -235,6 +236,12 @@ match /government_email_index/{docId} {
     match /lounges/{loungeId} {
       allow read: if isSignedIn();
       allow write: if false; // 라운지 정보는 관리자만 수정 가능
+    }
+
+    // Collection group query for comments
+    // Allows fetching all comments across all posts (e.g., for user profile)
+    match /{path=**}/comments/{commentId} {
+      allow read: if isSignedIn();
     }
   }
 }

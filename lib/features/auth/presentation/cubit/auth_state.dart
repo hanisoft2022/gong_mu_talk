@@ -7,6 +7,7 @@ class AuthState extends Equatable {
     this.isAuthenticating = false,
     this.isGovernmentEmailVerificationInProgress = false,
     this.isEmailVerified = false,
+    this.isPasswordProvider = true,
     this.userProfile,
     this.careerTrack = CareerTrack.none,
     this.nickname = '공무원',
@@ -27,6 +28,7 @@ class AuthState extends Equatable {
     this.extraNicknameTickets = 0,
     this.followerCount = 0,
     this.followingCount = 0,
+    this.postCount = 0,
     this.notificationsEnabled = true,
     this.serialVisible = true,
     this.excludedTracks = const <CareerTrack>{},
@@ -46,6 +48,7 @@ class AuthState extends Equatable {
   final bool isAuthenticating;
   final bool isGovernmentEmailVerificationInProgress;
   final bool isEmailVerified;
+  final bool isPasswordProvider; // true if email/password, false if Google/etc
   final UserProfile? userProfile;
   final CareerTrack careerTrack;
   final String nickname;
@@ -66,6 +69,7 @@ class AuthState extends Equatable {
   final int extraNicknameTickets;
   final int followerCount;
   final int followingCount;
+  final int postCount;
   final bool notificationsEnabled;
   final bool serialVisible;
   final Set<CareerTrack> excludedTracks;
@@ -87,6 +91,7 @@ class AuthState extends Equatable {
     bool? isAuthenticating,
     bool? isGovernmentEmailVerificationInProgress,
     bool? isEmailVerified,
+    bool? isPasswordProvider,
     UserProfile? userProfile,
     CareerTrack? careerTrack,
     String? nickname,
@@ -107,6 +112,7 @@ class AuthState extends Equatable {
     int? extraNicknameTickets,
     int? followerCount,
     int? followingCount,
+    int? postCount,
     bool? notificationsEnabled,
     bool? serialVisible,
     Set<CareerTrack>? excludedTracks,
@@ -128,6 +134,7 @@ class AuthState extends Equatable {
           isGovernmentEmailVerificationInProgress ??
           this.isGovernmentEmailVerificationInProgress,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      isPasswordProvider: isPasswordProvider ?? this.isPasswordProvider,
       userProfile: userProfile ?? this.userProfile,
       careerTrack: careerTrack ?? this.careerTrack,
       nickname: nickname ?? this.nickname,
@@ -149,6 +156,7 @@ class AuthState extends Equatable {
       extraNicknameTickets: extraNicknameTickets ?? this.extraNicknameTickets,
       followerCount: followerCount ?? this.followerCount,
       followingCount: followingCount ?? this.followingCount,
+      postCount: postCount ?? this.postCount,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       serialVisible: serialVisible ?? this.serialVisible,
       excludedTracks: excludedTracks ?? this.excludedTracks,
@@ -177,6 +185,7 @@ class AuthState extends Equatable {
     isAuthenticating,
     isGovernmentEmailVerificationInProgress,
     isEmailVerified,
+    isPasswordProvider,
     userProfile,
     careerTrack,
     nickname,
@@ -197,6 +206,7 @@ class AuthState extends Equatable {
     extraNicknameTickets,
     followerCount,
     followingCount,
+    postCount,
     notificationsEnabled,
     serialVisible,
     excludedTracks,
@@ -231,14 +241,14 @@ class AuthState extends Equatable {
   bool get hasNicknameTickets => extraNicknameTickets > 0;
 
   bool get canChangeNickname {
-    final DateTime now = DateTime.now();
-    final DateTime? resetAnchor = nicknameResetAt;
-    if (resetAnchor == null ||
-        resetAnchor.year != now.year ||
-        resetAnchor.month != now.month) {
+    // 30일 기준 변경 제한
+    if (nicknameLastChangedAt == null) {
       return true;
     }
-    return nicknameChangeCount < 1;
+
+    final DateTime now = DateTime.now();
+    final DateTime nextChangeDate = nicknameLastChangedAt!.add(const Duration(days: 30));
+    return now.isAfter(nextChangeDate) || now.isAtSameMomentAs(nextChangeDate);
   }
 
   String? get governmentEmail => userProfile?.governmentEmail;

@@ -39,6 +39,11 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
   final NotificationRepository _notificationRepository;
   late final StreamSubscription<AuthState> _authSubscription;
 
+  // Undo state for scrap toggle
+  Timer? _scrapUndoTimer;
+  String? _pendingScrapPostId;
+  bool? _pendingScrapPreviousState;
+
   final Map<String, QueryDocumentSnapshotJson?> _cursors =
       <String, QueryDocumentSnapshotJson?>{};
   bool _isFetching = false;
@@ -406,37 +411,135 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
       return;
     }
 
-    try {
-      await _repository.toggleScrap(uid: uid, postId: post.id);
-      final bool nowScrapped = !state.scrappedPostIds.contains(post.id);
-      final List<Post> updatedPosts = state.posts
-          .map((Post existing) {
-            if (existing.id != post.id) {
-              return existing;
-            }
-            return existing.copyWith(isScrapped: nowScrapped);
-          })
-          .toList(growable: false);
+    // Cancel any existing undo timer
+    _scrapUndoTimer?.cancel();
 
-      final Set<String> scrapped = Set<String>.from(state.scrappedPostIds);
-      if (nowScrapped) {
-        scrapped.add(post.id);
-      } else {
-        scrapped.remove(post.id);
-      }
+    // Store current state for potential undo
+    final bool previouslyScrapped = state.scrappedPostIds.contains(post.id);
+    final bool nowScrapped = !previouslyScrapped;
+    _pendingScrapPostId = post.id;
+    _pendingScrapPreviousState = previouslyScrapped;
 
-      emit(state.copyWith(posts: updatedPosts, scrappedPostIds: scrapped));
-    } catch (_) {
-      emit(state.copyWith(errorMessage: '스크랩 처리 중 오류가 발생했습니다.'));
+    // Optimistically update UI
+    final List<Post> updatedPosts = state.posts
+        .map((Post existing) {
+          if (existing.id != post.id) {
+            return existing;
+          }
+          return existing.copyWith(isScrapped: nowScrapped);
+        })
+        .toList(growable: false);
+
+    final Set<String> scrapped = Set<String>.from(state.scrappedPostIds);
+    if (nowScrapped) {
+      scrapped.add(post.id);
+    } else {
+      scrapped.remove(post.id);
     }
+
+    debugPrint('🔖 CommunityFeedCubit: Toggling scrap ${nowScrapped ? "ON" : "OFF"} for post ${post.id} at ${DateTime.now()}');
+    emit(state.copyWith(
+      posts: updatedPosts,
+      scrappedPostIds: scrapped,
+      lastScrapUndoNotificationTime: DateTime.now(),
+    ));
+
+    // Set timer to actually toggle after 5 seconds
+    _scrapUndoTimer = Timer(const Duration(seconds: 5), () async {
+      if (_pendingScrapPostId != null) {
+        try {
+          await _repository.toggleScrap(uid: uid, postId: _pendingScrapPostId!);
+          debugPrint('✅ CommunityFeedCubit: Scrap toggle confirmed for $_pendingScrapPostId');
+          _pendingScrapPostId = null;
+          _pendingScrapPreviousState = null;
+        } catch (e) {
+          // Revert on error
+          debugPrint('❌ CommunityFeedCubit: Scrap toggle failed, reverting: $e');
+          _revertScrapToggle();
+        }
+      }
+    });
+  }
+
+  void undoScrapToggle() {
+    debugPrint('↩️ CommunityFeedCubit: Undoing scrap toggle');
+    _scrapUndoTimer?.cancel();
+    _revertScrapToggle();
+  }
+
+  void _revertScrapToggle() {
+    if (_pendingScrapPostId == null || _pendingScrapPreviousState == null) {
+      debugPrint('⚠️ CommunityFeedCubit: No pending scrap to revert');
+      return;
+    }
+
+    debugPrint('↩️ CommunityFeedCubit: Reverting scrap toggle for $_pendingScrapPostId');
+
+    final List<Post> revertedPosts = state.posts
+        .map((Post existing) {
+          if (existing.id != _pendingScrapPostId) {
+            return existing;
+          }
+          return existing.copyWith(isScrapped: _pendingScrapPreviousState!);
+        })
+        .toList(growable: false);
+
+    final Set<String> scrapped = Set<String>.from(state.scrappedPostIds);
+    if (_pendingScrapPreviousState!) {
+      scrapped.add(_pendingScrapPostId!);
+    } else {
+      scrapped.remove(_pendingScrapPostId!);
+    }
+
+    emit(state.copyWith(
+      posts: revertedPosts,
+      scrappedPostIds: scrapped,
+    ));
+
+    _pendingScrapPostId = null;
+    _pendingScrapPreviousState = null;
   }
 
   Future<void> incrementViewCount(String postId) async {
     unawaited(_repository.incrementViewCount(postId));
   }
 
+  /// Refresh like/scrap states from cache (no network call)
+  /// Useful after returning from ScrapPage or LikedPostsPage
+  void refreshFromCache() {
+    final String? uid = _authCubit.state.userId;
+    if (uid == null || state.posts.isEmpty) return;
+
+    final postIds = state.posts.map((p) => p.id).toList();
+
+    // Get cached scrap/like states
+    final cachedScrappedIds = _repository.getCachedScrappedIds(uid, postIds);
+    final cachedLikedIds = _repository.getCachedLikedIds(uid, postIds);
+
+    if (cachedScrappedIds == null && cachedLikedIds == null) return;
+
+    // Update posts with cached states
+    final updatedPosts = state.posts.map((post) {
+      final isScrapped = cachedScrappedIds?.contains(post.id) ?? post.isScrapped;
+      final isLiked = cachedLikedIds?.contains(post.id) ?? post.isLiked;
+
+      if (isScrapped == post.isScrapped && isLiked == post.isLiked) {
+        return post;
+      }
+
+      return post.copyWith(isScrapped: isScrapped, isLiked: isLiked);
+    }).toList();
+
+    emit(state.copyWith(
+      posts: updatedPosts,
+      scrappedPostIds: cachedScrappedIds ?? state.scrappedPostIds,
+      likedPostIds: cachedLikedIds ?? state.likedPostIds,
+    ));
+  }
+
   @override
   Future<void> close() async {
+    _scrapUndoTimer?.cancel();
     await _authSubscription.cancel();
     return super.close();
   }

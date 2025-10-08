@@ -28,6 +28,7 @@ class CommunityFeedState extends Equatable {
     this.accessibleLounges = const <LoungeInfo>[],
     this.selectedLoungeInfo,
     this.isLoungeMenuOpen = false,
+    this.lastScrapUndoNotificationTime,
   });
 
   final CommunityFeedStatus status;
@@ -46,6 +47,7 @@ class CommunityFeedState extends Equatable {
   final List<LoungeInfo> accessibleLounges;
   final LoungeInfo? selectedLoungeInfo;
   final bool isLoungeMenuOpen;
+  final DateTime? lastScrapUndoNotificationTime;
 
   CommunityFeedState copyWith({
     CommunityFeedStatus? status,
@@ -64,6 +66,7 @@ class CommunityFeedState extends Equatable {
     List<LoungeInfo>? accessibleLounges,
     LoungeInfo? selectedLoungeInfo,
     bool? isLoungeMenuOpen,
+    DateTime? lastScrapUndoNotificationTime,
   }) {
     return CommunityFeedState(
       status: status ?? this.status,
@@ -82,6 +85,7 @@ class CommunityFeedState extends Equatable {
       accessibleLounges: accessibleLounges ?? this.accessibleLounges,
       selectedLoungeInfo: selectedLoungeInfo ?? this.selectedLoungeInfo,
       isLoungeMenuOpen: isLoungeMenuOpen ?? this.isLoungeMenuOpen,
+      lastScrapUndoNotificationTime: lastScrapUndoNotificationTime ?? this.lastScrapUndoNotificationTime,
     );
   }
 
@@ -103,5 +107,6 @@ class CommunityFeedState extends Equatable {
     accessibleLounges,
     selectedLoungeInfo,
     isLoungeMenuOpen,
+    lastScrapUndoNotificationTime,
   ];
 }

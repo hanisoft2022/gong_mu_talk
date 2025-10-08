@@ -23,7 +23,9 @@ class _ScrapPageState extends State<ScrapPage> {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
-    context.read<ScrapCubit>().loadInitial();
+    final cubit = context.read<ScrapCubit>();
+    debugPrint('🏁 ScrapPage initState - Cubit hashCode: ${cubit.hashCode}');
+    cubit.loadInitial();
   }
 
   @override
@@ -67,42 +69,74 @@ class _ScrapPageState extends State<ScrapPage> {
           ),
         ],
       ),
-      body: BlocBuilder<ScrapCubit, ScrapState>(
-        builder: (context, state) {
-          if (state.isLoading && state.scraps.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+      body: BlocListener<ScrapCubit, ScrapState>(
+        listenWhen: (previous, current) {
+          debugPrint('🔍 ScrapPage listenWhen: previous=${previous.lastUndoNotificationTime}, current=${current.lastUndoNotificationTime}');
+          final shouldShow = previous.lastUndoNotificationTime != current.lastUndoNotificationTime &&
+              current.lastUndoNotificationTime != null;
+          debugPrint('🔍 ScrapPage listenWhen: shouldShow=$shouldShow');
+          if (shouldShow) {
+            debugPrint('✅ ScrapPage: listenWhen triggered at ${current.lastUndoNotificationTime}, showing SnackBar');
           }
-
-          if (state.scraps.isEmpty && !state.isLoading) {
-            return _buildEmptyState();
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => context.read<ScrapCubit>().refresh(),
-            child: OptimizedListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              itemCount: state.scraps.length + (state.hasMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= state.scraps.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                final Post post = state.scraps[index];
-                return PostCard(
-                  post: post,
-                  onToggleLike: () =>
-                      context.read<ScrapCubit>().toggleLike(post),
-                  onToggleScrap: () =>
-                      context.read<ScrapCubit>().removeScrap(post),
-                );
-              },
-            ),
-          );
+          return shouldShow;
         },
+        listener: (context, state) {
+          debugPrint('📢 ScrapPage: Showing undo SnackBar');
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: const Text('스크랩이 해제되었습니다'),
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: '실행 취소',
+                  textColor: Colors.yellow,
+                  onPressed: () {
+                    debugPrint('↩️ ScrapPage: Undo button pressed');
+                    context.read<ScrapCubit>().undoRemoveScrap();
+                  },
+                ),
+              ),
+            );
+        },
+        child: BlocBuilder<ScrapCubit, ScrapState>(
+          builder: (context, state) {
+            debugPrint('🔨 ScrapPage BlocBuilder: scraps.length=${state.scraps.length}, lastUndoTime=${state.lastUndoNotificationTime}');
+            if (state.isLoading && state.scraps.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state.scraps.isEmpty && !state.isLoading) {
+              return _buildEmptyState();
+            }
+
+            return RefreshIndicator(
+              onRefresh: () => context.read<ScrapCubit>().refresh(),
+              child: OptimizedListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                itemCount: state.scraps.length + (state.hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index >= state.scraps.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final Post post = state.scraps[index];
+                  return PostCard(
+                    post: post,
+                    onToggleLike: () =>
+                        context.read<ScrapCubit>().toggleLike(post),
+                    onToggleScrap: () =>
+                        context.read<ScrapCubit>().removeScrap(post),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

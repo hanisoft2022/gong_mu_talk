@@ -12,24 +12,24 @@ const THUMBNAIL_CONFIG = {
   // Thumbnail dimensions (square)
   width: 300,
   height: 300,
-  
+
   // WebP compression quality
   quality: 75,
-  
+
   // Thumbnail prefix
   prefix: "thumb_",
-  
+
   // Paths to process (only post and comment images)
   validPaths: ["post_images/", "comment_images/"],
 };
 
 /**
  * Generate thumbnail when image is uploaded to Firebase Storage.
- * 
+ *
  * Triggers on:
  * - post_images/{userId}/{postId}/{fileName}
  * - comment_images/{userId}/{commentId}/{fileName}
- * 
+ *
  * Creates:
  * - Same path with thumb_ prefix
  * - 300x300 WebP thumbnail
@@ -96,7 +96,8 @@ export const generateThumbnail = onObjectFinalized(
 
       // Upload thumbnail to same directory as original
       const fileDir = path.dirname(filePath);
-      const thumbFileName = `${THUMBNAIL_CONFIG.prefix}${fileName.replace(/\.[^/.]+$/, "")}.webp`;
+      const baseFileName = fileName.replace(/\.[^/.]+$/, "");
+      const thumbFileName = `${THUMBNAIL_CONFIG.prefix}${baseFileName}.webp`;
       const thumbFilePath = path.join(fileDir, thumbFileName);
 
       await bucket.upload(tempThumbPath, {

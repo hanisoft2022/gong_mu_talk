@@ -1,0 +1,66 @@
+Post fields: [
+  'audience',            'keywords',
+  'visibility',          'authorTrack',
+  'likeCount',           'media',
+  'type',                'authorNickname',
+  'authorSerialVisible', 'tags',
+  'createdAt',           'serial',
+  'authorUid',           'authorIsSupporter',
+  'boardId',             'authorSupporterLevel',
+  'text',                'viewCount',
+  'hotScore',            'topComment',
+  'updatedAt',           'commentCount'
+]
+
+Sample data:
+{
+  "audience": "all",
+  "keywords": [
+    "j",
+    "jh",
+    "jhk",
+    "g",
+    "o",
+    "on",
+    "one",
+    "a",
+    "ar",
+    "ㄴ",
+    "ㄴㅇ",
+    "ㄴㅇㄹ",
+    "ㄴㅇㄹㄴ",
+    "ㄴㅇㄹㄴㅇ",
+    "ㄴㅇㄹㄴㅇㄹ"
+  ],
+  "visibility": "public",
+  "authorTrack": "publicAdministration",
+  "likeCount": 0,
+  "media": [],
+  "type": "chirp",
+  "authorNickname": "jhk.g.one.ar",
+  "authorSerialVisible": true,
+  "tags": [],
+  "createdAt": {
+    "_seconds": 1759720891,
+    "_nanoseconds": 421221000
+  },
+  "serial": "all",
+  "authorUid": "Ed0vjyyMjfNDGPDtKPZnkXxNizt1",
+  "authorIsSupporter": false,
+  "boardId": null,
+  "authorSupporterLevel": 0,
+  "text": "ㄴㅇㄹㄴㅇㄹ",
+  "viewCount": 1,
+  "hotScore": 5.9969706008103545,
+  "topComment": {
+    "id": "5wctrlaT5Et4VgAoiGmo",
+    "text": "ㄴㄹㅇㄴㅇㄹ",
+    "likeCount": 0,
+    "authorNickname": "jhk.g.one.ar"
+  },
+  "updatedAt": {
+    "_seconds": 1759727487,
+    "_nanoseconds": 910000000
+  },
+  "commentCount": 1
+}

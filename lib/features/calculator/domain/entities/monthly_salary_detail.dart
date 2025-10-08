@@ -10,6 +10,7 @@ class MonthlySalaryDetail extends Equatable {
     required this.teachingAllowance,
     this.homeroomAllowance = 0,
     this.positionAllowance = 0,
+    this.teachingAllowanceBonuses = 0,
     this.veteranAllowance = 0,
     required this.familyAllowance,
     required this.researchAllowance,
@@ -34,6 +35,9 @@ class MonthlySalaryDetail extends Equatable {
 
   /// 보직교사수당 (15만원, 보직교사만)
   final int positionAllowance;
+
+  /// 그 외 교직수당 가산금 (특수교사, 보건교사, 영양교사 등)
+  final int teachingAllowanceBonuses;
 
   /// 원로교사수당 (5만원, 30년 이상 + 55세 이상)
   final int veteranAllowance;
@@ -69,6 +73,7 @@ class MonthlySalaryDetail extends Equatable {
     teachingAllowance,
     homeroomAllowance,
     positionAllowance,
+    teachingAllowanceBonuses,
     veteranAllowance,
     familyAllowance,
     researchAllowance,
@@ -85,6 +90,7 @@ class MonthlySalaryDetail extends Equatable {
     int? teachingAllowance,
     int? homeroomAllowance,
     int? positionAllowance,
+    int? teachingAllowanceBonuses,
     int? veteranAllowance,
     int? familyAllowance,
     int? researchAllowance,
@@ -100,6 +106,8 @@ class MonthlySalaryDetail extends Equatable {
       teachingAllowance: teachingAllowance ?? this.teachingAllowance,
       homeroomAllowance: homeroomAllowance ?? this.homeroomAllowance,
       positionAllowance: positionAllowance ?? this.positionAllowance,
+      teachingAllowanceBonuses:
+          teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
       veteranAllowance: veteranAllowance ?? this.veteranAllowance,
       familyAllowance: familyAllowance ?? this.familyAllowance,
       researchAllowance: researchAllowance ?? this.researchAllowance,

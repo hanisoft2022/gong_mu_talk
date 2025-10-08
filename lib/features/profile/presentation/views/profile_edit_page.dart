@@ -13,12 +13,14 @@
 /// File Size: ~180 lines (Green Zone ✅)
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/performance_optimizations.dart';
+import '../../../../core/utils/nickname_validator.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/profile_edit/profile_edit_section.dart';
 import '../widgets/profile_edit/theme_settings_section.dart';
@@ -37,12 +39,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   // 토글 처리 중 상태
   bool _isUpdatingSerialVisibility = false;
 
+  // 닉네임 검증 에러
+  String? _nicknameError;
+
   @override
   void initState() {
     super.initState();
     final AuthState state = context.read<AuthCubit>().state;
     _nicknameController = TextEditingController(text: state.nickname);
     _bioController = TextEditingController(text: state.bio ?? '');
+  }
+
+  void _validateNickname(String value) {
+    final result = NicknameValidator.validate(value);
+    setState(() {
+      _nicknameError = result.isValid ? null : result.errorMessage;
+    });
   }
 
   void _showMessage(BuildContext context, String message) {
@@ -55,33 +67,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     );
   }
 
-  void _showNicknameInfo(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          icon: Icon(
-            Icons.visibility_outlined,
-            color: Theme.of(context).colorScheme.primary,
-            size: 32,
-          ),
-          title: const Text('닉네임 공개 정보'),
-          content: const Text(
-            '다른 사용자에게는 닉네임의 첫 글자만 보입니다.\n\n'
-            '예: "공무원" → "공***"\n\n'
-            '본인에게만 전체 닉네임이 표시됩니다.',
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
-    );
+  String _getNicknameHelperText(AuthState state) {
+    if (state.canChangeNickname) {
+      return '닉네임 변경은 30일마다 가능합니다';
+    }
+
+    final DateTime? lastChanged = state.nicknameLastChangedAt;
+    if (lastChanged == null) {
+      return '닉네임 변경은 30일마다 가능합니다';
+    }
+
+    final DateTime nextChangeDate = lastChanged.add(const Duration(days: 30));
+    final int daysRemaining = nextChangeDate.difference(DateTime.now()).inDays + 1;
+
+    return '닉네임 변경은 30일마다 가능합니다 • $daysRemaining일 후 변경 가능';
   }
+
 
   @override
   void dispose() {
@@ -127,27 +128,76 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 itemCount: 7,
                 itemBuilder: (context, index) {
                   if (index == 0) {
+                    final int maxLength = NicknameValidator.getMaxLength(
+                      _nicknameController.text,
+                    );
+
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: ProfileEditSection(
                         title: '닉네임',
-                        child: TextField(
-                          controller: _nicknameController,
-                          enabled: !isProcessing,
-                          maxLength: 20,
-                          decoration: InputDecoration(
-                            hintText: '닉네임을 입력하세요',
-                            counterText: '',
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                Icons.info_outline,
-                                color: Theme.of(context).colorScheme.primary,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _nicknameController,
+                              enabled: !isProcessing,
+                              maxLength: maxLength,
+                              onChanged: _validateNickname,
+                              decoration: InputDecoration(
+                                labelText: '닉네임',
+                                hintText: '한글/영문/숫자 사용 가능',
+                                counterText: '',
+                                border: const OutlineInputBorder(),
+                                helperText: _nicknameError == null
+                                    ? _getNicknameHelperText(state)
+                                    : null,
+                                helperMaxLines: 2,
+                                errorText: _nicknameError,
+                                errorMaxLines: 2,
+                                suffixIcon: Icon(
+                                  Icons.edit_outlined,
+                                  color: state.canChangeNickname &&
+                                          _nicknameError == null
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                ),
                               ),
-                              onPressed: () => _showNicknameInfo(context),
-                              tooltip: '닉네임 공개 정보',
                             ),
-                          ),
+                            // 디버그 모드에서만 표시되는 테스트 버튼
+                            if (kDebugMode) ...[
+                              const Gap(12),
+                              OutlinedButton.icon(
+                                onPressed: isProcessing
+                                    ? null
+                                    : () async {
+                                        final cubit = context.read<AuthCubit>();
+                                        final messenger = ScaffoldMessenger.of(context);
+                                        await cubit.resetNicknameChangeLimit();
+                                        if (mounted) {
+                                          messenger.showSnackBar(
+                                            const SnackBar(
+                                              content: Text('테스트 모드: 닉네임 변경 제한이 해제되었습니다.'),
+                                              duration: Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                icon: const Icon(Icons.bug_report),
+                                label: const Text('테스트: 닉네임 제한 해제'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.error,
+                                  side: BorderSide(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     );
@@ -245,8 +295,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final String nickname = _nicknameController.text.trim();
     final String bio = _bioController.text.trim();
 
-    if (nickname.isEmpty) {
-      _showMessage(context, '닉네임을 입력해주세요.');
+    // 닉네임 검증
+    final validationResult = NicknameValidator.validate(nickname);
+    if (!validationResult.isValid) {
+      _showMessage(context, validationResult.errorMessage ?? '잘못된 닉네임입니다.');
       return;
     }
 

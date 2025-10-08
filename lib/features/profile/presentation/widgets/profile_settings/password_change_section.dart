@@ -9,7 +9,8 @@
 ///
 /// **Features**:
 /// - Three-field form (current, new, confirm password)
-/// - Obscured password input
+/// - Obscured password input with toggle
+/// - Real-time password strength indicator
 /// - Form validation before submission
 /// - Loading state during password change
 /// - Success/error feedback via SnackBar
@@ -17,11 +18,13 @@
 ///
 /// **Validation**:
 /// - All fields must be filled
+/// - Minimum 8 characters required
 /// - New password and confirmation must match
 /// - Current password must be correct (validated by backend)
+/// - Password strength: weak/medium/strong
 ///
 /// **Security**:
-/// - Password fields are obscured
+/// - Password fields are obscured (toggle-able)
 /// - Current password required for verification
 /// - Secure password update via AuthCubit
 
@@ -33,6 +36,36 @@ import 'package:gap/gap.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import 'settings_section.dart';
+
+/// Password strength level
+enum PasswordStrength {
+  weak,
+  medium,
+  strong;
+
+  String get label {
+    switch (this) {
+      case PasswordStrength.weak:
+        return '약함';
+      case PasswordStrength.medium:
+        return '보통';
+      case PasswordStrength.strong:
+        return '강함';
+    }
+  }
+
+  Color getColor(BuildContext context) {
+    final theme = Theme.of(context);
+    switch (this) {
+      case PasswordStrength.weak:
+        return theme.colorScheme.error;
+      case PasswordStrength.medium:
+        return Colors.orange;
+      case PasswordStrength.strong:
+        return Colors.green;
+    }
+  }
+}
 
 /// Password change section with form validation and submission
 class PasswordChangeSection extends StatefulWidget {
@@ -49,12 +82,21 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
   late final TextEditingController _newPasswordController;
   late final TextEditingController _confirmPasswordController;
 
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
+
+  PasswordStrength? _passwordStrength;
+
   @override
   void initState() {
     super.initState();
     _currentPasswordController = TextEditingController();
     _newPasswordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
+
+    // Listen to new password changes for strength calculation
+    _newPasswordController.addListener(_updatePasswordStrength);
   }
 
   @override
@@ -63,6 +105,45 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  /// Updates password strength based on new password input
+  void _updatePasswordStrength() {
+    final password = _newPasswordController.text;
+    if (password.isEmpty) {
+      setState(() => _passwordStrength = null);
+      return;
+    }
+
+    setState(() {
+      _passwordStrength = _calculatePasswordStrength(password);
+    });
+  }
+
+  /// Calculates password strength
+  PasswordStrength _calculatePasswordStrength(String password) {
+    if (password.length < 8) {
+      return PasswordStrength.weak;
+    }
+
+    bool hasDigits = password.contains(RegExp(r'\d'));
+    bool hasSpecialChars = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    bool hasUpperCase = password.contains(RegExp(r'[A-Z]'));
+    bool hasLowerCase = password.contains(RegExp(r'[a-z]'));
+
+    int strengthScore = 0;
+    if (hasDigits) strengthScore++;
+    if (hasSpecialChars) strengthScore++;
+    if (hasUpperCase) strengthScore++;
+    if (hasLowerCase) strengthScore++;
+
+    if (strengthScore >= 3) {
+      return PasswordStrength.strong;
+    } else if (strengthScore >= 2) {
+      return PasswordStrength.medium;
+    } else {
+      return PasswordStrength.weak;
+    }
   }
 
   /// Validates and submits password change request
@@ -82,6 +163,11 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
       return;
     }
 
+    if (newPassword.length < 8) {
+      widget.showMessage(context, '새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
     if (newPassword != confirmPassword) {
       widget.showMessage(context, '새 비밀번호가 일치하지 않습니다.');
       return;
@@ -98,6 +184,7 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
       _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
+      setState(() => _passwordStrength = null);
     }
   }
 
@@ -113,36 +200,112 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
             // 현재 비밀번호
             TextField(
               controller: _currentPasswordController,
-              obscureText: true,
+              obscureText: _obscureCurrentPassword,
               enabled: !isProcessing,
-              decoration: const InputDecoration(labelText: '현재 비밀번호'),
+              decoration: InputDecoration(
+                labelText: '현재 비밀번호',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureCurrentPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureCurrentPassword = !_obscureCurrentPassword;
+                    });
+                  },
+                ),
+              ),
             ),
             const Gap(12),
 
             // 새 비밀번호
             TextField(
               controller: _newPasswordController,
-              obscureText: true,
+              obscureText: _obscureNewPassword,
               enabled: !isProcessing,
-              decoration: const InputDecoration(labelText: '새 비밀번호'),
+              decoration: InputDecoration(
+                labelText: '새 비밀번호 (최소 8자)',
+                helperText: '영문, 숫자, 특수문자 조합을 권장합니다',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureNewPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureNewPassword = !_obscureNewPassword;
+                    });
+                  },
+                ),
+              ),
             ),
+
+            // Password strength indicator
+            if (_passwordStrength != null) ...[
+              const Gap(8),
+              Row(
+                children: [
+                  Text(
+                    '비밀번호 강도: ',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _passwordStrength!.getColor(context).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _passwordStrength!.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _passwordStrength!.getColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const Gap(12),
 
             // 새 비밀번호 확인
             TextField(
               controller: _confirmPasswordController,
-              obscureText: true,
+              obscureText: _obscureConfirmPassword,
               enabled: !isProcessing,
-              decoration: const InputDecoration(labelText: '새 비밀번호 확인'),
+              decoration: InputDecoration(
+                labelText: '새 비밀번호 확인',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
+                ),
+              ),
             ),
             const Gap(12),
 
             // 비밀번호 변경 버튼
-            FilledButton(
-              onPressed: isProcessing
-                  ? null
-                  : () => _handlePasswordChange(context, isProcessing),
-              child: const Text('비밀번호 변경'),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: isProcessing
+                    ? null
+                    : () => _handlePasswordChange(context, isProcessing),
+                child: const Text('비밀번호 변경'),
+              ),
             ),
           ],
         );

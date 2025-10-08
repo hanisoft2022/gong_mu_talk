@@ -22,7 +22,7 @@ class CommunityErrorView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 12),
+                const Gap(12),
                 const Icon(Icons.inbox_outlined, size: 72),
                 const Gap(16),
                 Text(

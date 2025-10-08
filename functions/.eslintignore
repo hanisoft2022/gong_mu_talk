@@ -1,3 +1,8 @@
 # Legacy migration scripts
 migrate_lounges_node.js
 migrate_lounges_simple.js
+verify_counts.js
+check_post.js
+
+# Scripts directory
+scripts/
