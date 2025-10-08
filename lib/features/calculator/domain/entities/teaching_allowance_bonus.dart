@@ -1,25 +1,28 @@
 /// 교직수당 가산금 종류
 enum TeachingAllowanceBonus {
-  /// 가산금 3: 보직교사 (15만원)
+  /// 가산금 2: 보직교사 (15만원)
   headTeacher(
-    displayName: '보직교사 (부장 등)',
-    description: '부장교사 등 보직',
+    displayName: '보직교사 (부장교사)',
+    description: '교직수당 가산금 2 해당',
+    officialName: '교직수당(가산금2)',
     amount: 150000,
-    code: 'allowance3_head',
+    code: 'allowance2',
   ),
 
-  /// 가산금 3: 특수교사 (12만원)
+  /// 가산금 3-1: 특수교사 (12만원)
   specialEducation(
     displayName: '특수교사',
-    description: '특수교육 담당 교사',
+    description: '교직수당 가산금 3-1 해당',
+    officialName: '교직수당(가산금3-1)',
     amount: 120000,
-    code: 'allowance3',
+    code: 'allowance3_1',
   ),
 
-  /// 가산금 5: 특성화교사 (2.5만~5만원, 호봉별 차등)
+  /// 가산금 5: 전문교과 (2.5만~5만원, 호봉별 차등)
   vocationalEducation(
-    displayName: '특성화교사',
-    description: '특성화고 근무 교사 (호봉별 2.5만~5만원)',
+    displayName: '특성화교사 (전문교과)',
+    description: '교직수당 가산금 5 해당',
+    officialName: '교직수당(가산금5)',
     amount: 25000, // 최소 금액
     code: 'allowance5',
   ),
@@ -27,15 +30,17 @@ enum TeachingAllowanceBonus {
   /// 가산금 6: 보건교사 (4만원)
   healthTeacher(
     displayName: '보건교사',
-    description: '보건교사',
+    description: '교직수당 가산금 6 해당',
+    officialName: '교직수당(가산금6)',
     amount: 40000,
     code: 'allowance6',
   ),
 
   /// 가산금 7: 겸직수당 (교장 10만, 교감 5만)
   concurrentPosition(
-    displayName: '겸직수당',
-    description: '병설유치원 원장/원감 겸임',
+    displayName: '겸임 교장·교감',
+    description: '교직수당 가산금 7 해당',
+    officialName: '교직수당(가산금7)',
     amount: 50000, // 교감 기준
     code: 'allowance7',
   ),
@@ -43,7 +48,8 @@ enum TeachingAllowanceBonus {
   /// 가산금 8: 영양교사 (4만원)
   nutritionTeacher(
     displayName: '영양교사',
-    description: '영양교사',
+    description: '교직수당 가산금 8 해당',
+    officialName: '교직수당(가산금8)',
     amount: 40000,
     code: 'allowance8',
   ),
@@ -51,15 +57,17 @@ enum TeachingAllowanceBonus {
   /// 가산금 9: 사서교사 (3만원)
   librarian(
     displayName: '사서교사',
-    description: '사서교사',
+    description: '교직수당 가산금 9 해당',
+    officialName: '교직수당(가산금9)',
     amount: 30000,
     code: 'allowance9',
   ),
 
-  /// 가산금 10: 전문상담교사 (3만원)
+  /// 가산금 10: 상담교사 (3만원)
   counselor(
-    displayName: '전문상담교사',
-    description: '전문상담교사',
+    displayName: '상담교사',
+    description: '교직수당 가산금 10 해당',
+    officialName: '교직수당(가산금10)',
     amount: 30000,
     code: 'allowance10',
   );
@@ -67,12 +75,14 @@ enum TeachingAllowanceBonus {
   const TeachingAllowanceBonus({
     required this.displayName,
     required this.description,
+    required this.officialName,
     required this.amount,
     required this.code,
   });
 
   final String displayName;
   final String description;
+  final String officialName;
   final int amount;
   final String code;
 }

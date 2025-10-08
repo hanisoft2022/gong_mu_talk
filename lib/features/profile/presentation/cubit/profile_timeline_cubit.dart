@@ -119,6 +119,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           errorMessage: null,
         ),
       );
+      // Sync with cache after initial load
+      refreshFromCache();
     } catch (_) {
       emit(
         state.copyWith(
@@ -172,6 +174,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           errorMessage: null,
         ),
       );
+      // Sync with cache after refresh
+      refreshFromCache();
     } catch (_) {
       emit(
         state.copyWith(
@@ -214,6 +218,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           isLoadingMore: false,
         ),
       );
+      // Sync with cache after loading more
+      refreshFromCache();
     } catch (_) {
       emit(
         state.copyWith(
@@ -232,6 +238,37 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
       _cursor = null;
       emit(const ProfileTimelineState());
     }
+  }
+
+  /// Refresh posts with cached like/scrap states (no network call)
+  ///
+  /// This method syncs the current posts with the InteractionCacheManager
+  /// to reflect like/scrap state changes made in other views (e.g., lounge).
+  ///
+  /// Called after:
+  /// - toggleLike/toggleScrap (to sync with cache)
+  /// - Page becomes active (lifecycle hook - future enhancement)
+  void refreshFromCache() {
+    final String? uid = _authCubit.state.userId;
+    if (uid == null || state.posts.isEmpty) {
+      return;
+    }
+
+    final postIds = state.posts.map((p) => p.id).toList();
+
+    // Get cached like/scrap states (no network call)
+    final cachedScrappedIds = _repository.getCachedScrappedIds(uid, postIds);
+    final cachedLikedIds = _repository.getCachedLikedIds(uid, postIds);
+
+    // Update posts with cached states
+    final updatedPosts = state.posts.map((post) {
+      final isScrapped =
+          cachedScrappedIds?.contains(post.id) ?? post.isScrapped;
+      final isLiked = cachedLikedIds?.contains(post.id) ?? post.isLiked;
+      return post.copyWith(isScrapped: isScrapped, isLiked: isLiked);
+    }).toList();
+
+    emit(state.copyWith(posts: updatedPosts));
   }
 
   Future<void> toggleLike(Post post) async {
