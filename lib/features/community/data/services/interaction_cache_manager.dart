@@ -15,6 +15,10 @@ class InteractionCacheManager {
   // Like/Scrap 캐시 (비용 최적화)
   final Map<String, Set<String>> _likedPostsCache = {};
   final Map<String, Set<String>> _scrappedPostsCache = {};
+
+  // Track which posts have been checked (to distinguish "not liked" from "not checked yet")
+  final Map<String, Set<String>> _checkedPostsCache = {};
+
   DateTime? _lastCacheUpdate;
 
   // Comment Like 캐시 (추가 최적화)
@@ -41,6 +45,7 @@ class InteractionCacheManager {
     required String uid,
     required Set<String> likedIds,
     required Set<String> scrappedIds,
+    List<String>? checkedPostIds, // Posts that were checked (both liked and not liked)
   }) {
     // 캐시 업데이트 (병합 방식)
     _likedPostsCache[uid] = {...(_likedPostsCache[uid] ?? {}), ...likedIds};
@@ -48,12 +53,21 @@ class InteractionCacheManager {
       ...(_scrappedPostsCache[uid] ?? {}),
       ...scrappedIds,
     };
+
+    // Track which posts have been checked for like/scrap status
+    if (checkedPostIds != null) {
+      _checkedPostsCache[uid] = {
+        ...(_checkedPostsCache[uid] ?? {}),
+        ...checkedPostIds,
+      };
+    }
+
     _lastCacheUpdate = DateTime.now();
 
     // 캐시 미스 기록
     _cacheMissCount++;
     debugPrint(
-      '🔄 Like/Scrap 캐시 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps',
+      '🔄 Like/Scrap 캐시 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps, ${checkedPostIds?.length ?? 0} checked',
     );
     _logCacheStats();
   }
@@ -86,6 +100,27 @@ class InteractionCacheManager {
   /// Check if liked posts cache exists for user
   bool hasLikedCache(String uid) => _likedPostsCache.containsKey(uid);
 
+  /// Check if cache has complete information for all given post IDs
+  /// Returns true only if ALL postIds have been checked (either liked or not liked)
+  ///
+  /// Note: This is different from hasLikedCache which only checks if ANY cache exists
+  bool hasCompleteCacheForPosts(String uid, List<String> postIds) {
+    if (!_checkedPostsCache.containsKey(uid)) return false;
+
+    final checkedPosts = _checkedPostsCache[uid]!;
+
+    // Check if ALL postIds have been checked
+    final allChecked = postIds.every((id) => checkedPosts.contains(id));
+
+    if (allChecked) {
+      debugPrint('✅ Complete cache found for ${postIds.length} posts');
+    } else {
+      debugPrint('⚠️  Incomplete cache: ${postIds.where((id) => !checkedPosts.contains(id)).length}/${postIds.length} posts not checked');
+    }
+
+    return allChecked;
+  }
+
   /// Update top comment cache
   void updateTopCommentCache(String postId, dynamic topComment) {
     _topCommentsCache[postId] = topComment;
@@ -106,11 +141,13 @@ class InteractionCacheManager {
     if (uid != null) {
       _likedPostsCache.remove(uid);
       _scrappedPostsCache.remove(uid);
+      _checkedPostsCache.remove(uid);
       _likedCommentsCache.remove(uid);
       debugPrint('🗑️  Like/Scrap/Comment 캐시 삭제 - uid: $uid');
     } else {
       _likedPostsCache.clear();
       _scrappedPostsCache.clear();
+      _checkedPostsCache.clear();
       _likedCommentsCache.clear();
       _topCommentsCache.clear();
       _lastCacheUpdate = null;
@@ -123,13 +160,19 @@ class InteractionCacheManager {
     required String uid,
     required Set<String> likedIds,
     required Set<String> scrappedIds,
+    List<String>? checkedPostIds,
   }) {
     _likedPostsCache[uid] = likedIds;
     _scrappedPostsCache[uid] = scrappedIds;
+
+    if (checkedPostIds != null) {
+      _checkedPostsCache[uid] = checkedPostIds.toSet();
+    }
+
     _lastCacheUpdate = DateTime.now();
 
     debugPrint(
-      '🔄 Like/Scrap 캐시 강제 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps',
+      '🔄 Like/Scrap 캐시 강제 갱신 - ${likedIds.length} likes, ${scrappedIds.length} scraps, ${checkedPostIds?.length ?? 0} checked',
     );
   }
 
@@ -208,7 +251,12 @@ class InteractionCacheManager {
       _likedPostsCache[uid] = {};
     }
 
+    if (!_checkedPostsCache.containsKey(uid)) {
+      _checkedPostsCache[uid] = {};
+    }
+
     final likes = _likedPostsCache[uid]!;
+    final checked = _checkedPostsCache[uid]!;
     final wasLiked = likes.contains(postId);
 
     if (wasLiked) {
@@ -218,6 +266,9 @@ class InteractionCacheManager {
       likes.add(postId);
       debugPrint('🔄 Cache: Added like for post $postId');
     }
+
+    // Mark as checked
+    checked.add(postId);
 
     return !wasLiked; // Return new state
   }

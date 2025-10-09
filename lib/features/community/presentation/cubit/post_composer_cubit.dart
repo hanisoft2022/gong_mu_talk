@@ -223,7 +223,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     );
 
     try {
-      final int supporterLevel = 0;
+      const int supporterLevel = 0;
       final String serialValue = state.selectedLoungeId ?? authState.serial;
 
       debugPrint('🔍 [PostComposer] Creating post with:');
@@ -232,7 +232,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       debugPrint('   final serial: $serialValue');
 
       // 이미지를 먼저 업로드 (Post 생성 이전)
-      List<PostMedia> uploadedMedia = <PostMedia>[];
+      final List<PostMedia> uploadedMedia = <PostMedia>[];
       String? preGeneratedPostId;
 
       if (state.attachments.isNotEmpty) {
@@ -335,7 +335,7 @@ class PostComposerCubit extends Cubit<PostComposerState> {
       }
 
       // 압축된 이미지는 항상 WebP 포맷
-      final String contentType = 'image/webp';
+      const String contentType = 'image/webp';
       final PostMediaDraft draft = PostMediaDraft(
         file: compressedFile,
         bytes: bytes,

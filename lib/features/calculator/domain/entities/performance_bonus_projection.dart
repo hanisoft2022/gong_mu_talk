@@ -35,8 +35,8 @@ class PerformanceBonusProjection {
     final yearDiff = targetYear - baseYear;
     final futureAmount = baseAmountGradeA * pow(1 + inflationRate, yearDiff);
 
-    // 천원 미만 절사
-    return (futureAmount ~/ 1000) * 1000;
+    // 소수점만 반올림
+    return futureAmount.round();
   }
 
   /// 특정 기간 동안의 성과상여금 총합 계산

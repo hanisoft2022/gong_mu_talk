@@ -6,9 +6,8 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/salary_analysis_page.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_breakdown_widget.dart';
 
-/// 현재 급여 실수령액 카드 (재직 중)
+/// 현재 급여 카드 (재직 중)
 ///
 /// 월별 실수령액 분석 카드를 개선하여 사용자의 현재 급여를 강조
 class CurrentSalaryCard extends StatelessWidget {
@@ -62,40 +61,6 @@ class CurrentSalaryCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 헤더
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isLocked
-                          ? Colors.grey.withValues(alpha: 0.1)
-                          : Colors.teal.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.account_balance_wallet,
-                      size: 28,
-                      color: isLocked ? Colors.grey : Colors.teal,
-                    ),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: Text(
-                      '현재 급여 실수령액',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  if (isLocked) const Icon(Icons.lock, color: Colors.grey),
-                ],
-              ),
-
-              const Gap(12),
-
-              const Gap(20),
-
               if (isLocked)
                 // 잠금 상태
                 Center(
@@ -126,10 +91,10 @@ class CurrentSalaryCard extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            '월 평균 급여',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            '🗓️ 월 평균 급여',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.teal[800],
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const Gap(12),
@@ -179,7 +144,7 @@ class CurrentSalaryCard extends StatelessWidget {
 
                     const Gap(12),
 
-                    // 연간 급여
+                    // 연봉
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -191,10 +156,10 @@ class CurrentSalaryCard extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            '연간 급여',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            '📈 연봉',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.teal[800],
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const Gap(12),
@@ -242,16 +207,6 @@ class CurrentSalaryCard extends StatelessWidget {
                       ),
                     ),
 
-                    const Gap(16),
-
-                    // 계산 근거 섹션
-                    if (profile != null)
-                      SalaryBreakdownWidget(
-                        profile: profile,
-                        monthlyBreakdown: monthlyBreakdown!,
-                        nickname: nickname,
-                      ),
-
                     const Gap(20),
 
                     // 액션 버튼
@@ -266,6 +221,8 @@ class CurrentSalaryCard extends StatelessWidget {
                                     builder: (context) => SalaryAnalysisPage(
                                       lifetimeSalary: lifetimeSalary!,
                                       monthlyBreakdown: monthlyBreakdown,
+                                      profile: profile,
+                                      nickname: nickname,
                                     ),
                                   ),
                                 );

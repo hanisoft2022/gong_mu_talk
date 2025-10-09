@@ -1,8 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
+import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 
 /// 예상 연금 수령액 상세 페이지 (세후 실수령액 중심)
 class PensionDetailPage extends StatelessWidget {
@@ -381,20 +383,91 @@ class PensionDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  void _showDetailDialog(BuildContext context, String label, String value) {
+    final String title = label.replaceAll(RegExp(r'[📅📊💵📈]'), '').trim();
+    String description = '';
+
+    // 항목별 상세 설명 매핑
+    if (label.contains('재직 기간') || label.contains('재직기간')) {
+      description = '연금 지급률 산정의 기준이 되는 재직 기간입니다.\n\n재직 기간이 길수록 연금 지급률이 높아집니다.\n\n지급률 = 1.9% × 재직년수';
+    } else if (label.contains('평균 기준소득')) {
+      description = '재직 기간 동안의 평균 기준소득입니다.\n\n매년 받은 급여의 평균값으로, 연금액 계산의 기준이 됩니다.';
+    } else if (label.contains('연금 지급률')) {
+      description =
+          '연금 지급률은 재직 기간에 비례하여 결정됩니다.\n\n계산식: 1.9% × ${pensionEstimate.serviceYears}년 = ${(pensionEstimate.pensionRate * 100).toStringAsFixed(1)}%';
+    } else if (label.contains('세전 월 연금액')) {
+      description =
+          '공제 전 월 연금액입니다.\n\n계산식: 평균 기준소득 × 연금 지급률\n= ${NumberFormatter.formatCurrency(pensionEstimate.avgBaseIncome)} × ${(pensionEstimate.pensionRate * 100).toStringAsFixed(1)}%';
+    } else if (label.contains('소득세')) {
+      description = '연금 소득에 대한 소득세입니다.\n\n연금 수령액에 따라 누진세율이 적용됩니다.';
+    } else if (label.contains('지방세')) {
+      description = '소득세의 10%가 지방소득세로 부과됩니다.\n\n지방세 = 소득세 × 10%';
+    } else if (label.contains('건강보험')) {
+      description = '연금 수령자도 건강보험료를 납부해야 합니다.\n\n연금액의 일정 비율로 계산됩니다.';
+    } else if (label.contains('장기요양보험')) {
+      description = '건강보험료에 비례하여 장기요양보험료가 부과됩니다.\n\n장기요양 = 건강보험료 × 장기요양보험료율';
+    }
+
+    InfoDialog.showWidget(
+      context,
+      title: title,
+      icon: Icons.info_outline,
+      iconColor: Colors.green.shade600,
+      confirmText: '닫기',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          Text(description, style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5)),
+          const Gap(16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('금액', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    // Skip adding tap functionality for "퇴직 예정 연령" as it's not a calculation result
+    final bool isTappable = !label.contains('퇴직 예정 연령');
+
+    return InkWell(
+      onTap: isTappable ? () => _showDetailDialog(context, label, value) : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(label, style: Theme.of(context).textTheme.bodyMedium),
+                if (isTappable) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                ],
+              ],
+            ),
+            Text(
+              value,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -699,45 +772,71 @@ class PensionDetailPage extends StatelessWidget {
 
   /// 세전/공제 상세 정보 행
   Widget _buildTaxDetailRow(BuildContext context, String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+    return InkWell(
+      onTap: () => _showDetailDialog(context, label, value),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+              ],
+            ),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[900],
+              ),
+            ),
+          ],
         ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[900],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   /// 공제 항목 행
   Widget _buildDeductionRow(BuildContext context, String label, int amount) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+    return InkWell(
+      onTap: () => _showDetailDialog(context, label, '- ${NumberFormatter.formatCurrency(amount)}'),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+              ],
+            ),
+            Text(
+              '- ${NumberFormatter.formatCurrency(amount)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.red[600],
+              ),
+            ),
+          ],
         ),
-        Text(
-          '- ${NumberFormatter.formatCurrency(amount)}',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Colors.red[600],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

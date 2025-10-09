@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/school_type.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 
 /// 교사 프로필 정보
@@ -14,6 +15,7 @@ class TeacherProfile extends Equatable {
     this.expectedRetirementDate,
     this.retirementAge = 62,
     this.gradePromotionMonth = 3,
+    this.schoolType = SchoolType.elementary,
     this.allowances = const Allowance(),
     this.baseIncomeMonthly,
     this.hasSpouse = false,
@@ -24,6 +26,9 @@ class TeacherProfile extends Equatable {
     this.teachingAllowanceBonuses = const {},
     this.teacherAssociationFee = 0,
     this.otherDeductions = 0,
+    this.hasFirstGradeCertificate = true,
+    this.additionalTeachingMonths = 0,
+    this.excludedTeachingMonths = 0,
   });
 
   /// 출생 년도
@@ -37,6 +42,9 @@ class TeacherProfile extends Equatable {
 
   /// 현재 직급
   final Position position;
+
+  /// 학교급 (교원연구비 산정용 - 교장/교감만 사용)
+  final SchoolType schoolType;
 
   /// 재직 시작일
   final DateTime employmentStartDate;
@@ -80,9 +88,75 @@ class TeacherProfile extends Equatable {
   /// 기타 공제 (월)
   final int otherDeductions;
 
+  /// 1급 정교사 자격증 소지 여부 (기본 true)
+  final bool hasFirstGradeCertificate;
+
+  /// 추가 교육경력 (개월, 기본 0)
+  final int additionalTeachingMonths;
+
+  /// 제외할 교육경력 (개월, 기본 0)
+  final int excludedTeachingMonths;
+
   /// 정년퇴직일 자동 계산
   DateTime calculateRetirementDate() {
     return DateTime(birthYear + retirementAge, birthMonth, 1);
+  }
+
+  /// 재직연수 계산 (개월 단위)
+  /// 호봉 + 승급월 기반으로 정확하게 계산
+  int getServiceMonths() {
+    final now = DateTime.now();
+
+    // 1. 기본 연수 (호봉 - 9호봉 시작 - 1급 정교사 가산)
+    final baseYears = currentGrade - 9 - (hasFirstGradeCertificate ? 1 : 0);
+
+    // 2. 올해 승급일
+    final thisYearPromotion = DateTime(now.year, gradePromotionMonth, 1);
+
+    // 3. 승급월 기준 개월 수 계산
+    if (now.isBefore(thisYearPromotion)) {
+      // 아직 승급 안 됨 = 작년에 현재 호봉이 됨
+      final lastPromotion = DateTime(now.year - 1, gradePromotionMonth, 1);
+      final monthsSincePromotion = _calculateMonthDifference(lastPromotion, now);
+      return ((baseYears - 1) * 12) + monthsSincePromotion;
+    } else {
+      // 승급 완료 = 올해 현재 호봉이 됨
+      final monthsSincePromotion = _calculateMonthDifference(thisYearPromotion, now);
+      return (baseYears * 12) + monthsSincePromotion;
+    }
+  }
+
+  /// 재직연수 (년)
+  int getServiceYears() => getServiceMonths() ~/ 12;
+
+  /// 재직연수 나머지 개월
+  int getServiceRemainingMonths() => getServiceMonths() % 12;
+
+  /// 교육경력 계산 (개월 단위)
+  /// 재직연수 기본값 + 추가 - 제외
+  int getTeachingExperienceMonths() {
+    final baseMonths = getServiceMonths();
+    return (baseMonths + additionalTeachingMonths - excludedTeachingMonths).clamp(0, 1200);
+  }
+
+  /// 교육경력 (년)
+  int getTeachingExperienceYears() => getTeachingExperienceMonths() ~/ 12;
+
+  /// 교육경력 나머지 개월
+  int getTeachingExperienceRemainingMonths() => getTeachingExperienceMonths() % 12;
+
+  /// 교육경력 수정 여부
+  bool isTeachingExperienceModified() {
+    return additionalTeachingMonths > 0 || excludedTeachingMonths > 0;
+  }
+
+  /// 두 날짜 간 개월 수 차이 계산 (일자까지 고려)
+  int _calculateMonthDifference(DateTime from, DateTime to) {
+    int months = (to.year - from.year) * 12 + (to.month - from.month);
+    if (to.day < from.day) {
+      months--; // 일자가 안 지났으면 -1개월
+    }
+    return months.clamp(0, 1200);
   }
 
   @override
@@ -91,6 +165,7 @@ class TeacherProfile extends Equatable {
     birthMonth,
     currentGrade,
     position,
+    schoolType,
     employmentStartDate,
     expectedRetirementDate,
     retirementAge,
@@ -105,6 +180,9 @@ class TeacherProfile extends Equatable {
     teachingAllowanceBonuses,
     teacherAssociationFee,
     otherDeductions,
+    hasFirstGradeCertificate,
+    additionalTeachingMonths,
+    excludedTeachingMonths,
   ];
 
   TeacherProfile copyWith({
@@ -112,6 +190,7 @@ class TeacherProfile extends Equatable {
     int? birthMonth,
     int? currentGrade,
     Position? position,
+    SchoolType? schoolType,
     DateTime? employmentStartDate,
     DateTime? expectedRetirementDate,
     int? retirementAge,
@@ -126,12 +205,16 @@ class TeacherProfile extends Equatable {
     Set<TeachingAllowanceBonus>? teachingAllowanceBonuses,
     int? teacherAssociationFee,
     int? otherDeductions,
+    bool? hasFirstGradeCertificate,
+    int? additionalTeachingMonths,
+    int? excludedTeachingMonths,
   }) {
     return TeacherProfile(
       birthYear: birthYear ?? this.birthYear,
       birthMonth: birthMonth ?? this.birthMonth,
       currentGrade: currentGrade ?? this.currentGrade,
       position: position ?? this.position,
+      schoolType: schoolType ?? this.schoolType,
       employmentStartDate: employmentStartDate ?? this.employmentStartDate,
       expectedRetirementDate:
           expectedRetirementDate ?? this.expectedRetirementDate,
@@ -149,6 +232,12 @@ class TeacherProfile extends Equatable {
       teacherAssociationFee:
           teacherAssociationFee ?? this.teacherAssociationFee,
       otherDeductions: otherDeductions ?? this.otherDeductions,
+      hasFirstGradeCertificate:
+          hasFirstGradeCertificate ?? this.hasFirstGradeCertificate,
+      additionalTeachingMonths:
+          additionalTeachingMonths ?? this.additionalTeachingMonths,
+      excludedTeachingMonths:
+          excludedTeachingMonths ?? this.excludedTeachingMonths,
     );
   }
 
@@ -159,6 +248,7 @@ class TeacherProfile extends Equatable {
       'birthMonth': birthMonth,
       'currentGrade': currentGrade,
       'position': position.name,
+      'schoolType': schoolType.name,
       'employmentStartDate': employmentStartDate.toIso8601String(),
       'expectedRetirementDate': expectedRetirementDate?.toIso8601String(),
       'retirementAge': retirementAge,
@@ -179,6 +269,9 @@ class TeacherProfile extends Equatable {
           teachingAllowanceBonuses.map((e) => e.name).toList(),
       'teacherAssociationFee': teacherAssociationFee,
       'otherDeductions': otherDeductions,
+      'hasFirstGradeCertificate': hasFirstGradeCertificate,
+      'additionalTeachingMonths': additionalTeachingMonths,
+      'excludedTeachingMonths': excludedTeachingMonths,
     };
   }
 
@@ -201,6 +294,10 @@ class TeacherProfile extends Equatable {
         (e) => e.name == json['position'],
         orElse: () => Position.teacher,
       ),
+      schoolType: SchoolType.values.firstWhere(
+        (e) => e.name == json['schoolType'],
+        orElse: () => SchoolType.elementary,
+      ),
       employmentStartDate: DateTime.parse(json['employmentStartDate'] as String),
       expectedRetirementDate: json['expectedRetirementDate'] != null
           ? DateTime.parse(json['expectedRetirementDate'] as String)
@@ -222,6 +319,9 @@ class TeacherProfile extends Equatable {
       teachingAllowanceBonuses: bonuses,
       teacherAssociationFee: json['teacherAssociationFee'] as int? ?? 0,
       otherDeductions: json['otherDeductions'] as int? ?? 0,
+      hasFirstGradeCertificate: json['hasFirstGradeCertificate'] as bool? ?? true,
+      additionalTeachingMonths: json['additionalTeachingMonths'] as int? ?? 0,
+      excludedTeachingMonths: json['excludedTeachingMonths'] as int? ?? 0,
     );
   }
 }

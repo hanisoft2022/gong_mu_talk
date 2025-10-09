@@ -13,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gong_mu_talk/core/constants/app_colors.dart';
 
 import '../../../../../di/di.dart';
 import '../../../data/paystub_verification_repository.dart';
@@ -91,7 +92,7 @@ class _PaystubVerificationCardState extends State<PaystubVerificationCard> {
                                   color:
                                       verification.status ==
                                           PaystubVerificationStatus.processing
-                                      ? Colors.orange.withValues(alpha: 0.1)
+                                      ? AppColors.warning.withValues(alpha: 0.1)
                                       : theme.colorScheme.primary.withValues(
                                           alpha: 0.1,
                                         ),
@@ -105,7 +106,7 @@ class _PaystubVerificationCardState extends State<PaystubVerificationCard> {
                                   color:
                                       verification.status ==
                                           PaystubVerificationStatus.processing
-                                      ? Colors.orange.shade700
+                                      ? AppColors.warningDark
                                       : theme.colorScheme.primary,
                                   size: 24,
                                 ),

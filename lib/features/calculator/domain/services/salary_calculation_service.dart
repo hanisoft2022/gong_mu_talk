@@ -7,6 +7,7 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_
 import 'package:gong_mu_talk/features/calculator/domain/entities/performance_bonus_projection.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/school_type.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
@@ -131,6 +132,8 @@ class SalaryCalculationService {
   int _getBasePay(int grade, Position position) {
     switch (position) {
       case Position.teacher:
+      case Position.headTeacher:
+      case Position.seniorTeacher:
         return SalaryTable.getBasePay(grade);
       case Position.vicePrincipal:
         return SalaryTable.getVicePrincipalPay(grade);
@@ -143,6 +146,8 @@ class SalaryCalculationService {
   int _calculatePositionAllowance(Position position) {
     switch (position) {
       case Position.teacher:
+      case Position.headTeacher:
+      case Position.seniorTeacher:
         return AllowanceTable.teachingAllowance;
       case Position.vicePrincipal:
         return AllowanceTable.teachingAllowance + AllowanceTable.vicePrincipalManagementAllowance;
@@ -198,13 +203,48 @@ class SalaryCalculationService {
     return 130000; // 25년 이상: 13만원
   }
 
-  /// 교원연구비 계산
+  /// 교원연구비 계산 (2023.3.1 개정 기준)
   ///
-  /// [serviceYears] 재직 년수
+  /// [position] 직급 (교사/보직교사/수석교사/교감/교장)
+  /// [schoolType] 학교급 (유·초등/중등) - 교장/교감만 적용
+  /// [teachingExperienceYears] 교육경력 (년) - 일반교사만 적용
   ///
-  /// Returns: 교원연구비 (5년 미만 7만원, 5년 이상 6만원)
-  int calculateResearchAllowance(int serviceYears) {
-    return serviceYears < 5 ? 70000 : 60000;
+  /// 우선순위 (중복 지급 불가):
+  /// 1. 교장: 유·초등 75,000원 / 중등 60,000원
+  /// 2. 교감: 유·초등 65,000원 / 중등 60,000원
+  /// 3. 수석교사: 60,000원
+  /// 4. 보직교사: 60,000원
+  /// 5. 일반교사 (교육경력 5년 이상): 60,000원
+  /// 6. 일반교사 (교육경력 5년 미만): 75,000원
+  ///
+  /// Returns: 교원연구비 (60,000~75,000원)
+  int calculateResearchAllowance({
+    required Position position,
+    required SchoolType schoolType,
+    required int teachingExperienceYears,
+  }) {
+    // 1. 교장
+    if (position == Position.principal) {
+      return schoolType == SchoolType.elementary ? 75000 : 60000;
+    }
+
+    // 2. 교감
+    if (position == Position.vicePrincipal) {
+      return schoolType == SchoolType.elementary ? 65000 : 60000;
+    }
+
+    // 3. 수석교사
+    if (position == Position.seniorTeacher) {
+      return 60000;
+    }
+
+    // 4. 보직교사
+    if (position == Position.headTeacher) {
+      return 60000;
+    }
+
+    // 5. 일반교사 (교육경력 기준)
+    return teachingExperienceYears < 5 ? 75000 : 60000;
   }
 
   /// 시간외근무수당 정액분 계산
@@ -232,6 +272,7 @@ class SalaryCalculationService {
 
   /// 원로교사수당 계산
   ///
+  /// [bonuses] 선택된 교직수당 가산금 목록
   /// [serviceYears] 재직 년수
   /// [birthYear] 출생 년도
   /// [birthMonth] 출생 월
@@ -240,12 +281,18 @@ class SalaryCalculationService {
   ///
   /// Returns: 원로교사수당 (30년 이상 재직 + 55세 이상 시 5만원, 아니면 0)
   int calculateVeteranAllowance({
+    required Set<TeachingAllowanceBonus> bonuses,
     required int serviceYears,
     required int birthYear,
     required int birthMonth,
     required int currentYear,
     required int currentMonth,
   }) {
+    // 원로교사 가산금을 선택하지 않았으면 0원
+    if (!bonuses.contains(TeachingAllowanceBonus.veteranTeacher)) {
+      return 0;
+    }
+
     // 나이 계산
     final age = currentYear - birthYear - (currentMonth < birthMonth ? 1 : 0);
 
@@ -293,7 +340,7 @@ class SalaryCalculationService {
   /// 특수교사 가산금 계산
   int calculateSpecialEducationAllowance(Set<TeachingAllowanceBonus> bonuses) {
     return bonuses.contains(TeachingAllowanceBonus.specialEducation)
-        ? AllowanceTable.allowance2SpecialEducation
+        ? AllowanceTable.allowance3SpecialEducation
         : 0;
   }
 
@@ -325,6 +372,8 @@ class SalaryCalculationService {
   }
 
   /// 겸직수당 계산
+  ///
+  /// 교사의 경우 병설유치원 겸임교감 기준 (5만원) 적용
   int calculateConcurrentPositionAllowance(Set<TeachingAllowanceBonus> bonuses, Position position) {
     if (!bonuses.contains(TeachingAllowanceBonus.concurrentPosition)) return 0;
 
@@ -333,7 +382,8 @@ class SalaryCalculationService {
     } else if (position == Position.vicePrincipal) {
       return AllowanceTable.allowance7ConcurrentVice;
     }
-    return 0;
+    // 교사의 경우에도 병설유치원 겸임 등의 경우 지급 (교감 기준 5만원)
+    return AllowanceTable.allowance7ConcurrentVice;
   }
 
   /// 영양교사 가산금 계산
@@ -379,8 +429,11 @@ class SalaryCalculationService {
     final currentYear = DateTime.now().year;
     final currentMonth = DateTime.now().month;
 
-    // 재직 년수 계산
-    final serviceYears = currentYear - profile.employmentStartDate.year;
+    // 재직연수 계산 (정근수당용)
+    final serviceYears = profile.getServiceYears();
+
+    // 교육경력 계산 (교원연구비용)
+    final teachingExperienceYears = profile.getTeachingExperienceYears();
 
     // 1. 본봉
     final baseSalary = _getBasePay(profile.currentGrade, profile.position);
@@ -421,6 +474,7 @@ class SalaryCalculationService {
 
     // 5. 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = calculateVeteranAllowance(
+      bonuses: profile.teachingAllowanceBonuses,
       serviceYears: serviceYears,
       birthYear: profile.birthYear,
       birthMonth: profile.birthMonth,
@@ -434,8 +488,12 @@ class SalaryCalculationService {
       numberOfChildren: numberOfChildren,
     );
 
-    // 7. 교원연구비
-    final researchAllowance = calculateResearchAllowance(serviceYears);
+    // 7. 교원연구비 (교육경력 기준)
+    final researchAllowance = calculateResearchAllowance(
+      position: profile.position,
+      schoolType: profile.schoolType,
+      teachingExperienceYears: teachingExperienceYears,
+    );
 
     // 8. 정액급식비 (14만원, 선택)
     final mealAllowance = includeMealAllowance ? 140000 : 0;

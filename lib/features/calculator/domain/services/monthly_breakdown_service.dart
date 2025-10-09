@@ -1,7 +1,9 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bonus_constants.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
 
@@ -47,9 +49,7 @@ class MonthlyBreakdownService {
     final homeroomAllowance = isHomeroom ? AllowanceTable.homeroomAllowance : 0;
 
     // 보직교사수당
-    final positionAllowance = hasPosition
-        ? AllowanceTable.headTeacherAllowance
-        : 0;
+    final positionAllowance = hasPosition ? AllowanceTable.headTeacherAllowance : 0;
 
     // 교직수당 가산금 (개별 항목)
     final specialEducationAllowance = _salaryService.calculateSpecialEducationAllowance(
@@ -78,6 +78,7 @@ class MonthlyBreakdownService {
 
     // 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = _calculateVeteranAllowance(
+      bonuses: profile.teachingAllowanceBonuses,
       serviceYears: serviceYears,
       birthYear: profile.birthYear,
       currentYear: year,
@@ -94,9 +95,7 @@ class MonthlyBreakdownService {
     final researchAllowance = _calculateResearchAllowance(serviceYears);
 
     // 시간외근무수당 정액분
-    final overtimeAllowance = AllowanceTable.getOvertimeAllowance(
-      profile.currentGrade,
-    );
+    final overtimeAllowance = AllowanceTable.getOvertimeAllowance(profile.currentGrade);
 
     // 정근수당 가산금 (매월)
     final longevityMonthly = _calculateLongevityMonthlyAllowance(serviceYears);
@@ -129,17 +128,10 @@ class MonthlyBreakdownService {
       );
 
       // 명절상여금 (설날/추석, 음력 기준)
-      final holidayBonus = _calculateHolidayBonus(
-        baseSalary: baseSalary,
-        month: month,
-        year: year,
-      );
+      final holidayBonus = _calculateHolidayBonus(baseSalary: baseSalary, month: month, year: year);
 
       // 성과상여금 (3월만)
-      final performanceBonus = _calculatePerformanceBonus(
-        grade: performanceGrade,
-        month: month,
-      );
+      final performanceBonus = _calculatePerformanceBonus(grade: performanceGrade, month: month);
 
       // 총 지급액 (세전)
       final grossSalary =
@@ -155,11 +147,11 @@ class MonthlyBreakdownService {
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
 
       // 국민연금 (일반 근로자용, 공무원은 미사용)
-      final nationalPension = 0; // 공무원은 공무원연금 적용
+      const nationalPension = 0; // 공무원은 공무원연금 적용
 
       // 공무원연금 기여금 계산 (9%)
       // 기준소득월액 = 본봉 + 정기수당 + 정근수당 + 명절휴가비
-      // 제외: 시간외근무수당, 성과상여금
+      // 제외: 시간외근무수당(정액분), 성과상여금
       final pensionBaseIncome =
           baseSalary +
           teachingAllowance +
@@ -181,7 +173,7 @@ class MonthlyBreakdownService {
       final longTermCareInsurance = (healthInsurance * 0.1295).round();
 
       // 고용보험 (공무원 제외)
-      final employmentInsurance = 0; // 공무원은 고용보험 적용 제외
+      const employmentInsurance = 0; // 공무원은 고용보험 적용 제외
 
       // 총 공제액
       final totalDeductions =
@@ -289,16 +281,23 @@ class MonthlyBreakdownService {
 
   /// 원로교사수당 계산
   ///
+  /// [bonuses] 선택된 교직수당 가산금 목록
   /// [serviceYears] 재직 년수
   /// [birthYear] 출생 년도
   /// [currentYear] 현재 년도
   ///
   /// Returns: 원로교사수당
   int _calculateVeteranAllowance({
+    required Set<TeachingAllowanceBonus> bonuses,
     required int serviceYears,
     required int birthYear,
     required int currentYear,
   }) {
+    // 원로교사 가산금을 선택하지 않았으면 0원
+    if (!bonuses.contains(TeachingAllowanceBonus.veteranTeacher)) {
+      return 0;
+    }
+
     final age = currentYear - birthYear;
 
     // 30년 이상 재직 + 55세 이상
@@ -360,11 +359,7 @@ class MonthlyBreakdownService {
   /// [year] 년도
   ///
   /// Returns: 명절상여금 (설날/추석 월에 본봉의 60%)
-  int _calculateHolidayBonus({
-    required int baseSalary,
-    required int month,
-    required int year,
-  }) {
+  int _calculateHolidayBonus({required int baseSalary, required int month, required int year}) {
     // 2025-2030년 설날/추석 양력 날짜 매핑 (음력 기준)
     final lunarHolidays = {
       2025: [1, 10], // 설날 1월 29일, 추석 10월 6일
@@ -389,12 +384,9 @@ class MonthlyBreakdownService {
   /// [month] 현재 월
   ///
   /// Returns: 성과상여금 (3월만 지급, 그 외 0)
-  int _calculatePerformanceBonus({
-    required PerformanceGrade grade,
-    required int month,
-  }) {
-    // 3월만 지급
-    if (month != 3) return 0;
+  int _calculatePerformanceBonus({required PerformanceGrade grade, required int month}) {
+    // 성과상여금은 지정된 월에만 지급
+    if (month != PerformanceBonusConstants.paymentMonth) return 0;
 
     // 2025년 교육공무원 성과상여금 (차등지급률 50% 기준)
     return grade.amount;
@@ -415,9 +407,6 @@ class MonthlyBreakdownService {
   ///
   /// Returns: 연간 총 공제액
   int calculateAnnualDeductions(List<MonthlyNetIncome> monthlyIncomes) {
-    return monthlyIncomes.fold<int>(
-      0,
-      (sum, income) => sum + income.totalDeductions,
-    );
+    return monthlyIncomes.fold<int>(0, (sum, income) => sum + income.totalDeductions);
   }
 }

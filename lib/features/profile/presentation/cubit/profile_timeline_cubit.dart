@@ -119,8 +119,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           errorMessage: null,
         ),
       );
-      // Sync with cache after initial load
-      refreshFromCache();
+      // Note: No need to call refreshFromCache() here
+      // enrichPostPage already uses cache and sets correct isLiked/isScrapped values
     } catch (_) {
       emit(
         state.copyWith(
@@ -174,8 +174,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           errorMessage: null,
         ),
       );
-      // Sync with cache after refresh
-      refreshFromCache();
+      // Note: No need to call refreshFromCache() here
+      // enrichPostPage already uses cache and sets correct isLiked/isScrapped values
     } catch (_) {
       emit(
         state.copyWith(
@@ -218,8 +218,8 @@ class ProfileTimelineCubit extends Cubit<ProfileTimelineState> {
           isLoadingMore: false,
         ),
       );
-      // Sync with cache after loading more
-      refreshFromCache();
+      // Note: No need to call refreshFromCache() here
+      // enrichPostPage already uses cache and sets correct isLiked/isScrapped values
     } catch (_) {
       emit(
         state.copyWith(

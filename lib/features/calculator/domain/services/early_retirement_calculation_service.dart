@@ -20,9 +20,7 @@ class EarlyRetirementCalculationService {
     final regularRetirementDate = profile.calculateRetirementDate();
 
     // 2. 잔여 기간 계산 (명퇴일 ~ 정년퇴직일)
-    final remainingDays = regularRetirementDate
-        .difference(retirementDate)
-        .inDays;
+    final remainingDays = regularRetirementDate.difference(retirementDate).inDays;
     final remainingYears = (remainingDays / 365).floor();
     final remainingMonths = ((remainingDays % 365) / 30).floor();
 
@@ -81,11 +79,7 @@ class EarlyRetirementCalculationService {
       if (age < currentAge) continue;
 
       // 해당 연령 시점의 날짜 계산
-      final retirementDate = DateTime(
-        profile.birthYear + age,
-        profile.birthMonth,
-        1,
-      );
+      final retirementDate = DateTime(profile.birthYear + age, profile.birthMonth, 1);
 
       final bonus = calculateEarlyRetirementBonus(
         profile: profile,
@@ -146,10 +140,7 @@ class EarlyRetirementCalculationService {
   /// [remainingMonths] 잔여 개월수
   ///
   /// Returns: 월별 적립액
-  int calculateMonthlyAccumulation({
-    required int totalAmount,
-    required int remainingMonths,
-  }) {
+  int calculateMonthlyAccumulation({required int totalAmount, required int remainingMonths}) {
     if (remainingMonths == 0) return 0;
     return (totalAmount / remainingMonths).round();
   }
@@ -172,14 +163,12 @@ class EarlyRetirementCalculationService {
     int lifeExpectancy = 85,
   }) {
     // 1. 명퇴 시 총 수령액
-    // = 명퇴금 + (명퇴 연금 × 12개월 × 수령년수)
+    // = 명퇴금 + (명퇴 연금  × 수령년수)
     final earlyPensionYears = lifeExpectancy - retirementAge;
-    final earlyTotal =
-        earlyRetirementBonus +
-        (earlyRetirementPension * 12 * earlyPensionYears);
+    final earlyTotal = earlyRetirementBonus + (earlyRetirementPension * 12 * earlyPensionYears);
 
     // 2. 정년 시 총 수령액
-    // = (정년까지 급여 × 잔여년수) + (정년 연금 × 12개월 × 수령년수)
+    // = (정년까지 급여 × 잔여년수) + (정년 연금  × 수령년수)
     final regularRetirementAge = retirementAge + remainingYears;
     final regularPensionYears = lifeExpectancy - regularRetirementAge;
     final estimatedMonthlySalary = earlyRetirementPension; // 간략화: 연금액과 동일하게 가정
@@ -189,10 +178,6 @@ class EarlyRetirementCalculationService {
 
     final difference = earlyTotal - regularTotal;
 
-    return {
-      'earlyTotal': earlyTotal,
-      'regularTotal': regularTotal,
-      'difference': difference,
-    };
+    return {'earlyTotal': earlyTotal, 'regularTotal': regularTotal, 'difference': difference};
   }
 }

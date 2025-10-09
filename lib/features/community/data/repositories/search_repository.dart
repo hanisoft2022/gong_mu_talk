@@ -43,7 +43,7 @@ class SearchRepository {
     int limit = 20,
     bool authorOnly = false,
   }) async {
-    QueryJson query = _postsRef
+    final QueryJson query = _postsRef
         .where('keywords', arrayContains: token)
         .where('visibility', isEqualTo: PostVisibility.public.name)
         .orderBy('hotScore', descending: true)

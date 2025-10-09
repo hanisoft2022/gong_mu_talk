@@ -7,24 +7,18 @@ class MonthlyBreakdownCard extends StatelessWidget {
   final bool isLocked;
   final List<MonthlyNetIncome>? monthlyBreakdown;
 
-  const MonthlyBreakdownCard({
-    super.key,
-    required this.isLocked,
-    this.monthlyBreakdown,
-  });
+  const MonthlyBreakdownCard({super.key, required this.isLocked, this.monthlyBreakdown});
 
   @override
   Widget build(BuildContext context) {
     // 평균 계산
-    final avgNetIncome =
-        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final avgNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? (monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b) /
                   monthlyBreakdown!.length)
               .round()
         : 0;
 
-    final annualNetIncome =
-        monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
+    final annualNetIncome = monthlyBreakdown != null && monthlyBreakdown!.isNotEmpty
         ? monthlyBreakdown!.map((m) => m.netIncome).reduce((a, b) => a + b)
         : 0;
 
@@ -58,9 +52,9 @@ class MonthlyBreakdownCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '월별 실수령액 분석',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   if (isLocked) const Icon(Icons.lock, color: Colors.grey),
@@ -74,11 +68,7 @@ class MonthlyBreakdownCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.lock_outline,
-                        size: 48,
-                        color: Colors.grey[400],
-                      ),
+                      Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
@@ -132,16 +122,16 @@ class MonthlyBreakdownCard extends StatelessWidget {
                               children: [
                                 Text(
                                   '${m.month}월 (정기상여금)',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: Colors.teal[700]),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(color: Colors.teal[700]),
                                 ),
                                 Text(
                                   NumberFormatter.formatCurrency(m.netIncome),
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.teal[700],
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.teal[700],
+                                  ),
                                 ),
                               ],
                             ),

@@ -471,7 +471,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
           if (existing.id != _pendingScrapPostId) {
             return existing;
           }
-          return existing.copyWith(isScrapped: _pendingScrapPreviousState!);
+          return existing.copyWith(isScrapped: _pendingScrapPreviousState);
         })
         .toList(growable: false);
 
@@ -479,7 +479,7 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     if (_pendingScrapPreviousState!) {
       scrapped.add(_pendingScrapPostId!);
     } else {
-      scrapped.remove(_pendingScrapPostId!);
+      scrapped.remove(_pendingScrapPostId);
     }
 
     emit(state.copyWith(

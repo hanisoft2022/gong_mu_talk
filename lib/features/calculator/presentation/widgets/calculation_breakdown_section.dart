@@ -13,6 +13,8 @@ class CalculationBreakdownSection extends StatelessWidget {
   final int? totalAmount;
   final String? totalLabel;
   final bool initiallyExpanded;
+  final EdgeInsetsGeometry? tilePadding;
+  final EdgeInsetsGeometry? childrenPadding;
 
   const CalculationBreakdownSection({
     super.key,
@@ -20,86 +22,9 @@ class CalculationBreakdownSection extends StatelessWidget {
     this.totalAmount,
     this.totalLabel,
     this.initiallyExpanded = false,
+    this.tilePadding,
+    this.childrenPadding,
   });
-
-  void _showOvertimeAllowanceInfo(BuildContext context) {
-    InfoDialog.showWidget(
-      context,
-      title: '시간외근무수당 지급 기준',
-      icon: Icons.access_time_outlined,
-      iconColor: Colors.teal.shade600,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '2025년 기준 정액분 (월)',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          const Gap(16),
-          _buildInfoItem('1~19호봉', '123,130원', '(시간당 12,313원 × 10시간)'),
-          Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
-          _buildInfoItem('20~29호봉', '137,330원', '(시간당 13,733원 × 10시간)'),
-          Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
-          _buildInfoItem('30호봉 이상', '147,410원', '(시간당 14,741원 × 10시간)'),
-          const Gap(16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.teal.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.lightbulb_outline, size: 16, color: Colors.teal.shade700),
-                const Gap(8),
-                Expanded(
-                  child: Text(
-                    '승급 시 해당 월부터 새 기준 적용',
-                    style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String grade, String amount, String detail) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              grade,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            Text(
-              amount,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.teal.shade700,
-              ),
-            ),
-          ],
-        ),
-        const Gap(4),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
 
   Widget _buildDetailedInfoText(String text) {
     final spans = <TextSpan>[];
@@ -135,10 +60,12 @@ class CalculationBreakdownSection extends StatelessWidget {
             spans.add(TextSpan(text: text.substring(currentIndex, nicknameStart)));
           }
           // 닉네임 (강조)
-          spans.add(TextSpan(
-            text: nickname,
-            style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
-          ));
+          spans.add(
+            TextSpan(
+              text: nickname,
+              style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+            ),
+          );
           // "선생님의"
           spans.add(const TextSpan(text: ' 선생님의'));
           // 닉네임 끝부터 링크 시작까지
@@ -191,10 +118,12 @@ class CalculationBreakdownSection extends StatelessWidget {
           spans.add(TextSpan(text: text.substring(currentIndex, nicknameStart)));
         }
         // 닉네임 (강조)
-        spans.add(TextSpan(
-          text: nickname,
-          style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
-        ));
+        spans.add(
+          TextSpan(
+            text: nickname,
+            style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+          ),
+        );
         // "선생님의"
         spans.add(const TextSpan(text: ' 선생님의'));
         // 닉네임 이후 텍스트
@@ -221,14 +150,8 @@ class CalculationBreakdownSection extends StatelessWidget {
 
   void _showItemDetailDialog(BuildContext context, BreakdownItem item) {
     // 항목별 상세 정보 다이얼로그
-    String title = item.label;
+    final String title = item.label;
     Widget content;
-
-    // 시간외근무수당인 경우 기존 다이얼로그 표시
-    if (item.label.contains('시간외근무수당')) {
-      _showOvertimeAllowanceInfo(context);
-      return;
-    }
 
     // 1. 구조화된 위젯이 있으면 우선 사용
     if (item.detailedWidget != null) {
@@ -260,10 +183,7 @@ class CalculationBreakdownSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '지급액',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-              ),
+              const Text('지급액', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
               Text(
                 item.isDeduction
                     ? '- ${NumberFormatter.formatCurrency(item.amount)}'
@@ -271,9 +191,7 @@ class CalculationBreakdownSection extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: item.isDeduction
-                      ? Colors.red.shade700
-                      : Colors.teal.shade700,
+                  color: item.isDeduction ? Colors.red.shade700 : Colors.teal.shade700,
                 ),
               ),
             ],
@@ -286,41 +204,42 @@ class CalculationBreakdownSection extends StatelessWidget {
       context,
       title: title,
       icon: item.icon,
-      iconColor: item.iconColor ?? Colors.teal.shade600,
+      iconColor: item.iconColor ?? Colors.blue.shade600,
       content: content,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // 섹션별로 그룹화
+    final sectionGroups = _groupItemsBySection(items);
+
     return Container(
       margin: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          tilePadding: tilePadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding:
+              childrenPadding ?? const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           title: Row(
             children: [
-              Icon(Icons.calculate, size: 18, color: Colors.teal.shade700),
+              Icon(Icons.list_alt, size: 20, color: Colors.grey[700]),
               const SizedBox(width: 8),
               Text(
-                '계산 근거 보기',
+                '계산 내역 보기',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.teal.shade900,
+                  color: Colors.grey[800],
                 ),
               ),
             ],
           ),
           children: [
-            ...items.map((item) => _buildBreakdownItem(context, item)),
+            // 섹션별로 그룹화된 아이템 표시
+            ...sectionGroups.map((group) => _buildSectionGroup(context, group)),
             if (totalAmount != null) ...[
               const SizedBox(height: 12),
               const Divider(thickness: 1.5),
@@ -331,6 +250,114 @@ class CalculationBreakdownSection extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 섹션별로 그룹화
+  List<_SectionGroup> _groupItemsBySection(List<BreakdownItem> items) {
+    final groups = <_SectionGroup>[];
+    BreakdownItem? currentHeader;
+    List<BreakdownItem> currentItems = [];
+
+    for (final item in items) {
+      if (item.isSectionHeader) {
+        // 이전 그룹 저장
+        if (currentHeader != null) {
+          groups.add(_SectionGroup(header: currentHeader, items: currentItems));
+        }
+        // 새 그룹 시작
+        currentHeader = item;
+        currentItems = [];
+      } else {
+        currentItems.add(item);
+      }
+    }
+
+    // 마지막 그룹 저장
+    if (currentHeader != null) {
+      groups.add(_SectionGroup(header: currentHeader, items: currentItems));
+    }
+
+    return groups;
+  }
+
+  /// 섹션 그룹을 ExpansionTile로 표시
+  Widget _buildSectionGroup(BuildContext context, _SectionGroup group) {
+    // 섹션별 색상 정의
+    final sectionStyle = _getSectionStyle(group.header.label);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: sectionStyle.borderColor, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          childrenPadding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+          backgroundColor: sectionStyle.backgroundColor,
+          collapsedBackgroundColor: sectionStyle.backgroundColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Row(
+            children: [
+              Icon(sectionStyle.icon, size: 20, color: sectionStyle.iconColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  group.header.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: sectionStyle.textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          children: group.items.map((item) => _buildBreakdownItem(context, item)).toList(),
+        ),
+      ),
+    );
+  }
+
+  /// 섹션별 스타일 정의
+  _SectionStyle _getSectionStyle(String sectionLabel) {
+    if (sectionLabel.contains('매월 지급')) {
+      return _SectionStyle(
+        icon: Icons.calendar_month,
+        iconColor: Colors.teal.shade700,
+        textColor: Colors.teal.shade900,
+        backgroundColor: Colors.teal.shade50,
+        borderColor: Colors.teal.shade200,
+      );
+    } else if (sectionLabel.contains('특별 지급')) {
+      return _SectionStyle(
+        icon: Icons.stars,
+        iconColor: Colors.orange.shade700,
+        textColor: Colors.orange.shade900,
+        backgroundColor: Colors.orange.shade50,
+        borderColor: Colors.orange.shade200,
+      );
+    } else if (sectionLabel.contains('공제 항목')) {
+      return _SectionStyle(
+        icon: Icons.remove_circle_outline,
+        iconColor: Colors.red.shade700,
+        textColor: Colors.red.shade900,
+        backgroundColor: Colors.red.shade50,
+        borderColor: Colors.red.shade200,
+      );
+    } else {
+      return _SectionStyle(
+        icon: Icons.folder_outlined,
+        iconColor: Colors.grey.shade700,
+        textColor: Colors.grey.shade900,
+        backgroundColor: Colors.grey.shade50,
+        borderColor: Colors.grey.shade200,
+      );
+    }
   }
 
   Widget _buildBreakdownItem(BuildContext context, BreakdownItem item) {
@@ -358,11 +385,7 @@ class CalculationBreakdownSection extends StatelessWidget {
         ),
         child: Text(
           item.label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
         ),
       );
     }
@@ -371,7 +394,9 @@ class CalculationBreakdownSection extends StatelessWidget {
     final isTappable = item.label.isNotEmpty && item.amount != 0;
 
     return InkWell(
-      onTap: isTappable ? () => _showItemDetailDialog(context, item) : null,
+      onTap: isTappable
+          ? (item.onTap ?? () => _showItemDetailDialog(context, item))
+          : null,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -440,7 +465,7 @@ class CalculationBreakdownSection extends StatelessWidget {
             ),
           ),
           Text(
-            NumberFormatter.formatCurrency(totalAmount!),
+            NumberFormatter.formatCurrency(totalAmount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.teal.shade900,
@@ -467,6 +492,7 @@ class BreakdownItem {
   final Map<String, dynamic>? userData; // 사용자 실제 값
   final bool isDivider; // 구분선 여부
   final bool isSpacer; // 공백 여부
+  final VoidCallback? onTap; // 커스텀 탭 동작
 
   const BreakdownItem({
     required this.label,
@@ -482,58 +508,63 @@ class BreakdownItem {
     this.userData,
     this.isDivider = false,
     this.isSpacer = false,
+    this.onTap,
   });
 
   /// 구분선 생성자
   const BreakdownItem.divider()
-      : label = '',
-        amount = 0,
-        description = null,
-        icon = null,
-        iconColor = null,
-        isHighlight = false,
-        isDeduction = false,
-        detailedInfo = null,
-        detailedWidget = null,
-        calculationFormula = null,
-        userData = null,
-        isDivider = true,
-        isSpacer = false;
+    : label = '',
+      amount = 0,
+      description = null,
+      icon = null,
+      iconColor = null,
+      isHighlight = false,
+      isDeduction = false,
+      detailedInfo = null,
+      detailedWidget = null,
+      calculationFormula = null,
+      userData = null,
+      isDivider = true,
+      isSpacer = false,
+      onTap = null;
 
   /// 공백 생성자
   const BreakdownItem.spacer()
-      : label = '',
-        amount = 0,
-        description = null,
-        icon = null,
-        iconColor = null,
-        isHighlight = false,
-        isDeduction = false,
-        detailedInfo = null,
-        detailedWidget = null,
-        calculationFormula = null,
-        userData = null,
-        isDivider = false,
-        isSpacer = true;
+    : label = '',
+      amount = 0,
+      description = null,
+      icon = null,
+      iconColor = null,
+      isHighlight = false,
+      isDeduction = false,
+      detailedInfo = null,
+      detailedWidget = null,
+      calculationFormula = null,
+      userData = null,
+      isDivider = false,
+      isSpacer = true,
+      onTap = null;
 
   /// 섹션 헤더 생성자
   BreakdownItem.sectionHeader(String title)
-      : label = title,
-        amount = 0,
-        description = null,
-        icon = null,
-        iconColor = null,
-        isHighlight = false,
-        isDeduction = false,
-        detailedInfo = null,
-        detailedWidget = null,
-        calculationFormula = null,
-        userData = null,
-        isDivider = false,
-        isSpacer = false;
+    : label = title,
+      amount = 0,
+      description = null,
+      icon = null,
+      iconColor = null,
+      isHighlight = false,
+      isDeduction = false,
+      detailedInfo = null,
+      detailedWidget = null,
+      calculationFormula = null,
+      userData = null,
+      isDivider = false,
+      isSpacer = false,
+      onTap = null;
 
   /// 섹션 헤더인지 확인
-  bool get isSectionHeader => label.isNotEmpty && amount == 0 && icon == null && !isDivider && !isSpacer;
+  bool get isSectionHeader =>
+      label.isNotEmpty && amount == 0 && icon == null && !isDivider && !isSpacer;
 }
 
 /// 계산 근거 그룹 (섹션 구분용)
@@ -588,4 +619,29 @@ class BreakdownGroup extends StatelessWidget {
       ],
     );
   }
+}
+
+/// 섹션 그룹 (내부 사용)
+class _SectionGroup {
+  final BreakdownItem header;
+  final List<BreakdownItem> items;
+
+  _SectionGroup({required this.header, required this.items});
+}
+
+/// 섹션 스타일 (내부 사용)
+class _SectionStyle {
+  final IconData icon;
+  final Color iconColor;
+  final Color textColor;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  _SectionStyle({
+    required this.icon,
+    required this.iconColor,
+    required this.textColor,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
 }

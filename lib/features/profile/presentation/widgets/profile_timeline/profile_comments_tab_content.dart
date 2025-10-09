@@ -196,32 +196,35 @@ class _CommentCard extends StatelessWidget {
               // Comment image preview
               if (comment.imageUrls.isNotEmpty) ...[
                 const Gap(12),
-                GestureDetector(
-                  onTap: () => _showCommentImageViewer(
-                    context,
-                    comment.imageUrls.first,
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: comment.imageUrls.first,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        maxWidthDiskCache: 600,
-                        maxHeightDiskCache: 400,
-                        placeholder: (context, url) => Container(
-                          color: colorScheme.surfaceContainerHighest,
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => _showCommentImageViewer(
+                      context,
+                      comment.imageUrls.first,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 250),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: comment.imageUrls.first,
+                          fit: BoxFit.contain,
+                          maxWidthDiskCache: 800,
+                          maxHeightDiskCache: 800,
+                          placeholder: (context, url) => Container(
+                            height: 150,
+                            color: colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                           ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: colorScheme.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: colorScheme.onSurfaceVariant,
+                          errorWidget: (context, url, error) => Container(
+                            height: 150,
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ),

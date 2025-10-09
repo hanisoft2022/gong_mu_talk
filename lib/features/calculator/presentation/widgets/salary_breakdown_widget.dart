@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bonus_constants.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/calculation_breakdown_section.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/detailed_info_widget.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
@@ -60,7 +62,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
     final annualBasePay =
         (payBeforePromotion * monthsBeforePromotion) + (payAfterPromotion * monthsAfterPromotion);
 
-    final annualTeachingAllowance = AllowanceTable.teachingAllowance * 12;
+    const annualTeachingAllowance = AllowanceTable.teachingAllowance * 12;
     final annualHomeroomAllowance = (profile?.isHomeroom ?? false)
         ? AllowanceTable.homeroomAllowance * 12
         : 0;
@@ -68,7 +70,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ? AllowanceTable.headTeacherAllowance * 12
         : 0;
 
-    // 시간외근무수당도 승급월 고려
+    // 시간외근무수당(정액분)도 승급월 고려
     final overtimeBeforePromotion = profile != null
         ? AllowanceTable.getOvertimeAllowance(gradeBeforePromotion)
         : 0;
@@ -158,10 +160,10 @@ class SalaryBreakdownWidget extends StatelessWidget {
 
     final items = <BreakdownItem>[
       // 매월 지급 섹션 헤더
-      BreakdownItem.sectionHeader('📅 매월 지급'),
+      BreakdownItem.sectionHeader('📅 매월 지급 × 12개월'),
 
       BreakdownItem(
-        label: '📋 본봉 × 12개월',
+        label: '📋 본봉',
         amount: annualBasePay,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -179,7 +181,6 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '승급월 반영',
                 icon: Icons.trending_up,
-                backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
                 children: [
                   DetailTable(
@@ -202,7 +203,6 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생"}님의 연간 본봉 계산',
                 icon: Icons.calculate,
-                backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
                 children: [
                   DetailInfoBox(
@@ -222,10 +222,10 @@ class SalaryBreakdownWidget extends StatelessWidget {
               ),
             ] else ...[
               DetailSection(
-                title: '${nickname ?? "선생님"}의 호봉 정보',
+                title: '${nickname ?? "선생"}님의 호봉 정보',
                 icon: Icons.badge,
                 backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
@@ -236,7 +236,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '연간 본봉 계산',
                 icon: Icons.calculate,
-                backgroundColor: Colors.teal.shade50,
+
                 titleColor: Colors.teal.shade900,
                 children: [
                   DetailCalculation(
@@ -253,63 +253,41 @@ class SalaryBreakdownWidget extends StatelessWidget {
           userExample: '${nickname ?? "선생님"}의 승급월을 반영하여 계산되었습니다.',
         ),
       ),
-      BreakdownItem(
-        label: '📚 교직수당 × 12개월',
+      const BreakdownItem(
+        label: '📚 교직수당',
         amount: annualTeachingAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
-              title: '기본 지급액',
+            DetailSection(
+              title: '지급액',
               icon: Icons.school,
-              children: [
-                DetailTable(
-                  headers: ['구분', '지급액'],
-                  rows: [
-                    ['월 지급액', '250,000원'],
-                    ['연 지급액', '3,000,000원'],
-                    ['대상', '모든 교육공무원'],
-                  ],
-                ),
-              ],
+              children: [DetailInfoBox(type: DetailInfoBoxType.highlight, content: '월 250,000원')],
             ),
             DetailSection(
-              title: '교직수당 가산금 종류',
-              icon: Icons.add_circle_outline,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
-              children: const [
-                DetailInfoBox(type: DetailInfoBoxType.info, content: '해당되는 가산금은 별도 항목으로 표시됩니다.'),
-                SizedBox(height: 8),
-                DetailTable(
-                  headers: ['가산금 종류', '월 금액', '표시 항목'],
-                  rows: [
-                    ['담임교사 (가산금 4)', '200,000원', '담임수당'],
-                    ['보직교사 (가산금 3)', '150,000원', '보직수당'],
-                  ],
-                ),
-              ],
+              title: '지급 대상',
+              icon: Icons.people,
+              children: [DetailInfoBox(type: DetailInfoBoxType.info, content: '고등학교 이하 각급 학교 교원')],
             ),
-            const DetailSection(
-              title: '그 외 교직수당 가산금',
-              icon: Icons.more_horiz,
+            DetailSection(
+              title: '교직수당 가산금',
+              icon: Icons.add_circle_outline,
               children: [
+                DetailInfoBox(type: DetailInfoBoxType.info, content: '해당되는 가산금은 별도 항목으로 표시됩니다.'),
+                Gap(10),
                 DetailTable(
-                  headers: ['가산금 종류', '월 금액'],
+                  headers: ['번호', '가산금 명칭', '월 금액(원)'],
                   rows: [
-                    ['원로교사 (30년+, 55세+)', '50,000원'],
-                    ['특수교사', '120,000원'],
-                    ['특성화교사 (호봉별)', '25,000~50,000원'],
-                    ['보건교사', '40,000원'],
-                    ['사서교사', '30,000원'],
-                    ['영양교사', '40,000원'],
-                    ['전문상담교사', '30,000원'],
-                    ['겸직수당', '50,000~100,000원'],
+                    ['1', '원로교사 (30년+, 55세+)', '50,000'],
+                    ['2', '보직교사', '150,000'],
+                    ['3', '특수교사', '120,000'],
+                    ['4', '담임교사', '200,000'],
+                    ['5', '특성화교사 (호봉별)', '25,000~50,000'],
+                    ['6', '보건교사', '40,000'],
+                    ['7', '겸직수당', '50,000~100,000'],
+                    ['8', '영양교사', '40,000'],
+                    ['9', '사서교사', '30,000'],
+                    ['10', '전문상담교사', '30,000'],
                   ],
-                ),
-                SizedBox(height: 8),
-                DetailInfoBox(
-                  type: DetailInfoBoxType.tip,
-                  content: '위 가산금은 해당되는 경우 "💼 그 외 교직수당 가산금" 항목으로 표시됩니다.',
                 ),
               ],
             ),
@@ -318,23 +296,186 @@ class SalaryBreakdownWidget extends StatelessWidget {
       ),
       if (profile?.isHomeroom ?? false)
         BreakdownItem(
-          label: '🏛️ 담임수당 × 12개월',
+          label: '🏛️ 담임수당',
           amount: annualHomeroomAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('담임수당: 월 200,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (profile?.hasPosition ?? false)
+        BreakdownItem(
+          label: '👔 보직교사수당',
+          amount: annualHeadTeacherAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('보직교사수당: 월 150,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualSpecialEducationAllowance > 0)
+        BreakdownItem(
+          label: '🎓 특수교사수당',
+          amount: annualSpecialEducationAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('특수교사수당: 월 120,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualVocationalEducationAllowance > 0)
+        BreakdownItem(
+          label: '🏫 특성화교사수당 (전문교과)',
+          amount: annualVocationalEducationAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
               const DetailSection(
-                title: '지급 기준',
+                title: '지급액',
                 icon: Icons.account_balance_wallet,
-                children: [
+                children: [DetailInfoBox(type: DetailInfoBoxType.info, content: '호봉에 따른 차등 지급')],
+              ),
+              DetailSection(
+                title: '호봉별 지급액',
+                icon: Icons.table_chart,
+                backgroundColor: Colors.teal.shade50,
+                titleColor: Colors.teal.shade900,
+                children: const [
                   DetailTable(
-                    headers: ['구분', '금액'],
+                    headers: ['호봉 범위', '월 지급액'],
                     rows: [
-                      ['월 지급액', '200,000원'],
-                      ['연 지급액', '2,400,000원'],
-                      ['지급 대상', '담임교사'],
+                      ['1~4호봉', '25,000원'],
+                      ['5~8호봉', '30,000원'],
+                      ['9~13호봉', '35,000원'],
+                      ['14~21호봉', '40,000원'],
+                      ['22~30호봉', '45,000원'],
+                      ['31~40호봉', '50,000원'],
                     ],
                   ),
                 ],
+              ),
+              const DetailSection(
+                title: '지급 대상',
+                icon: Icons.people,
+                children: [
+                  DetailListItem(text: '특성화고등학교 교사', isChecked: true),
+                  DetailListItem(text: '마이스터고 교사', isChecked: true),
+                  DetailListItem(text: '실업계 고교 실습 지도 교사', isChecked: true),
+                ],
+              ),
+              DetailSection(
+                title: '${nickname ?? "선생"}님의 특성화교사수당',
+                icon: Icons.person,
+                backgroundColor: Colors.teal.shade50,
+                titleColor: Colors.teal.shade900,
+                children: [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.highlight,
+                    content: monthlyBreakdown.isNotEmpty
+                        ? '월 지급액: ${NumberFormatter.formatCurrency(monthlyBreakdown.first.vocationalEducationAllowance)}\n'
+                              '연간 총액: ${NumberFormatter.formatCurrency(annualVocationalEducationAllowance)}'
+                        : '데이터 로딩 중...',
+                  ),
+                ],
+              ),
+              const DetailInfoBox(type: DetailInfoBoxType.tip, content: '기타 수당과 중복 수령 가능합니다.'),
+            ],
+          ),
+        ),
+      if (annualHealthTeacherAllowance > 0)
+        BreakdownItem(
+          label: '⚕️ 보건교사수당',
+          amount: annualHealthTeacherAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('보건교사수당: 월 40,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualConcurrentPositionAllowance > 0)
+        BreakdownItem(
+          label: '💼 겸직수당',
+          amount: annualConcurrentPositionAllowance,
+          detailedWidget: DetailedInfoWidget(
+            sections: [
+              DetailSection(
+                title: '지급액',
+                icon: Icons.account_balance_wallet,
+                backgroundColor: Colors.teal.shade50,
+                titleColor: Colors.teal.shade900,
+                children: const [
+                  DetailInfoBox(type: DetailInfoBoxType.info, content: '겸직 업무에 따라 차등 지급'),
+                  SizedBox(height: 8),
+                  DetailTable(
+                    headers: ['구분', '월 지급액'],
+                    rows: [
+                      ['일반 겸직', '50,000원'],
+                      ['중요 겸직', '100,000원'],
+                    ],
+                  ),
+                ],
+              ),
+              const DetailSection(
+                title: '지급 대상',
+                icon: Icons.people,
+                children: [
+                  DetailListItem(text: '타 학교 겸임교사', isChecked: true),
+                  DetailListItem(text: '교육청 겸직 발령 교사', isChecked: true),
+                  DetailListItem(text: '대학 겸임교수 등', isChecked: true),
+                  SizedBox(height: 8),
+                  DetailInfoBox(type: DetailInfoBoxType.tip, content: '기타 수당과 중복 수령 가능합니다.'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      if (annualNutritionTeacherAllowance > 0)
+        BreakdownItem(
+          label: '🍽️ 영양교사수당',
+          amount: annualNutritionTeacherAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('영양교사수당: 월 40,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualLibrarianAllowance > 0)
+        BreakdownItem(
+          label: '📚 사서교사수당',
+          amount: annualLibrarianAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('사서교사수당: 월 30,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualCounselorAllowance > 0)
+        BreakdownItem(
+          label: '💬 전문상담교사수당',
+          amount: annualCounselorAllowance,
+          onTap: () {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('전문상담교사수당: 월 30,000원'), duration: Duration(seconds: 2)),
+            );
+          },
+        ),
+      if (annualVeteranAllowance > 0)
+        BreakdownItem(
+          label: '🎓 원로교사수당',
+          amount: annualVeteranAllowance,
+          detailedWidget: DetailedInfoWidget(
+            sections: [
+              const DetailSection(
+                title: '지급액',
+                icon: Icons.account_balance_wallet,
+                children: [DetailInfoBox(type: DetailInfoBoxType.highlight, content: '월 50,000원')],
               ),
               DetailSection(
                 title: '지급 대상',
@@ -342,231 +483,25 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
                 children: const [
-                  DetailListItem(text: '학급 담임을 맡은 교사', isChecked: true),
-                  DetailListItem(text: '초·중·고등학교 전 학년', isChecked: true),
-                ],
-              ),
-              const DetailSection(
-                title: '지급 방식',
-                icon: Icons.calendar_month,
-                children: [
-                  DetailInfoBox(type: DetailInfoBoxType.info, content: '매월 급여와 함께 지급'),
+                  DetailListItem(text: '재직연수 30년 이상', isChecked: true),
+                  DetailListItem(text: '만 55세 이상', isChecked: true),
                   SizedBox(height: 8),
-                  DetailInfoBox(
-                    type: DetailInfoBoxType.tip,
-                    content: '담임 배정 시 매월 지급되며, 담임 변경 시 해당 월부터 적용됩니다.',
-                  ),
+                  DetailInfoBox(type: DetailInfoBoxType.warning, content: '두 조건을 모두 충족해야 지급됩니다.'),
+                  SizedBox(height: 8),
+                  DetailInfoBox(type: DetailInfoBoxType.tip, content: '기타 수당과 중복 수령 가능합니다.'),
                 ],
               ),
             ],
           ),
         ),
-      if (profile?.hasPosition ?? false)
-        BreakdownItem(
-          label: '👔 보직교사수당 × 12개월',
-          amount: annualHeadTeacherAllowance,
-          detailedInfo: '''👔 보직교사수당
-
-【지급 기준】
-• 월 150,000원 (연 1,800,000원)
-• 보직교사(부장)에게 지급
-
-【지급 대상】
-• 교무부장, 연구부장 등
-• 학년부장, 교과부장 등
-• 기타 학교 보직 담당 교사
-
-💡 담임수당과 중복 수령 가능합니다.''',
-        ),
-      if (annualSpecialEducationAllowance > 0)
-        BreakdownItem(
-          label: '🎓 특수교사 가산금 × 12개월',
-          amount: annualSpecialEducationAllowance,
-          detailedInfo: '''🎓 특수교사 가산금
-
-【지급 기준】
-• 월 120,000원 (연 1,440,000원)
-• 교직수당 가산금 2 해당
-
-【지급 대상】
-• 특수학교 교사
-• 일반학교 특수학급 담당 교사
-• 특수교육 자격증 소지자
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 특수교육 대상 학생을 위한 전문성에 대한 수당입니다.''',
-        ),
-      if (annualVocationalEducationAllowance > 0)
-        BreakdownItem(
-          label: '🏫 특성화교사 가산금 (전문교과) × 12개월',
-          amount: annualVocationalEducationAllowance,
-          detailedInfo: '''🏫 특성화교사 가산금 (전문교과)
-
-【지급 기준】
-• 교직수당 가산금 5 해당
-• 호봉에 따라 차등 지급
-
-【호봉별 지급액】
-• 31~40호봉: 50,000원
-• 22~30호봉: 45,000원
-• 14~21호봉: 40,000원
-• 9~13호봉: 35,000원
-• 5~8호봉: 30,000원
-• 1~4호봉: 25,000원
-
-【지급 대상】
-• 특성화고등학교 교사
-• 마이스터고 교사
-• 실업계 고교 실습 지도 교사
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 직업교육을 담당하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualHealthTeacherAllowance > 0)
-        BreakdownItem(
-          label: '⚕️ 보건교사 가산금 × 12개월',
-          amount: annualHealthTeacherAllowance,
-          detailedInfo: '''⚕️ 보건교사 가산금
-
-【지급 기준】
-• 월 40,000원 (연 480,000원)
-• 교직수당 가산금 8 해당
-
-【지급 대상】
-• 학교 보건교사
-• 보건실 전담 교사
-• 간호사 자격 소지 교사
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 학생 건강관리 업무를 담당하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualConcurrentPositionAllowance > 0)
-        BreakdownItem(
-          label: '💼 겸직수당 × 12개월',
-          amount: annualConcurrentPositionAllowance,
-          detailedInfo: '''💼 겸직수당
-
-【지급 기준】
-• 교직수당 가산금 6 해당
-• 겸직 업무에 따라 차등 지급
-
-【지급액】
-• 일반 겸직: 50,000원
-• 중요 겸직: 100,000원
-
-【지급 대상】
-• 타 학교 겸임교사
-• 교육청 겸직 발령 교사
-• 대학 겸임교수 등
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 본직 외 추가 업무를 겸하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualNutritionTeacherAllowance > 0)
-        BreakdownItem(
-          label: '🍽️ 영양교사 가산금 × 12개월',
-          amount: annualNutritionTeacherAllowance,
-          detailedInfo: '''🍽️ 영양교사 가산금
-
-【지급 기준】
-• 월 40,000원 (연 480,000원)
-• 교직수당 가산금 8 해당
-
-【지급 대상】
-• 학교 영양교사
-• 급식 전담 교사
-• 영양사 자격 소지 교사
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 학생 급식 및 영양관리를 담당하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualLibrarianAllowance > 0)
-        BreakdownItem(
-          label: '📚 사서교사 가산금 × 12개월',
-          amount: annualLibrarianAllowance,
-          detailedInfo: '''📚 사서교사 가산금
-
-【지급 기준】
-• 월 30,000원 (연 360,000원)
-• 교직수당 가산금 9 해당
-
-【지급 대상】
-• 학교 사서교사
-• 도서관 전담 교사
-• 사서 자격증 소지 교사
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 학교 도서관 운영 및 독서교육을 담당하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualCounselorAllowance > 0)
-        BreakdownItem(
-          label: '💬 전문상담교사 가산금 × 12개월',
-          amount: annualCounselorAllowance,
-          detailedInfo: '''💬 전문상담교사 가산금
-
-【지급 기준】
-• 월 30,000원 (연 360,000원)
-• 교직수당 가산금 9 해당
-
-【지급 대상】
-• 전문상담교사
-• 상담실 전담 교사
-• 상담 자격증 소지 교사
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 학생 상담 및 진로지도를 전담하는 교사에 대한 수당입니다.''',
-        ),
-      if (annualVeteranAllowance > 0)
-        BreakdownItem(
-          label: '🎓 원로교사수당 × 12개월',
-          amount: annualVeteranAllowance,
-          detailedInfo: '''🎓 원로교사수당
-
-【지급 기준】
-• 월 50,000원 (연 600,000원)
-• 교직수당 가산금 1 해당
-
-【지급 대상】
-• 재직연수 30년 이상
-• 만 55세 이상
-• 두 조건 모두 충족 시 지급
-
-【지급 방식】
-• 매월 급여와 함께 지급
-• 담임수당, 보직교사수당과 중복 수령 가능
-
-💡 장기 근속 교사에 대한 예우 차원의 수당입니다.''',
-        ),
       if (annualFamilyAllowance > 0)
         BreakdownItem(
-          label: '👨‍👩‍👧‍👦 가족수당 × 12개월',
+          label: '👨‍👩‍👧‍👦 가족수당',
           amount: annualFamilyAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
               const DetailSection(
                 title: '👨‍👩‍👧‍👦 가족수당',
-                icon: Icons.family_restroom,
                 children: [
                   DetailInfoBox(type: DetailInfoBoxType.info, content: '가족 구성원에 따라 차등 지급되는 수당입니다.'),
                 ],
@@ -584,36 +519,27 @@ class SalaryBreakdownWidget extends StatelessWidget {
                       ['첫째 자녀', '50,000원'],
                       ['둘째 자녀', '80,000원'],
                       ['셋째 이상 자녀', '각 120,000원'],
-                      ['60세 이상 직계존속', '1인당 20,000원 (최대 4명)'],
+                      ['60세 이상 직계존속', '1인당 20,000원 (최대 2명)'],
                     ],
                   ),
-                ],
-              ),
-              const DetailSection(
-                title: '지급 방식',
-                icon: Icons.payments,
-                children: [
-                  DetailListItem(text: '매월 급여와 함께 지급', isChecked: true),
-                  DetailListItem(text: '가족관계증명서 제출 필요', isChecked: true),
-                  SizedBox(height: 8),
-                  DetailInfoBox(type: DetailInfoBoxType.tip, content: '자녀 수가 많을수록 가산금이 증가합니다.'),
                 ],
               ),
             ],
           ),
         ),
       BreakdownItem(
-        label: '📖 연구비 × 12개월',
+        label: '📖 교원연구비',
         amount: annualResearchAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
             const DetailSection(
-              title: '2023.3.1 개정 기준',
+              title: '2023.3.1 개정 기준 (최신 개정)',
               icon: Icons.update,
               children: [
                 DetailInfoBox(
                   type: DetailInfoBoxType.info,
-                  content: '직책별, 학교급별로 지급단가가 다르며, 중복 지급되지 않습니다.',
+                  content:
+                      '교원 연구비는 교육부 훈령 기준을 따르되 시·도교육청 예산 및 집행지침에 따라 단가가 상이할 수 있어, 지역별 최신 단가표를 기준으로 산정합니다.',
                 ),
               ],
             ),
@@ -643,16 +569,16 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 DetailInfoBox(
                   type: DetailInfoBoxType.warning,
                   content:
-                      '여러 직책을 겸할 경우 가장 높은 직책 기준만 적용됩니다.\n\n'
+                      '교원연구비는 여러 기준에 해당하더라도 가장 높은 단가 1개만 지급됩니다.\n\n'
                       '예시:\n'
-                      '• 부장교사 + 담임 → 부장교사 기준 60,000원만 지급\n'
-                      '• 보직교사 + 5년 이상 → 보직교사 기준 60,000원만 지급',
+                      '• 보직 60,000원 + 5년 미만 75,000원 → 75,000원 적용(금액 우선)\n'
+                      '• 보직 60,000원 + 5년 이상 60,000원 → 60,000원 1건만 지급(중복 불가)',
                 ),
               ],
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 연구비',
+                title: '${nickname ?? "선생"}님의 교원연구비',
                 icon: Icons.person,
                 backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
@@ -669,12 +595,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       ),
       BreakdownItem(
-        label: '🕓 시간외근무수당 × 12개월',
+        label: '🕓 시간외근무수당(정액분)',
         amount: annualOvertimeAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
             const DetailSection(
-              title: '시간외근무수당 지급 기준',
+              title: '시간외근무수당(정액분) 지급 기준',
               icon: Icons.access_time,
               children: [
                 DetailTable(
@@ -682,7 +608,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                   rows: [
                     ['지급 방식', '정액 지급'],
                     ['지급 기준', '호봉별 차등'],
-                    ['실제 근무시간', '무관'],
+                    ['정상근무 기준', '15일 이상 시 전액'],
                   ],
                 ),
               ],
@@ -704,16 +630,33 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ),
               ],
             ),
+            DetailSection(
+              title: '${nickname ?? "선생"}님의 시간외근무수당(정액분)',
+              icon: Icons.person,
+              backgroundColor: Colors.teal.shade50,
+              titleColor: Colors.teal.shade900,
+              children: [
+                DetailInfoBox(
+                  type: DetailInfoBoxType.highlight,
+                  content: monthlyBreakdown.isNotEmpty
+                      ? '월 지급액: ${NumberFormatter.formatCurrency(monthlyBreakdown.first.overtimeAllowance)}\n'
+                            '연간 총액: ${NumberFormatter.formatCurrency(annualOvertimeAllowance)}'
+                      : '데이터 로딩 중...',
+                ),
+              ],
+            ),
             const DetailSection(
               title: '지급 방식',
               icon: Icons.payments,
               children: [
-                DetailListItem(text: '매월 급여와 함께 지급', isChecked: true),
-                DetailListItem(text: '실제 초과근무 시간과 무관하게 정액 지급', isChecked: true),
+                DetailInfoBox(
+                  type: DetailInfoBoxType.info,
+                  content: '시간외근무수당(정액분)은 정상근무 15일 이상 시 전액 지급됩니다.',
+                ),
                 SizedBox(height: 8),
                 DetailInfoBox(
-                  type: DetailInfoBoxType.tip,
-                  content: '공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.',
+                  type: DetailInfoBoxType.warning,
+                  content: '해당 월 출근(또는 출장) 근무일수가 15일 미만이면 미달 1일당 15분의 1씩 감액합니다.',
                 ),
               ],
             ),
@@ -721,7 +664,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       ),
       BreakdownItem(
-        label: '🎖 정근수당 가산금 × 12개월',
+        label: '🎖 정근수당 가산금',
         amount: annualLongevityMonthly,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -757,11 +700,25 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ),
               ],
             ),
+            DetailSection(
+              title: '${nickname ?? "선생"}님의 정근수당 가산금',
+              icon: Icons.person,
+              backgroundColor: Colors.teal.shade50,
+              titleColor: Colors.teal.shade900,
+              children: [
+                DetailInfoBox(
+                  type: DetailInfoBoxType.highlight,
+                  content: monthlyBreakdown.isNotEmpty
+                      ? '월 지급액: ${NumberFormatter.formatCurrency(monthlyBreakdown.first.longevityMonthly)}\n'
+                            '연간 총액: ${NumberFormatter.formatCurrency(annualLongevityMonthly)}'
+                      : '데이터 로딩 중...',
+                ),
+              ],
+            ),
             const DetailSection(
               title: '지급 방식',
               icon: Icons.calendar_month,
               children: [
-                DetailListItem(text: '매월 급여와 함께 지급', isChecked: true),
                 DetailListItem(text: '정근수당(1월/7월)과는 별도', isChecked: true),
                 SizedBox(height: 8),
                 DetailInfoBox(
@@ -779,31 +736,83 @@ class SalaryBreakdownWidget extends StatelessWidget {
 
       if (annualPerformanceBonus > 0)
         BreakdownItem(
-          label: '⭐ 성과상여금 (3월)',
+          label: '⭐ 성과상여금 (${PerformanceBonusConstants.paymentMonth}월)',
           amount: annualPerformanceBonus,
           isHighlight: true,
-          detailedWidget: const DetailedInfoWidget(
+          detailedWidget: DetailedInfoWidget(
             sections: [
-              DetailSection(
+              const DetailSection(
                 title: '지급 시기',
                 icon: Icons.calendar_today,
-                children: [DetailInfoBox(type: DetailInfoBoxType.info, content: '매년 3월 지급')],
+                children: [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content: '매년 ${PerformanceBonusConstants.paymentMonth}월 지급',
+                  ),
+                ],
               ),
               DetailSection(
+                title: '💡 계산 기준',
+                icon: Icons.calculate,
+                backgroundColor: Colors.amber.shade50,
+                titleColor: Colors.amber.shade900,
+                children: const [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.highlight,
+                    content: '본 앱은 A등급(차등지급률 50%) 기준으로 계산합니다.',
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content:
+                        '• A등급은 전체 교원의 50%에 배정되는 중위 등급입니다\n'
+                        '• 통계적으로 가장 높은 확률로 받을 수 있는 등급입니다\n'
+                        '• 차등지급률 50%는 2025년 정부 정책 기준입니다',
+                  ),
+                ],
+              ),
+              const DetailSection(
                 title: '등급별 지급액 (2025년)',
                 icon: Icons.star,
                 children: [
                   DetailTable(
-                    headers: ['등급', '지급액', '비율'],
+                    headers: ['등급', '차등지급률', '지급액', '배정 비율'],
                     rows: [
-                      ['S등급', '5,102,970원', '상위 30%'],
-                      ['A등급', '4,273,220원', '중위 50% (기본)'],
-                      ['B등급', '3,650,900원', '하위 20%'],
+                      ['S등급', '60%', '5,102,970원', '상위 30%'],
+                      ['A등급', '50%', '4,273,220원', '중위 50%'],
+                      ['B등급', '43%', '3,650,900원', '하위 20%'],
                     ],
                   ),
                 ],
               ),
               DetailSection(
+                title: '📊 직책별 추가 지급액',
+                icon: Icons.workspace_premium,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
+                children: const [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content: '직책에 따라 기본 성과상여금에 추가 지급액이 있습니다.',
+                  ),
+                  SizedBox(height: 8),
+                  DetailTable(
+                    headers: ['직책', '추가 지급률'],
+                    rows: [
+                      ['교장', '약 30% 추가'],
+                      ['교감', '약 20% 추가'],
+                      ['수석교사', '약 10% 추가'],
+                      ['보직교사(부장)', '약 5% 추가'],
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.warning,
+                    content: '본 앱은 일반 교사 기준으로 계산하며, 직책 가산금은 포함하지 않습니다.',
+                  ),
+                ],
+              ),
+              const DetailSection(
                 title: '등급 산정 방식',
                 icon: Icons.assessment,
                 children: [
@@ -813,12 +822,49 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ],
               ),
               DetailSection(
+                title: '🔮 미래 예측 (생애소득 계산 시)',
+                icon: Icons.trending_up,
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.info,
+                    content: '생애 소득 계산 시 미래 성과상여금은 물가상승률(연 2.3%)을 반영하여 예측합니다.',
+                  ),
+                  SizedBox(height: 8),
+                  DetailTable(
+                    headers: ['연도', '예상 지급액(A등급)'],
+                    rows: [
+                      ['2025년', '4,273,220원'],
+                      ['2030년', '4,787,772원'],
+                      ['2040년', '6,010,212원'],
+                      ['2060년', '9,471,144원'],
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.warning,
+                    content: '실제 지급액은 정부 정책 변경, 학교별 차등지급률 등에 따라 달라질 수 있습니다.',
+                  ),
+                ],
+              ),
+              const DetailSection(
                 title: '참고사항',
                 icon: Icons.info_outline,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.tip,
-                    content: '근무성적평정 결과에 따라 매년 등급이 변동될 수 있습니다.',
+                    content:
+                        '• 근무성적평정 결과에 따라 매년 등급이 변동될 수 있습니다\n'
+                        '• 학교별로 차등지급률이 다를 수 있습니다 (40~60% 범위)\n'
+                        '• 정부 정책 변경에 따라 지급액이 조정될 수 있습니다',
+                  ),
+                  SizedBox(height: 8),
+                  DetailInfoBox(
+                    type: DetailInfoBoxType.warning,
+                    content:
+                        '⚠️ 공무원연금 기준소득월액 산정 시:\n'
+                        '성과상여금은 개인별 실제 금액이 제외되고, 직종별 평균액이 가산됩니다.',
                   ),
                 ],
               ),
@@ -1012,7 +1058,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 월평균 소득세',
+                title: '${nickname ?? "선생"}님의 월평균 소득세',
                 icon: Icons.person,
                 backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
@@ -1144,7 +1190,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 DetailListItem(text: '담임수당', isChecked: true),
                 DetailListItem(text: '보직수당', isChecked: true),
                 DetailListItem(text: '가족수당', isChecked: true),
-                DetailListItem(text: '연구비', isChecked: true),
+                DetailListItem(text: '교원연구비', isChecked: true),
                 DetailListItem(text: '정근수당 가산금', isChecked: true),
                 DetailListItem(text: '정근수당 (1/7월)', isChecked: true),
                 DetailListItem(text: '명절휴가비', isChecked: true),
@@ -1154,13 +1200,13 @@ class SalaryBreakdownWidget extends StatelessWidget {
               title: '기준소득월액 제외 항목',
               icon: Icons.cancel_outlined,
               children: [
-                DetailListItem(text: '시간외근무수당', isChecked: false, color: Colors.red),
+                DetailListItem(text: '시간외근무수당(정액분)', isChecked: false, color: Colors.red),
                 DetailListItem(text: '성과상여금', isChecked: false, color: Colors.red),
               ],
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 계산',
+                title: '${nickname ?? "선생"}님의 계산',
                 icon: Icons.person,
                 backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
@@ -1180,7 +1226,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
                     content:
-                        '연간 기여금 = ${NumberFormatter.formatCurrency((annualPensionContribution / 12).round())} × 12개월 = ${NumberFormatter.formatCurrency(annualPensionContribution)}',
+                        '연간 기여금 = ${NumberFormatter.formatCurrency((annualPensionContribution / 12).round())} = ${NumberFormatter.formatCurrency(annualPensionContribution)}',
                   ),
                 ],
               ),
@@ -1264,7 +1310,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 계산',
+                title: '${nickname ?? "선생"}님의 계산',
                 icon: Icons.person,
                 backgroundColor: Colors.teal.shade50,
                 titleColor: Colors.teal.shade900,
@@ -1455,6 +1501,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
 
         ...deductions,
       ],
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 16),
     );
   }
 }

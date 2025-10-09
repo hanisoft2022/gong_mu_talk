@@ -74,11 +74,11 @@ class AllowanceTable {
   /// 가산금 1: 원로교사수당 (30년 이상 재직 + 55세 이상)
   static const int allowance1VeteranTeacher = 50000;
 
-  /// 가산금 2: 특수교사수당
-  static const int allowance2SpecialEducation = 120000;
+  /// 가산금 2: 보직교사수당 (부장 등)
+  static const int allowance2HeadTeacher = 150000;
 
-  /// 가산금 3: 보직교사수당 (부장 등)
-  static const int allowance3HeadTeacher = 150000;
+  /// 가산금 3: 특수교사수당
+  static const int allowance3SpecialEducation = 120000;
 
   /// 가산금 4: 담임수당
   static const int allowance4Homeroom = 200000;
@@ -108,8 +108,8 @@ class AllowanceTable {
   /// @deprecated Use allowance4Homeroom instead
   static const int homeroomAllowance = allowance4Homeroom;
 
-  /// @deprecated Use allowance3HeadTeacher instead
-  static const int headTeacherAllowance = allowance3HeadTeacher;
+  /// @deprecated Use allowance2HeadTeacher instead
+  static const int headTeacherAllowance = allowance2HeadTeacher;
 
   /// @deprecated Use allowance1VeteranTeacher instead
   static const int veteranAllowance = allowance1VeteranTeacher;
@@ -136,7 +136,7 @@ class AllowanceTable {
     40: 147410, // 30호봉 이상: 14,741원/시간 × 10
   };
 
-  /// 호봉별 시간외근무수당 조회
+  /// 호봉별 시간외근무수당(정액분) 조회
   static int getOvertimeAllowance(int grade) {
     if (grade <= 19) return overtimeAllowanceByGrade[19]!;
     if (grade <= 29) return overtimeAllowanceByGrade[29]!;

@@ -48,7 +48,7 @@ class ImageCompressionUtil {
       final int quality;
       final int minWidth;
       final int minHeight;
-      final CompressFormat format = CompressFormat.webp; // WebP 사용
+      const CompressFormat format = CompressFormat.webp; // WebP 사용
 
       switch (type) {
         case ImageCompressionType.post:

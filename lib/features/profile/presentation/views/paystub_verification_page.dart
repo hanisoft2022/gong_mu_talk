@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gong_mu_talk/core/constants/app_colors.dart';
 
 import '../../../../di/di.dart';
 import '../../data/paystub_verification_repository.dart';
@@ -58,7 +59,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('급여명세서 인증이 신청되었습니다. 검토까지 1-2일 소요됩니다.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         context.pop();
@@ -68,7 +69,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('인증 신청 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -315,22 +316,22 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.05),
+        color: AppColors.success.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.security, color: Colors.green.shade700, size: 20),
+              const Icon(Icons.security, color: AppColors.successDark, size: 20),
               const Gap(8),
               Text(
                 '개인정보 처리 안내',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.green.shade700,
+                  color: AppColors.successDark,
                 ),
               ),
             ],
@@ -473,13 +474,13 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                   },
                   icon: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
+                    decoration: const BoxDecoration(
+                      color: AppColors.blackAlpha50,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 20,
                     ),
                   ),
@@ -513,7 +514,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               )
             : Text(

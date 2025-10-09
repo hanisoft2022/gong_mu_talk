@@ -44,7 +44,7 @@ class ImageProcessor {
       }
 
       // Create thumbnail
-      final int thumbSize = thumbnailSize;
+      const int thumbSize = thumbnailSize;
       final img.Image thumbnail = img.copyResize(
         originalImage,
         width: thumbSize,

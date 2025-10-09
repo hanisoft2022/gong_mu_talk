@@ -25,6 +25,8 @@ import '../features/calculator/domain/usecases/calculate_retirement_benefit_usec
 import '../features/calculator/domain/usecases/calculate_early_retirement_usecase.dart';
 import '../features/calculator/domain/usecases/calculate_after_tax_pension_usecase.dart';
 import '../features/calculator/domain/usecases/calculate_monthly_breakdown_usecase.dart';
+import '../features/calculator/domain/repositories/teacher_profile_repository.dart';
+import '../features/calculator/data/repositories/firestore_teacher_profile_repository.dart';
 import '../features/calculator/presentation/cubit/calculator_cubit.dart';
 
 import '../features/community/data/community_repository.dart';
@@ -175,6 +177,10 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<CalculateMonthlyBreakdownUseCase>(
       () => CalculateMonthlyBreakdownUseCase(getIt()),
     )
+    // Calculator repository
+    ..registerLazySingleton<TeacherProfileRepository>(
+      () => FirestoreTeacherProfileRepository(getIt()),
+    )
     // Calculator cubit - LazySingleton으로 앱 전체에서 단일 인스턴스 유지
     ..registerLazySingleton<CalculatorCubit>(
       () => CalculatorCubit(
@@ -185,6 +191,8 @@ Future<void> configureDependencies() async {
         calculateAfterTaxPensionUseCase: getIt(),
         calculateMonthlyBreakdownUseCase: getIt(),
         profileStorageService: getIt(),
+        firestoreRepository: getIt(),
+        getUserId: () => getIt<AuthCubit>().state.userId,
       ),
     )
     ..registerLazySingleton<GoRouter>(createRouter)

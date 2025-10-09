@@ -41,29 +41,33 @@ class PostEnrichmentService {
 
     Set<String> likedIds;
     Set<String> scrappedIds;
+    final postIds = [post.id];
 
     // Use cache for single post enrichment (consistent with enrichPosts)
+    // Check if cache is complete for these specific posts
     if (_cacheManager.shouldRefreshCache() ||
-        !_cacheManager.hasLikedCache(currentUid)) {
+        !_cacheManager.hasLikedCache(currentUid) ||
+        !_cacheManager.hasCompleteCacheForPosts(currentUid, postIds)) {
       // Fetch from Firestore and update cache
       likedIds = await _interactionRepository.fetchLikedPostIds(
         uid: currentUid,
-        postIds: [post.id],
+        postIds: postIds,
       );
       scrappedIds = await _interactionRepository.fetchScrappedIds(
         uid: currentUid,
-        postIds: [post.id],
+        postIds: postIds,
       );
 
       _cacheManager.updateCache(
         uid: currentUid,
         likedIds: likedIds,
         scrappedIds: scrappedIds,
+        checkedPostIds: postIds, // Mark these posts as checked
       );
     } else {
       // Get from cache
-      likedIds = _cacheManager.getLikedPostIds(currentUid, [post.id]) ?? {};
-      scrappedIds = _cacheManager.getScrappedPostIds(currentUid, [post.id]) ?? {};
+      likedIds = _cacheManager.getLikedPostIds(currentUid, postIds) ?? {};
+      scrappedIds = _cacheManager.getScrappedPostIds(currentUid, postIds) ?? {};
     }
 
     Post enriched = post.copyWith(
@@ -99,9 +103,11 @@ class PostEnrichmentService {
     Set<String> scrappedIds;
 
     // 캐시 사용 (10분 유효 - 비용 최적화)
+    // Check if cache is complete for these specific posts
     if (_cacheManager.shouldRefreshCache() ||
-        !_cacheManager.hasLikedCache(currentUid)) {
-      // 캐시 갱신 필요
+        !_cacheManager.hasLikedCache(currentUid) ||
+        !_cacheManager.hasCompleteCacheForPosts(currentUid, postIds)) {
+      // 캐시 갱신 필요 (TTL 만료, 캐시 없음, 또는 불완전한 캐시)
       likedIds = await _interactionRepository.fetchLikedPostIds(
         uid: currentUid,
         postIds: postIds,
@@ -115,9 +121,10 @@ class PostEnrichmentService {
         uid: currentUid,
         likedIds: likedIds,
         scrappedIds: scrappedIds,
+        checkedPostIds: postIds, // Mark these posts as checked
       );
     } else {
-      // 캐시에서 가져오기
+      // 캐시에서 가져오기 (완전한 캐시가 확인됨)
       likedIds = _cacheManager.getLikedPostIds(currentUid, postIds) ?? {};
       scrappedIds = _cacheManager.getScrappedPostIds(currentUid, postIds) ?? {};
     }
@@ -220,6 +227,7 @@ class PostEnrichmentService {
       uid: uid,
       likedIds: likedIds,
       scrappedIds: scrappedIds,
+      checkedPostIds: postIds,
     );
   }
 }

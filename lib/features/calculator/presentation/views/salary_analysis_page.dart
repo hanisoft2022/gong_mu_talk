@@ -3,33 +3,42 @@ import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bonus_constants.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_breakdown_widget.dart';
 
 /// 급여 분석 통합 페이지
 ///
-/// 월별 급여명세, 연도별 급여 증가, 생애 시뮬레이션을 탭으로 통합
+/// 월별 급여명세, 연봉 명세, 연도별 급여 증가, 생애 시뮬레이션을 탭으로 통합
 class SalaryAnalysisPage extends StatelessWidget {
   final LifetimeSalary lifetimeSalary;
   final List<MonthlyNetIncome>? monthlyBreakdown;
+  final TeacherProfile? profile;
+  final String? nickname;
 
   const SalaryAnalysisPage({
     super.key,
     required this.lifetimeSalary,
     this.monthlyBreakdown,
+    this.profile,
+    this.nickname,
   });
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('급여 분석'),
           centerTitle: true,
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.calendar_month), text: '월별 명세'),
+              Tab(icon: Icon(Icons.receipt_long), text: '연봉 명세'),
               Tab(icon: Icon(Icons.trending_up), text: '연도별 증가'),
               Tab(icon: Icon(Icons.timeline), text: '생애 시뮬레이션'),
             ],
@@ -40,9 +49,15 @@ class SalaryAnalysisPage extends StatelessWidget {
           children: [
             // 탭 1: 월별 급여명세
             _MonthlyBreakdownTab(monthlyBreakdown: monthlyBreakdown),
-            // 탭 2: 연도별 급여 증가
+            // 탭 2: 연봉 명세 (연간 계산 내역)
+            _AnnualBreakdownTab(
+              monthlyBreakdown: monthlyBreakdown,
+              profile: profile,
+              nickname: nickname,
+            ),
+            // 탭 3: 연도별 급여 증가
             _AnnualGrowthTab(lifetimeSalary: lifetimeSalary),
-            // 탭 3: 생애 시뮬레이션
+            // 탭 4: 생애 시뮬레이션
             _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary),
           ],
         ),
@@ -63,10 +78,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
       return const Center(child: Text('월별 급여 데이터가 없습니다.'));
     }
 
-    final annualNet = monthlyBreakdown!.fold<int>(
-      0,
-      (sum, m) => sum + m.netIncome,
-    );
+    final annualNet = monthlyBreakdown!.fold<int>(0, (sum, m) => sum + m.netIncome);
 
     return Column(
       children: [
@@ -75,16 +87,11 @@ class _MonthlyBreakdownTab extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade400, Colors.teal.shade600],
-            ),
+            gradient: LinearGradient(colors: [Colors.teal.shade400, Colors.teal.shade600]),
           ),
           child: Column(
             children: [
-              const Text(
-                '연간 총 실수령액',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
+              const Text('연간 총 실수령액', style: TextStyle(color: Colors.white70, fontSize: 14)),
               const SizedBox(height: 8),
               Text(
                 NumberFormatter.formatCurrency(annualNet),
@@ -116,12 +123,10 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                   title: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (month.hasPerformanceBonus ||
+                          color:
+                              (month.hasPerformanceBonus ||
                                   month.hasLongevityBonus ||
                                   month.hasHolidayBonus)
                               ? Colors.orange.shade100
@@ -131,7 +136,8 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                         child: Text(
                           '${month.month}월',
                           style: TextStyle(
-                            color: (month.hasPerformanceBonus ||
+                            color:
+                                (month.hasPerformanceBonus ||
                                     month.hasLongevityBonus ||
                                     month.hasHolidayBonus)
                                 ? Colors.orange.shade900
@@ -144,10 +150,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                       if (month.hasPerformanceBonus) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.amber,
                             borderRadius: BorderRadius.circular(4),
@@ -172,10 +175,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                       if (month.hasLongevityBonus) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.teal,
                             borderRadius: BorderRadius.circular(4),
@@ -200,10 +200,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                       if (month.hasHolidayBonus) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.pink,
                             borderRadius: BorderRadius.circular(4),
@@ -231,10 +228,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '실수령액: ${NumberFormatter.formatCurrency(month.netIncome)}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
                   children: [
@@ -244,7 +238,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                         children: [
                           _buildDetailRow('기본급', month.baseSalary),
                           const SizedBox(height: 8),
-                          // 교직 수당 (확장 가능)
+                          // 교직수당 (확장 가능)
                           _buildExpandableAllowanceSection(context, month),
                           if (month.performanceBonus > 0) ...[
                             const SizedBox(height: 8),
@@ -274,11 +268,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                             ),
                           ],
                           const Divider(height: 24),
-                          _buildDetailRow(
-                            '총 지급액',
-                            month.grossSalary,
-                            isBold: true,
-                          ),
+                          _buildDetailRow('총 지급액', month.grossSalary, isBold: true),
                           const SizedBox(height: 12),
                           _buildDetailRow(
                             '총 공제액 (${month.deductionRate.toStringAsFixed(1)}%)',
@@ -286,12 +276,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                             color: Colors.red,
                           ),
                           const Divider(height: 24),
-                          _buildDetailRow(
-                            '실수령액',
-                            month.netIncome,
-                            isBold: true,
-                            isHighlight: true,
-                          ),
+                          _buildDetailRow('실수령액', month.netIncome, isBold: true, isHighlight: true),
                         ],
                       ),
                     ),
@@ -328,14 +313,10 @@ class _MonthlyBreakdownTab extends StatelessWidget {
           Text(
             NumberFormatter.formatCurrency(amount),
             style: TextStyle(
-              fontWeight: isBold || highlight
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+              fontWeight: isBold || highlight ? FontWeight.bold : FontWeight.normal,
               color:
                   color ??
-                  (isHighlight
-                      ? Colors.teal[700]
-                      : (highlight ? Colors.orange.shade900 : null)),
+                  (isHighlight ? Colors.teal[700] : (highlight ? Colors.orange.shade900 : null)),
             ),
           ),
         ],
@@ -343,10 +324,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
     );
   }
 
-  Widget _buildExpandableAllowanceSection(
-    BuildContext context,
-    MonthlyNetIncome month,
-  ) {
+  Widget _buildExpandableAllowanceSection(BuildContext context, MonthlyNetIncome month) {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
@@ -355,7 +333,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('교직 수당'),
+            const Text('교직수당'),
             Text(
               NumberFormatter.formatCurrency(month.totalAllowances),
               style: const TextStyle(fontWeight: FontWeight.normal),
@@ -652,7 +630,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
           const SizedBox(height: 4),
           _buildTappableDetailRow(
             context,
-            '연구비',
+            '교원연구비',
             month.researchAllowance,
             detailedInfo: '''📖 연구비
 
@@ -669,13 +647,13 @@ class _MonthlyBreakdownTab extends StatelessWidget {
           const SizedBox(height: 4),
           _buildTappableDetailRow(
             context,
-            '시간외근무수당',
+            '시간외근무수당(정액분)',
             month.overtimeAllowance,
-            detailedInfo: '''🕓 시간외근무수당
+            detailedInfo: '''🕓 시간외근무수당(정액분)
 
 【지급 기준】
 • 호봉에 따라 차등 지급
-• 정액으로 매월 지급 (실제 근무시간 무관)
+• 정액으로 매월 지급
 
 【호봉별 지급액】
 • 1~10호봉: 30,000원
@@ -685,9 +663,8 @@ class _MonthlyBreakdownTab extends StatelessWidget {
 
 【지급 방식】
 • 매월 급여와 함께 지급
-• 실제 초과근무 시간과 무관하게 정액 지급
-
-💡 공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.''',
+• 시간외근무수당(정액분)은 정상근무 15일 이상 시 전액 지급됩니다.
+• 해당 월 출근(또는 출장) 근무일수가 15일 미만이면 미달 1일당 15분의 1씩 감액합니다.''',
           ),
           if (month.longevityMonthly > 0) ...[
             const SizedBox(height: 4),
@@ -744,11 +721,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
                   Expanded(child: Text(label)),
                   if (detailedInfo != null) ...[
                     const SizedBox(width: 4),
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
                   ],
                 ],
               ),
@@ -764,12 +737,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
   }
 
   /// 상세 정보 다이얼로그 표시
-  void _showDetailDialog(
-    BuildContext context,
-    String title,
-    int amount,
-    String detailedInfo,
-  ) {
+  void _showDetailDialog(BuildContext context, String title, int amount, String detailedInfo) {
     InfoDialog.showWidget(
       context,
       title: title,
@@ -789,10 +757,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '월 지급액',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                const Text('월 지급액', style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   NumberFormatter.formatCurrency(amount),
                   style: TextStyle(
@@ -805,10 +770,7 @@ class _MonthlyBreakdownTab extends StatelessWidget {
             ),
           ),
           const Gap(16),
-          Text(
-            detailedInfo,
-            style: const TextStyle(height: 1.6),
-          ),
+          Text(detailedInfo, style: const TextStyle(height: 1.6)),
         ],
       ),
     );
@@ -837,24 +799,18 @@ class _AnnualGrowthTab extends StatelessWidget {
                 children: [
                   Text(
                     '📊 요약',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   _buildSummaryItem(
                     context,
                     '평균 연봉',
-                    NumberFormatter.formatCurrency(
-                      lifetimeSalary.avgAnnualSalary,
-                    ),
+                    NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
                   ),
                   const Divider(height: 24),
-                  _buildSummaryItem(
-                    context,
-                    '총 재직 기간',
-                    '${lifetimeSalary.totalYears}년',
-                  ),
+                  _buildSummaryItem(context, '총 재직 기간', '${lifetimeSalary.totalYears}년'),
                 ],
               ),
             ),
@@ -865,9 +821,7 @@ class _AnnualGrowthTab extends StatelessWidget {
           // 차트
           Text(
             '📈 연도별 급여 증가 추이',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Card(
@@ -882,9 +836,7 @@ class _AnnualGrowthTab extends StatelessWidget {
           // 연도별 리스트
           Text(
             '📅 연도별 상세',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -901,15 +853,10 @@ class _AnnualGrowthTab extends StatelessWidget {
                     '${salary.year}년 (${salary.grade}호봉)',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text(
-                    '월 실수령: ${NumberFormatter.formatCurrency(salary.netPay)}',
-                  ),
+                  subtitle: Text('월 실수령: ${NumberFormatter.formatCurrency(salary.netPay)}'),
                   trailing: Text(
                     NumberFormatter.formatCurrency(salary.annualTotalPay),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal[700],
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal[700]),
                   ),
                 ),
               );
@@ -951,21 +898,14 @@ class _AnnualGrowthTab extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxPay / 5,
-        ),
+        gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxPay / 5),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 60,
               getTitlesWidget: (value, meta) {
-                return Text(
-                  '${(value / 10000).toInt()}만',
-                  style: theme.textTheme.bodySmall,
-                );
+                return Text('${(value / 10000).toInt()}만', style: theme.textTheme.bodySmall);
               },
             ),
           ),
@@ -978,19 +918,12 @@ class _AnnualGrowthTab extends StatelessWidget {
                     value.toInt() % 5 != 0) {
                   return const SizedBox();
                 }
-                return Text(
-                  '${value.toInt() + 1}년',
-                  style: theme.textTheme.bodySmall,
-                );
+                return Text('${value.toInt() + 1}년', style: theme.textTheme.bodySmall);
               },
             ),
           ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -1031,16 +964,9 @@ class _LifetimeSimulationTab extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.savings,
-                    size: 48,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  Icon(Icons.savings, size: 48, color: Theme.of(context).primaryColor),
                   const SizedBox(height: 16),
-                  Text(
-                    '생애 총 소득',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('생애 총 소득', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
                     NumberFormatter.formatCurrency(lifetimeSalary.totalIncome),
@@ -1065,9 +991,9 @@ class _LifetimeSimulationTab extends StatelessWidget {
                 children: [
                   Text(
                     '💰 상세 정보',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   _buildInfoRow(
@@ -1087,9 +1013,7 @@ class _LifetimeSimulationTab extends StatelessWidget {
                   _buildInfoRow(
                     context,
                     '평균 연봉',
-                    NumberFormatter.formatCurrency(
-                      lifetimeSalary.avgAnnualSalary,
-                    ),
+                    NumberFormatter.formatCurrency(lifetimeSalary.avgAnnualSalary),
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
@@ -1103,6 +1027,67 @@ class _LifetimeSimulationTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+
+          // 성과상여금 예측 안내
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.amber[700], size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '📌 성과상여금 예측 안내',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber[900],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '• 평가 등급: A등급 고정 (중위 50% 배정으로 확률상 가장 높음)\n'
+                  '• 차등지급률: 50% 고정 (2025년 정부 정책 기준)\n'
+                  '• 물가상승률: 연 2.3% 적용 (최근 10년 평균)\n'
+                  '• 지급 시기: 매년 ${PerformanceBonusConstants.paymentMonth}월',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[800], height: 1.6),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '본 예측은 현재 정책 기준으로 산정된 참고값이며, 실제 지급액은 개인 평가 결과, 학교별 차등지급률, 정부 정책 변경에 따라 달라질 수 있습니다.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[800], height: 1.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
 
           // 안내 메시지
           Container(
@@ -1123,21 +1108,14 @@ class _LifetimeSimulationTab extends StatelessWidget {
                     children: [
                       Text(
                         '생애 총 소득 계산 방식',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[900],
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[900]),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '• 명목 가치: 각 연도 급여를 그대로 합산\n'
                         '• 현재 가치: 인플레이션을 고려한 실질 가치\n'
                         '• 실제 수령액은 개인의 승진, 수당 등에 따라 달라질 수 있습니다',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue[800],
-                          height: 1.5,
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.blue[800], height: 1.5),
                       ),
                     ],
                   ),
@@ -1150,12 +1128,7 @@ class _LifetimeSimulationTab extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
-    BuildContext context,
-    String label,
-    String value, {
-    String? subtitle,
-  }) {
+  Widget _buildInfoRow(BuildContext context, String label, String value, {String? subtitle}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1163,9 +1136,7 @@ class _LifetimeSimulationTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
-            ),
+            Expanded(child: Text(label, style: Theme.of(context).textTheme.bodyLarge)),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1180,12 +1151,39 @@ class _LifetimeSimulationTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// 탭 2: 연봉 명세 (연간 계산 내역)
+class _AnnualBreakdownTab extends StatelessWidget {
+  final List<MonthlyNetIncome>? monthlyBreakdown;
+  final TeacherProfile? profile;
+  final String? nickname;
+
+  const _AnnualBreakdownTab({
+    this.monthlyBreakdown,
+    this.profile,
+    this.nickname,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (monthlyBreakdown == null || monthlyBreakdown!.isEmpty || profile == null) {
+      return const Center(child: Text('연봉 명세 데이터가 없습니다.'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: SalaryBreakdownWidget(
+        profile: profile,
+        monthlyBreakdown: monthlyBreakdown!,
+        nickname: nickname,
+      ),
     );
   }
 }

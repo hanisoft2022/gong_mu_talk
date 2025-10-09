@@ -33,6 +33,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/core/constants/app_colors.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import 'settings_section.dart';
@@ -55,14 +56,13 @@ enum PasswordStrength {
   }
 
   Color getColor(BuildContext context) {
-    final theme = Theme.of(context);
     switch (this) {
       case PasswordStrength.weak:
-        return theme.colorScheme.error;
+        return AppColors.error;
       case PasswordStrength.medium:
-        return Colors.orange;
+        return AppColors.warning;
       case PasswordStrength.strong:
-        return Colors.green;
+        return AppColors.success;
     }
   }
 }
@@ -126,10 +126,10 @@ class _PasswordChangeSectionState extends State<PasswordChangeSection> {
       return PasswordStrength.weak;
     }
 
-    bool hasDigits = password.contains(RegExp(r'\d'));
-    bool hasSpecialChars = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-    bool hasUpperCase = password.contains(RegExp(r'[A-Z]'));
-    bool hasLowerCase = password.contains(RegExp(r'[a-z]'));
+    final bool hasDigits = password.contains(RegExp(r'\d'));
+    final bool hasSpecialChars = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    final bool hasUpperCase = password.contains(RegExp(r'[A-Z]'));
+    final bool hasLowerCase = password.contains(RegExp(r'[a-z]'));
 
     int strengthScore = 0;
     if (hasDigits) strengthScore++;

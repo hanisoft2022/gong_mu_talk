@@ -41,7 +41,7 @@ class _CommunityFeedPageState extends State<CommunityFeedPage>
   SearchCubit? _searchCubit;
   bool _isAppBarElevated = false;
   bool _isModalOpen = false;
-  static final SearchScope _persistentSearchScope = SearchScope.all;
+  static const SearchScope _persistentSearchScope = SearchScope.all;
 
   // ==================== Lifecycle Methods ====================
   @override

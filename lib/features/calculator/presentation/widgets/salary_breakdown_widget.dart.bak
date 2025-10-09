@@ -68,7 +68,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ? AllowanceTable.headTeacherAllowance * 12
         : 0;
 
-    // 시간외근무수당도 승급월 고려
+    // 시간외근무수당(정액분)도 승급월 고려
     final overtimeBeforePromotion = profile != null
         ? AllowanceTable.getOvertimeAllowance(gradeBeforePromotion)
         : 0;
@@ -161,7 +161,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
       BreakdownItem.sectionHeader('📅 매월 지급'),
 
       BreakdownItem(
-        label: '📋 본봉 × 12개월',
+        label: '📋 본봉',
         amount: annualBasePay,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -256,7 +256,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       ),
       BreakdownItem(
-        label: '📚 교직수당 × 12개월',
+        label: '📚 교직수당',
         amount: annualTeachingAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -322,7 +322,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
       ),
       if (profile?.isHomeroom ?? false)
         BreakdownItem(
-          label: '🏛️ 담임수당 × 12개월',
+          label: '🏛️ 담임수당',
           amount: annualHomeroomAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
@@ -369,7 +369,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (profile?.hasPosition ?? false)
         BreakdownItem(
-          label: '👔 보직교사수당 × 12개월',
+          label: '👔 보직교사수당',
           amount: annualHeadTeacherAllowance,
           detailedInfo: '''👔 보직교사수당
 
@@ -386,7 +386,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualSpecialEducationAllowance > 0)
         BreakdownItem(
-          label: '🎓 특수교사 가산금 × 12개월',
+          label: '🎓 특수교사 가산금',
           amount: annualSpecialEducationAllowance,
           detailedInfo: '''🎓 특수교사 가산금
 
@@ -407,7 +407,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualVocationalEducationAllowance > 0)
         BreakdownItem(
-          label: '🏫 특성화교사 가산금 (전문교과) × 12개월',
+          label: '🏫 특성화교사 가산금 (전문교과)',
           amount: annualVocationalEducationAllowance,
           detailedInfo: '''🏫 특성화교사 가산금 (전문교과)
 
@@ -436,7 +436,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualHealthTeacherAllowance > 0)
         BreakdownItem(
-          label: '⚕️ 보건교사 가산금 × 12개월',
+          label: '⚕️ 보건교사 가산금',
           amount: annualHealthTeacherAllowance,
           detailedInfo: '''⚕️ 보건교사 가산금
 
@@ -457,7 +457,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualConcurrentPositionAllowance > 0)
         BreakdownItem(
-          label: '💼 겸직수당 × 12개월',
+          label: '💼 겸직수당',
           amount: annualConcurrentPositionAllowance,
           detailedInfo: '''💼 겸직수당
 
@@ -482,7 +482,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualNutritionTeacherAllowance > 0)
         BreakdownItem(
-          label: '🍽️ 영양교사 가산금 × 12개월',
+          label: '🍽️ 영양교사 가산금',
           amount: annualNutritionTeacherAllowance,
           detailedInfo: '''🍽️ 영양교사 가산금
 
@@ -503,7 +503,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualLibrarianAllowance > 0)
         BreakdownItem(
-          label: '📚 사서교사 가산금 × 12개월',
+          label: '📚 사서교사 가산금',
           amount: annualLibrarianAllowance,
           detailedInfo: '''📚 사서교사 가산금
 
@@ -524,7 +524,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualCounselorAllowance > 0)
         BreakdownItem(
-          label: '💬 전문상담교사 가산금 × 12개월',
+          label: '💬 전문상담교사 가산금',
           amount: annualCounselorAllowance,
           detailedInfo: '''💬 전문상담교사 가산금
 
@@ -545,7 +545,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualVeteranAllowance > 0)
         BreakdownItem(
-          label: '🎓 원로교사수당 × 12개월',
+          label: '🎓 원로교사수당',
           amount: annualVeteranAllowance,
           detailedInfo: '''🎓 원로교사수당
 
@@ -566,7 +566,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       if (annualFamilyAllowance > 0)
         BreakdownItem(
-          label: '👨‍👩‍👧‍👦 가족수당 × 12개월',
+          label: '👨‍👩‍👧‍👦 가족수당',
           amount: annualFamilyAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
@@ -611,7 +611,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           ),
         ),
       BreakdownItem(
-        label: '📖 연구비 × 12개월',
+        label: '📖 연구비',
         amount: annualResearchAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -679,12 +679,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       ),
       BreakdownItem(
-        label: '🕓 시간외근무수당 × 12개월',
+        label: '🕓 시간외근무수당(정액분)',
         amount: annualOvertimeAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
             DetailSection(
-              title: '시간외근무수당 지급 기준',
+              title: '시간외근무수당(정액분) 지급 기준',
               icon: Icons.access_time,
               backgroundColor: Colors.blue.shade50,
               titleColor: Colors.blue.shade900,
@@ -725,7 +725,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 SizedBox(height: 8),
                 DetailInfoBox(
                   type: DetailInfoBoxType.tip,
-                  content: '공무원은 시간외근무수당이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.',
+                  content: '공무원은 시간외근무수당(정액분)이 정액으로 지급되며, 실제 초과근무 시간과는 별개입니다.',
                 ),
               ],
             ),
@@ -733,7 +733,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
         ),
       ),
       BreakdownItem(
-        label: '🎖 정근수당 가산금 × 12개월',
+        label: '🎖 정근수당 가산금',
         amount: annualLongevityMonthly,
         detailedWidget: DetailedInfoWidget(
           sections: [
@@ -1186,13 +1186,13 @@ class SalaryBreakdownWidget extends StatelessWidget {
               backgroundColor: Colors.red.shade50,
               titleColor: Colors.red.shade900,
               children: const [
-                DetailListItem(text: '시간외근무수당', isChecked: false, color: Colors.red),
+                DetailListItem(text: '시간외근무수당(정액분)', isChecked: false, color: Colors.red),
                 DetailListItem(text: '성과상여금', isChecked: false, color: Colors.red),
               ],
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 계산',
+                title: '${nickname ?? "선생"}님의 계산',
                 icon: Icons.person,
                 backgroundColor: Colors.purple.shade50,
                 titleColor: Colors.purple.shade900,
@@ -1212,7 +1212,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
                     content:
-                        '연간 기여금 = ${NumberFormatter.formatCurrency((annualPensionContribution / 12).round())} × 12개월 = ${NumberFormatter.formatCurrency(annualPensionContribution)}',
+                        '연간 기여금 = ${NumberFormatter.formatCurrency((annualPensionContribution / 12).round())} = ${NumberFormatter.formatCurrency(annualPensionContribution)}',
                   ),
                 ],
               ),
@@ -1300,7 +1300,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
-                title: '${nickname ?? "선생님"}의 계산',
+                title: '${nickname ?? "선생"}님의 계산',
                 icon: Icons.person,
                 backgroundColor: Colors.green.shade50,
                 titleColor: Colors.green.shade900,

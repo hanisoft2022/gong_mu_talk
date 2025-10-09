@@ -5,16 +5,12 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_cubit.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/quick_input_bottom_sheet.dart';
 
-/// 급여 정보 입력 카드
+/// 내 정보 입력 카드
 class SalaryInfoInputCard extends StatelessWidget {
   final bool isDataEntered;
   final TeacherProfile? profile;
 
-  const SalaryInfoInputCard({
-    super.key,
-    required this.isDataEntered,
-    this.profile,
-  });
+  const SalaryInfoInputCard({super.key, required this.isDataEntered, this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -28,31 +24,11 @@ class SalaryInfoInputCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 아이콘 + 제목
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.account_balance_wallet,
-                      size: 28,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  const Gap(12),
-                  Text(
-                    '급여 정보 입력',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              Text(
+                '📝  내 정보 입력',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
 
               const Gap(16),
@@ -94,11 +70,7 @@ class SalaryInfoInputCard extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 20,
-                                  ),
+                                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
                                   const Gap(8),
                                   Text(
                                     '입력 완료',
@@ -113,13 +85,14 @@ class SalaryInfoInputCard extends StatelessWidget {
                               if (profile != null)
                                 Text(
                                   '${profile!.currentGrade}호봉 · ${profile!.position.displayName}',
-                                  style: Theme.of(context).textTheme.bodyLarge
-                                      ?.copyWith(fontWeight: FontWeight.w500),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
                                 ),
                             ],
                           ),
                         ),
-                        TextButton.icon(
+                        ElevatedButton.icon(
                           onPressed: () => _showInputBottomSheet(context),
                           icon: const Icon(Icons.edit_outlined, size: 18),
                           label: const Text('수정'),

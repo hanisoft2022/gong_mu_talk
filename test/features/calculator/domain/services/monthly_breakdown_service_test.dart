@@ -12,10 +12,7 @@ void main() {
 
   setUp(() {
     final taxService = TaxCalculationService();
-    service = MonthlyBreakdownService(
-      taxService,
-      SalaryCalculationService(taxService),
-    );
+    service = MonthlyBreakdownService(taxService, SalaryCalculationService(taxService));
   });
 
   group('MonthlyBreakdownService - 호봉표 검증', () {
@@ -52,21 +49,17 @@ void main() {
 
       expect(monthlyIncomes.length, 12);
 
-      // 1월 (정근수당 포함)
+      // 1월 (정근수당 포함, 2025년 설날 1/29)
       final january = monthlyIncomes[0];
       expect(january.month, 1);
       expect(january.baseSalary, 1915100, reason: '1호봉 본봉');
       expect(january.longevityBonus, greaterThan(0), reason: '1월 정근수당');
-      expect(january.holidayBonus, 0, reason: '1월은 명절상여금 없음');
+      expect(january.holidayBonus, greaterThan(0), reason: '2025년 설날은 1월 29일');
 
-      // 2월 (설날 상여금 포함)
+      // 2월 (2025년은 명절상여금 없음, 설날이 1월)
       final february = monthlyIncomes[1];
       expect(february.month, 2);
-      expect(
-        february.holidayBonus,
-        (1915100 * 0.6).round(),
-        reason: '2월 설날 상여금은 본봉의 60%',
-      );
+      expect(february.holidayBonus, 0, reason: '2025년 설날은 1월이므로 2월은 명절상여금 없음');
       expect(february.longevityBonus, 0, reason: '2월은 정근수당 없음');
 
       // 7월 (정근수당 포함)
@@ -75,15 +68,17 @@ void main() {
       expect(july.longevityBonus, greaterThan(0), reason: '7월 정근수당');
       expect(july.holidayBonus, 0, reason: '7월은 명절상여금 없음');
 
-      // 9월 (추석 상여금 포함)
+      // 9월 (2025년은 명절상여금 없음, 추석이 10월)
       final september = monthlyIncomes[8];
       expect(september.month, 9);
-      expect(
-        september.holidayBonus,
-        (1915100 * 0.6).round(),
-        reason: '9월 추석 상여금은 본봉의 60%',
-      );
+      expect(september.holidayBonus, 0, reason: '2025년 추석은 10월이므로 9월은 명절상여금 없음');
       expect(september.longevityBonus, 0, reason: '9월은 정근수당 없음');
+
+      // 10월 (추석 상여금 포함, 2025년 추석 10/6)
+      final october = monthlyIncomes[9];
+      expect(october.month, 10);
+      expect(october.holidayBonus, (1915100 * 0.6).round(), reason: '2025년 추석 상여금은 본봉의 60%');
+      expect(october.longevityBonus, 0, reason: '10월은 정근수당 없음');
 
       // 일반 월 (3월)
       final march = monthlyIncomes[2];
@@ -119,18 +114,16 @@ void main() {
       expect(baseSalary, 2365500);
 
       // 수당 검증
-      final teachingAllowance = AllowanceTable.teachingAllowance;
-      final homeroomAllowance = AllowanceTable.homeroomAllowance;
-      final familyAllowance = 40000 + 50000 + 80000; // 배우자 + 첫째 + 둘째
-      final overtimeAllowance = AllowanceTable.getOvertimeAllowance(
-        9,
-      ); // 1~10호봉: 12만원
-      final researchAllowance = 60000; // 5년 이상: 6만원
+      const teachingAllowance = AllowanceTable.teachingAllowance;
+      const homeroomAllowance = AllowanceTable.homeroomAllowance;
+      const familyAllowance = 40000 + 50000 + 80000; // 배우자 + 첫째 + 둘째
+      final overtimeAllowance = AllowanceTable.getOvertimeAllowance(9); // 1~19호봉: 123,130원
+      const researchAllowance = 60000; // 5년 이상: 6만원
 
       expect(teachingAllowance, 250000);
       expect(homeroomAllowance, 200000);
       expect(familyAllowance, 170000);
-      expect(overtimeAllowance, 120000);
+      expect(overtimeAllowance, 123130);
 
       // 1월 실수령액 검증
       final january = monthlyIncomes[0];
@@ -145,7 +138,7 @@ void main() {
           familyAllowance +
           researchAllowance +
           overtimeAllowance +
-          100000; // 정근수당 가산금 (5년 이상 10년 미만)
+          50000; // 정근수당 가산금 (5년 이상 10년 미만)
 
       expect(
         january.longevityBonus,
@@ -153,26 +146,16 @@ void main() {
         reason: '8년 재직자는 월급의 40% 정근수당',
       );
 
-      // 2월 명절상여금 검증
-      final february = monthlyIncomes[1];
-      expect(
-        february.holidayBonus,
-        (baseSalary * 0.6).round(),
-        reason: '설날 상여금은 본봉의 60%',
-      );
+      // 1월 명절상여금 검증 (2025년 설날 1/29)
+      expect(january.holidayBonus, (baseSalary * 0.6).round(), reason: '2025년 설날 상여금은 본봉의 60%');
 
       // 연간 실수령액 계산
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);
       expect(annualNetIncome, greaterThan(0));
 
-      // 명절상여금 총액 검증 (2월 + 9월)
-      final totalHolidayBonus =
-          monthlyIncomes[1].holidayBonus + monthlyIncomes[8].holidayBonus;
-      expect(
-        totalHolidayBonus,
-        (baseSalary * 0.6 * 2).round(),
-        reason: '연간 명절상여금은 본봉의 120%',
-      );
+      // 명절상여금 총액 검증 (2025년: 1월 설날 + 10월 추석)
+      final totalHolidayBonus = monthlyIncomes[0].holidayBonus + monthlyIncomes[9].holidayBonus;
+      expect(totalHolidayBonus, (baseSalary * 0.6 * 2).round(), reason: '연간 명절상여금은 본봉의 120%');
     });
 
     test('21호봉 교사 실수령액 계산', () {
@@ -199,28 +182,24 @@ void main() {
       expect(baseSalary, 3478900);
 
       // 재직 년수: 2025 - 2005 = 20년 (정근수당 50%)
-      final serviceYears = 20;
+      const serviceYears = 20;
       expect(serviceYears, greaterThanOrEqualTo(10));
 
       // 가족수당: 배우자 4만 + 첫째 5만 + 둘째 8만 + 셋째 12만
-      final familyAllowance = 40000 + 50000 + 80000 + 120000;
+      const familyAllowance = 40000 + 50000 + 80000 + 120000;
       expect(familyAllowance, 290000);
 
       // 보직교사수당
-      final positionAllowance = AllowanceTable.headTeacherAllowance;
+      const positionAllowance = AllowanceTable.headTeacherAllowance;
       expect(positionAllowance, 150000);
 
-      // 시간외수당 (21호봉: 16만원)
+      // 시간외수당 (21호봉: 20~29호봉 137,330원)
       final overtimeAllowance = AllowanceTable.getOvertimeAllowance(21);
-      expect(overtimeAllowance, 160000);
+      expect(overtimeAllowance, 137330);
 
-      // 2월 명절상여금
-      final february = monthlyIncomes[1];
-      expect(
-        february.holidayBonus,
-        (baseSalary * 0.6).round(),
-        reason: '명절상여금은 본봉의 60%',
-      );
+      // 1월 명절상여금 (2025년 설날 1/29)
+      final january = monthlyIncomes[0];
+      expect(january.holidayBonus, (baseSalary * 0.6).round(), reason: '2025년 설날 상여금은 본봉의 60%');
     });
 
     test('35호봉 교사 실수령액 계산 (원로교사수당 포함 가능)', () {
@@ -250,20 +229,12 @@ void main() {
       final march = monthlyIncomes[2];
       expect(march.baseSalary, baseSalary);
 
-      // 명절상여금 검증
-      final february = monthlyIncomes[1];
-      expect(
-        february.holidayBonus,
-        (baseSalary * 0.6).round(),
-        reason: '명절상여금은 본봉의 60%',
-      );
+      // 명절상여금 검증 (2025년: 1월 설날, 10월 추석)
+      final january = monthlyIncomes[0];
+      expect(january.holidayBonus, (baseSalary * 0.6).round(), reason: '2025년 설날 상여금은 본봉의 60%');
 
-      final september = monthlyIncomes[8];
-      expect(
-        september.holidayBonus,
-        (baseSalary * 0.6).round(),
-        reason: '추석 상여금은 본봉의 60%',
-      );
+      final october = monthlyIncomes[9];
+      expect(october.holidayBonus, (baseSalary * 0.6).round(), reason: '2025년 추석 상여금은 본봉의 60%');
     });
   });
 
@@ -289,18 +260,13 @@ void main() {
       );
 
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);
-      final annualDeductions = service.calculateAnnualDeductions(
-        monthlyIncomes,
-      );
+      final annualDeductions = service.calculateAnnualDeductions(monthlyIncomes);
 
       expect(annualNetIncome, greaterThan(0));
       expect(annualDeductions, greaterThan(0));
 
       // 12개월 총합 검증
-      final manualSum = monthlyIncomes.fold<int>(
-        0,
-        (sum, income) => sum + income.netIncome,
-      );
+      final manualSum = monthlyIncomes.fold<int>(0, (sum, income) => sum + income.netIncome);
       expect(annualNetIncome, manualSum);
     });
   });

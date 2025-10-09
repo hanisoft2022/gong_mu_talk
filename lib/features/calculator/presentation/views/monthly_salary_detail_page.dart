@@ -31,16 +31,11 @@ class MonthlySalaryDetailPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
-              ),
+              gradient: LinearGradient(colors: [Colors.blue.shade400, Colors.blue.shade600]),
             ),
             child: Column(
               children: [
-                const Text(
-                  '연간 총 급여',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
+                const Text('연간 총 급여', style: TextStyle(color: Colors.white70, fontSize: 14)),
                 const SizedBox(height: 8),
                 Text(
                   NumberFormatter.formatCurrency(annualGrossSalary),
@@ -92,17 +87,13 @@ class _MonthCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: detail.hasLongevityBonus
-                    ? Colors.orange.shade100
-                    : Colors.blue.shade50,
+                color: detail.hasLongevityBonus ? Colors.orange.shade100 : Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '${detail.month}월',
                 style: TextStyle(
-                  color: detail.hasLongevityBonus
-                      ? Colors.orange.shade900
-                      : Colors.blue.shade900,
+                  color: detail.hasLongevityBonus ? Colors.orange.shade900 : Colors.blue.shade900,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -118,11 +109,7 @@ class _MonthCard extends StatelessWidget {
                 ),
                 child: const Text(
                   '정근수당',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -156,11 +143,7 @@ class _MonthCard extends StatelessWidget {
 
                 if (detail.veteranAllowance > 0) ...[
                   const SizedBox(height: 8),
-                  _SalaryRow(
-                    '원로교사수당',
-                    detail.veteranAllowance,
-                    icon: Icons.star,
-                  ),
+                  _SalaryRow('원로교사수당', detail.veteranAllowance, icon: Icons.star),
                 ],
 
                 const SizedBox(height: 8),
@@ -175,7 +158,7 @@ class _MonthCard extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 8),
-                _SalaryRow('시간외근무수당', detail.overtimeAllowance),
+                _SalaryRow('시간외근무수당(정액분)', detail.overtimeAllowance),
 
                 const SizedBox(height: 8),
                 _SalaryRow('정근수당 가산금', detail.longevityMonthly),
@@ -221,14 +204,9 @@ class _SalaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: isTotal
-          ? const EdgeInsets.symmetric(vertical: 12, horizontal: 16)
-          : EdgeInsets.zero,
+      padding: isTotal ? const EdgeInsets.symmetric(vertical: 12, horizontal: 16) : EdgeInsets.zero,
       decoration: isTotal
-          ? BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            )
+          ? BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8))
           : null,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -236,11 +214,7 @@ class _SalaryRow extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 16,
-                  color: highlight ? Colors.orange : Colors.grey,
-                ),
+                Icon(icon, size: 16, color: highlight ? Colors.orange : Colors.grey),
                 const SizedBox(width: 8),
               ],
               Text(
@@ -259,9 +233,7 @@ class _SalaryRow extends StatelessWidget {
             NumberFormatter.formatCurrency(amount),
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
-              fontWeight: isTotal || highlight
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+              fontWeight: isTotal || highlight ? FontWeight.bold : FontWeight.normal,
               color: highlight
                   ? Colors.orange.shade900
                   : (isTotal ? Colors.blue.shade900 : Colors.black87),

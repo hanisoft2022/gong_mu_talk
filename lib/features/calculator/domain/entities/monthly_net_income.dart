@@ -66,7 +66,7 @@ class MonthlyNetIncome extends Equatable {
   /// 연구비
   final int researchAllowance;
 
-  /// 시간외근무수당
+  /// 시간외근무수당(정액분)
   final int overtimeAllowance;
 
   /// 특수교사 가산금
@@ -225,7 +225,8 @@ class MonthlyNetIncome extends Equatable {
       researchAllowance: researchAllowance ?? this.researchAllowance,
       overtimeAllowance: overtimeAllowance ?? this.overtimeAllowance,
       specialEducationAllowance: specialEducationAllowance ?? this.specialEducationAllowance,
-      vocationalEducationAllowance: vocationalEducationAllowance ?? this.vocationalEducationAllowance,
+      vocationalEducationAllowance:
+          vocationalEducationAllowance ?? this.vocationalEducationAllowance,
       healthTeacherAllowance: healthTeacherAllowance ?? this.healthTeacherAllowance,
       concurrentPositionAllowance: concurrentPositionAllowance ?? this.concurrentPositionAllowance,
       nutritionTeacherAllowance: nutritionTeacherAllowance ?? this.nutritionTeacherAllowance,
@@ -240,8 +241,7 @@ class MonthlyNetIncome extends Equatable {
       nationalPension: nationalPension ?? this.nationalPension,
       pensionContribution: pensionContribution ?? this.pensionContribution,
       healthInsurance: healthInsurance ?? this.healthInsurance,
-      longTermCareInsurance:
-          longTermCareInsurance ?? this.longTermCareInsurance,
+      longTermCareInsurance: longTermCareInsurance ?? this.longTermCareInsurance,
       employmentInsurance: employmentInsurance ?? this.employmentInsurance,
       totalDeductions: totalDeductions ?? this.totalDeductions,
       netIncome: netIncome ?? this.netIncome,

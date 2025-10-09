@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/core/constants/app_colors.dart';
 
 import '../../../domain/models/comment.dart';
 import '../author_display_widget.dart';
@@ -104,15 +105,15 @@ class _CommentTileState extends State<CommentTile>
               decoration: widget.isHighlighted
                   ? BoxDecoration(
                       color: (Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFFFFC107) // Amber for dark mode
-                              : const Color(0xFFFFEB3B)) // Deeper yellow for light mode
+                              ? AppColors.highlightBgDark
+                              : AppColors.highlightBgLight)
                           .withValues(
                         alpha: _highlightAnimation.value,
                       ),
                       border: Border.all(
                         color: (Theme.of(context).brightness == Brightness.dark
-                                ? const Color(0xFFFFD54F) // Lighter amber border for dark mode
-                                : const Color(0xFFFBC02D)) // Deep yellow border for light mode
+                                ? AppColors.highlightBorderDark
+                                : AppColors.highlightBorderLight)
                             .withValues(
                           alpha: _highlightAnimation.value,
                         ),
@@ -178,31 +179,36 @@ class _CommentTileState extends State<CommentTile>
               // Comment images
               if (!isDeleted && widget.comment.imageUrls.isNotEmpty) ...[
                 const Gap(8),
-                GestureDetector(
-                  onTap: () => _showCommentImageViewer(
-                    context,
-                    widget.comment.imageUrls.first,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: widget.comment.imageUrls.first,
-                      fit: BoxFit.cover,
-                      maxWidthDiskCache: 800,
-                      maxHeightDiskCache: 800,
-                      placeholder: (context, url) => Container(
-                        height: 150,
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 150,
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          color: theme.colorScheme.onSurfaceVariant,
+                Center(
+                  child: GestureDetector(
+                    onTap: () => _showCommentImageViewer(
+                      context,
+                      widget.comment.imageUrls.first,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 250),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.comment.imageUrls.first,
+                          fit: BoxFit.contain,
+                          maxWidthDiskCache: 800,
+                          maxHeightDiskCache: 800,
+                          placeholder: (context, url) => Container(
+                            height: 150,
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            height: 150,
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -224,10 +230,8 @@ class _CommentTileState extends State<CommentTile>
                         Icons.local_fire_department,
                         size: 16,
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors
-                                  .orange
-                                  .shade300 // 다크모드에서 더 밝은 주황색
-                            : Colors.deepOrange.shade600, // 라이트모드에서 진한 주황색
+                            ? AppColors.highlightLight
+                            : AppColors.highlightDark,
                       ),
                       const Gap(6),
                     ],
@@ -251,7 +255,7 @@ class _CommentTileState extends State<CommentTile>
                               : Icons.favorite_border,
                           size: 16,
                           color: widget.comment.isLiked
-                              ? Colors.pink[400]
+                              ? AppColors.like
                               : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -259,7 +263,7 @@ class _CommentTileState extends State<CommentTile>
                         '${widget.comment.likeCount}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: widget.comment.isLiked
-                              ? Colors.pink[400]
+                              ? AppColors.like
                               : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -360,7 +364,7 @@ class _CommentImageViewerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       body: Stack(
         children: [
           // Image with zoom capability
@@ -377,7 +381,7 @@ class _CommentImageViewerPage extends StatelessWidget {
                   child: Icon(
                     Icons.broken_image_outlined,
                     size: 64,
-                    color: Colors.white54,
+                    color: AppColors.whiteAlpha50,
                   ),
                 ),
               ),
@@ -389,10 +393,10 @@ class _CommentImageViewerPage extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: AppColors.white),
                 onPressed: () => Navigator.of(context).pop(),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  backgroundColor: AppColors.blackAlpha50,
                 ),
               ),
             ),

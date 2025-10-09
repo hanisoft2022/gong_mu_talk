@@ -150,6 +150,165 @@ class CommunityCubit extends Cubit<CommunityState> {
 
 **결론**: 줄 수는 참고용. **단일 책임**이 핵심 판단 기준입니다.
 
+### Color System Guidelines
+
+**Philosophy**: "Semantic Meaning > Hardcoded Values"
+
+GongMuTalk uses a **centralized color system** (`AppColors`) to ensure consistency across the app.
+
+#### 🎨 Color Categories
+
+**1. Brand Colors** - 브랜드 아이덴티티
+```dart
+AppColors.primary           // #0064FF - Toss blue (main brand color)
+AppColors.primaryDark       // #0B1E3E - Dark variant
+AppColors.secondary         // #5E8BFF - Secondary actions
+AppColors.accent            // #00C4B3 - Accent highlights
+```
+
+**2. Surface Colors** - 배경 및 컨테이너
+```dart
+// Light mode
+AppColors.surface           // #F3F4F8 - Main background
+AppColors.surfaceBright     // #FFFFFF - Cards, elevated surfaces
+AppColors.surfaceSubtle     // #E8EBF3 - Input fields, subtle containers
+
+// Dark mode
+AppColors.surfaceDark       // #0F1726 - Main background
+AppColors.surfaceDarkElevated  // #171F2F - App bars, elevated surfaces
+AppColors.surfaceDarkCard   // #1F293C - Cards, containers
+```
+
+**3. Semantic Colors** - 상태 및 피드백
+```dart
+// Status
+AppColors.success / successLight / successDark  // Green - 성공, 완료, 검증
+AppColors.warning / warningLight / warningDark  // Amber - 주의, 확인 필요
+AppColors.error / errorLight / errorDark        // Red - 오류, 실패
+AppColors.info / infoLight / infoDark           // Blue - 정보, 안내
+```
+
+**4. Emotional/Action Colors** - 커뮤니티 기능
+```dart
+// Like
+AppColors.like / likeLight / likeDark           // Pink - 좋아요, 인기
+
+// Highlight
+AppColors.highlight / highlightLight / highlightDark  // Orange - 강조, 인기글
+AppColors.highlightBgLight / highlightBgDark    // Yellow/Amber - 하이라이트 배경
+AppColors.highlightBorderLight / highlightBorderDark  // 하이라이트 테두리
+```
+
+**5. Financial Colors** - 계산기 기능 (중요!)
+```dart
+AppColors.positive / positiveLight / positiveDark  // Green - 수익, 증가, 실수령액
+AppColors.negative / negativeLight / negativeDark  // Red - 손실, 감소, 공제액
+AppColors.neutral / neutralLight / neutralDark     // Gray - 중립, 기준값, 총액
+```
+
+**6. Monochrome** - Black & White variants
+```dart
+AppColors.black / blackSoft / blackAlpha50
+AppColors.white / whiteSoft / whiteAlpha50 / whiteAlpha70
+```
+
+#### 📋 Usage Guidelines
+
+**✅ DO:**
+```dart
+// Use semantic colors from AppColors
+Icon(Icons.error_outline, color: AppColors.error)
+Text(style: TextStyle(color: AppColors.neutral))
+Container(color: AppColors.highlightBgLight)
+
+// Use theme-based colors for consistency
+Icon(Icons.info, color: Theme.of(context).colorScheme.primary)
+Text(style: Theme.of(context).textTheme.bodyMedium)
+```
+
+**❌ DON'T:**
+```dart
+// Don't use hardcoded Color() values
+Icon(Icons.error, color: Color(0xFFEF4444))  // ❌
+
+// Don't use Material default colors directly
+Icon(Icons.error, color: Colors.red)  // ❌
+Container(color: Colors.grey[600])    // ❌
+
+// Don't create ad-hoc alpha values
+Divider(color: Colors.grey.withValues(alpha: 0.3))  // ❌
+```
+
+#### 🎯 Decision Tree: "언제 어떤 색상 쓸까?"
+
+```
+상태 표시가 필요한가?
+├─ 성공/완료 → AppColors.success
+├─ 경고/주의 → AppColors.warning
+├─ 오류/실패 → AppColors.error
+└─ 정보/안내 → AppColors.info
+
+금융 데이터인가? (Calculator)
+├─ 증가/수익/실수령 → AppColors.positive
+├─ 감소/손실/공제 → AppColors.negative
+└─ 중립/총액/기준 → AppColors.neutral
+
+커뮤니티 액션인가?
+├─ 좋아요 → AppColors.like
+├─ 하이라이트/인기 → AppColors.highlight
+└─ 하이라이트 배경 → AppColors.highlightBg{Light|Dark}
+
+기본 UI 요소인가?
+├─ 강조 필요 → Theme.of(context).colorScheme.primary
+├─ 보조 액션 → Theme.of(context).colorScheme.secondary
+├─ 텍스트 주요 → Theme.of(context).colorScheme.onSurface
+├─ 텍스트 보조 → Theme.of(context).colorScheme.onSurfaceVariant
+└─ 배경/카드 → Theme.of(context).colorScheme.surface
+
+흑백이 필요한가?
+└─ AppColors.{black|white}{Soft|Alpha50|Alpha70}
+```
+
+#### 🔄 Light/Dark Mode Handling
+
+```dart
+// ✅ Good: Use brightness-aware colors
+final bgColor = Theme.of(context).brightness == Brightness.dark
+    ? AppColors.highlightBgDark
+    : AppColors.highlightBgLight;
+
+// ✅ Better: Use theme variants when possible
+final errorColor = Theme.of(context).brightness == Brightness.dark
+    ? AppColors.errorLight  // Lighter error for dark mode
+    : AppColors.error;
+
+// ✅ Best: Use theme color scheme directly
+final iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
+```
+
+#### 🎨 Adding New Colors
+
+**Before adding new colors**, check:
+1. ✅ **Is this a recurring pattern?** (used 3+ times across features)
+2. ✅ **Does it have semantic meaning?** (not just "dark blue")
+3. ✅ **Is it part of brand identity?** (finance, status, emotion)
+
+**If yes to all 3**, add to `lib/core/constants/app_colors.dart`:
+```dart
+// Example: Adding "Premium" tier color
+static const Color premium = Color(0xFFD4AF37);  // Gold
+static const Color premiumLight = Color(0xFFE5C158);
+static const Color premiumDark = Color(0xFFC19A2E);
+```
+
+**If no**, use theme colors or keep it local to the widget.
+
+#### 📚 References
+
+- Color definitions: `lib/core/constants/app_colors.dart`
+- Theme integration: `lib/core/theme/app_theme.dart`
+- Material 3 colors: [Material Design Color System](https://m3.material.io/styles/color/system/overview)
+
 ### Testing Strategy
 
 📚 **Comprehensive Testing Guide**: See [CLAUDE-TESTING.md](CLAUDE-TESTING.md) for:

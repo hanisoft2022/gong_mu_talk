@@ -458,7 +458,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       isSelf,
       widget.post.authorUid,
     );
-    final bool isFollowing = false; // Social graph feature not yet implemented
+    const bool isFollowing = false; // Social graph feature not yet implemented
 
     _showAuthorMenuAtPosition(canFollow: canFollow, isFollowing: isFollowing);
   }
@@ -532,7 +532,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       return;
     }
 
-    final bool isFollowing = false; // Social graph feature not yet implemented
+    const bool isFollowing = false; // Social graph feature not yet implemented
     final overlayEntry = AuthorMenuOverlay.show(
       context: context,
       authorButtonKey: authorKey,

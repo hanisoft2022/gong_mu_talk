@@ -339,8 +339,8 @@ bool shouldShowMore(String text, BuildContext context) {
 
   // Get the available width (approximate card content width)
   final screenWidth = MediaQuery.of(context).size.width;
-  final cardPadding = 32.0; // Card padding (16 * 2)
-  final cardMargin = 24.0; // Card margin
+  const cardPadding = 32.0; // Card padding (16 * 2)
+  const cardMargin = 24.0; // Card margin
   final availableWidth = screenWidth - cardPadding - cardMargin;
 
   textPainter.layout(maxWidth: availableWidth);

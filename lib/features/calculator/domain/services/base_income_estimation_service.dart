@@ -42,7 +42,7 @@ class BaseIncomeEstimationService {
 
     // 식대보조비 (정액급식비)
     const mealAllowance = 140000;
-    final excludedMeal = mealAllowance;
+    const excludedMeal = mealAllowance;
 
     // 3. 포함 항목 계산 (평균액)
     // 성과급 평균액 (3년 평균 가정)
@@ -90,11 +90,11 @@ class BaseIncomeEstimationService {
     return (baseSalary * 2.0).round();
   }
 
-  /// 시간외근무수당 추정
+  /// 시간외근무수당(정액분) 추정
   ///
   /// [currentGrade] 현재 호봉
   ///
-  /// Returns: 월 시간외근무수당
+  /// Returns: 월 시간외근무수당(정액분)
   int _estimateOvertimeAllowance(int currentGrade) {
     // 호봉별 정액분
     if (currentGrade <= 10) return 120000;
@@ -183,10 +183,7 @@ class BaseIncomeEstimationService {
   int calculateAverageBaseIncome(List<Map<String, dynamic>> lifetimeEstimates) {
     if (lifetimeEstimates.isEmpty) return 0;
 
-    final total = lifetimeEstimates.fold<int>(
-      0,
-      (sum, item) => sum + (item['baseIncome'] as int),
-    );
+    final total = lifetimeEstimates.fold<int>(0, (sum, item) => sum + (item['baseIncome'] as int));
 
     return (total / lifetimeEstimates.length).round();
   }
