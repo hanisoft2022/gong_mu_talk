@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gong_mu_talk/common/widgets/cupertino_picker_modal.dart';
+import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
@@ -39,6 +40,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   int _numberOfChildren = 0;
   int _numberOfParents = 0; // 60세 이상 직계존속
   Set<TeachingAllowanceBonus> _teachingAllowanceBonuses = {};
+
+  // 공제 항목
+  int _teacherAssociationFee = 0; // 교직원공제회비
+  int _otherDeductions = 0; // 기타 공제
 
   @override
   void initState() {
@@ -83,6 +88,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
           TeachingAllowanceBonus.headTeacher,
         };
       }
+
+      // 공제 항목 초기화
+      _teacherAssociationFee = widget.initialProfile!.teacherAssociationFee;
+      _otherDeductions = widget.initialProfile!.otherDeductions;
     }
   }
 
@@ -120,7 +129,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.rocket_launch, color: Colors.blue),
+                    Icon(Icons.rocket_launch, color: Colors.teal.shade600),
                     const Gap(12),
                     Text(
                       '빠른 계산 (3초 완성!)',
@@ -732,23 +741,32 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                   const Gap(4),
                                   GestureDetector(
                                     onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('퇴직 예정 연령 안내'),
-                                          content: const Text(
-                                            '현재 법정 정년: 만 62세\n\n'
-                                            '• 60세: 조기 퇴직 (연금 감액 가능)\n'
-                                            '• 62세: 현행 법정 정년 (기본값)\n'
-                                            '• 65세: 정년 연장 시나리오 (미확정)',
+                                      InfoDialog.showList(
+                                        context,
+                                        title: '퇴직 예정 연령 안내',
+                                        icon: Icons.cake_outlined,
+                                        iconColor: Colors.teal.shade600,
+                                        description: '현재 법정 정년: 만 62세',
+                                        items: const [
+                                          InfoListItem(
+                                            title: '60세',
+                                            subtitle: '조기 퇴직 (연금 감액 가능)',
+                                            icon: Icons.warning_amber_rounded,
+                                            iconColor: Colors.orange,
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context),
-                                              child: const Text('확인'),
-                                            ),
-                                          ],
-                                        ),
+                                          InfoListItem(
+                                            title: '62세',
+                                            subtitle: '현행 법정 정년 (기본값)',
+                                            icon: Icons.check_circle_outline,
+                                            iconColor: Colors.teal,
+                                          ),
+                                          InfoListItem(
+                                            title: '65세',
+                                            subtitle: '정년 연장 시나리오 (미확정)',
+                                            icon: Icons.info_outline,
+                                            iconColor: Colors.teal,
+                                          ),
+                                        ],
                                       );
                                     },
                                     child: Icon(
@@ -772,6 +790,107 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               ),
                               const Gap(4),
                               _buildRetirementAgeDescription(),
+                            ],
+                          ),
+                        ),
+
+                        const Gap(16),
+
+                        const Divider(),
+
+                        // 공제 항목 (선택)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    '공제 항목 (선택)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const Gap(4),
+                                  GestureDetector(
+                                    onTap: () {
+                                      InfoDialog.showList(
+                                        context,
+                                        title: '공제 항목 안내',
+                                        icon: Icons.account_balance_outlined,
+                                        iconColor: Colors.teal.shade600,
+                                        description: '매월 급여에서 공제되는 항목을 입력할 수 있습니다.',
+                                        items: const [
+                                          InfoListItem(
+                                            title: '교직원공제회비',
+                                            subtitle: '교직원공제회 회원인 경우',
+                                            icon: Icons.groups_outlined,
+                                          ),
+                                          InfoListItem(
+                                            title: '기타 공제',
+                                            subtitle: '적금, 보험료 등 기타 공제 항목',
+                                            icon: Icons.savings_outlined,
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      size: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(12),
+                              TextField(
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: '교직원공제회비 (원)',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.account_balance),
+                                  hintText: '예: 50000',
+                                ),
+                                controller: TextEditingController(
+                                  text: _teacherAssociationFee > 0
+                                      ? _teacherAssociationFee.toString()
+                                      : '',
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _teacherAssociationFee =
+                                        int.tryParse(value) ?? 0;
+                                  });
+                                },
+                              ),
+                              const Gap(12),
+                              TextField(
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: '기타 공제 (원)',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.payment),
+                                  hintText: '예: 30000',
+                                ),
+                                controller: TextEditingController(
+                                  text: _otherDeductions > 0
+                                      ? _otherDeductions.toString()
+                                      : '',
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _otherDeductions = int.tryParse(value) ?? 0;
+                                  });
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -824,11 +943,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
         break;
       case 62:
         description = '현행 법정 정년';
-        color = Colors.green;
+        color = Colors.teal;
         break;
       case 65:
         description = '정년 연장 시나리오 (미확정)';
-        color = Colors.blue;
+        color = Colors.teal;
         break;
       default:
         description = '';
@@ -979,6 +1098,8 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
       isHomeroom: _isHomeroom,
       hasPosition: hasPosition,
       teachingAllowanceBonuses: _teachingAllowanceBonuses,
+      teacherAssociationFee: _teacherAssociationFee,
+      otherDeductions: _otherDeductions,
     );
 
     widget.onSubmit(profile);

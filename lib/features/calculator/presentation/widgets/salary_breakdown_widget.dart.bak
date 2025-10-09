@@ -165,10 +165,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         amount: annualBasePay,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '공무원 보수규정',
               icon: Icons.gavel,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailInfoBox(
                   type: DetailInfoBoxType.info,
                   content: '공무원 보수규정 별표 1에 따라 교육공무원 호봉표 기준으로 지급됩니다.',
@@ -179,8 +181,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '승급월 반영',
                 icon: Icons.trending_up,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailTable(
                     headers: const ['기간', '호봉', '월 급여'],
@@ -202,8 +204,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생"}님의 연간 본봉 계산',
                 icon: Icons.calculate,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
@@ -224,8 +226,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 호봉 정보',
                 icon: Icons.badge,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
@@ -236,8 +238,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '연간 본봉 계산',
                 icon: Icons.calculate,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: [
                   DetailCalculation(
                     label: '연간 본봉',
@@ -258,10 +260,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         amount: annualTeachingAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '기본 지급액',
               icon: Icons.school,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['구분', '지급액'],
                   rows: [
@@ -275,8 +279,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
             DetailSection(
               title: '교직수당 가산금 종류',
               icon: Icons.add_circle_outline,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
               children: const [
                 DetailInfoBox(type: DetailInfoBoxType.info, content: '해당되는 가산금은 별도 항목으로 표시됩니다.'),
                 SizedBox(height: 8),
@@ -322,10 +326,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
           amount: annualHomeroomAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '지급 기준',
                 icon: Icons.account_balance_wallet,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailTable(
                     headers: ['구분', '금액'],
                     rows: [
@@ -339,8 +345,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '지급 대상',
                 icon: Icons.people,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailListItem(text: '학급 담임을 맡은 교사', isChecked: true),
                   DetailListItem(text: '초·중·고등학교 전 학년', isChecked: true),
@@ -564,18 +570,20 @@ class SalaryBreakdownWidget extends StatelessWidget {
           amount: annualFamilyAllowance,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '👨‍👩‍👧‍👦 가족수당',
                 icon: Icons.family_restroom,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailInfoBox(type: DetailInfoBoxType.info, content: '가족 구성원에 따라 차등 지급되는 수당입니다.'),
                 ],
               ),
               DetailSection(
                 title: '지급 기준',
                 icon: Icons.account_balance_wallet,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailTable(
                     headers: ['구분', '월 지급액'],
@@ -607,10 +615,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         amount: annualResearchAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '2023.3.1 개정 기준',
               icon: Icons.update,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailInfoBox(
                   type: DetailInfoBoxType.info,
                   content: '직책별, 학교급별로 지급단가가 다르며, 중복 지급되지 않습니다.',
@@ -654,8 +664,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 연구비',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.highlight,
@@ -673,10 +683,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         amount: annualOvertimeAllowance,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '시간외근무수당 지급 기준',
               icon: Icons.access_time,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['항목', '내용'],
                   rows: [
@@ -690,8 +702,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
             DetailSection(
               title: '호봉별 지급액',
               icon: Icons.table_chart,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
               children: const [
                 DetailTable(
                   headers: ['호봉 범위', '월 지급액'],
@@ -725,10 +737,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         amount: annualLongevityMonthly,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '🎖 정근수당 가산금',
               icon: Icons.military_tech,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['항목', '내용'],
                   rows: [
@@ -741,8 +755,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
             DetailSection(
               title: '재직연수별 지급액',
               icon: Icons.trending_up,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
               children: const [
                 DetailTable(
                   headers: ['재직연수', '월 지급액'],
@@ -782,17 +796,21 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '⭐ 성과상여금 (3월)',
           amount: annualPerformanceBonus,
           isHighlight: true,
-          detailedWidget: const DetailedInfoWidget(
+          detailedWidget: DetailedInfoWidget(
             sections: [
               DetailSection(
                 title: '지급 시기',
                 icon: Icons.calendar_today,
-                children: [DetailInfoBox(type: DetailInfoBoxType.info, content: '매년 3월 지급')],
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [DetailInfoBox(type: DetailInfoBoxType.info, content: '매년 3월 지급')],
               ),
               DetailSection(
                 title: '등급별 지급액 (2025년)',
                 icon: Icons.star,
-                children: [
+                backgroundColor: Colors.amber.shade50,
+                titleColor: Colors.amber.shade900,
+                children: const [
                   DetailTable(
                     headers: ['등급', '지급액', '비율'],
                     rows: [
@@ -803,7 +821,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              DetailSection(
+              const DetailSection(
                 title: '등급 산정 방식',
                 icon: Icons.assessment,
                 children: [
@@ -812,7 +830,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
                   DetailListItem(text: '개인별 등급 통보', isChecked: true),
                 ],
               ),
-              DetailSection(
+              const DetailSection(
                 title: '참고사항',
                 icon: Icons.info_outline,
                 children: [
@@ -832,18 +850,20 @@ class SalaryBreakdownWidget extends StatelessWidget {
           isHighlight: true,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '지급 시기',
                 icon: Icons.event,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailInfoBox(type: DetailInfoBoxType.info, content: '매년 1월, 7월 (연 2회)'),
                 ],
               ),
               DetailSection(
                 title: '재직연수별 지급률',
                 icon: Icons.trending_up,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailTable(
                     headers: ['재직연수', '지급률'],
@@ -863,8 +883,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '정근수당 가산금 (매월 지급)',
                 icon: Icons.add_circle,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: const [
                   DetailTable(
                     headers: ['재직연수', '월 지급액'],
@@ -901,10 +921,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
           isHighlight: true,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '지급 기준',
                 icon: Icons.celebration,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailTable(
                     headers: ['항목', '내용'],
                     rows: [
@@ -917,17 +939,19 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '지급 시기',
                 icon: Icons.schedule,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailListItem(text: '설날: 음력 설 전월 급여 시', isChecked: true),
                   DetailListItem(text: '추석: 음력 추석 전월 급여 시', isChecked: true),
                 ],
               ),
-              const DetailSection(
+              DetailSection(
                 title: '2025년 지급 예정월',
                 icon: Icons.calendar_month,
-                children: [
+                backgroundColor: Colors.amber.shade50,
+                titleColor: Colors.amber.shade900,
+                children: const [
                   DetailTable(
                     headers: ['명절', '지급월', '음력 날짜'],
                     rows: [
@@ -974,10 +998,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const DetailSection(
+            DetailSection(
               title: '소득세 세율 구간 (2025년)',
               icon: Icons.account_balance,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['과세표준', '세율'],
                   rows: [
@@ -1005,17 +1031,17 @@ class SalaryBreakdownWidget extends StatelessWidget {
               title: '공제율 계산 반영 사항',
               icon: Icons.calculate,
               children: [
-                DetailListItem(text: '총 급여액 (본봉 + 수당)', isChecked: true, color: Colors.teal),
-                DetailListItem(text: '부양가족 수', isChecked: true, color: Colors.teal),
-                DetailListItem(text: '각종 공제 (연금, 보험료 등)', isChecked: true, color: Colors.teal),
+                DetailListItem(text: '총 급여액 (본봉 + 수당)', isChecked: true, color: Colors.blue),
+                DetailListItem(text: '부양가족 수', isChecked: true, color: Colors.blue),
+                DetailListItem(text: '각종 공제 (연금, 보험료 등)', isChecked: true, color: Colors.blue),
               ],
             ),
             if (monthlyBreakdown.isNotEmpty)
               DetailSection(
                 title: '${nickname ?? "선생님"}의 월평균 소득세',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
@@ -1058,10 +1084,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const DetailSection(
+            DetailSection(
               title: '지방소득세 계산 방식',
               icon: Icons.home_work,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['항목', '내용'],
                   rows: [
@@ -1076,8 +1104,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 지방세 계산',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailCalculation(
                     label: '지방세 계산',
@@ -1119,10 +1147,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         isDeduction: true,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '기여율 (공무원연금법)',
               icon: Icons.percent,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['구분', '기여율'],
                   rows: [
@@ -1136,8 +1166,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
             DetailSection(
               title: '기준소득월액 포함 항목',
               icon: Icons.check_circle_outline,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
+              backgroundColor: Colors.green.shade50,
+              titleColor: Colors.green.shade900,
               children: const [
                 DetailListItem(text: '본봉', isChecked: true),
                 DetailListItem(text: '교직수당', isChecked: true),
@@ -1150,10 +1180,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 DetailListItem(text: '명절휴가비', isChecked: true),
               ],
             ),
-            const DetailSection(
+            DetailSection(
               title: '기준소득월액 제외 항목',
               icon: Icons.cancel_outlined,
-              children: [
+              backgroundColor: Colors.red.shade50,
+              titleColor: Colors.red.shade900,
+              children: const [
                 DetailListItem(text: '시간외근무수당', isChecked: false, color: Colors.red),
                 DetailListItem(text: '성과상여금', isChecked: false, color: Colors.red),
               ],
@@ -1162,8 +1194,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 계산',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: [
                   DetailCalculation(
                     label: '월 평균 기준소득',
@@ -1188,7 +1220,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
               title: '연금 수령 조건',
               icon: Icons.savings_outlined,
               children: [
-                DetailListItem(text: '재직기간 10년 이상: 연금 수령 가능', isChecked: true, color: Colors.teal),
+                DetailListItem(text: '재직기간 10년 이상: 연금 수령 가능', isChecked: true, color: Colors.blue),
                 DetailListItem(text: '재직기간 10년 미만: 퇴직일시금'),
                 DetailInfoBox(
                   type: DetailInfoBoxType.tip,
@@ -1196,10 +1228,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const DetailSection(
+            DetailSection(
               title: '국민연금과의 차이',
               icon: Icons.compare_arrows,
-              children: [
+              backgroundColor: Colors.amber.shade50,
+              titleColor: Colors.amber.shade900,
+              children: const [
                 DetailTable(
                   headers: ['구분', '공무원연금', '국민연금'],
                   rows: [
@@ -1219,10 +1253,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
         isDeduction: true,
         detailedWidget: DetailedInfoWidget(
           sections: [
-            const DetailSection(
+            DetailSection(
               title: '건강보험 부담률 (2025년)',
               icon: Icons.health_and_safety,
-              children: [
+              backgroundColor: Colors.blue.shade50,
+              titleColor: Colors.blue.shade900,
+              children: const [
                 DetailTable(
                   headers: ['구분', '부담률'],
                   rows: [
@@ -1236,8 +1272,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
             DetailSection(
               title: '장기요양보험료 계산',
               icon: Icons.elderly,
-              backgroundColor: Colors.teal.shade50,
-              titleColor: Colors.teal.shade900,
+              backgroundColor: Colors.purple.shade50,
+              titleColor: Colors.purple.shade900,
               children: const [
                 DetailInfoBox(type: DetailInfoBoxType.info, content: '건강보험료의 12.95% (2025년 요율)'),
                 SizedBox(height: 8),
@@ -1266,8 +1302,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 계산',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: [
                   DetailCalculation(
                     label: '1단계: 건강보험료 계산',
@@ -1322,10 +1358,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
           isDeduction: true,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '교직원공제회 개요',
                 icon: Icons.account_balance,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
                     content: '교직원의 경제적 안정과 복리 증진을 위한 상호부조 단체입니다.',
@@ -1335,8 +1373,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '공제회 사업',
                 icon: Icons.business_center,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailListItem(text: '저금리 대출 사업 (주택, 생활안정자금)', isChecked: true),
                   DetailListItem(text: '목돈마련 적금 상품', isChecked: true),
@@ -1349,16 +1387,16 @@ class SalaryBreakdownWidget extends StatelessWidget {
                 title: '가입 방식',
                 icon: Icons.how_to_reg,
                 children: [
-                  DetailListItem(text: '임의 가입', isChecked: true, color: Colors.teal),
-                  DetailListItem(text: '월 회비 자율 결정', isChecked: true, color: Colors.teal),
-                  DetailListItem(text: '급여에서 자동 공제', isChecked: true, color: Colors.teal),
+                  DetailListItem(text: '임의 가입', isChecked: true, color: Colors.blue),
+                  DetailListItem(text: '월 회비 자율 결정', isChecked: true, color: Colors.blue),
+                  DetailListItem(text: '급여에서 자동 공제', isChecked: true, color: Colors.blue),
                 ],
               ),
               DetailSection(
                 title: '${nickname ?? "선생님"}의 교직원공제회비',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.highlight,
@@ -1391,10 +1429,12 @@ class SalaryBreakdownWidget extends StatelessWidget {
           isDeduction: true,
           detailedWidget: DetailedInfoWidget(
             sections: [
-              const DetailSection(
+              DetailSection(
                 title: '기타 공제 항목 예시',
                 icon: Icons.receipt_long,
-                children: [
+                backgroundColor: Colors.blue.shade50,
+                titleColor: Colors.blue.shade900,
+                children: const [
                   DetailListItem(text: '교원단체(교총/전교조) 회비', isChecked: true),
                   DetailListItem(text: '노동조합비', isChecked: true),
                   DetailListItem(text: '체육회비', isChecked: true),
@@ -1405,8 +1445,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '공제 방식',
                 icon: Icons.payment,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.green.shade50,
+                titleColor: Colors.green.shade900,
                 children: const [
                   DetailInfoBox(
                     type: DetailInfoBoxType.info,
@@ -1417,8 +1457,8 @@ class SalaryBreakdownWidget extends StatelessWidget {
               DetailSection(
                 title: '${nickname ?? "선생님"}의 기타 공제',
                 icon: Icons.person,
-                backgroundColor: Colors.teal.shade50,
-                titleColor: Colors.teal.shade900,
+                backgroundColor: Colors.purple.shade50,
+                titleColor: Colors.purple.shade900,
                 children: [
                   DetailInfoBox(
                     type: DetailInfoBoxType.highlight,

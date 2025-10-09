@@ -134,17 +134,10 @@ class PostMediaPreview extends StatelessWidget {
           child: RepaintBoundary(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: media.thumbnailUrl ?? media.url,
-                placeholder: (context, url) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) =>
-                    const Icon(Icons.broken_image_outlined, size: 48),
+              child: _SafePostImage(
+                media: media,
                 fit: BoxFit.cover,
+                theme: theme,
               ),
             ),
           ),
@@ -179,17 +172,11 @@ class PostMediaPreview extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: media.thumbnailUrl ?? media.url,
+                  _SafePostImage(
+                    media: media,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.broken_image_outlined),
+                    theme: theme,
+                    showSmallSpinner: true,
                   ),
                   if (showBadge)
                     Container(
@@ -358,4 +345,109 @@ bool shouldShowMore(String text, BuildContext context) {
 
   textPainter.layout(maxWidth: availableWidth);
   return textPainter.didExceedMaxLines;
+}
+
+/// Safe image widget that falls back to original URL if thumbnail fails
+///
+/// Handles cases where:
+/// - thumbnailUrl is empty string (not null)
+/// - thumbnailUrl points to non-existent file
+/// - Thumbnail generation is still in progress
+class _SafePostImage extends StatefulWidget {
+  const _SafePostImage({
+    required this.media,
+    required this.fit,
+    required this.theme,
+    this.showSmallSpinner = false,
+  });
+
+  final PostMedia media;
+  final BoxFit fit;
+  final ThemeData theme;
+  final bool showSmallSpinner;
+
+  @override
+  State<_SafePostImage> createState() => _SafePostImageState();
+}
+
+class _SafePostImageState extends State<_SafePostImage> {
+  bool _useFallback = false;
+
+  String? get _imageUrl {
+    if (_useFallback) {
+      // Use original URL on fallback
+      final url = widget.media.url.trim();
+      return url.isEmpty ? null : url;
+    }
+
+    // Use thumbnail if available and not empty
+    final thumbnail = widget.media.thumbnailUrl;
+    if (thumbnail != null && thumbnail.trim().isNotEmpty) {
+      return thumbnail;
+    }
+
+    // Fall back to original URL
+    final url = widget.media.url.trim();
+    return url.isEmpty ? null : url;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = _imageUrl;
+
+    // If no valid URL, show error immediately
+    if (imageUrl == null) {
+      return Container(
+        color: widget.theme.colorScheme.surfaceContainerHighest,
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: widget.showSmallSpinner ? 32 : 48,
+          color: widget.theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: widget.fit,
+      placeholder: (context, url) => Container(
+        color: widget.theme.colorScheme.surfaceContainerHighest,
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: widget.showSmallSpinner ? 2 : 2,
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) {
+        // If not already using fallback, try original URL
+        if (!_useFallback && widget.media.thumbnailUrl != null) {
+          // Schedule fallback attempt on next frame
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _useFallback = true;
+              });
+            }
+          });
+          // Show loading while switching to fallback
+          return Container(
+            color: widget.theme.colorScheme.surfaceContainerHighest,
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        // If fallback also failed, show error icon
+        return Container(
+          color: widget.theme.colorScheme.surfaceContainerHighest,
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: widget.showSmallSpinner ? 32 : 48,
+            color: widget.theme.colorScheme.onSurfaceVariant,
+          ),
+        );
+      },
+    );
+  }
 }

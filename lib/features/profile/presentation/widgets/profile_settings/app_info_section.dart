@@ -21,8 +21,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../../routing/app_router.dart';
@@ -97,63 +97,59 @@ class _AppInfoSectionState extends State<AppInfoSection> {
 
   /// Shows version info dialog with detailed app information
   void _showVersionInfo(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        final packageInfo = _cachedPackageInfo;
+    final packageInfo = _cachedPackageInfo;
 
-        return AlertDialog(
-          title: const Text('버전 정보'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('앱 이름: ${packageInfo?.appName ?? '공무톡'}'),
-              Text('앱 버전: ${packageInfo?.version ?? '1.0.0'}'),
-              Text('빌드 번호: ${packageInfo?.buildNumber ?? '1'}'),
-              Text(
-                '패키지명: ${packageInfo?.packageName ?? 'kr.hanisoft.gong_mu_talk'}',
-              ),
-              const Gap(16),
-              const Text('최신 버전을 사용 중입니다.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
+    InfoDialog.showList(
+      context,
+      title: '버전 정보',
+      icon: Icons.info_outline,
+      iconColor: Colors.teal.shade600,
+      description: '최신 버전을 사용 중입니다.',
+      items: [
+        InfoListItem(
+          title: '앱 이름',
+          subtitle: packageInfo?.appName ?? '공무톡',
+          icon: Icons.apps,
+        ),
+        InfoListItem(
+          title: '앱 버전',
+          subtitle: packageInfo?.version ?? '1.0.0',
+          icon: Icons.update,
+        ),
+        InfoListItem(
+          title: '빌드 번호',
+          subtitle: packageInfo?.buildNumber ?? '1',
+          icon: Icons.numbers,
+        ),
+        InfoListItem(
+          title: '패키지명',
+          subtitle: packageInfo?.packageName ?? 'kr.hanisoft.gong_mu_talk',
+          icon: Icons.code,
+        ),
+      ],
     );
   }
 
   /// Shows developer info dialog
   void _showDeveloperInfo(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('개발자 정보'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('개발사: HANISOFT'),
-              Text('이메일: hanisoft2022@gmail.com'),
-              Gap(16),
-              Text('공무톡은 공무원을 위한 종합 서비스 플랫폼입니다.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
+    InfoDialog.showList(
+      context,
+      title: '개발자 정보',
+      icon: Icons.code_outlined,
+      iconColor: Colors.teal.shade600,
+      description: '공무톡은 공무원을 위한 종합 서비스 플랫폼입니다.',
+      items: const [
+        InfoListItem(
+          title: '개발사',
+          subtitle: 'HANISOFT',
+          icon: Icons.business,
+        ),
+        InfoListItem(
+          title: '이메일',
+          subtitle: 'hanisoft2022@gmail.com',
+          icon: Icons.email,
+        ),
+      ],
     );
   }
 

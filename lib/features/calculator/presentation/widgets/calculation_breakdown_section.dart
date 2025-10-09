@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,51 +23,50 @@ class CalculationBreakdownSection extends StatelessWidget {
   });
 
   void _showOvertimeAllowanceInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Expanded(child: Text('시간외근무수당 지급 기준', style: Theme.of(context).textTheme.titleLarge)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '2025년 기준 정액분 (월)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+    InfoDialog.showWidget(
+      context,
+      title: '시간외근무수당 지급 기준',
+      icon: Icons.access_time_outlined,
+      iconColor: Colors.teal.shade600,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '2025년 기준 정액분 (월)',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.grey,
             ),
-            const SizedBox(height: 16),
-            _buildInfoItem('1~19호봉', '123,130원', '(시간당 12,313원 × 10시간)'),
-            const Divider(height: 24),
-            _buildInfoItem('20~29호봉', '137,330원', '(시간당 13,733원 × 10시간)'),
-            const Divider(height: 24),
-            _buildInfoItem('30호봉 이상', '147,410원', '(시간당 14,741원 × 10시간)'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lightbulb_outline, size: 16, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '승급 시 해당 월부터 새 기준 적용',
-                      style: TextStyle(fontSize: 12, color: Colors.blue),
-                    ),
+          ),
+          const Gap(16),
+          _buildInfoItem('1~19호봉', '123,130원', '(시간당 12,313원 × 10시간)'),
+          Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
+          _buildInfoItem('20~29호봉', '137,330원', '(시간당 13,733원 × 10시간)'),
+          Divider(height: 24, thickness: 1, color: Colors.grey.shade200),
+          _buildInfoItem('30호봉 이상', '147,410원', '(시간당 14,741원 × 10시간)'),
+          const Gap(16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.teal.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lightbulb_outline, size: 16, color: Colors.teal.shade700),
+                const Gap(8),
+                Expanded(
+                  child: Text(
+                    '승급 시 해당 월부터 새 기준 적용',
+                    style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인'))],
+          ),
+        ],
       ),
     );
   }
@@ -77,7 +78,10 @@ class CalculationBreakdownSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(grade, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            Text(
+              grade,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
             Text(
               amount,
               style: TextStyle(
@@ -88,8 +92,11 @@ class CalculationBreakdownSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(detail, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        const Gap(4),
+        Text(
+          detail,
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
       ],
     );
   }
@@ -147,8 +154,8 @@ class CalculationBreakdownSection extends StatelessWidget {
       spans.add(
         TextSpan(
           text: match.group(0),
-          style: const TextStyle(
-            color: Colors.blue,
+          style: TextStyle(
+            color: Colors.teal.shade700,
             decoration: TextDecoration.underline,
             fontWeight: FontWeight.w600,
           ),
@@ -248,12 +255,15 @@ class CalculationBreakdownSection extends StatelessWidget {
               item.description!,
               style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
             ),
-            const SizedBox(height: 16),
+            const Gap(16),
           ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('지급액', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              const Text(
+                '지급액',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              ),
               Text(
                 item.isDeduction
                     ? '- ${NumberFormatter.formatCurrency(item.amount)}'
@@ -261,7 +271,9 @@ class CalculationBreakdownSection extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: item.isDeduction ? Colors.red.shade700 : Colors.teal.shade700,
+                  color: item.isDeduction
+                      ? Colors.red.shade700
+                      : Colors.teal.shade700,
                 ),
               ),
             ],
@@ -270,21 +282,12 @@ class CalculationBreakdownSection extends StatelessWidget {
       );
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            if (item.icon != null) ...[
-              Icon(item.icon, color: item.iconColor ?? Colors.blue),
-              const SizedBox(width: 8),
-            ],
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
-          ],
-        ),
-        content: content,
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인'))],
-      ),
+    InfoDialog.showWidget(
+      context,
+      title: title,
+      icon: item.icon,
+      iconColor: item.iconColor ?? Colors.teal.shade600,
+      content: content,
     );
   }
 
@@ -304,14 +307,14 @@ class CalculationBreakdownSection extends StatelessWidget {
           childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           title: Row(
             children: [
-              Icon(Icons.calculate, size: 18, color: Colors.blue.shade700),
+              Icon(Icons.calculate, size: 18, color: Colors.teal.shade700),
               const SizedBox(width: 8),
               Text(
                 '계산 근거 보기',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade900,
+                  color: Colors.teal.shade900,
                 ),
               ),
             ],
@@ -425,7 +428,7 @@ class CalculationBreakdownSection extends StatelessWidget {
   Widget _buildTotalRow(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(8)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -433,14 +436,14 @@ class CalculationBreakdownSection extends StatelessWidget {
             totalLabel ?? '합계',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.blue.shade900,
+              color: Colors.teal.shade900,
             ),
           ),
           Text(
             NumberFormatter.formatCurrency(totalAmount!),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.blue.shade900,
+              color: Colors.teal.shade900,
             ),
           ),
         ],

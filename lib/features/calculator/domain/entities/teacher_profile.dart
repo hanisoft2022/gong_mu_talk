@@ -22,6 +22,8 @@ class TeacherProfile extends Equatable {
     this.isHomeroom = false,
     this.hasPosition = false,
     this.teachingAllowanceBonuses = const {},
+    this.teacherAssociationFee = 0,
+    this.otherDeductions = 0,
   });
 
   /// 출생 년도
@@ -72,6 +74,12 @@ class TeacherProfile extends Equatable {
   /// 교직수당 가산금 (담임 제외)
   final Set<TeachingAllowanceBonus> teachingAllowanceBonuses;
 
+  /// 교직원공제회비 (월)
+  final int teacherAssociationFee;
+
+  /// 기타 공제 (월)
+  final int otherDeductions;
+
   /// 정년퇴직일 자동 계산
   DateTime calculateRetirementDate() {
     return DateTime(birthYear + retirementAge, birthMonth, 1);
@@ -95,6 +103,8 @@ class TeacherProfile extends Equatable {
     isHomeroom,
     hasPosition,
     teachingAllowanceBonuses,
+    teacherAssociationFee,
+    otherDeductions,
   ];
 
   TeacherProfile copyWith({
@@ -114,6 +124,8 @@ class TeacherProfile extends Equatable {
     bool? isHomeroom,
     bool? hasPosition,
     Set<TeachingAllowanceBonus>? teachingAllowanceBonuses,
+    int? teacherAssociationFee,
+    int? otherDeductions,
   }) {
     return TeacherProfile(
       birthYear: birthYear ?? this.birthYear,
@@ -134,6 +146,9 @@ class TeacherProfile extends Equatable {
       hasPosition: hasPosition ?? this.hasPosition,
       teachingAllowanceBonuses:
           teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
+      teacherAssociationFee:
+          teacherAssociationFee ?? this.teacherAssociationFee,
+      otherDeductions: otherDeductions ?? this.otherDeductions,
     );
   }
 
@@ -162,6 +177,8 @@ class TeacherProfile extends Equatable {
       'hasPosition': hasPosition,
       'teachingAllowanceBonuses':
           teachingAllowanceBonuses.map((e) => e.name).toList(),
+      'teacherAssociationFee': teacherAssociationFee,
+      'otherDeductions': otherDeductions,
     };
   }
 
@@ -203,6 +220,8 @@ class TeacherProfile extends Equatable {
       isHomeroom: json['isHomeroom'] as bool? ?? false,
       hasPosition: json['hasPosition'] as bool? ?? false,
       teachingAllowanceBonuses: bonuses,
+      teacherAssociationFee: json['teacherAssociationFee'] as int? ?? 0,
+      otherDeductions: json['otherDeductions'] as int? ?? 0,
     );
   }
 }

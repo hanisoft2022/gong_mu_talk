@@ -181,6 +181,7 @@ class PostCommentsSection extends StatelessWidget {
           children: threadedComments,
         ),
       );
+      sectionChildren.add(const Gap(12));
     }
 
     return Padding(

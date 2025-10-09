@@ -8,14 +8,22 @@ enum DetailInfoBoxType {
   info,     // ℹ️ 정보
 }
 
-/// 상세 정보 표시 색상 팔레트
+/// 상세 정보 표시 색상 팔레트 (모던 미니멀 시스템)
+///
+/// 색상 원칙:
+/// - Primary: Teal (강조, 하이라이트)
+/// - Neutral: Grey (기본 배경, 테이블)
+/// - Warning: Orange (경고만)
 class DetailInfoColors {
+  static const primary = Colors.teal;      // 메인 색상
+  static const neutral = Colors.grey;      // 중성 색상
+  static const warning = Colors.orange;    // 경고 색상
+
+  // Deprecated (하위 호환성 유지)
   static const income = Colors.teal;
   static const deduction = Colors.red;
-  static const warning = Colors.orange;
-  static const tip = Colors.blue;
-  static const highlight = Colors.green;
-  static const neutral = Colors.grey;
+  static const tip = Colors.teal;         // blue → teal
+  static const highlight = Colors.teal;   // green → teal
 }
 
 /// 상세 정보 표시 텍스트 스타일
@@ -170,7 +178,7 @@ class DetailTable extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             decoration: BoxDecoration(
-              color: headerColor ?? Colors.blue.shade50,
+              color: headerColor ?? Colors.grey.shade100, // Grey 계열로 변경
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(7),
               ),
@@ -181,7 +189,7 @@ class DetailTable extends StatelessWidget {
                   child: Text(
                     header,
                     style: DetailInfoTextStyles.tableHeader.copyWith(
-                      color: Colors.blue.shade900,
+                      color: Colors.grey.shade800, // 더 중성적인 색상
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -249,9 +257,9 @@ class DetailCalculation extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: Colors.teal.shade50, // Teal로 변경 (계산은 중요하므로)
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: Colors.teal.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +267,7 @@ class DetailCalculation extends StatelessWidget {
           if (label != null) ...[
             Row(
               children: [
-                Icon(Icons.calculate, size: 16, color: Colors.blue.shade700),
+                Icon(Icons.calculate, size: 16, color: Colors.teal.shade700),
                 const SizedBox(width: 6),
                 Text(
                   label!,
@@ -289,7 +297,7 @@ class DetailCalculation extends StatelessWidget {
                   ),
                 )),
             const SizedBox(height: 8),
-            Divider(color: Colors.blue.shade200, height: 1),
+            Divider(color: Colors.teal.shade200, height: 1),
             const SizedBox(height: 8),
           ],
           // 계산 공식
@@ -319,7 +327,7 @@ class DetailCalculation extends StatelessWidget {
               Container(
                 width: 120,
                 height: 1.5,
-                color: Colors.blue.shade300,
+                color: Colors.teal.shade300,
               ),
               const SizedBox(height: 8),
               Text(
@@ -327,7 +335,7 @@ class DetailCalculation extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade900,
+                  color: Colors.teal.shade900,
                 ),
               ),
             ],
@@ -354,24 +362,24 @@ class DetailInfoBox extends StatelessWidget {
   Color _getBackgroundColor() {
     switch (type) {
       case DetailInfoBoxType.tip:
-        return Colors.blue.shade50;
+        return Colors.teal.shade50; // blue → teal
       case DetailInfoBoxType.warning:
-        return Colors.orange.shade50;
+        return Colors.orange.shade50; // 경고는 유지
       case DetailInfoBoxType.highlight:
-        return Colors.green.shade50;
+        return Colors.teal.shade50; // green → teal
       case DetailInfoBoxType.info:
-        return Colors.grey.shade100;
+        return Colors.grey.shade100; // 유지
     }
   }
 
   Color _getBorderColor() {
     switch (type) {
       case DetailInfoBoxType.tip:
-        return Colors.blue.shade200;
+        return Colors.teal.shade200;
       case DetailInfoBoxType.warning:
         return Colors.orange.shade300;
       case DetailInfoBoxType.highlight:
-        return Colors.green.shade300;
+        return Colors.teal.shade200;
       case DetailInfoBoxType.info:
         return Colors.grey.shade300;
     }
@@ -380,11 +388,11 @@ class DetailInfoBox extends StatelessWidget {
   Color _getIconColor() {
     switch (type) {
       case DetailInfoBoxType.tip:
-        return Colors.blue.shade700;
+        return Colors.teal.shade700;
       case DetailInfoBoxType.warning:
         return Colors.orange.shade700;
       case DetailInfoBoxType.highlight:
-        return Colors.green.shade700;
+        return Colors.teal.shade700;
       case DetailInfoBoxType.info:
         return Colors.grey.shade700;
     }
@@ -460,7 +468,7 @@ class DetailListItem extends StatelessWidget {
           Icon(
             isChecked ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: color ?? (isChecked ? Colors.green : Colors.grey.shade400),
+            color: color ?? (isChecked ? Colors.teal : Colors.grey.shade400), // green → teal
           ),
           const SizedBox(width: 8),
           Expanded(

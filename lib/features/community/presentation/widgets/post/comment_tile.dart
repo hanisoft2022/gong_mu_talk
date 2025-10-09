@@ -45,7 +45,7 @@ class _CommentTileState extends State<CommentTile>
     super.initState();
     _highlightController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 3500),
     );
     _highlightAnimation = Tween<double>(begin: 0.35, end: 0.0).animate(
       CurvedAnimation(
@@ -55,7 +55,12 @@ class _CommentTileState extends State<CommentTile>
     );
 
     if (widget.isHighlighted) {
-      _highlightController.forward();
+      // Wait for scroll to complete before starting highlight animation
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _highlightController.forward();
+        }
+      });
     }
   }
 
@@ -63,7 +68,12 @@ class _CommentTileState extends State<CommentTile>
   void didUpdateWidget(CommentTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isHighlighted && !oldWidget.isHighlighted) {
-      _highlightController.forward();
+      // Wait for scroll to complete before starting highlight animation
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _highlightController.forward();
+        }
+      });
     } else if (!widget.isHighlighted && oldWidget.isHighlighted) {
       _highlightController.reset();
     }
@@ -95,9 +105,18 @@ class _CommentTileState extends State<CommentTile>
                   ? BoxDecoration(
                       color: (Theme.of(context).brightness == Brightness.dark
                               ? const Color(0xFFFFC107) // Amber for dark mode
-                              : const Color(0xFFFFF9C4)) // Light yellow for light mode
+                              : const Color(0xFFFFEB3B)) // Deeper yellow for light mode
                           .withValues(
                         alpha: _highlightAnimation.value,
+                      ),
+                      border: Border.all(
+                        color: (Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFFFFD54F) // Lighter amber border for dark mode
+                                : const Color(0xFFFBC02D)) // Deep yellow border for light mode
+                            .withValues(
+                          alpha: _highlightAnimation.value,
+                        ),
+                        width: 2,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     )

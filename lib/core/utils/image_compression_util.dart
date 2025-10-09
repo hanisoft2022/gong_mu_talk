@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
 
@@ -66,7 +69,7 @@ class ImageCompressionUtil {
         '_compressed.webp',
       );
 
-      final XFile? compressedFile =
+      XFile? compressedFile =
           await FlutterImageCompress.compressAndGetFile(
             originalFile.path,
             targetPath,
@@ -78,8 +81,18 @@ class ImageCompressionUtil {
           );
 
       if (compressedFile == null) {
-        // 압축 실패 시 원본 반환 (fallback)
-        return originalFile;
+        // 압축 실패 시 Flutter 기본 디코더로 WebP 변환 시도 (HEIF fallback)
+        debugPrint('⚠️ FlutterImageCompress failed, trying fallback WebP conversion');
+        compressedFile = await _convertToWebPFallback(
+          originalFile,
+          targetPath,
+          quality,
+        );
+
+        if (compressedFile == null) {
+          debugPrint('❌ Fallback WebP conversion also failed, using original');
+          return originalFile;
+        }
       }
 
       // 압축 효과 검증 (압축 후가 더 크면 원본 사용)
@@ -115,6 +128,69 @@ class ImageCompressionUtil {
     }
 
     return compressedFiles;
+  }
+
+  /// HEIF/HEIC fallback: Flutter 기본 디코더로 WebP 변환
+  ///
+  /// FlutterImageCompress가 실패할 때 사용하는 fallback 메서드
+  /// Android에서 HEIF 디코딩 문제를 해결하기 위함
+  static Future<XFile?> _convertToWebPFallback(
+    XFile originalFile,
+    String targetPath,
+    int quality,
+  ) async {
+    try {
+      // 1. 원본 이미지 읽기
+      final Uint8List bytes = await File(originalFile.path).readAsBytes();
+
+      // 2. Flutter 기본 디코더로 디코딩
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image image = frameInfo.image;
+
+      // 3. ByteData로 변환 (PNG 형식으로 먼저)
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) {
+        debugPrint('❌ Failed to convert image to ByteData');
+        return null;
+      }
+
+      // 4. PNG → WebP 변환 (FlutterImageCompress 사용)
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      // 임시 PNG 파일 생성
+      final String tempPngPath = targetPath.replaceAll('.webp', '_temp.png');
+      final File tempPngFile = File(tempPngPath);
+      await tempPngFile.writeAsBytes(pngBytes);
+
+      // PNG → WebP 변환
+      final XFile? webpFile =
+          await FlutterImageCompress.compressAndGetFile(
+        tempPngPath,
+        targetPath,
+        quality: quality,
+        format: CompressFormat.webp,
+      );
+
+      // 임시 PNG 파일 삭제
+      try {
+        await tempPngFile.delete();
+      } catch (_) {
+        // Ignore cleanup errors
+      }
+
+      if (webpFile != null) {
+        debugPrint('✅ Fallback WebP conversion succeeded');
+      }
+
+      return webpFile;
+    } catch (e) {
+      debugPrint('❌ Fallback WebP conversion error: $e');
+      return null;
+    }
   }
 
   /// 이미지 파일 타입 검증

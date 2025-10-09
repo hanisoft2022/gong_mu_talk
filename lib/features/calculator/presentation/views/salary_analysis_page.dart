@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
@@ -768,51 +770,44 @@ class _MonthlyBreakdownTab extends StatelessWidget {
     int amount,
     String detailedInfo,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
-                  borderRadius: BorderRadius.circular(8),
+    InfoDialog.showWidget(
+      context,
+      title: title,
+      icon: Icons.info_outline,
+      iconColor: Colors.teal.shade600,
+      confirmText: '닫기',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.teal.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '월 지급액',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      '월 지급액',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      NumberFormatter.formatCurrency(amount),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.teal.shade900,
-                      ),
-                    ),
-                  ],
+                Text(
+                  NumberFormatter.formatCurrency(amount),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.teal.shade900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                detailedInfo,
-                style: const TextStyle(height: 1.6),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('닫기'),
+          const Gap(16),
+          Text(
+            detailedInfo,
+            style: const TextStyle(height: 1.6),
           ),
         ],
       ),
