@@ -1627,6 +1627,9 @@ async function markVerification(
           // 검증 상태
           careerVerificationStatus: "verified",
           careerVerificationMethod: "paystub",
+
+          // 4-Level Access Control
+          careerTrackVerified: true,
         });
 
         console.log(`Updated user profile for ${userId}`, {

@@ -223,7 +223,6 @@ class PostComposerCubit extends Cubit<PostComposerState> {
     );
 
     try {
-      const int supporterLevel = 0;
       final String serialValue = state.selectedLoungeId ?? authState.serial;
 
       debugPrint('🔍 [PostComposer] Creating post with:');
@@ -262,8 +261,6 @@ class PostComposerCubit extends Cubit<PostComposerState> {
         authorTrack: authState.careerTrack,
         authorSpecificCareer: authState.careerHierarchy?.specificCareer,
         authorSerialVisible: authState.serialVisible,
-        authorSupporterLevel: supporterLevel,
-        authorIsSupporter: supporterLevel > 0,
         text: text,
         audience: type == PostType.chirp ? state.audience : PostAudience.all,
         serial: serialValue,

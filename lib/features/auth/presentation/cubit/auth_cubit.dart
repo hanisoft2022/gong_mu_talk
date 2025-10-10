@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/firebase_auth_repository.dart';
 import '../../data/login_session_store.dart';
@@ -18,6 +19,8 @@ import '../../../profile/data/user_profile_repository.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../../notifications/data/notification_repository.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/profile_storage_service.dart';
+import '../../../calculator/domain/entities/feature_access_level.dart';
 import 'auth_cubit_helpers.dart';
 import 'auth_profile_manager.dart';
 
@@ -30,11 +33,15 @@ class AuthCubit extends Cubit<AuthState> {
     required UserProfileRepository userProfileRepository,
     required NotificationRepository notificationRepository,
     required NotificationService notificationService,
+    required ProfileStorageService profileStorageService,
+    required SharedPreferences sharedPreferences,
   }) : _authRepository = authRepository,
        _sessionStore = sessionStore,
        _userProfileRepository = userProfileRepository,
        _notificationRepository = notificationRepository,
        _notificationService = notificationService,
+       _profileStorageService = profileStorageService,
+       _sharedPreferences = sharedPreferences,
        _profileManager = AuthProfileManager(
          userProfileRepository: userProfileRepository,
          notificationRepository: notificationRepository,
@@ -50,6 +57,8 @@ class AuthCubit extends Cubit<AuthState> {
   final UserProfileRepository _userProfileRepository;
   final NotificationRepository _notificationRepository;
   final NotificationService _notificationService;
+  final ProfileStorageService _profileStorageService;
+  final SharedPreferences _sharedPreferences;
   final AuthProfileManager _profileManager;
   late final StreamSubscription<AuthUser?> _authSubscription;
   static const Duration _sessionMaxAge = Duration(days: 30);
@@ -431,8 +440,20 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void _handleLogout(bool wasLoggedIn) {
+    final String? userId = state.userId;
+
     unawaited(_sessionStore.clearLoginTimestamp());
     unawaited(_notificationRepository.stopListening());
+
+    // 🔐 Security: Clear user-specific local data on logout
+    // 1. Calculator profile data
+    unawaited(_profileStorageService.clearProfile(userId: userId));
+
+    // 2. Notification settings
+    unawaited(_notificationRepository.clearNotificationSettings(userId: userId));
+
+    // 3. Search history (recent searches)
+    unawaited(_clearSearchHistory(userId));
 
     String? message = state.lastMessage;
     if (_pendingForcedLogoutMessage != null) {
@@ -443,6 +464,22 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     emit(AuthState(lastMessage: message));
+  }
+
+  /// Clear search history for specific user
+  Future<void> _clearSearchHistory(String? userId) async {
+    // SearchCubit의 key 패턴과 동일하게 구현
+    const String recentSearchesKeyPrefix = 'recent_searches';
+    const String guestSearchesKey = 'recent_searches_guest';
+
+    final String key;
+    if (userId == null || userId.isEmpty) {
+      key = guestSearchesKey;
+    } else {
+      key = '${recentSearchesKeyPrefix}_$userId';
+    }
+
+    await _sharedPreferences.remove(key);
   }
 
   void _handleLogin(AuthUser user) {

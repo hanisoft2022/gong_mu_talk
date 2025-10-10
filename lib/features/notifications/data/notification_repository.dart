@@ -55,13 +55,21 @@ class NotificationRepository {
   // The startListening/stopListening methods are kept for backward compatibility
   // but can be removed in a future release as they're no longer needed.
 
-  // 알림 설정 관련 메서드들
-  static const String _notificationSettingsKey = 'notification_settings';
+  // 알림 설정 관련 메서드들 (User-specific key 구조)
+  static const String _notificationSettingsKeyPrefix = 'notification_settings';
+  static const String _guestSettingsKey = 'notification_settings_guest';
 
-  Future<Map<String, bool>> getNotificationSettings() async {
-    final String? settingsJson = _preferences.getString(
-      _notificationSettingsKey,
-    );
+  /// User-specific key 생성
+  String _getSettingsKey(String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return _guestSettingsKey;
+    }
+    return '${_notificationSettingsKeyPrefix}_$userId';
+  }
+
+  Future<Map<String, bool>> getNotificationSettings({String? userId}) async {
+    final key = _getSettingsKey(userId);
+    final String? settingsJson = _preferences.getString(key);
     if (settingsJson == null) {
       // 기본 설정 (모든 알림 켜짐)
       return {
@@ -77,20 +85,45 @@ class NotificationRepository {
     return decoded.cast<String, bool>();
   }
 
-  Future<void> updateNotificationSettings(Map<String, bool> settings) async {
+  Future<void> updateNotificationSettings(
+    Map<String, bool> settings, {
+    String? userId,
+  }) async {
+    final key = _getSettingsKey(userId);
     final String encoded = jsonEncode(settings);
-    await _preferences.setString(_notificationSettingsKey, encoded);
+    await _preferences.setString(key, encoded);
   }
 
-  Future<bool> isNotificationEnabled(String type) async {
-    final settings = await getNotificationSettings();
+  Future<bool> isNotificationEnabled(String type, {String? userId}) async {
+    final settings = await getNotificationSettings(userId: userId);
     return settings[type] ?? true;
   }
 
-  Future<void> setNotificationEnabled(String type, bool enabled) async {
-    final settings = await getNotificationSettings();
+  Future<void> setNotificationEnabled(
+    String type,
+    bool enabled, {
+    String? userId,
+  }) async {
+    final settings = await getNotificationSettings(userId: userId);
     settings[type] = enabled;
-    await updateNotificationSettings(settings);
+    await updateNotificationSettings(settings, userId: userId);
+  }
+
+  /// 알림 설정 삭제 (로그아웃 시 사용)
+  Future<void> clearNotificationSettings({String? userId}) async {
+    final key = _getSettingsKey(userId);
+    await _preferences.remove(key);
+  }
+
+  /// 모든 사용자의 알림 설정 삭제 (필요시)
+  Future<void> clearAllNotificationSettings() async {
+    final keys = _preferences.getKeys();
+    final settingsKeys = keys.where(
+      (key) => key.startsWith(_notificationSettingsKeyPrefix),
+    );
+    for (final key in settingsKeys) {
+      await _preferences.remove(key);
+    }
   }
 
   /// 사용자의 모든 알림 가져오기

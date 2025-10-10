@@ -62,15 +62,12 @@ class CommunityRepository {
     _postRepository = PostRepository(
       firestore: _firestore,
       storage: _storage,
-      userProfileRepository: _userProfileRepository,
     );
     _commentRepository = CommentRepository(
       firestore: _firestore,
-      userProfileRepository: _userProfileRepository,
     );
     _interactionRepository = InteractionRepository(
       firestore: _firestore,
-      userProfileRepository: _userProfileRepository,
     );
     _searchRepository = SearchRepository(firestore: _firestore);
     _loungeRepository = LoungeRepository(firestore: _firestore);
@@ -151,14 +148,11 @@ class CommunityRepository {
     required CareerTrack authorTrack,
     String? authorSpecificCareer,
     bool authorSerialVisible = true,
-    int authorSupporterLevel = 0,
-    bool authorIsSupporter = false,
     required String text,
     required PostAudience audience,
     required String serial,
     List<PostMedia> media = const <PostMedia>[],
     List<String> tags = const <String>[],
-    bool awardPoints = true,
   }) {
     return _postRepository.createPost(
       postId: postId,
@@ -168,14 +162,11 @@ class CommunityRepository {
       authorTrack: authorTrack,
       authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible,
-      authorSupporterLevel: authorSupporterLevel,
-      authorIsSupporter: authorIsSupporter,
       text: text,
       audience: audience,
       serial: serial,
       media: media,
       tags: tags,
-      awardPoints: awardPoints,
     );
   }
 
@@ -383,9 +374,6 @@ class CommunityRepository {
     CareerTrack authorTrack = CareerTrack.none,
     String? authorSpecificCareer,
     bool authorSerialVisible = true,
-    int authorSupporterLevel = 0,
-    bool authorIsSupporter = false,
-    bool awardPoints = true,
     List<String>? imageUrls,
   }) async {
     final comment = await _commentRepository.createComment(
@@ -397,9 +385,6 @@ class CommunityRepository {
       authorTrack: authorTrack,
       authorSpecificCareer: authorSpecificCareer,
       authorSerialVisible: authorSerialVisible,
-      authorSupporterLevel: authorSupporterLevel,
-      authorIsSupporter: authorIsSupporter,
-      awardPoints: awardPoints,
       imageUrls: imageUrls,
     );
 
@@ -485,7 +470,6 @@ class CommunityRepository {
     final nickname = await currentUserNickname;
     final CareerTrack track = _userSession.careerTrack;
     final String? specificCareer = _userSession.specificCareer;
-    final int supporterLevel = _userSession.supporterLevel;
     final bool serialVisible = _userSession.serialVisible;
     await createComment(
       postId: postId,
@@ -496,8 +480,6 @@ class CommunityRepository {
       authorTrack: track,
       authorSpecificCareer: specificCareer,
       authorSerialVisible: serialVisible,
-      authorSupporterLevel: supporterLevel,
-      authorIsSupporter: supporterLevel > 0,
       imageUrls: imageUrls,
     );
   }
@@ -559,7 +541,10 @@ class CommunityRepository {
     _cacheManager.toggleScrapInCache(uid: uid, postId: postId);
   }
 
+  /// ⚠️ DEPRECATED: Use fetchScrappedPosts instead to avoid loading all scraps at once.
+  @Deprecated('Use fetchScrappedPosts instead for pagination support')
   Future<Set<String>> fetchScrappedPostIds(String uid) {
+    // ignore: deprecated_member_use_from_same_package
     return _interactionRepository.fetchScrappedPostIds(uid);
   }
 

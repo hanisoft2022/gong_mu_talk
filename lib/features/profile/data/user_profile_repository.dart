@@ -31,9 +31,6 @@ class UserProfileRepository {
   DocumentReference<JsonMap> _handleDoc(String handle) =>
       _firestore.collection('handles').doc(handle);
 
-  CollectionReference<JsonMap> _badgesCollection(String uid) =>
-      _userDoc(uid).collection('badges');
-
   Future<UserProfile?> fetchProfile(String uid) async {
     final DocumentSnapshot<JsonMap> snapshot = await _userDoc(uid).get();
     if (!snapshot.exists) {
@@ -87,11 +84,6 @@ class UserProfileRepository {
         yearsOfService: yearsOfService,
         createdAt: now,
         updatedAt: now,
-        supporterLevel: 0,
-        premiumTier: PremiumTier.none,
-        points: 0,
-        level: 1,
-        badges: const <String>[],
         careerTrack: _careerTrackFromSerial(serial),
         excludedSerials: const <String>{},
         excludedDepartments: const <String>{},
@@ -112,7 +104,6 @@ class UserProfileRepository {
         followingCount: 0,
         postCount: 0,
         notificationsEnabled: true,
-        supporterBadgeVisible: true,
         serialVisible: true,
       );
 
@@ -229,7 +220,6 @@ class UserProfileRepository {
     int? yearsOfService,
     Object? photoUrl = _unset,
     bool? notificationsEnabled,
-    bool? supporterBadgeVisible,
     bool? serialVisible,
     String? governmentEmail,
     DateTime? governmentEmailVerifiedAt,
@@ -269,9 +259,6 @@ class UserProfileRepository {
     }
     if (notificationsEnabled != null) {
       updates['notificationsEnabled'] = notificationsEnabled;
-    }
-    if (supporterBadgeVisible != null) {
-      updates['supporterBadgeVisible'] = supporterBadgeVisible;
     }
     if (serialVisible != null) {
       updates['serialVisible'] = serialVisible;
@@ -317,34 +304,6 @@ class UserProfileRepository {
     }
 
     await _userDoc(uid).update(updates);
-  }
-
-  Future<void> incrementPoints({
-    required String uid,
-    required int delta,
-    int? levelDelta,
-  }) async {
-    await _userDoc(uid).update(<String, Object?>{
-      'points': FieldValue.increment(delta),
-      if (levelDelta != null) 'level': FieldValue.increment(levelDelta),
-      'updatedAt': Timestamp.now(),
-    });
-  }
-
-  Future<void> assignBadge({
-    required String uid,
-    required String badgeId,
-    required String label,
-    String? description,
-  }) async {
-    final DocumentReference<JsonMap> badgeDoc = _badgesCollection(
-      uid,
-    ).doc(badgeId);
-    await badgeDoc.set(<String, Object?>{
-      'label': label,
-      'description': description,
-      'awardedAt': Timestamp.now(),
-    });
   }
 
   Future<void> markModerationNoticeRead(String uid) async {

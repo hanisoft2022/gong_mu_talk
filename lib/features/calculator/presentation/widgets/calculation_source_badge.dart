@@ -18,31 +18,32 @@ class CalculationSourceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayText = year != null ? '$year $source 기준' : '$source 기준';
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: onTap ?? () => _showSourceInfo(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
+          color: colorScheme.primaryContainer,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.shade200, width: 1),
+          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.account_balance, size: 16, color: Colors.blue.shade700),
+            Icon(Icons.account_balance, size: 16, color: colorScheme.primary),
             const SizedBox(width: 6),
             Text(
               displayText,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.blue.shade900,
+                color: colorScheme.primary,
               ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.info_outline, size: 14, color: Colors.blue.shade600),
+            Icon(Icons.info_outline, size: 14, color: colorScheme.primary),
           ],
         ),
       ),
@@ -69,6 +70,8 @@ class _SourceInfoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -81,12 +84,12 @@ class _SourceInfoSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: colorScheme.primaryContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.verified,
-                  color: Colors.blue.shade700,
+                  color: colorScheme.primary,
                   size: 24,
                 ),
               ),
@@ -127,20 +130,20 @@ class _SourceInfoSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                Icon(Icons.info_outline, color: colorScheme.primary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     '공무원 보수규정 및 관련 법령에 따라 정확하게 계산됩니다.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.blue.shade900,
+                      color: colorScheme.primary,
                       height: 1.4,
                     ),
                   ),
@@ -168,6 +171,8 @@ class _SourceInfoSheet extends StatelessWidget {
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,7 +181,7 @@ class _SourceInfoSheet extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),

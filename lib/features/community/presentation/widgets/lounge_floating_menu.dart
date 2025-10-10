@@ -284,7 +284,7 @@ class _LoungeFloatingMenuState extends State<LoungeFloatingMenu>
                         ),
                       ),
 
-                      // 급여명세서 인증 버튼 (미인증 시)
+                      // 직렬 인증 버튼 (미인증 시)
                       if (!widget.hasCareerVerification &&
                           widget.onVerifyCareer != null) ...[
                         Padding(

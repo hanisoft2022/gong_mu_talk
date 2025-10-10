@@ -31,6 +31,7 @@ import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
+import '../features/profile/presentation/views/government_email_verification_page.dart';
 import '../features/profile/presentation/views/blocked_users_page.dart';
 import '../features/profile/presentation/views/profile_settings_page.dart';
 import '../features/profile/presentation/widgets/profile_settings/custom_license_page.dart';
@@ -127,6 +128,12 @@ GoRouter createRouter() {
         path: '${ProfileRoute.path}/verify-paystub',
         name: PaystubVerificationRoute.name,
         builder: (context, state) => const PaystubVerificationPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '${ProfileRoute.path}/government-email-verification',
+        name: GovernmentEmailVerificationRoute.name,
+        builder: (context, state) => const GovernmentEmailVerificationPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -359,6 +366,13 @@ class PaystubVerificationRoute {
 
   static const String name = 'paystub-verification';
   static const String path = '${ProfileRoute.path}/verify-paystub';
+}
+
+class GovernmentEmailVerificationRoute {
+  const GovernmentEmailVerificationRoute._();
+
+  static const String name = 'government-email-verification';
+  static const String path = '${ProfileRoute.path}/government-email-verification';
 }
 
 class BlockedUsersRoute {

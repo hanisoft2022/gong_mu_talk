@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/calculation_context.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
@@ -39,12 +40,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: false,
-        numberOfChildren: 0,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: false,
+          numberOfChildren: 0,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       expect(monthlyIncomes.length, 12);
@@ -99,12 +102,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: true,
-        numberOfChildren: 2,
-        isHomeroom: true,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: true,
+          numberOfChildren: 2,
+          isHomeroom: true,
+          hasPosition: false,
+        ),
       );
 
       // 재직 년수: 2025 - 2017 = 8년
@@ -170,12 +175,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: true,
-        numberOfChildren: 3,
-        isHomeroom: false,
-        hasPosition: true, // 보직교사
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: true,
+          numberOfChildren: 3,
+          isHomeroom: false,
+          hasPosition: true, // 보직교사
+        ),
       );
 
       final baseSalary = SalaryTable.getBasePay(21);
@@ -214,12 +221,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: true,
-        numberOfChildren: 2,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: true,
+          numberOfChildren: 2,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       final baseSalary = SalaryTable.getBasePay(35);
@@ -251,12 +260,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: false,
-        numberOfChildren: 0,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: false,
+          numberOfChildren: 0,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       final annualNetIncome = service.calculateAnnualNetIncome(monthlyIncomes);

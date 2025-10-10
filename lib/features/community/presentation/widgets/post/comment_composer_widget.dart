@@ -30,6 +30,9 @@ class CommentComposer extends StatelessWidget {
     required this.onPickImages,
     required this.onRemoveImage,
     required this.onSubmit,
+    this.enabled = true,
+    this.onDisabledTap,
+    this.hintText = '댓글을 입력하세요...',
   });
 
   final TextEditingController controller;
@@ -42,6 +45,9 @@ class CommentComposer extends StatelessWidget {
   final VoidCallback onPickImages;
   final void Function(int index) onRemoveImage;
   final VoidCallback onSubmit;
+  final bool enabled;
+  final VoidCallback? onDisabledTap;
+  final String hintText;
 
   @override
   Widget build(BuildContext context) {
@@ -52,11 +58,14 @@ class CommentComposer extends StatelessWidget {
         TextField(
           controller: controller,
           focusNode: focusNode,
+          enabled: enabled,
+          readOnly: !enabled,
+          onTap: !enabled ? onDisabledTap : null,
           minLines: 1,
           maxLines: 4,
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
-            hintText: '댓글을 입력하세요...',
+            hintText: hintText,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
             contentPadding: const EdgeInsets.fromLTRB(12, 10, 60, 10),
@@ -66,7 +75,7 @@ class CommentComposer extends StatelessWidget {
                 // Image picker button
                 IconButton(
                   icon: const Icon(Icons.image_outlined, size: 20),
-                  onPressed: onPickImages,
+                  onPressed: enabled ? onPickImages : onDisabledTap,
                   tooltip: '이미지 첨부',
                   padding: const EdgeInsets.all(4),
                   constraints: const BoxConstraints(
@@ -84,7 +93,7 @@ class CommentComposer extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send_rounded, size: 20),
-                  onPressed: canSubmit && !isSubmitting ? onSubmit : null,
+                  onPressed: enabled && canSubmit && !isSubmitting ? onSubmit : (!enabled ? onDisabledTap : null),
                   tooltip: '댓글 등록',
                   padding: const EdgeInsets.all(4),
                   constraints: const BoxConstraints(

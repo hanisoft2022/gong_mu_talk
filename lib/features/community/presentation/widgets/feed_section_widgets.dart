@@ -58,12 +58,13 @@ class FeedSectionBuilder extends StatelessWidget {
 
     // Show skeleton for both sorting and lounging
     if (isSorting || isLounging) {
+      final colorScheme = Theme.of(context).colorScheme;
       return Skeletonizer(
         enabled: true,
         enableSwitchAnimation: true,
         effect: ShimmerEffect(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
+          baseColor: colorScheme.surfaceContainerHighest,
+          highlightColor: colorScheme.surfaceContainerHigh,
           duration: const Duration(milliseconds: 1000),
         ),
         child: _buildSkeletonList(),

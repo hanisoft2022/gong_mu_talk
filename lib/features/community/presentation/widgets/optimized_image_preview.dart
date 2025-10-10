@@ -48,6 +48,8 @@ class _OptimizedImagePreviewState extends State<OptimizedImagePreview> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: widget.size,
       height: widget.size,
@@ -60,9 +62,7 @@ class _OptimizedImagePreviewState extends State<OptimizedImagePreview> {
                 ? Container(
                     width: widget.size,
                     height: widget.size,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: colorScheme.surfaceContainerHighest,
                     child: const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
@@ -80,8 +80,8 @@ class _OptimizedImagePreviewState extends State<OptimizedImagePreview> {
                 : Container(
                     width: widget.size,
                     height: widget.size,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.error),
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Icon(Icons.error, color: colorScheme.error),
                   ),
           ),
           Positioned(
@@ -91,11 +91,15 @@ class _OptimizedImagePreviewState extends State<OptimizedImagePreview> {
               onTap: widget.onRemove,
               child: Container(
                 padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
+                decoration: BoxDecoration(
+                  color: colorScheme.scrim.withValues(alpha: 0.54),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                child: Icon(
+                  Icons.close,
+                  color: colorScheme.onInverseSurface,
+                  size: 16,
+                ),
               ),
             ),
           ),

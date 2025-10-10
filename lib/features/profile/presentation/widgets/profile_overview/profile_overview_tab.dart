@@ -18,6 +18,7 @@ import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../community/presentation/cubit/scrap_cubit.dart';
 import '../../../../community/presentation/cubit/user_comments_cubit.dart';
 import '../../cubit/profile_timeline_cubit.dart';
+import '../profile_verification/government_email_verification_card.dart';
 import '../profile_verification/paystub_verification_card.dart';
 import '../profile_timeline/profile_comments_tab_content.dart';
 import '../profile_timeline/profile_posts_tab_content.dart';
@@ -107,6 +108,11 @@ class _ProfileOverviewTabState extends State<ProfileOverviewTab>
                             currentUserId: state.userId,
                           ),
                         if (hasUserId) ...[
+                          // Show email verification card only if neither email nor career is verified
+                          if (!state.isGovernmentEmailVerified && !state.isCareerTrackVerified) ...[
+                            const Gap(16),
+                            const GovernmentEmailVerificationCard(),
+                          ],
                           const Gap(16),
                           PaystubVerificationCard(uid: state.userId!),
                         ],

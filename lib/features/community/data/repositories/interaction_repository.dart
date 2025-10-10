@@ -2,12 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/paginated_query.dart';
-import '../../../../core/constants/engagement_points.dart';
 import '../../../../core/firebase/firestore_refs.dart';
-import '../../../profile/data/user_profile_repository.dart';
 
 typedef JsonMap = Map<String, Object?>;
 typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
@@ -21,16 +18,13 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 /// - Fetch scrapped posts with pagination
 /// - Award engagement points for interactions
 ///
-/// Dependencies: UserProfileRepository, FirebaseFirestore
+/// Dependencies: FirebaseFirestore
 class InteractionRepository {
   InteractionRepository({
     FirebaseFirestore? firestore,
-    required UserProfileRepository userProfileRepository,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _userProfileRepository = userProfileRepository;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-  final UserProfileRepository _userProfileRepository;
   final Random _random = Random();
   static const int _counterShardCount = 10;
 
@@ -66,7 +60,6 @@ class InteractionRepository {
     final DocumentReference<JsonMap> likeDoc = _likesRef.doc('${postId}_$uid');
     final DocumentReference<JsonMap> postDoc = _postDoc(postId);
     final DocumentReference<JsonMap> shardDoc = _counterShardRef(postId);
-    String? postAuthorUid;
     final bool liked = await _firestore.runTransaction<bool>((
       Transaction transaction,
     ) async {
@@ -74,7 +67,6 @@ class InteractionRepository {
       if (!postSnapshot.exists) {
         throw StateError('게시글을 찾을 수 없습니다.');
       }
-      postAuthorUid = (postSnapshot.data()?['authorUid'] as String?) ?? '';
 
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
@@ -101,20 +93,6 @@ class InteractionRepository {
       return willLike;
     });
 
-    if (liked &&
-        postAuthorUid != null &&
-        postAuthorUid!.isNotEmpty &&
-        postAuthorUid != uid) {
-      try {
-        await _userProfileRepository.incrementPoints(
-          uid: postAuthorUid!,
-          delta: EngagementPoints.contentReceivedLike,
-        );
-      } catch (error, stackTrace) {
-        debugPrint('Failed to award points for post like: $error\n$stackTrace');
-      }
-    }
-
     return liked;
   }
 
@@ -130,7 +108,6 @@ class InteractionRepository {
     final DocumentReference<JsonMap> commentDoc = _commentsRef(
       postId,
     ).doc(commentId);
-    String? commentAuthorUid;
     final bool liked = await _firestore.runTransaction<bool>((
       Transaction transaction,
     ) async {
@@ -138,8 +115,6 @@ class InteractionRepository {
       if (!commentSnapshot.exists) {
         throw StateError('댓글을 찾을 수 없습니다.');
       }
-      commentAuthorUid =
-          (commentSnapshot.data()?['authorUid'] as String?) ?? '';
 
       final DocSnapshotJson likeSnapshot = await transaction.get(likeDoc);
       final bool willLike = !likeSnapshot.exists;
@@ -161,22 +136,6 @@ class InteractionRepository {
       return willLike;
     });
 
-    if (liked &&
-        commentAuthorUid != null &&
-        commentAuthorUid!.isNotEmpty &&
-        commentAuthorUid != uid) {
-      try {
-        await _userProfileRepository.incrementPoints(
-          uid: commentAuthorUid!,
-          delta: EngagementPoints.contentReceivedLike,
-        );
-      } catch (error, stackTrace) {
-        debugPrint(
-          'Failed to award points for comment like: $error\n$stackTrace',
-        );
-      }
-    }
-
     return liked;
   }
 
@@ -196,6 +155,9 @@ class InteractionRepository {
     }
   }
 
+  /// ⚠️ DEPRECATED: Use fetchScrappedPostIdsPage instead to avoid loading all scraps at once.
+  /// This method can cause high Firestore read costs for users with many scraps.
+  @Deprecated('Use fetchScrappedPostIdsPage instead for better performance and cost optimization')
   Future<Set<String>> fetchScrappedPostIds(String uid) async {
     final QuerySnapshot<JsonMap> snapshot = await _scrapsRef(uid).get();
     return snapshot.docs

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/holiday_payment_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/annual_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_detail.dart';
@@ -11,6 +12,7 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/school_type.dar
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
+import 'package:gong_mu_talk/features/calculator/domain/calculation_core/service_years_calculator.dart';
 
 /// 가족수당 계산 결과 클래스
 class FamilyAllowanceResult {
@@ -72,22 +74,28 @@ class SalaryCalculationService {
         targetYear: year,
       );
 
-      // 4. 총 급여 (세전)
+      // 4. 명절상여금 계산 (연간, 본봉 × 1.2)
+      final holidayBonus = HolidayPaymentTable.calculateAnnualHolidayBonus(
+        baseSalary: basePay,
+        year: year,
+      );
+
+      // 5. 총 급여 (세전)
       final grossPay =
           basePay + positionAllowance + homeroomAllowance + familyAllowance + otherAllowances;
 
-      // 5. 세금 및 4대보험
+      // 6. 세금 및 4대보험
       final incomeTax = _taxService.calculateIncomeTax(grossPay);
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
       final insurance = _taxService.calculateTotalInsurance(grossPay);
       final totalDeductions = incomeTax + localTax + insurance;
 
-      // 6. 실수령액 (월급)
+      // 7. 실수령액 (월급)
       final netPay = grossPay - totalDeductions;
 
-      // 7. 연간 총 급여 (월급 * 12 + 성과상여금)
-      // 성과상여금은 3월에 지급되므로 연간 1회만 포함
-      final annualTotalPay = (netPay * 12) + performanceBonus;
+      // 8. 연간 총 급여 (월급 * 12 + 성과상여금 + 명절상여금)
+      // 성과상여금은 3월에 지급, 명절상여금은 설날/추석 2회
+      final annualTotalPay = (netPay * 12) + performanceBonus + holidayBonus;
 
       results.add(
         AnnualSalary(
@@ -99,6 +107,7 @@ class SalaryCalculationService {
           familyAllowance: familyAllowance,
           otherAllowances: otherAllowances,
           performanceBonus: performanceBonus,
+          holidayBonus: holidayBonus,
           incomeTax: (incomeTax + localTax).round(),
           insurance: insurance.round(),
           netPay: netPay,
@@ -310,8 +319,12 @@ class SalaryCalculationService {
       return 0;
     }
 
-    // 나이 계산
-    final age = currentYear - birthYear - (currentMonth < birthMonth ? 1 : 0);
+    // 나이 계산 (ServiceYearsCalculator 사용)
+    final age = ServiceYearsCalculator.calculateAge(
+      birthYear,
+      birthMonth,
+      DateTime(currentYear, currentMonth, 1),
+    );
 
     // 30년 이상 재직 + 55세 이상
     if (serviceYears >= 30 && age >= 55) {
@@ -491,10 +504,15 @@ class SalaryCalculationService {
     final currentYear = DateTime.now().year;
     final currentMonth = DateTime.now().month;
 
-    // 재직연수 계산 (정근수당용)
-    final serviceYears = profile.getServiceYears();
+    // 재직연수 계산 (ServiceYearsCalculator 사용)
+    final serviceInfo = ServiceYearsCalculator.calculate(
+      profile.employmentStartDate,
+      DateTime(currentYear, currentMonth, 1),
+    );
+    final serviceYears = serviceInfo.fullYears;
 
-    // 교육경력 계산 (교원연구비용)
+    // 교육경력 계산 (재직년수 기반 + 추가/제외 개월)
+    // 기존 로직 유지: getTeachingExperienceYears()는 추가/제외 교육경력을 포함
     final teachingExperienceYears = profile.getTeachingExperienceYears();
 
     // 1. 본봉

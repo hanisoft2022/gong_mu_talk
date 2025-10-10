@@ -11,6 +11,7 @@ class AnnualSalary extends Equatable {
     this.familyAllowance = 0,
     this.otherAllowances = 0,
     this.performanceBonus = 0,
+    this.holidayBonus = 0,
     this.incomeTax = 0,
     this.insurance = 0,
     required this.netPay,
@@ -40,6 +41,9 @@ class AnnualSalary extends Equatable {
 
   /// 성과상여금 (3월 지급)
   final int performanceBonus;
+
+  /// 명절상여금 (연간, 설날 + 추석 = 본봉 × 1.2)
+  final int holidayBonus;
 
   /// 소득세
   final int incomeTax;
@@ -73,6 +77,7 @@ class AnnualSalary extends Equatable {
     familyAllowance,
     otherAllowances,
     performanceBonus,
+    holidayBonus,
     incomeTax,
     insurance,
     netPay,
@@ -88,6 +93,7 @@ class AnnualSalary extends Equatable {
     int? familyAllowance,
     int? otherAllowances,
     int? performanceBonus,
+    int? holidayBonus,
     int? incomeTax,
     int? insurance,
     int? netPay,
@@ -102,6 +108,7 @@ class AnnualSalary extends Equatable {
       familyAllowance: familyAllowance ?? this.familyAllowance,
       otherAllowances: otherAllowances ?? this.otherAllowances,
       performanceBonus: performanceBonus ?? this.performanceBonus,
+      holidayBonus: holidayBonus ?? this.holidayBonus,
       incomeTax: incomeTax ?? this.incomeTax,
       insurance: insurance ?? this.insurance,
       netPay: netPay ?? this.netPay,

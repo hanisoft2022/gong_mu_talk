@@ -7,10 +7,8 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/firebase/paginated_query.dart';
 import '../../../../core/utils/hot_score.dart';
 import '../../../../core/utils/prefix_tokenizer.dart';
-import '../../../../core/constants/engagement_points.dart';
 import '../../../../core/firebase/firestore_refs.dart';
 import '../../../profile/domain/career_track.dart';
-import '../../../profile/data/user_profile_repository.dart';
 import '../../domain/models/post.dart';
 
 typedef JsonMap = Map<String, Object?>;
@@ -26,19 +24,16 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 /// - Upload and manage post media
 /// - Post visibility (hide/restore)
 ///
-/// Dependencies: UserProfileRepository, FirebaseFirestore, FirebaseStorage
+/// Dependencies: FirebaseFirestore, FirebaseStorage
 class PostRepository {
   PostRepository({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-    required UserProfileRepository userProfileRepository,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _storage = storage ?? FirebaseStorage.instance,
-       _userProfileRepository = userProfileRepository;
+       _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
-  final UserProfileRepository _userProfileRepository;
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
   final HotScoreCalculator _hotScoreCalculator = const HotScoreCalculator();
 
@@ -59,15 +54,12 @@ class PostRepository {
     required CareerTrack authorTrack,
     String? authorSpecificCareer,
     bool authorSerialVisible = true,
-    int authorSupporterLevel = 0,
-    bool authorIsSupporter = false,
     required String text,
     required PostAudience audience,
     required String serial,
     List<PostMedia> media = const <PostMedia>[],
     List<String> tags = const <String>[],
     String? boardId,
-    bool awardPoints = true,
   }) async {
     final DocumentReference<JsonMap> ref = postId != null
         ? _postsRef.doc(postId)
@@ -89,8 +81,6 @@ class PostRepository {
       'authorTrack': authorTrack.name,
       'authorSpecificCareer': authorSpecificCareer,
       'authorSerialVisible': authorSerialVisible,
-      'authorSupporterLevel': authorSupporterLevel,
-      'authorIsSupporter': authorIsSupporter,
       'text': text,
       'media': media
           .map((PostMedia media) => media.toMap())
@@ -114,18 +104,6 @@ class PostRepository {
     };
 
     await ref.set(data);
-    if (awardPoints) {
-      try {
-        await _userProfileRepository.incrementPoints(
-          uid: authorUid,
-          delta: EngagementPoints.postCreation,
-        );
-      } catch (error, stackTrace) {
-        debugPrint(
-          'Failed to award points for post creation: $error\n$stackTrace',
-        );
-      }
-    }
     return Post.fromMap(ref.id, data);
   }
 

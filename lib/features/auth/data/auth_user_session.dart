@@ -24,8 +24,5 @@ class AuthUserSession implements UserSession {
   bool get serialVisible => _state.serialVisible;
 
   @override
-  int get supporterLevel => 0;
-
-  @override
   String get userId => _state.userId ?? 'anonymous';
 }

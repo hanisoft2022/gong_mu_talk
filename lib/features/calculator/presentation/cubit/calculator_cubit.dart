@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gong_mu_talk/core/services/profile_storage_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/calculation_context.dart';
 import 'package:gong_mu_talk/features/calculator/domain/repositories/teacher_profile_repository.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_lifetime_salary_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_pension_usecase.dart';
@@ -9,6 +12,7 @@ import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_early
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_after_tax_pension_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/domain/usecases/calculate_monthly_breakdown_usecase.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/cubit/calculator_state.dart';
+import 'package:gong_mu_talk/features/auth/presentation/cubit/auth_cubit.dart';
 
 class CalculatorCubit extends Cubit<CalculatorState> {
   final CalculateLifetimeSalaryUseCase _calculateLifetimeSalaryUseCase;
@@ -20,6 +24,10 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   final ProfileStorageService _profileStorageService;
   final TeacherProfileRepository _firestoreRepository;
   final String? Function() _getUserId;
+  final AuthCubit _authCubit;
+
+  StreamSubscription<AuthState>? _authSubscription;
+  String? _lastUserId;
 
   CalculatorCubit({
     required CalculateLifetimeSalaryUseCase calculateLifetimeSalaryUseCase,
@@ -32,6 +40,7 @@ class CalculatorCubit extends Cubit<CalculatorState> {
     required ProfileStorageService profileStorageService,
     required TeacherProfileRepository firestoreRepository,
     required String? Function() getUserId,
+    required AuthCubit authCubit,
   }) : _calculateLifetimeSalaryUseCase = calculateLifetimeSalaryUseCase,
        _calculatePensionUseCase = calculatePensionUseCase,
        _calculateRetirementBenefitUseCase = calculateRetirementBenefitUseCase,
@@ -41,29 +50,47 @@ class CalculatorCubit extends Cubit<CalculatorState> {
        _profileStorageService = profileStorageService,
        _firestoreRepository = firestoreRepository,
        _getUserId = getUserId,
+       _authCubit = authCubit,
        super(const CalculatorState()) {
     // 저장된 프로필 불러오기
+    _lastUserId = _getUserId();
     loadSavedProfile();
+
+    // AuthState 변경 감지하여 userId 변경 시 자동 리셋
+    _authSubscription = _authCubit.stream.listen((authState) {
+      final currentUserId = authState.userId;
+
+      // userId가 변경되었을 때 (로그아웃 → 로그인, 사용자 전환)
+      if (_lastUserId != currentUserId) {
+        _lastUserId = currentUserId;
+
+        // 상태 초기화 및 새 사용자 프로필 로드
+        emit(const CalculatorState());
+        loadSavedProfile();
+      }
+    });
   }
 
   /// 저장된 프로필 불러오기 (로컬 먼저, Firestore는 백그라운드)
   Future<void> loadSavedProfile() async {
+    final userId = _getUserId();
+
     // 1. 로컬 저장소에서 먼저 불러오기 (빠른 응답)
-    final localProfile = _profileStorageService.loadProfile();
+    // User-specific key로 계정별 데이터 격리
+    final localProfile = _profileStorageService.loadProfile(userId: userId);
     if (localProfile != null) {
       emit(state.copyWith(profile: localProfile, isDataEntered: true));
       calculate();
     }
 
     // 2. Firestore에서 불러오기 (백그라운드, 로그인된 경우만)
-    final userId = _getUserId();
     if (userId != null) {
       try {
         final firestoreProfile = await _firestoreRepository.loadProfile(userId);
         if (firestoreProfile != null) {
           // Firestore 데이터가 있으면 로컬보다 우선 (최신 데이터로 간주)
           emit(state.copyWith(profile: firestoreProfile, isDataEntered: true));
-          await _profileStorageService.saveProfile(firestoreProfile); // 로컬도 업데이트
+          await _profileStorageService.saveProfile(firestoreProfile, userId: userId); // 로컬도 업데이트
           calculate();
         }
       } catch (e) {
@@ -77,11 +104,13 @@ class CalculatorCubit extends Cubit<CalculatorState> {
   Future<void> saveProfile(TeacherProfile profile) async {
     emit(state.copyWith(profile: profile, isDataEntered: true));
 
+    final userId = _getUserId();
+
     // 1. 로컬 저장 (즉시, 오프라인 우선)
-    await _profileStorageService.saveProfile(profile);
+    // User-specific key로 계정별 데이터 격리
+    await _profileStorageService.saveProfile(profile, userId: userId);
 
     // 2. Firestore 저장 (백그라운드, 로그인된 경우만)
-    final userId = _getUserId();
     if (userId != null) {
       // 백그라운드로 동기화 (실패해도 로컬은 저장됨)
       _firestoreRepository.saveProfile(userId, profile).catchError((e) {
@@ -142,10 +171,12 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
       // 8. 월별 실수령액 분석
       final monthlyBreakdown = _calculateMonthlyBreakdownUseCase(
-        profile: profile,
-        year: DateTime.now().year,
-        hasSpouse: profile.hasSpouse,
-        numberOfChildren: profile.numberOfChildren,
+        CalculationContext(
+          profile: profile,
+          year: DateTime.now().year,
+          hasSpouse: profile.hasSpouse,
+          numberOfChildren: profile.numberOfChildren,
+        ),
       );
 
       emit(
@@ -236,10 +267,12 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
     try {
       final monthlyBreakdown = _calculateMonthlyBreakdownUseCase(
-        profile: state.profile!,
-        year: DateTime.now().year,
-        hasSpouse: state.profile!.hasSpouse,
-        numberOfChildren: state.profile!.numberOfChildren,
+        CalculationContext(
+          profile: state.profile!,
+          year: DateTime.now().year,
+          hasSpouse: state.profile!.hasSpouse,
+          numberOfChildren: state.profile!.numberOfChildren,
+        ),
       );
 
       emit(state.copyWith(monthlyBreakdown: monthlyBreakdown));
@@ -254,11 +287,12 @@ class CalculatorCubit extends Cubit<CalculatorState> {
 
   /// 프로필 초기화 (로컬 + Firestore 모두 삭제)
   Future<void> clearProfile() async {
-    // 1. 로컬 저장소 삭제
-    await _profileStorageService.clearProfile();
+    final userId = _getUserId();
+
+    // 1. 로컬 저장소 삭제 (User-specific key)
+    await _profileStorageService.clearProfile(userId: userId);
 
     // 2. Firestore 삭제 (백그라운드, 로그인된 경우만)
-    final userId = _getUserId();
     if (userId != null) {
       _firestoreRepository.deleteProfile(userId).catchError((e) {
         // Firestore 삭제 실패해도 로컬은 이미 삭제됨
@@ -266,5 +300,11 @@ class CalculatorCubit extends Cubit<CalculatorState> {
     }
 
     emit(const CalculatorState());
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
   }
 }

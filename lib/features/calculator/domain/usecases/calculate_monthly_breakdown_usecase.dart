@@ -1,6 +1,5 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/calculation_context.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 
 /// 월별 실수령액 계산 UseCase
@@ -11,33 +10,11 @@ class CalculateMonthlyBreakdownUseCase {
 
   /// 12개월 실수령액 계산 실행
   ///
-  /// [profile] 교사 프로필
-  /// [year] 계산 년도
-  /// [hasSpouse] 배우자 유무
-  /// [numberOfChildren] 자녀 수
-  /// [isHomeroom] 담임 여부
-  /// [hasPosition] 보직 여부
-  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
+  /// [context] 계산 컨텍스트 (프로필, 년도, 가족 정보, 담임/보직 여부 등)
   ///
   /// Returns: 12개월 실수령액 목록
-  List<MonthlyNetIncome> call({
-    required TeacherProfile profile,
-    required int year,
-    required bool hasSpouse,
-    required int numberOfChildren,
-    bool isHomeroom = false,
-    bool hasPosition = false,
-    PerformanceGrade performanceGrade = PerformanceGrade.A,
-  }) {
-    return _service.calculateMonthlyBreakdown(
-      profile: profile,
-      year: year,
-      hasSpouse: hasSpouse,
-      numberOfChildren: numberOfChildren,
-      isHomeroom: isHomeroom,
-      hasPosition: hasPosition,
-      performanceGrade: performanceGrade,
-    );
+  List<MonthlyNetIncome> call(CalculationContext context) {
+    return _service.calculateMonthlyBreakdown(context);
   }
 
   /// 연간 총 실수령액 계산
@@ -60,38 +37,21 @@ class CalculateMonthlyBreakdownUseCase {
 
   /// 연도별 실수령액 비교
   ///
-  /// [profile] 교사 프로필
+  /// [baseContext] 기본 계산 컨텍스트
   /// [startYear] 시작 년도
   /// [endYear] 종료 년도
-  /// [hasSpouse] 배우자 유무
-  /// [numberOfChildren] 자녀 수
-  /// [isHomeroom] 담임 여부
-  /// [hasPosition] 보직 여부
-  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
   ///
   /// Returns: 연도별 월별 실수령액 맵
   Map<int, List<MonthlyNetIncome>> compareByYear({
-    required TeacherProfile profile,
+    required CalculationContext baseContext,
     required int startYear,
     required int endYear,
-    required bool hasSpouse,
-    required int numberOfChildren,
-    bool isHomeroom = false,
-    bool hasPosition = false,
-    PerformanceGrade performanceGrade = PerformanceGrade.A,
   }) {
     final results = <int, List<MonthlyNetIncome>>{};
 
     for (int year = startYear; year <= endYear; year++) {
-      final monthlyIncomes = _service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: year,
-        hasSpouse: hasSpouse,
-        numberOfChildren: numberOfChildren,
-        isHomeroom: isHomeroom,
-        hasPosition: hasPosition,
-        performanceGrade: performanceGrade,
-      );
+      final context = baseContext.copyWith(year: year);
+      final monthlyIncomes = _service.calculateMonthlyBreakdown(context);
       results[year] = monthlyIncomes;
     }
 

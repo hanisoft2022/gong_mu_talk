@@ -10,7 +10,6 @@ void main() {
     AuthState buildState({
       String? userId,
       CareerTrack track = CareerTrack.teacher,
-      int supporterLevel = 1,
       bool serialVisible = true,
     }) {
       return AuthState(
@@ -29,7 +28,6 @@ void main() {
 
       expect(session.userId, 'user-1');
       expect(session.careerTrack, CareerTrack.teacher);
-      expect(session.supporterLevel, 1);
       expect(session.serialVisible, isTrue);
     });
 

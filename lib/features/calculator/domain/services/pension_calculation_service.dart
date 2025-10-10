@@ -5,6 +5,7 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/transition_rat
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
+import 'package:gong_mu_talk/features/calculator/domain/calculation_core/service_years_calculator.dart';
 
 /// 연금 계산 서비스
 class PensionCalculationService {
@@ -21,11 +22,12 @@ class PensionCalculationService {
     // 1. 정년퇴직일 계산 (생년월 기반)
     final retirementDate = profile.calculateRetirementDate();
 
-    // 2. 재직 년수 계산 (정확한 날짜 기반)
-    final totalDays = retirementDate
-        .difference(profile.employmentStartDate)
-        .inDays;
-    final serviceYears = (totalDays / 365).floor();
+    // 2. 재직 년수 계산 (ServiceYearsCalculator 사용)
+    final serviceInfo = ServiceYearsCalculator.calculate(
+      profile.employmentStartDate,
+      retirementDate,
+    );
+    final serviceYears = serviceInfo.fullYears;
 
     // 3. 기간별 경력 계산 (이행률 적용 위해)
     final periods = TransitionRateTable.calculatePeriodYears(

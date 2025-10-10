@@ -18,9 +18,6 @@ class AuthState extends Equatable {
     this.jobTitle = '직무 미입력',
     this.yearsOfService = 0,
     this.bio,
-    this.points = 0,
-    this.level = 1,
-    this.badges = const <String>[],
     this.photoUrl,
     this.nicknameChangeCount = 0,
     this.nicknameLastChangedAt,
@@ -59,9 +56,6 @@ class AuthState extends Equatable {
   final String jobTitle;
   final int yearsOfService;
   final String? bio;
-  final int points;
-  final int level;
-  final List<String> badges;
   final String? photoUrl;
   final int nicknameChangeCount;
   final DateTime? nicknameLastChangedAt;
@@ -102,9 +96,6 @@ class AuthState extends Equatable {
     String? jobTitle,
     int? yearsOfService,
     String? bio,
-    int? points,
-    int? level,
-    List<String>? badges,
     String? photoUrl,
     int? nicknameChangeCount,
     DateTime? nicknameLastChangedAt,
@@ -145,9 +136,6 @@ class AuthState extends Equatable {
       jobTitle: jobTitle ?? this.jobTitle,
       yearsOfService: yearsOfService ?? this.yearsOfService,
       bio: bio ?? this.bio,
-      points: points ?? this.points,
-      level: level ?? this.level,
-      badges: badges ?? this.badges,
       photoUrl: photoUrl ?? this.photoUrl,
       nicknameChangeCount: nicknameChangeCount ?? this.nicknameChangeCount,
       nicknameLastChangedAt:
@@ -196,9 +184,6 @@ class AuthState extends Equatable {
     jobTitle,
     yearsOfService,
     bio,
-    points,
-    level,
-    badges,
     photoUrl,
     nicknameChangeCount,
     nicknameLastChangedAt,
@@ -238,6 +223,9 @@ class AuthState extends Equatable {
   bool get isGovernmentEmailVerified =>
       userProfile?.isGovernmentEmailVerified ?? false;
 
+  bool get isCareerTrackVerified =>
+      userProfile?.isCareerTrackVerified ?? false;
+
   bool get hasNicknameTickets => extraNicknameTickets > 0;
 
   bool get canChangeNickname {
@@ -256,12 +244,74 @@ class AuthState extends Equatable {
   /// 라운지 읽기 권한: 로그인한 모든 사용자
   bool get hasLoungeReadAccess => isLoggedIn;
 
-  /// 라운지 쓰기 권한: 공직자 메일 인증 완료 사용자
-  bool get hasLoungeWriteAccess => isGovernmentEmailVerified;
+  /// 라운지 쓰기 권한: 공직자 메일 인증 OR 직렬 인증 완료 사용자
+  /// 직렬 인증을 완료한 경우 자동으로 메일 인증 권한 포함 (OR 로직)
+  bool get hasLoungeWriteAccess =>
+      isGovernmentEmailVerified || isCareerTrackVerified;
 
   /// @deprecated Use hasLoungeReadAccess or hasLoungeWriteAccess instead
   @Deprecated('Use hasLoungeReadAccess or hasLoungeWriteAccess')
   bool get hasLoungeAccess => hasLoungeWriteAccess;
 
   bool get hasSerialTabAccess => isGovernmentEmailVerified;
+}
+
+/// AuthState에 대한 기능 접근 레벨 확장
+///
+/// FeatureAccessLevel을 사용하여 선언적으로 접근 제어를 구현
+extension AuthStateFeatureAccess on AuthState {
+  /// 현재 사용자의 접근 레벨 반환
+  ///
+  /// - Level 0 (guest): 비회원
+  /// - Level 1 (member): 회원 (로그인만)
+  /// - Level 2 (emailVerified): 공직자 메일 인증
+  /// - Level 3 (careerVerified): 직렬 인증
+  FeatureAccessLevel get currentAccessLevel {
+    // 직렬 인증 완료 (최고 레벨)
+    if (isCareerTrackVerified) {
+      return FeatureAccessLevel.careerVerified;
+    }
+
+    // 공직자 메일 인증 완료
+    if (isGovernmentEmailVerified) {
+      return FeatureAccessLevel.emailVerified;
+    }
+
+    // 로그인만 완료
+    if (isLoggedIn) {
+      return FeatureAccessLevel.member;
+    }
+
+    // 비회원
+    return FeatureAccessLevel.guest;
+  }
+
+  /// 특정 기능에 접근 가능한지 확인
+  ///
+  /// 사용 예시:
+  /// ```dart
+  /// if (authState.canAccess(FeatureAccessLevel.emailVerified)) {
+  ///   // 공직자 메일 인증 완료 사용자만 접근 가능
+  /// }
+  /// ```
+  bool canAccess(FeatureAccessLevel requiredLevel) {
+    return currentAccessLevel >= requiredLevel;
+  }
+
+  /// 다음 레벨 정보 반환
+  ///
+  /// 사용자가 다음 단계로 올라가기 위한 레벨 정보
+  FeatureAccessLevel? get nextAccessLevel {
+    return currentAccessLevel.nextLevel;
+  }
+
+  /// 다음 레벨로 가기 위한 액션 설명
+  String get nextLevelActionDescription {
+    return currentAccessLevel.nextLevelActionDescription;
+  }
+
+  /// 다음 레벨 인증 페이지 경로
+  String? get verificationRoute {
+    return currentAccessLevel.verificationRoute;
+  }
 }

@@ -22,8 +22,19 @@ class SearchCubit extends Cubit<SearchState> {
   final SharedPreferences _preferences;
   Timer? _autocompleteDebounce;
 
-  static const String _recentSearchesKey = 'recent_searches';
+  // User-specific key structure
+  static const String _recentSearchesKeyPrefix = 'recent_searches';
+  static const String _guestSearchesKey = 'recent_searches_guest';
   static const int _maxRecentSearches = 10;
+
+  /// Get user-specific key for recent searches
+  String _getRecentSearchesKey() {
+    final userId = _repository.currentUserId;
+    if (userId == null || userId.isEmpty) {
+      return _guestSearchesKey;
+    }
+    return '${_recentSearchesKeyPrefix}_$userId';
+  }
 
   void onQueryChanged(String value) {
     emit(state.copyWith(draftQuery: value));
@@ -208,7 +219,7 @@ class SearchCubit extends Cubit<SearchState> {
     emit(state.copyWith(recentSearches: recentSearches));
   }
 
-  // 최근 검색어 추가
+  // 최근 검색어 추가 (User-specific)
   Future<void> _addRecentSearch(String query) async {
     final recentSearches = await _getRecentSearches();
 
@@ -223,27 +234,42 @@ class SearchCubit extends Cubit<SearchState> {
       recentSearches.removeRange(_maxRecentSearches, recentSearches.length);
     }
 
-    // 저장
-    await _preferences.setStringList(_recentSearchesKey, recentSearches);
+    // 저장 (User-specific key)
+    final key = _getRecentSearchesKey();
+    await _preferences.setStringList(key, recentSearches);
   }
 
-  // 최근 검색어 가져오기
+  // 최근 검색어 가져오기 (User-specific)
   Future<List<String>> _getRecentSearches() async {
-    return _preferences.getStringList(_recentSearchesKey) ?? <String>[];
+    final key = _getRecentSearchesKey();
+    return _preferences.getStringList(key) ?? <String>[];
   }
 
-  // 최근 검색어 개별 삭제
+  // 최근 검색어 개별 삭제 (User-specific)
   Future<void> removeRecentSearch(String query) async {
     final recentSearches = await _getRecentSearches();
     recentSearches.remove(query);
-    await _preferences.setStringList(_recentSearchesKey, recentSearches);
+    final key = _getRecentSearchesKey();
+    await _preferences.setStringList(key, recentSearches);
     emit(state.copyWith(recentSearches: recentSearches));
   }
 
-  // 최근 검색어 전체 삭제
+  // 최근 검색어 전체 삭제 (User-specific)
   Future<void> clearRecentSearches() async {
-    await _preferences.remove(_recentSearchesKey);
+    final key = _getRecentSearchesKey();
+    await _preferences.remove(key);
     emit(state.copyWith(recentSearches: const <String>[]));
+  }
+
+  // 모든 사용자의 최근 검색어 삭제 (필요시)
+  Future<void> clearAllRecentSearches() async {
+    final keys = _preferences.getKeys();
+    final searchKeys = keys.where(
+      (key) => key.startsWith(_recentSearchesKeyPrefix),
+    );
+    for (final key in searchKeys) {
+      await _preferences.remove(key);
+    }
   }
 
   @override

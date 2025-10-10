@@ -9,7 +9,5 @@ abstract interface class UserSession {
 
   String? get specificCareer;
 
-  int get supporterLevel;
-
   bool get serialVisible;
 }

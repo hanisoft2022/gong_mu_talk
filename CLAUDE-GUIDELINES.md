@@ -309,6 +309,173 @@ static const Color premiumDark = Color(0xFFC19A2E);
 - Theme integration: `lib/core/theme/app_theme.dart`
 - Material 3 colors: [Material Design Color System](https://m3.material.io/styles/color/system/overview)
 
+### Calculator Domain Rules
+
+**Philosophy**: "Single Source of Truth > Duplicate Logic"
+
+GongMuTalk의 급여/연금 계산기는 **정확성**이 최우선입니다. 계산 로직의 일관성을 위해 **Single Source of Truth** 패턴을 엄격히 준수합니다.
+
+#### 🧮 Calculation Core (calculation_core/)
+
+**계산 로직의 단일 진입점** - 모든 서비스는 이 클래스들을 통해 계산해야 합니다.
+
+**1. ServiceYearsCalculator** - 재직년수 계산
+```dart
+// ✅ ALWAYS use ServiceYearsCalculator
+final serviceInfo = ServiceYearsCalculator.calculate(
+  startDate,
+  endDate,
+);
+final serviceYears = serviceInfo.fullYears;
+
+// ❌ NEVER calculate manually
+final serviceYears = endDate.year - startDate.year;  // ❌ Wrong!
+final serviceYears = (totalDays / 365).floor();      // ❌ Wrong!
+final serviceYears = profile.getServiceYears();      // ❌ Wrong!
+```
+
+**계산 방식**:
+- 일수 기반 정확 계산 (365일 = 1년)
+- 만 나이 방식 적용
+- 테스트 커버리지: 100% (18/18 tests)
+
+**2. HolidayPaymentTable** - 명절상여금 지급 월
+```dart
+// ✅ ALWAYS use HolidayPaymentTable
+final holidayBonus = HolidayPaymentTable.calculateHolidayBonus(
+  baseSalary: baseSalary,
+  year: year,
+  month: month,
+);
+
+// ❌ NEVER hardcode lunar calendar mapping
+final lunarHolidays = {
+  2025: [1, 10],  // ❌ Wrong! Incomplete data
+  // ...
+};
+```
+
+**데이터 범위**:
+- 2025~2073년 (49년치)
+- 한국천문연구원 음력-양력 변환 데이터 기반
+- **2033년 업데이트 필요** (2074-2075년 추가)
+
+**연간 명절상여금**:
+- 설날 + 추석 = 본봉 × 60% × 2 = 본봉 × 1.2
+- 38년 재직 시 약 114M원 (누락 시 큰 손실!)
+
+#### 📋 Calculator Services Layer
+
+**계산 서비스 계층** - calculation_core를 사용하여 복잡한 계산 수행
+
+**SalaryCalculationService**:
+- 연도별 급여 계산 (`calculateAnnualSalaries`)
+- 생애 급여 계산 (`calculateLifetimeSalary`)
+- 각종 수당 계산 (정근수당, 가족수당, 교원연구비 등)
+
+**MonthlyBreakdownService**:
+- 월별 실수령액 계산 (`calculateMonthlyBreakdown`)
+- 12개월 상세 급여명세서
+
+**PensionCalculationService**:
+- 연금 예상액 계산 (`calculatePension`)
+- 조기연금 시나리오 비교
+
+**TaxCalculationService**:
+- 소득세 및 지방소득세
+- 4대보험 (연금, 건강, 장기요양, 고용)
+
+#### 🚨 Critical Rules
+
+**Rule 1: Never Duplicate Calculation Logic**
+```dart
+// ❌ BAD: Duplicating service years calculation
+final serviceYears1 = year - profile.employmentStartDate.year;
+final serviceYears2 = (totalDays / 365).floor();
+final serviceYears3 = profile.getServiceYears();
+
+// ✅ GOOD: Single source of truth
+final serviceYears = ServiceYearsCalculator.calculate(...).fullYears;
+```
+
+**Rule 2: Always Include Holiday Bonus in Lifetime Salary**
+```dart
+// ❌ BAD: Missing 114M won for 38-year career
+final annualTotalPay = (netPay * 12) + performanceBonus;
+
+// ✅ GOOD: Complete calculation
+final holidayBonus = HolidayPaymentTable.calculateAnnualHolidayBonus(
+  baseSalary: basePay,
+  year: year,
+);
+final annualTotalPay = (netPay * 12) + performanceBonus + holidayBonus;
+```
+
+**Rule 3: Use Accurate Age Calculation for Benefits**
+```dart
+// ❌ BAD: Simplified age calculation
+final age = currentYear - birthYear;
+
+// ✅ GOOD: Precise age with month consideration
+final age = ServiceYearsCalculator.calculateAge(
+  birthYear,
+  birthMonth,
+  DateTime(currentYear, currentMonth, 1),
+);
+```
+
+#### 🧪 Testing Requirements
+
+**Tier 1: Critical Path (90%+ coverage required)**
+- `ServiceYearsCalculator`: 100% (18/18 tests) ✅
+- `HolidayPaymentTable`: 100% (25/25 tests) ✅
+- Salary calculation services: 90%+ required
+- Pension calculation services: 90%+ required
+
+**Why so strict?**
+- User trust: 급여/연금 계산 오류는 신뢰 손실
+- Financial impact: 38년 재직 시 114M원 차이 가능
+- Legal compliance: 정확한 세금/보험료 계산 필수
+
+#### 📂 File Organization
+
+```
+lib/features/calculator/domain/
+├── calculation_core/           # Single Source of Truth
+│   ├── service_years_calculator.dart    # 재직년수 통합 계산
+│   └── (future) calculation_context.dart
+├── constants/
+│   ├── salary_table.dart
+│   ├── holiday_payment_table.dart       # 명절상여금 (49년치)
+│   └── income_redistribution_table.dart
+├── services/                   # Complex calculations
+│   ├── salary_calculation_service.dart
+│   ├── monthly_breakdown_service.dart
+│   ├── pension_calculation_service.dart
+│   └── tax_calculation_service.dart
+└── entities/                   # Domain models
+    ├── teacher_profile.dart
+    ├── annual_salary.dart
+    ├── monthly_net_income.dart
+    └── pension_estimate.dart
+```
+
+#### 🔄 Migration Notes
+
+**Before refactor (Old code)**:
+- 3 different service years calculations (inconsistent!)
+- 6 years of holiday data (insufficient!)
+- Holiday bonus missing from lifetime salary (114M won loss!)
+
+**After refactor (Current code)**:
+- ✅ Single `ServiceYearsCalculator` for all calculations
+- ✅ 49 years of `HolidayPaymentTable` data (2025-2073)
+- ✅ Holiday bonus included in lifetime salary
+
+**Impact**: 24세 입직 교사 (38년 재직) → +114M won accuracy improvement!
+
+---
+
 ### Testing Strategy
 
 📚 **Comprehensive Testing Guide**: See [CLAUDE-TESTING.md](CLAUDE-TESTING.md) for:

@@ -5,10 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/paginated_query.dart';
 import '../../../../core/utils/prefix_tokenizer.dart';
-import '../../../../core/constants/engagement_points.dart';
 import '../../../../core/firebase/firestore_refs.dart';
 import '../../../profile/domain/career_track.dart';
-import '../../../profile/data/user_profile_repository.dart';
 import '../../domain/models/comment.dart';
 import '../../domain/models/post.dart';
 
@@ -25,16 +23,13 @@ typedef DocSnapshotJson = DocumentSnapshot<JsonMap>;
 ///
 /// Note: Comment notifications are now handled by Firebase Functions (onCommentNotification)
 ///
-/// Dependencies: UserProfileRepository, FirebaseFirestore
+/// Dependencies: FirebaseFirestore
 class CommentRepository {
   CommentRepository({
     FirebaseFirestore? firestore,
-    required UserProfileRepository userProfileRepository,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _userProfileRepository = userProfileRepository;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-  final UserProfileRepository _userProfileRepository;
   final PrefixTokenizer _tokenizer = const PrefixTokenizer();
 
   // NOTE: Counter shard related fields removed as commentCount is now managed
@@ -89,9 +84,6 @@ class CommentRepository {
     CareerTrack authorTrack = CareerTrack.none,
     String? authorSpecificCareer,
     bool authorSerialVisible = true,
-    int authorSupporterLevel = 0,
-    bool authorIsSupporter = false,
-    bool awardPoints = true,
     List<String>? imageUrls,
   }) async {
     final CollectionReference<JsonMap> comments = _commentsRef(postId);
@@ -105,8 +97,6 @@ class CommentRepository {
         'authorTrack': authorTrack.name,
         'authorSpecificCareer': authorSpecificCareer,
         'authorSerialVisible': authorSerialVisible,
-        'authorSupporterLevel': authorSupporterLevel,
-        'authorIsSupporter': authorIsSupporter,
         'text': text,
         'likeCount': 0,
         'createdAt': Timestamp.fromDate(now),
@@ -127,25 +117,11 @@ class CommentRepository {
       });
     });
 
-    if (awardPoints) {
-      try {
-        await _userProfileRepository.incrementPoints(
-          uid: authorUid,
-          delta: EngagementPoints.commentCreation,
-        );
-      } catch (error, stackTrace) {
-        debugPrint(
-          'Failed to award points for comment creation: $error\n$stackTrace',
-        );
-      }
-
-      // NOTE: Comment notifications are now handled by Firebase Functions
-      // (onCommentNotification). This includes:
-      // - Reply notifications (commentReply)
-      // - Post comment notifications (postComment)
-      // - Scrapped post notifications (scrappedPostComment)
-      // No client-side notification dispatch needed.
-    }
+    // NOTE: Comment notifications are handled by Firebase Functions
+    // (onCommentNotification). This includes:
+    // - Reply notifications (commentReply)
+    // - Post comment notifications (postComment)
+    // - Scrapped post notifications (scrappedPostComment)
 
     return Comment(
       id: commentDoc.id,

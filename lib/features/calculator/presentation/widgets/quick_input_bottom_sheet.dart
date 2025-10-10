@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gong_mu_talk/common/widgets/cupertino_picker_modal.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/school_type.dart';
@@ -145,9 +146,9 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.8,
@@ -163,7 +164,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -173,7 +174,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    Icon(Icons.rocket_launch, color: Colors.teal.shade600),
+                    Icon(Icons.rocket_launch, color: context.appColors.info),
                     const Gap(12),
                     Text(
                       '빠른 계산 (3초 완성!)',
@@ -206,12 +207,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           context: context,
                           builder: (BuildContext context) {
                             return DefaultTextStyle(
-                              style: GoogleFonts.notoSansKr(color: Colors.black87),
+                              style: GoogleFonts.notoSansKr(color: Theme.of(context).colorScheme.onSurface),
                               child: Container(
                                 height: 300,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                 ),
                                 child: Column(
                                   children: [
@@ -219,10 +220,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     Container(
                                       height: 50,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.surface,
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: Colors.grey.shade300,
+                                            color: Theme.of(context).colorScheme.outline,
                                             width: 0.5,
                                           ),
                                         ),
@@ -239,18 +240,20 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                             child: Text(
                                               '취소',
                                               style: TextStyle(
-                                                color: Colors.grey.shade600,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
                                                 fontSize: 16,
                                               ),
                                             ),
                                             onPressed: () => Navigator.pop(context),
                                           ),
-                                          const Text(
+                                          Text(
                                             '출생 연월 선택',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 16,
-                                              color: Colors.black87,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                             ),
                                           ),
                                           CupertinoButton(
@@ -281,7 +284,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         data: CupertinoThemeData(
                                           textTheme: CupertinoTextThemeData(
                                             pickerTextStyle: GoogleFonts.notoSansKr(
-                                              color: Colors.black87,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                               fontSize: 20,
                                             ),
                                           ),
@@ -295,7 +298,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                   initialItem: initialDate.year - 1960,
                                                 ),
                                                 itemExtent: 40,
-                                                backgroundColor: Colors.white,
+                                                backgroundColor: Theme.of(context).colorScheme.surface,
                                                 diameterRatio: 1.5,
                                                 squeeze: 1.2,
                                                 magnification: 1.1,
@@ -335,7 +338,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                   initialItem: initialDate.month - 1,
                                                 ),
                                                 itemExtent: 40,
-                                                backgroundColor: Colors.white,
+                                                backgroundColor: Theme.of(context).colorScheme.surface,
                                                 diameterRatio: 1.5,
                                                 squeeze: 1.2,
                                                 magnification: 1.1,
@@ -386,7 +389,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           _birthDate != null
                               ? '${_birthDate!.year}년 ${_birthDate!.month}월'
                               : '선택해주세요',
-                          style: TextStyle(color: _birthDate != null ? null : Colors.grey),
+                          style: TextStyle(
+                            color: _birthDate != null
+                                ? null
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
@@ -406,7 +413,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                         ),
                         child: Text(
                           _currentGrade != null ? '$_currentGrade호봉' : '호봉을 선택해주세요',
-                          style: TextStyle(color: _currentGrade != null ? null : Colors.grey),
+                          style: TextStyle(
+                            color: _currentGrade != null
+                                ? null
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
@@ -447,7 +458,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                       const Gap(4),
                       Text(
                         '교원연구비 계산에 사용됩니다 (교장/교감만)',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
 
@@ -464,12 +478,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           context: context,
                           builder: (BuildContext context) {
                             return DefaultTextStyle(
-                              style: GoogleFonts.notoSansKr(color: Colors.black87),
+                              style: GoogleFonts.notoSansKr(color: Theme.of(context).colorScheme.onSurface),
                               child: Container(
                                 height: 300,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                 ),
                                 child: Column(
                                   children: [
@@ -477,10 +491,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     Container(
                                       height: 50,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.surface,
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: Colors.grey.shade300,
+                                            color: Theme.of(context).colorScheme.outline,
                                             width: 0.5,
                                           ),
                                         ),
@@ -497,18 +511,20 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                             child: Text(
                                               '취소',
                                               style: TextStyle(
-                                                color: Colors.grey.shade600,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
                                                 fontSize: 16,
                                               ),
                                             ),
                                             onPressed: () => Navigator.pop(context),
                                           ),
-                                          const Text(
+                                          Text(
                                             '임용일 선택',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 16,
-                                              color: Colors.black87,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                             ),
                                           ),
                                           CupertinoButton(
@@ -539,14 +555,14 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         data: CupertinoThemeData(
                                           textTheme: CupertinoTextThemeData(
                                             dateTimePickerTextStyle: GoogleFonts.notoSansKr(
-                                              color: Colors.black87,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                               fontSize: 20,
                                             ),
                                           ),
                                         ),
                                         child: CupertinoDatePicker(
                                           mode: CupertinoDatePickerMode.date,
-                                          backgroundColor: Colors.white,
+                                          backgroundColor: Theme.of(context).colorScheme.surface,
                                           initialDateTime: _employmentStartDate,
                                           minimumYear: 1980,
                                           maximumDate: DateTime.now(),
@@ -610,7 +626,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               const Gap(4),
                               Text(
                                 '호봉이 승급되는 월을 선택하세요.',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -637,22 +656,22 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         context,
                                         title: '재직연수 & 교육경력 안내',
                                         icon: Icons.school_outlined,
-                                        iconColor: Colors.teal.shade600,
+                                        iconColor: context.appColors.info,
                                         description: '두 가지 경력 개념을 구분하여 정확한 수당 계산',
-                                        items: const [
+                                        items: [
                                           InfoListItem(
                                             title: '재직연수',
                                             subtitle: '정근수당 계산 기준, 군 경력 100% 반영',
                                             icon: Icons.event_available,
-                                            iconColor: Colors.green,
+                                            iconColor: context.appColors.success,
                                           ),
                                           InfoListItem(
                                             title: '교육경력',
                                             subtitle: '교원연구비 계산 기준, 군 경력 미반영이므로 수기 입력 필요',
                                             icon: Icons.timeline,
-                                            iconColor: Colors.blue,
+                                            iconColor: Theme.of(context).colorScheme.primary,
                                           ),
-                                          InfoListItem(
+                                          const InfoListItem(
                                             title: '호봉 기반 자동 계산',
                                             subtitle: '현재 호봉과 승급월을 기반으로 자동 계산됩니다',
                                             icon: Icons.calculate_outlined,
@@ -663,7 +682,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     child: Icon(
                                       Icons.info_outline,
                                       size: 18,
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -685,9 +704,11 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     child: Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.shade50,
+                                        color: context.appColors.successLight,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.green.shade200),
+                                        border: Border.all(
+                                          color: context.appColors.success.withValues(alpha: 0.3),
+                                        ),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,7 +718,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                               Icon(
                                                 Icons.event_available,
                                                 size: 18,
-                                                color: Colors.green.shade700,
+                                                color: context.appColors.success,
                                               ),
                                               const Gap(6),
                                               Expanded(
@@ -706,7 +727,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Colors.green.shade900,
+                                                    color: context.appColors.successDark,
                                                   ),
                                                 ),
                                               ),
@@ -721,7 +742,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                 style: TextStyle(
                                                   fontSize: 20,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.green.shade900,
+                                                  color: context.appColors.successDark,
                                                   height: 1.2,
                                                 ),
                                               );
@@ -732,7 +753,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                             '정근수당 기준',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: Colors.green.shade700,
+                                              color: context.appColors.success,
                                             ),
                                           ),
                                         ],
@@ -745,9 +766,13 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     child: Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.blue.shade50,
+                                        color: Theme.of(context).colorScheme.primaryContainer,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.blue.shade200),
+                                        border: Border.all(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary.withValues(alpha: 0.3),
+                                        ),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,7 +782,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                               Icon(
                                                 Icons.timeline,
                                                 size: 18,
-                                                color: Colors.blue.shade700,
+                                                color: Theme.of(context).colorScheme.primary,
                                               ),
                                               const Gap(6),
                                               Expanded(
@@ -766,7 +791,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Colors.blue.shade900,
+                                                    color: Theme.of(context).colorScheme.primary,
                                                   ),
                                                 ),
                                               ),
@@ -775,7 +800,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                 child: Icon(
                                                   Icons.edit,
                                                   size: 16,
-                                                  color: Colors.blue.shade700,
+                                                  color: Theme.of(context).colorScheme.primary,
                                                 ),
                                               ),
                                             ],
@@ -796,7 +821,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                     style: TextStyle(
                                                       fontSize: 20,
                                                       fontWeight: FontWeight.bold,
-                                                      color: Colors.blue.shade900,
+                                                      color: Theme.of(context).colorScheme.primary,
                                                       height: 1.2,
                                                     ),
                                                   ),
@@ -808,7 +833,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                         vertical: 2,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.orange.shade100,
+                                                        color: context.appColors.highlightLight,
                                                         borderRadius: BorderRadius.circular(3),
                                                       ),
                                                       child: Text(
@@ -816,7 +841,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                         style: TextStyle(
                                                           fontSize: 10,
                                                           fontWeight: FontWeight.w600,
-                                                          color: Colors.orange.shade900,
+                                                          color: context.appColors.highlightDark,
                                                         ),
                                                       ),
                                                     ),
@@ -829,7 +854,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                             '교원연구비 기준',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: Colors.blue.shade700,
+                                              color: Theme.of(context).colorScheme.primary,
                                             ),
                                           ),
                                         ],
@@ -916,7 +941,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               const Gap(4),
                               Text(
                                 '첫째 5만원, 둘째 8만원, 셋째 이상 각 12만원',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                               // 자녀 생년월일 입력 버튼 (조건부 표시)
                               if (_numberOfChildren >= 1) ...[
@@ -935,7 +963,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                 const Gap(4),
                                 Text(
                                   '생년월일 입력 시 월 20만원 한도 내 비과세 적용',
-                                  style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
                                 ),
                               ],
                               const Gap(16),
@@ -961,7 +992,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               const Gap(4),
                               Text(
                                 '만 60세 이상 직계존속 부모님, 1인당 2만원 (최대 2명)',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -990,26 +1024,26 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         context,
                                         title: '퇴직 예정 연령 안내',
                                         icon: Icons.cake_outlined,
-                                        iconColor: Colors.teal.shade600,
+                                        iconColor: context.appColors.info,
                                         description: '재직 20년 이상부터 퇴직 가능',
-                                        items: const [
+                                        items: [
                                           InfoListItem(
                                             title: '명예퇴직 (재직 20년 이상)',
                                             subtitle: '법정 정년 전 퇴직',
                                             icon: Icons.star_outline,
-                                            iconColor: Colors.orange,
+                                            iconColor: context.appColors.warning,
                                           ),
                                           InfoListItem(
                                             title: '법정 정년 (62세)',
                                             subtitle: '현행 법정 정년',
                                             icon: Icons.check_circle_outline,
-                                            iconColor: Colors.teal,
+                                            iconColor: context.appColors.info,
                                           ),
                                           InfoListItem(
                                             title: '정년 연장 (63~65세)',
                                             subtitle: '정년 연장 시나리오 (정부 논의 단계, 법 개정 전)',
                                             icon: Icons.trending_up,
-                                            iconColor: Colors.blue,
+                                            iconColor: Theme.of(context).colorScheme.primary,
                                           ),
                                         ],
                                       );
@@ -1017,7 +1051,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     child: Icon(
                                       Icons.info_outline,
                                       size: 18,
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -1062,7 +1096,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                         context,
                                         title: '공제 항목 안내',
                                         icon: Icons.account_balance_outlined,
-                                        iconColor: Colors.teal.shade600,
+                                        iconColor: context.appColors.info,
                                         description: '매월 급여에서 공제되는 항목을 입력할 수 있습니다.',
                                         items: const [
                                           InfoListItem(
@@ -1081,7 +1115,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     child: Icon(
                                       Icons.info_outline,
                                       size: 18,
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -1235,13 +1269,13 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
       if (_retirementAge < 62) {
         description = '명예퇴직 (재직 20년 이상)';
-        color = Colors.orange;
+        color = context.appColors.warning;
       } else if (_retirementAge == 62) {
         description = '현행 법정 정년 (62세)';
-        color = Colors.teal;
+        color = context.appColors.info;
       } else {
         description = '정년 연장 시나리오 (정부 논의 단계, 법 개정 전)';
-        color = Colors.blue;
+        color = Theme.of(context).colorScheme.primary;
       }
 
       return Row(
@@ -1267,13 +1301,13 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
     if (_retirementAge < 62) {
       ageDescription = '명예퇴직 (재직 20년 이상)';
-      ageColor = Colors.orange;
+      ageColor = context.appColors.warning;
     } else if (_retirementAge == 62) {
       ageDescription = '현행 법정 정년 (62세)';
-      ageColor = Colors.teal;
+      ageColor = context.appColors.info;
     } else {
       ageDescription = '정년 연장 시나리오 (정부 논의 단계, 법 개정 전)';
-      ageColor = Colors.blue;
+      ageColor = Theme.of(context).colorScheme.primary;
     }
 
     return Column(
@@ -1289,7 +1323,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
         const Gap(4),
         Text(
           '임용일 기준 재직 20년인 만 $ageAt20YearsService세부터 명예퇴직 가능',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -1316,7 +1350,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     if (_birthDate == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('출생 연월을 먼저 선택해주세요.'), backgroundColor: Colors.orange),
+        SnackBar(
+          content: const Text('출생 연월을 먼저 선택해주세요.'),
+          backgroundColor: context.appColors.warning,
+        ),
       );
       return;
     }
@@ -1341,9 +1378,9 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     if (minRetirementAge > 65) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('정년(65세)이 지났거나 퇴직 선택이 불가능합니다.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('정년(65세)이 지났거나 퇴직 선택이 불가능합니다.'),
+          backgroundColor: context.appColors.warning,
         ),
       );
       return;
@@ -1486,7 +1523,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     // 생년월 필수 입력 검증
     if (_birthDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('출생 연월을 선택해주세요.'), backgroundColor: Colors.orange),
+        SnackBar(content: const Text('출생 연월을 선택해주세요.'), backgroundColor: context.appColors.warning),
       );
       return;
     }
@@ -1494,7 +1531,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     // 호봉 필수 입력 검증
     if (_currentGrade == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('현재 호봉을 선택해주세요.'), backgroundColor: Colors.orange),
+        SnackBar(content: const Text('현재 호봉을 선택해주세요.'), backgroundColor: context.appColors.warning),
       );
       return;
     }
@@ -1565,12 +1602,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
       context: context,
       builder: (BuildContext context) {
         return DefaultTextStyle(
-          style: GoogleFonts.notoSansKr(color: Colors.black87),
+          style: GoogleFonts.notoSansKr(color: Theme.of(context).colorScheme.onSurface),
           child: Container(
             height: 600,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Column(
               children: [
@@ -1578,8 +1615,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                 Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(bottom: BorderSide(color: Colors.grey.shade300, width: 0.5)),
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                      bottom: BorderSide(color: Theme.of(context).colorScheme.outline, width: 0.5),
+                    ),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   ),
                   child: Row(
@@ -1590,7 +1629,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           '자동계산',
-                          style: TextStyle(color: Colors.orange.shade700, fontSize: 15),
+                          style: TextStyle(color: context.appColors.highlight, fontSize: 15),
                         ),
                         onPressed: () {
                           HapticFeedback.mediumImpact();
@@ -1601,12 +1640,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           });
                         },
                       ),
-                      const Text(
+                      Text(
                         '교육경력 수정',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       CupertinoButton(
@@ -1639,7 +1678,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                     data: CupertinoThemeData(
                       textTheme: CupertinoTextThemeData(
                         pickerTextStyle: GoogleFonts.notoSansKr(
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 20,
                         ),
                       ),
@@ -1651,7 +1690,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
                             border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade300, width: 0.5),
+                              bottom: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 0.5,
+                              ),
                             ),
                           ),
                           child: Row(
@@ -1660,7 +1702,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               Icon(
                                 Icons.add_circle_outline,
                                 size: 18,
-                                color: Colors.green.shade700,
+                                color: context.appColors.success,
                               ),
                               const Gap(6),
                               Text(
@@ -1668,7 +1710,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.green.shade700,
+                                  color: context.appColors.success,
                                 ),
                               ),
                             ],
@@ -1684,7 +1726,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     initialItem: tempAdditionalYears,
                                   ),
                                   itemExtent: 40,
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
                                   diameterRatio: 1.5,
                                   squeeze: 1.2,
                                   magnification: 1.1,
@@ -1719,7 +1761,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     initialItem: tempAdditionalMonths,
                                   ),
                                   itemExtent: 40,
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
                                   diameterRatio: 1.5,
                                   squeeze: 1.2,
                                   magnification: 1.1,
@@ -1755,8 +1797,14 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
                             border: Border(
-                              top: BorderSide(color: Colors.grey.shade300, width: 0.5),
-                              bottom: BorderSide(color: Colors.grey.shade300, width: 0.5),
+                              top: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 0.5,
+                              ),
+                              bottom: BorderSide(
+                                color: Theme.of(context).colorScheme.outline,
+                                width: 0.5,
+                              ),
                             ),
                           ),
                           child: Column(
@@ -1767,7 +1815,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                   Icon(
                                     Icons.remove_circle_outline,
                                     size: 18,
-                                    color: Colors.red.shade700,
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
                                   const Gap(6),
                                   Text(
@@ -1775,7 +1823,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.red.shade700,
+                                      color: Theme.of(context).colorScheme.error,
                                     ),
                                   ),
                                 ],
@@ -1783,7 +1831,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               const Gap(2),
                               Text(
                                 '예: 군 복무 개월 수',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -1798,7 +1849,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     initialItem: tempExcludedYears,
                                   ),
                                   itemExtent: 40,
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
                                   diameterRatio: 1.5,
                                   squeeze: 1.2,
                                   magnification: 1.1,
@@ -1833,7 +1884,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                     initialItem: tempExcludedMonths,
                                   ),
                                   itemExtent: 40,
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
                                   diameterRatio: 1.5,
                                   squeeze: 1.2,
                                   magnification: 1.1,
@@ -1915,7 +1966,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                   children: [
                     Text(
                       '만 6세 이하 자녀만 입력하시면 비과세 혜택을 받을 수 있습니다.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const Gap(16),
                     Flexible(
@@ -1930,12 +1984,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: Colors.teal.shade100,
+                                backgroundColor: context.appColors.infoLight,
                                 child: Text(
                                   '${index + 1}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.teal.shade700,
+                                    color: context.appColors.info,
                                   ),
                                 ),
                               ),
@@ -1946,11 +2000,13 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                               subtitle: birthDate != null
                                   ? Text(
                                       '${birthDate.year}년 ${birthDate.month}월 ${birthDate.day}일',
-                                      style: const TextStyle(color: Colors.black87),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                                     )
-                                  : const Text(
+                                  : Text(
                                       '선택 안 함 (만 6세 초과)',
-                                      style: TextStyle(color: Colors.grey),
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1975,12 +2031,12 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                   context: context,
                                   builder: (BuildContext pickerContext) {
                                     return DefaultTextStyle(
-                                      style: GoogleFonts.notoSansKr(color: Colors.black87),
+                                      style: GoogleFonts.notoSansKr(color: Theme.of(context).colorScheme.onSurface),
                                       child: Container(
                                         height: 300,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.vertical(
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.surface,
+                                          borderRadius: const BorderRadius.vertical(
                                             top: Radius.circular(16),
                                           ),
                                         ),
@@ -1990,10 +2046,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                             Container(
                                               height: 50,
                                               decoration: BoxDecoration(
-                                                color: Colors.white,
+                                                color: Theme.of(context).colorScheme.surface,
                                                 border: Border(
                                                   bottom: BorderSide(
-                                                    color: Colors.grey.shade300,
+                                                    color: Theme.of(context).colorScheme.outline,
                                                     width: 0.5,
                                                   ),
                                                 ),
@@ -2012,7 +2068,9 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                     child: Text(
                                                       '취소',
                                                       style: TextStyle(
-                                                        color: Colors.grey.shade600,
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).colorScheme.onSurfaceVariant,
                                                         fontSize: 16,
                                                       ),
                                                     ),
@@ -2020,10 +2078,10 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                   ),
                                                   Text(
                                                     '$ordinal 생년월일',
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontWeight: FontWeight.w600,
                                                       fontSize: 16,
-                                                      color: Colors.black87,
+                                                      color: Theme.of(context).colorScheme.onSurface,
                                                     ),
                                                   ),
                                                   CupertinoButton(
@@ -2056,14 +2114,14 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                                 data: CupertinoThemeData(
                                                   textTheme: CupertinoTextThemeData(
                                                     dateTimePickerTextStyle: GoogleFonts.notoSansKr(
-                                                      color: Colors.black87,
+                                                      color: Theme.of(context).colorScheme.onSurface,
                                                       fontSize: 20,
                                                     ),
                                                   ),
                                                 ),
                                                 child: CupertinoDatePicker(
                                                   mode: CupertinoDatePickerMode.date,
-                                                  backgroundColor: Colors.white,
+                                                  backgroundColor: Theme.of(context).colorScheme.surface,
                                                   initialDateTime: tempDate,
                                                   minimumYear: 2015,
                                                   maximumDate: DateTime.now(),

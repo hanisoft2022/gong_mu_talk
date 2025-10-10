@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -59,11 +60,11 @@ class CalculationBreakdownSection extends StatelessWidget {
           if (currentIndex < nicknameStart) {
             spans.add(TextSpan(text: text.substring(currentIndex, nicknameStart)));
           }
-          // 닉네임 (강조)
+          // 닉네임 (강조) - context.appColors를 사용할 수 없으므로 직접 색상 지정
           spans.add(
             TextSpan(
               text: nickname,
-              style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Color(0xFF00897B), fontWeight: FontWeight.bold),
             ),
           );
           // "선생님의"
@@ -81,8 +82,8 @@ class CalculationBreakdownSection extends StatelessWidget {
       spans.add(
         TextSpan(
           text: match.group(0),
-          style: TextStyle(
-            color: Colors.teal.shade700,
+          style: const TextStyle(
+            color: Color(0xFF00897B),
             decoration: TextDecoration.underline,
             fontWeight: FontWeight.w600,
           ),
@@ -121,7 +122,7 @@ class CalculationBreakdownSection extends StatelessWidget {
         spans.add(
           TextSpan(
             text: nickname,
-            style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Color(0xFF00897B), fontWeight: FontWeight.bold),
           ),
         );
         // "선생님의"
@@ -176,7 +177,11 @@ class CalculationBreakdownSection extends StatelessWidget {
           if (item.description != null) ...[
             Text(
               item.description!,
-              style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
             ),
             const Gap(16),
           ],
@@ -191,7 +196,9 @@ class CalculationBreakdownSection extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: item.isDeduction ? Colors.red.shade700 : Colors.teal.shade700,
+                  color: item.isDeduction
+                      ? Theme.of(context).colorScheme.error
+                      : context.appColors.info,
                 ),
               ),
             ],
@@ -204,7 +211,7 @@ class CalculationBreakdownSection extends StatelessWidget {
       context,
       title: title,
       icon: item.icon,
-      iconColor: item.iconColor ?? Colors.blue.shade600,
+      iconColor: item.iconColor ?? Theme.of(context).colorScheme.primary,
       content: content,
     );
   }
@@ -213,6 +220,7 @@ class CalculationBreakdownSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // 섹션별로 그룹화
     final sectionGroups = _groupItemsBySection(items);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -225,14 +233,14 @@ class CalculationBreakdownSection extends StatelessWidget {
               childrenPadding ?? const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           title: Row(
             children: [
-              Icon(Icons.list_alt, size: 20, color: Colors.grey[700]),
+              Icon(Icons.list_alt, size: 20, color: colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
                 '계산 내역 보기',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -326,36 +334,36 @@ class CalculationBreakdownSection extends StatelessWidget {
   /// 섹션별 스타일 정의
   _SectionStyle _getSectionStyle(String sectionLabel) {
     if (sectionLabel.contains('매월 지급')) {
-      return _SectionStyle(
+      return const _SectionStyle(
         icon: Icons.calendar_month,
-        iconColor: Colors.teal.shade700,
-        textColor: Colors.teal.shade900,
-        backgroundColor: Colors.teal.shade50,
-        borderColor: Colors.teal.shade200,
+        iconColor: Color(0xFF00897B),
+        textColor: Color(0xFF004D40),
+        backgroundColor: Color(0xFFE0F2F1),
+        borderColor: Color(0xFF80CBC4),
       );
     } else if (sectionLabel.contains('특별 지급')) {
-      return _SectionStyle(
+      return const _SectionStyle(
         icon: Icons.stars,
-        iconColor: Colors.orange.shade700,
-        textColor: Colors.orange.shade900,
-        backgroundColor: Colors.orange.shade50,
-        borderColor: Colors.orange.shade200,
+        iconColor: Color(0xFFE65100),
+        textColor: Color(0xFFBF360C),
+        backgroundColor: Color(0xFFFFF3E0),
+        borderColor: Color(0xFFFFCC80),
       );
     } else if (sectionLabel.contains('공제 항목')) {
-      return _SectionStyle(
+      return const _SectionStyle(
         icon: Icons.remove_circle_outline,
-        iconColor: Colors.red.shade700,
-        textColor: Colors.red.shade900,
-        backgroundColor: Colors.red.shade50,
-        borderColor: Colors.red.shade200,
+        iconColor: Color(0xFFC62828),
+        textColor: Color(0xFFB71C1C),
+        backgroundColor: Color(0xFFFFEBEE),
+        borderColor: Color(0xFFEF9A9A),
       );
     } else {
-      return _SectionStyle(
+      return const _SectionStyle(
         icon: Icons.folder_outlined,
-        iconColor: Colors.grey.shade700,
-        textColor: Colors.grey.shade900,
-        backgroundColor: Colors.grey.shade50,
-        borderColor: Colors.grey.shade200,
+        iconColor: Color(0xFF616161),
+        textColor: Color(0xFF424242),
+        backgroundColor: Color(0xFFFAFAFA),
+        borderColor: Color(0xFFE0E0E0),
       );
     }
   }
@@ -376,16 +384,21 @@ class CalculationBreakdownSection extends StatelessWidget {
 
     // 섹션 헤더 처리
     if (item.isSectionHeader) {
+      final colorScheme = Theme.of(context).colorScheme;
       return Container(
         margin: const EdgeInsets.only(top: 12, bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           item.label,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
       );
     }
@@ -408,11 +421,12 @@ class CalculationBreakdownSection extends StatelessWidget {
               Icon(
                 item.icon,
                 size: 16,
-                color:
-                    item.iconColor ??
+                color: item.iconColor ??
                     (item.isHighlight
-                        ? Colors.orange.shade700
-                        : (item.isDeduction ? Colors.red.shade600 : Colors.grey[600])),
+                        ? context.appColors.highlight
+                        : (item.isDeduction
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
               const SizedBox(width: 8),
             ],
@@ -423,8 +437,10 @@ class CalculationBreakdownSection extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: item.isHighlight ? FontWeight.w600 : FontWeight.normal,
                   color: item.isHighlight
-                      ? Colors.orange.shade900
-                      : (item.isDeduction ? Colors.red.shade700 : Colors.black87),
+                      ? context.appColors.highlight
+                      : (item.isDeduction
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSurface),
                 ),
               ),
             ),
@@ -439,8 +455,10 @@ class CalculationBreakdownSection extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: item.isHighlight
-                        ? Colors.orange.shade900
-                        : (item.isDeduction ? Colors.red.shade700 : Colors.black87),
+                        ? context.appColors.highlight
+                        : (item.isDeduction
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.onSurface),
                   ),
                 ),
               ),
@@ -453,7 +471,10 @@ class CalculationBreakdownSection extends StatelessWidget {
   Widget _buildTotalRow(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: context.appColors.infoLight,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -461,14 +482,14 @@ class CalculationBreakdownSection extends StatelessWidget {
             totalLabel ?? '합계',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.teal.shade900,
+              color: context.appColors.infoDark,
             ),
           ),
           Text(
             NumberFormatter.formatCurrency(totalAmount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.teal.shade900,
+              color: context.appColors.infoDark,
             ),
           ),
         ],
@@ -577,6 +598,8 @@ class BreakdownGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -584,7 +607,7 @@ class BreakdownGroup extends StatelessWidget {
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: titleColor ?? Colors.black87,
+            color: titleColor ?? colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -597,7 +620,7 @@ class BreakdownGroup extends StatelessWidget {
                 Row(
                   children: [
                     if (item.icon != null) ...[
-                      Icon(item.icon, size: 14, color: Colors.grey[600]),
+                      Icon(item.icon, size: 14, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 6),
                     ],
                     Text(item.label, style: Theme.of(context).textTheme.bodyMedium),
@@ -609,7 +632,7 @@ class BreakdownGroup extends StatelessWidget {
                       : NumberFormatter.formatCurrency(item.amount),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: item.isDeduction ? Colors.red[700] : null,
+                    color: item.isDeduction ? colorScheme.error : null,
                   ),
                 ),
               ],
@@ -637,7 +660,7 @@ class _SectionStyle {
   final Color backgroundColor;
   final Color borderColor;
 
-  _SectionStyle({
+  const _SectionStyle({
     required this.icon,
     required this.iconColor,
     required this.textColor,

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_detail.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/salary_analysis_page.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/common/feature_button.dart';
 
 /// 현재 급여 카드 (재직 중)
 ///
@@ -66,11 +69,18 @@ class CurrentSalaryCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
+                      Icon(
+                        Icons.lock_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                       const Gap(8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -84,16 +94,19 @@ class CurrentSalaryCard extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.1),
+                        color: context.appColors.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.teal.withValues(alpha: 0.3), width: 1),
+                        border: Border.all(
+                          color: context.appColors.info.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         children: [
                           Text(
                             '🗓️ 월 평균 급여',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.teal[800],
+                              color: context.appColors.info,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -104,15 +117,15 @@ class CurrentSalaryCard extends StatelessWidget {
                             children: [
                               Text(
                                 '세전',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                               Text(
                                 NumberFormatter.formatCurrency(avgGrossSalary),
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey[700],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -125,7 +138,7 @@ class CurrentSalaryCard extends StatelessWidget {
                               Text(
                                 '실수령',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.teal[800],
+                                  color: context.appColors.info,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -133,7 +146,7 @@ class CurrentSalaryCard extends StatelessWidget {
                                 NumberFormatter.formatCurrency(avgNetIncome),
                                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.teal[900],
+                                  color: context.appColors.info,
                                 ),
                               ),
                             ],
@@ -149,16 +162,19 @@ class CurrentSalaryCard extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.1),
+                        color: context.appColors.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.teal.withValues(alpha: 0.3), width: 1),
+                        border: Border.all(
+                          color: context.appColors.info.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         children: [
                           Text(
                             '📈 연봉',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.teal[800],
+                              color: context.appColors.info,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -169,15 +185,15 @@ class CurrentSalaryCard extends StatelessWidget {
                             children: [
                               Text(
                                 '세전',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                               Text(
                                 NumberFormatter.formatCurrency(annualGrossSalary),
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey[700],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -190,7 +206,7 @@ class CurrentSalaryCard extends StatelessWidget {
                               Text(
                                 '실수령',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.teal[800],
+                                  color: context.appColors.info,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -198,7 +214,7 @@ class CurrentSalaryCard extends StatelessWidget {
                                 NumberFormatter.formatCurrency(annualNetIncome),
                                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.teal[900],
+                                  color: context.appColors.info,
                                 ),
                               ),
                             ],
@@ -209,10 +225,13 @@ class CurrentSalaryCard extends StatelessWidget {
 
                     const Gap(20),
 
-                    // 액션 버튼
+                    // 액션 버튼 (Level 2: emailVerified 이상)
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
+                      child: FeatureButton(
+                        requiredLevel: FeatureAccessLevel.emailVerified,
+                        featureName: '상세 분석',
+                        icon: const Icon(Icons.analytics, size: 18),
                         onPressed: lifetimeSalary != null
                             ? () {
                                 Navigator.push(
@@ -227,12 +246,11 @@ class CurrentSalaryCard extends StatelessWidget {
                                   ),
                                 );
                               }
-                            : null,
-                        icon: const Icon(Icons.analytics, size: 18),
-                        label: const Text('상세 분석'),
+                            : () {},
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
+                        child: const Text('상세 분석'),
                       ),
                     ),
                   ],

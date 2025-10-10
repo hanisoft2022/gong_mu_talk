@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
 
@@ -27,14 +28,16 @@ class AfterTaxPensionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: isLocked
-                          ? Colors.grey.withValues(alpha: 0.1)
-                          : Colors.green.withValues(alpha: 0.1),
+                          ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)
+                          : context.appColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.verified,
                       size: 28,
-                      color: isLocked ? Colors.grey : Colors.green,
+                      color: isLocked
+                          ? Theme.of(context).colorScheme.outline
+                          : context.appColors.success,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -46,7 +49,7 @@ class AfterTaxPensionCard extends StatelessWidget {
                       ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
-                  if (isLocked) const Icon(Icons.lock, color: Colors.grey),
+                  if (isLocked) Icon(Icons.lock, color: Theme.of(context).colorScheme.outline),
                 ],
               ),
 
@@ -57,11 +60,18 @@ class AfterTaxPensionCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
+                      Icon(
+                        Icons.lock_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -85,7 +95,7 @@ class AfterTaxPensionCard extends StatelessWidget {
                     Text(
                       '공제 내역',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -128,34 +138,45 @@ class AfterTaxPensionCard extends StatelessWidget {
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: Colors.green[700]),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.appColors.success,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildDeductionRow(BuildContext context, String label, int amount) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           '  - $label',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           '- ${NumberFormatter.formatCurrency(amount)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red[600]),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colorScheme.error,
+          ),
         ),
       ],
     );
@@ -167,15 +188,17 @@ class AfterTaxPensionCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.green[900], fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: context.appColors.success,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.green[700]),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: context.appColors.success,
+          ),
         ),
       ],
     );

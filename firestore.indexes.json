@@ -72,6 +72,34 @@
         {"fieldPath": "visibility", "order": "ASCENDING"},
         {"fieldPath": "hotScore", "order": "DESCENDING"}
       ]
+    },
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {"fieldPath": "audience", "order": "ASCENDING"},
+        {"fieldPath": "serial", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"},
+        {"fieldPath": "visibility", "order": "ASCENDING"},
+        {"fieldPath": "likeCount", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {"fieldPath": "keywords", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "followerCount", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {"fieldPath": "deleted", "order": "ASCENDING"},
+        {"fieldPath": "keywords", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
     }
   ],
   "fieldOverrides": []

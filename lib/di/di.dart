@@ -96,6 +96,8 @@ Future<void> configureDependencies() async {
         userProfileRepository: getIt(),
         notificationRepository: getIt(),
         notificationService: getIt(),
+        profileStorageService: getIt(),
+        sharedPreferences: getIt(),
       ),
     )
     ..registerLazySingleton<PaystubVerificationRepository>(
@@ -193,6 +195,7 @@ Future<void> configureDependencies() async {
         profileStorageService: getIt(),
         firestoreRepository: getIt(),
         getUserId: () => getIt<AuthCubit>().state.userId,
+        authCubit: getIt(),
       ),
     )
     ..registerLazySingleton<GoRouter>(createRouter)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 
@@ -38,14 +39,16 @@ class MonthlyBreakdownCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: isLocked
-                          ? Colors.grey.withValues(alpha: 0.1)
-                          : Colors.teal.withValues(alpha: 0.1),
+                          ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)
+                          : context.appColors.info.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.calendar_month,
                       size: 28,
-                      color: isLocked ? Colors.grey : Colors.teal,
+                      color: isLocked
+                          ? Theme.of(context).colorScheme.outline
+                          : context.appColors.info,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -57,7 +60,7 @@ class MonthlyBreakdownCard extends StatelessWidget {
                       ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
-                  if (isLocked) const Icon(Icons.lock, color: Colors.grey),
+                  if (isLocked) Icon(Icons.lock, color: Theme.of(context).colorScheme.outline),
                 ],
               ),
 
@@ -68,11 +71,18 @@ class MonthlyBreakdownCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
+                      Icon(
+                        Icons.lock_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -105,7 +115,7 @@ class MonthlyBreakdownCard extends StatelessWidget {
                     Text(
                       '월별 상세 (정기상여금 포함)',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -122,15 +132,15 @@ class MonthlyBreakdownCard extends StatelessWidget {
                               children: [
                                 Text(
                                   '${m.month}월 (정기상여금)',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(color: Colors.teal[700]),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: context.appColors.info,
+                                  ),
                                 ),
                                 Text(
                                   NumberFormatter.formatCurrency(m.netIncome),
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.teal[700],
+                                    color: context.appColors.info,
                                   ),
                                 ),
                               ],
@@ -152,13 +162,15 @@ class MonthlyBreakdownCard extends StatelessWidget {
     String value, {
     bool isHighlight = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: isHighlight ? Colors.teal[900] : Colors.grey[700],
+            color: isHighlight ? context.appColors.info : colorScheme.onSurfaceVariant,
             fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -166,7 +178,7 @@ class MonthlyBreakdownCard extends StatelessWidget {
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: isHighlight ? Colors.teal[700] : Colors.teal[600],
+            color: context.appColors.info,
           ),
         ),
       ],

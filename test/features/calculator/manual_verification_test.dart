@@ -5,6 +5,7 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.d
 import 'package:gong_mu_talk/features/calculator/domain/entities/allowance.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/position.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/calculation_context.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/monthly_breakdown_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
@@ -37,12 +38,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: false,
-        numberOfChildren: 0,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: false,
+          numberOfChildren: 0,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       // 본봉 검증
@@ -80,10 +83,10 @@ void main() {
 
       // 웹서핑 결과와 비교
       // 웹 자료의 240만~260만원은 일반 월급만 계산한 것으로 추정
-      // 우리는 정근수당(1월/7월) + 명절상여금(2월/9월)을 모두 포함하여
-      // 월 평균이 270만원 수준 (더 정확한 계산)
+      // 우리는 정근수당(1월/7월) + 명절상여금(1월/10월)을 모두 포함하여
+      // 월 평균이 289만원 수준 (더 정확한 계산)
       expect(avgNetIncome, greaterThanOrEqualTo(2600000));
-      expect(avgNetIncome, lessThanOrEqualTo(2800000));
+      expect(avgNetIncome, lessThanOrEqualTo(2950000));
     });
 
     test('1호봉 초임 교사 실수령액 검증', () {
@@ -99,12 +102,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: false,
-        numberOfChildren: 0,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: false,
+          numberOfChildren: 0,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       // 본봉 검증
@@ -142,12 +147,14 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: true,
-        numberOfChildren: 2,
-        isHomeroom: true,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: true,
+          numberOfChildren: 2,
+          isHomeroom: true,
+          hasPosition: false,
+        ),
       );
 
       // 본봉 검증
@@ -186,26 +193,28 @@ void main() {
       );
 
       final monthlyIncomes = service.calculateMonthlyBreakdown(
-        profile: profile,
-        year: 2025,
-        hasSpouse: false,
-        numberOfChildren: 0,
-        isHomeroom: false,
-        hasPosition: false,
+        CalculationContext(
+          profile: profile,
+          year: 2025,
+          hasSpouse: false,
+          numberOfChildren: 0,
+          isHomeroom: false,
+          hasPosition: false,
+        ),
       );
 
       final baseSalary = SalaryTable.getBasePay(15);
 
-      // 2월 (설날)
-      final february = monthlyIncomes[1];
-      expect(february.holidayBonus, (baseSalary * 0.6).round());
+      // 1월 (설날 1/29)
+      final january = monthlyIncomes[0];
+      expect(january.holidayBonus, (baseSalary * 0.6).round());
 
-      // 9월 (추석)
-      final september = monthlyIncomes[8];
-      expect(september.holidayBonus, (baseSalary * 0.6).round());
+      // 10월 (추석 10/3)
+      final october = monthlyIncomes[9];
+      expect(october.holidayBonus, (baseSalary * 0.6).round());
 
       // 연간 총액
-      final totalHolidayBonus = february.holidayBonus + september.holidayBonus;
+      final totalHolidayBonus = january.holidayBonus + october.holidayBonus;
       expect(totalHolidayBonus, (baseSalary * 1.2).round());
 
       print('\n15호봉 본봉: $baseSalary원');

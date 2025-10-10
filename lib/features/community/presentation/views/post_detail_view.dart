@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../di/di.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/post.dart';
 import '../widgets/post_card.dart';
@@ -47,7 +48,12 @@ class _PostDetailViewState extends State<PostDetailView> {
     });
 
     try {
-      final post = await _repository.fetchPostById(widget.postId);
+      // Get current user ID for enrichment (likes, scraps)
+      final currentUid = context.read<AuthCubit>().state.userId;
+      final post = await _repository.fetchPostById(
+        widget.postId,
+        currentUid: currentUid,
+      );
 
       if (mounted) {
         if (post == null) {

@@ -13,8 +13,7 @@ class PaystubVerificationPage extends StatefulWidget {
   const PaystubVerificationPage({super.key});
 
   @override
-  State<PaystubVerificationPage> createState() =>
-      _PaystubVerificationPageState();
+  State<PaystubVerificationPage> createState() => _PaystubVerificationPageState();
 }
 
 class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
@@ -23,10 +22,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
   bool _isUploading = false;
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false);
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -49,16 +45,12 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       final bytes = await _selectedFile!.readAsBytes();
       final fileName = _selectedFile!.path.split('/').last;
 
-      await repository.uploadPaystub(
-        bytes: bytes,
-        fileName: fileName,
-        contentType: 'image/jpeg',
-      );
+      await repository.uploadPaystub(bytes: bytes, fileName: fileName, contentType: 'image/jpeg');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('급여명세서 인증이 신청되었습니다. 검토까지 1-2일 소요됩니다.'),
+            content: Text('직렬 인증이 신청되었습니다. 검토까지 1-2일 소요됩니다.'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -67,10 +59,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('인증 신청 실패: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text('인증 신청 실패: ${e.toString()}'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -87,7 +76,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('직렬 인증하기'), centerTitle: true),
+      appBar: AppBar(title: const Text('📃급여명세서로 직렬 인증하기'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -123,61 +112,33 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
+              Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 24),
               const Gap(8),
               Text(
                 '직렬 인증이 필요한 이유',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
           const Gap(16),
-          _buildInfoItem(
-            theme,
-            '🏛️',
-            '전문 라운지 접근',
-            '같은 직렬의 공무원들과 소통할 수 있는 전용 라운지를 이용할 수 있습니다.',
-          ),
+          _buildInfoItem(theme, '🏛️', '전문 라운지 접근', '같은 직렬의 공무원들과 소통할 수 있는 전용 라운지를 이용할 수 있습니다.'),
           const Gap(12),
-          _buildInfoItem(
-            theme,
-            '💬',
-            '맞춤형 콘텐츠',
-            '직렬별 맞춤 정보와 같은 고민을 하는 동료들의 이야기를 만나보세요.',
-          ),
+          _buildInfoItem(theme, '💬', '맞춤형 콘텐츠', '직렬별 맞춤 정보와 같은 고민을 하는 동료들의 이야기를 만나보세요.'),
           const Gap(12),
-          _buildInfoItem(
-            theme,
-            '🔒',
-            '안전한 커뮤니티',
-            '검증된 공무원만 참여하여 더욱 신뢰할 수 있는 커뮤니티입니다.',
-          ),
+          _buildInfoItem(theme, '🔒', '안전한 커뮤니티', '검증된 공무원만 참여하여 더욱 신뢰할 수 있는 커뮤니티입니다.'),
         ],
       ),
     );
   }
 
-  Widget _buildInfoItem(
-    ThemeData theme,
-    String emoji,
-    String title,
-    String description,
-  ) {
+  Widget _buildInfoItem(ThemeData theme, String emoji, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,12 +148,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
               const Gap(4),
               Text(
                 description,
@@ -213,20 +169,14 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.help_outline,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
+              Icon(Icons.help_outline, color: theme.colorScheme.primary, size: 24),
               const Gap(8),
               Text(
                 '왜 급여 명세서인가요?',
@@ -259,12 +209,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
             '급여액이나 계좌번호 등 민감한 정보는 가린 후 업로드하셔도 됩니다. 직렬과 계급만 확인 가능하면 됩니다.',
           ),
           const Gap(12),
-          _buildWhyPaystubItem(
-            theme,
-            '🗑️',
-            '인증 후 즉시 삭제',
-            '업로드된 파일은 직렬 인증 완료 후 자동으로 삭제됩니다.',
-          ),
+          _buildWhyPaystubItem(theme, '🗑️', '인증 후 즉시 삭제', '업로드된 파일은 직렬 인증 완료 후 자동으로 삭제됩니다.'),
           const Gap(12),
           _buildWhyPaystubItem(
             theme,
@@ -277,12 +222,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     );
   }
 
-  Widget _buildWhyPaystubItem(
-    ThemeData theme,
-    String emoji,
-    String title,
-    String description,
-  ) {
+  Widget _buildWhyPaystubItem(ThemeData theme, String emoji, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -292,12 +232,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
               const Gap(4),
               Text(
                 description,
@@ -370,9 +305,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                   Expanded(
                     child: Text(
                       '개인정보 수집 및 이용에 동의합니다',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -390,16 +323,12 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       children: [
         Text(
           '급여명세서 업로드',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         Text(
           '최근 3개월 이내의 급여명세서를 업로드해주세요.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const Gap(16),
 
@@ -421,11 +350,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.cloud_upload_outlined,
-                    size: 48,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.cloud_upload_outlined, size: 48, color: theme.colorScheme.primary),
                   const Gap(12),
                   Text(
                     '파일 선택하기',
@@ -454,9 +379,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -478,11 +401,7 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                       color: AppColors.blackAlpha50,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.close,
-                      color: AppColors.white,
-                      size: 20,
-                    ),
+                    child: const Icon(Icons.close, color: AppColors.white, size: 20),
                   ),
                 ),
               ),
@@ -504,18 +423,13 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
           disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: _isUploading
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.white,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
               )
             : Text(
                 '인증 신청하기',

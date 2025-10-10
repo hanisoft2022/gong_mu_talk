@@ -1,9 +1,10 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/calculation_context.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
+import 'package:gong_mu_talk/features/calculator/domain/constants/holiday_payment_table.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
+import 'package:gong_mu_talk/features/calculator/domain/calculation_core/service_years_calculator.dart';
 
 /// 월별 실수령액 계산 서비스
 class MonthlyBreakdownService {
@@ -14,95 +15,85 @@ class MonthlyBreakdownService {
 
   /// 12개월 실수령액 계산
   ///
-  /// [profile] 교사 프로필
-  /// [year] 계산 년도
-  /// [hasSpouse] 배우자 유무
-  /// [numberOfChildren] 자녀 수
-  /// [isHomeroom] 담임 여부
-  /// [hasPosition] 보직 여부
-  /// [performanceGrade] 성과상여금 등급 (기본값: A등급)
+  /// [context] 계산 컨텍스트 (프로필, 년도, 가족 정보, 담임/보직 여부 등)
   ///
   /// Returns: 12개월 실수령액 목록
-  List<MonthlyNetIncome> calculateMonthlyBreakdown({
-    required TeacherProfile profile,
-    required int year,
-    required bool hasSpouse,
-    required int numberOfChildren,
-    bool isHomeroom = false,
-    bool hasPosition = false,
-    PerformanceGrade performanceGrade = PerformanceGrade.A,
-  }) {
+  List<MonthlyNetIncome> calculateMonthlyBreakdown(CalculationContext context) {
     final monthlyIncomes = <MonthlyNetIncome>[];
 
-    // 재직 년수 계산
-    final serviceYears = year - profile.employmentStartDate.year;
+    // 재직 년수 계산 (ServiceYearsCalculator 사용)
+    final serviceInfo = ServiceYearsCalculator.calculate(
+      context.profile.employmentStartDate,
+      DateTime(context.year, 12, 31), // 해당 년도 말 기준
+    );
+    final serviceYears = serviceInfo.fullYears;
 
     // 기본급
-    final baseSalary = SalaryTable.getBasePay(profile.currentGrade);
+    final baseSalary = SalaryTable.getBasePay(context.profile.currentGrade);
 
     // 교직수당 (모든 교사)
     const teachingAllowance = AllowanceTable.teachingAllowance;
 
     // 담임수당
-    final homeroomAllowance = isHomeroom ? AllowanceTable.homeroomAllowance : 0;
+    final homeroomAllowance = context.isHomeroom ? AllowanceTable.homeroomAllowance : 0;
 
     // 보직교사수당
-    final positionAllowance = hasPosition ? AllowanceTable.headTeacherAllowance : 0;
+    final positionAllowance = context.hasPosition ? AllowanceTable.headTeacherAllowance : 0;
 
     // 교직수당 가산금 (개별 항목)
     final specialEducationAllowance = _salaryService.calculateSpecialEducationAllowance(
-      profile.teachingAllowanceBonuses,
+      context.profile.teachingAllowanceBonuses,
     );
     final vocationalEducationAllowance = _salaryService.calculateVocationalEducationAllowance(
-      profile.teachingAllowanceBonuses,
-      profile.currentGrade,
+      context.profile.teachingAllowanceBonuses,
+      context.profile.currentGrade,
     );
     final healthTeacherAllowance = _salaryService.calculateHealthTeacherAllowance(
-      profile.teachingAllowanceBonuses,
+      context.profile.teachingAllowanceBonuses,
     );
     final concurrentPositionAllowance = _salaryService.calculateConcurrentPositionAllowance(
-      profile.teachingAllowanceBonuses,
-      profile.position,
+      context.profile.teachingAllowanceBonuses,
+      context.profile.position,
     );
     final nutritionTeacherAllowance = _salaryService.calculateNutritionTeacherAllowance(
-      profile.teachingAllowanceBonuses,
+      context.profile.teachingAllowanceBonuses,
     );
     final librarianAllowance = _salaryService.calculateLibrarianAllowance(
-      profile.teachingAllowanceBonuses,
+      context.profile.teachingAllowanceBonuses,
     );
     final counselorAllowance = _salaryService.calculateCounselorAllowance(
-      profile.teachingAllowanceBonuses,
+      context.profile.teachingAllowanceBonuses,
     );
 
     // 원로교사수당 (30년 이상 + 55세 이상)
     final veteranAllowance = _salaryService.calculateVeteranAllowance(
-      bonuses: profile.teachingAllowanceBonuses,
+      bonuses: context.profile.teachingAllowanceBonuses,
       serviceYears: serviceYears,
-      birthYear: profile.birthYear,
-      birthMonth: profile.birthMonth,
-      currentYear: year,
+      birthYear: context.profile.birthYear,
+      birthMonth: context.profile.birthMonth,
+      currentYear: context.year,
       currentMonth: 1, // 월별로 큰 차이 없으므로 1로 고정
     );
 
     final familyAllowanceResult = _salaryService.calculateFamilyAllowance(
-      numberOfChildren: numberOfChildren,
-      youngChildrenBirthDates: profile.youngChildrenBirthDates, // 현재는 UI가 없어 빈 목록 전달
-      currentYear: year,
-      hasSpouse: hasSpouse,
-      numberOfParents: profile.numberOfParents,
+      numberOfChildren: context.numberOfChildren,
+      youngChildrenBirthDates: context.profile.youngChildrenBirthDates, // 현재는 UI가 없어 빈 목록 전달
+      currentYear: context.year,
+      hasSpouse: context.hasSpouse,
+      numberOfParents: context.profile.numberOfParents,
     );
     final familyAllowance = familyAllowanceResult.total;
     final nonTaxableFamilyAllowance = familyAllowanceResult.nonTaxable;
 
     // 연구비
     final researchAllowance = _salaryService.calculateResearchAllowance(
-      position: profile.position,
-      schoolType: profile.schoolType,
+      position: context.profile.position,
+      schoolType: context.profile.schoolType,
       teachingExperienceYears: serviceYears, // 교육경력 대신 재직년수 사용
     );
 
     // 시간외근무수당 정액분
-    final overtimeAllowance = _salaryService.calculateOvertimeAllowance(profile.currentGrade);
+    final overtimeAllowance = _salaryService.calculateOvertimeAllowance(context.profile.currentGrade);
 
     // 정근수당 가산금 (매월)
     final longevityMonthly = _salaryService.calculateLongevityMonthlyAllowance(serviceYears);
@@ -134,12 +125,16 @@ class MonthlyBreakdownService {
         month: month,
       );
 
-      // 명절상여금 (설날/추석, 음력 기준)
-      final holidayBonus = _calculateHolidayBonus(baseSalary: baseSalary, month: month, year: year);
+      // 명절상여금 (설날/추석, HolidayPaymentTable 사용)
+      final holidayBonus = HolidayPaymentTable.calculateHolidayBonus(
+        baseSalary: baseSalary,
+        year: context.year,
+        month: month,
+      );
 
       // 성과상여금 (3월만)
       final performanceBonus = _salaryService.calculatePerformanceBonus(
-        grade: performanceGrade,
+        grade: context.performanceGrade,
         month: month,
       );
 
@@ -151,7 +146,7 @@ class MonthlyBreakdownService {
       final taxableIncome = grossSalary - researchAllowance - nonTaxableFamilyAllowance;
 
       // 부양가족 수 계산 (본인 제외)
-      final dependents = (hasSpouse ? 1 : 0) + numberOfChildren + profile.numberOfParents;
+      final dependents = (context.hasSpouse ? 1 : 0) + context.numberOfChildren + context.profile.numberOfParents;
 
       // 소득세 (과세 대상 소득 기준)
       final incomeTax = _taxService.calculateIncomeTax(taxableIncome, dependents: dependents);
@@ -244,32 +239,6 @@ class MonthlyBreakdownService {
     }
 
     return monthlyIncomes;
-  }
-
-  /// 명절상여금 계산 (설날/추석, 음력 기준)
-  ///
-  /// [baseSalary] 본봉
-  /// [month] 월
-  /// [year] 년도
-  ///
-  /// Returns: 명절상여금 (설날/추석 월에 본봉의 60%)
-  int _calculateHolidayBonus({required int baseSalary, required int month, required int year}) {
-    // 2025-2030년 설날/추석 양력 날짜 매핑 (음력 기준)
-    final lunarHolidays = {
-      2025: [1, 10], // 설날 1월 29일, 추석 10월 6일
-      2026: [2, 9], // 설날 2월 17일, 추석 9월 25일
-      2027: [2, 9], // 설날 2월 6일, 추석 9월 15일
-      2028: [1, 9], // 설날 1월 26일, 추석 10월 3일
-      2029: [2, 9], // 설날 2월 13일, 추석 9월 23일
-      2030: [2, 9], // 설날 2월 3일, 추석 9월 12일
-    };
-
-    final months = lunarHolidays[year];
-    if (months != null && months.contains(month)) {
-      return (baseSalary * 0.6).round();
-    }
-
-    return 0;
   }
 
   /// 연간 총 실수령액 계산

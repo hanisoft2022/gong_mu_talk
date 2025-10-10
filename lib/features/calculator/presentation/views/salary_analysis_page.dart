@@ -8,6 +8,8 @@ import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bo
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_breakdown_widget.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/common/feature_card.dart';
 
 /// 급여 분석 통합 페이지
 ///
@@ -57,8 +59,12 @@ class SalaryAnalysisPage extends StatelessWidget {
             ),
             // 탭 3: 연도별 급여 증가
             _AnnualGrowthTab(lifetimeSalary: lifetimeSalary),
-            // 탭 4: 생애 시뮬레이션
-            _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary),
+            // 탭 4: 생애 시뮬레이션 (Level 3: careerVerified 필요)
+            FeatureCard(
+              requiredLevel: FeatureAccessLevel.careerVerified,
+              featureName: '30년 생애 시뮬레이션',
+              child: _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary),
+            ),
           ],
         ),
       ),

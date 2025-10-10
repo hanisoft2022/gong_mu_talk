@@ -334,17 +334,27 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CommentComposer(
-                                controller: _commentController,
-                                focusNode: _commentFocusNode,
-                                selectedImages: _selectedImages,
-                                isSubmitting: _isSubmittingComment,
-                                isUploadingImages: _isUploadingImages,
-                                uploadProgress: _uploadProgress,
-                                canSubmit: _canSubmitComment,
-                                onPickImages: _pickImages,
-                                onRemoveImage: _removeImage,
-                                onSubmit: _submitComment,
+                              BlocBuilder<AuthCubit, AuthState>(
+                                builder: (context, authState) {
+                                  final bool canWrite = authState.hasLoungeWriteAccess;
+                                  return CommentComposer(
+                                    controller: _commentController,
+                                    focusNode: _commentFocusNode,
+                                    selectedImages: _selectedImages,
+                                    isSubmitting: _isSubmittingComment,
+                                    isUploadingImages: _isUploadingImages,
+                                    uploadProgress: _uploadProgress,
+                                    canSubmit: _canSubmitComment,
+                                    onPickImages: _pickImages,
+                                    onRemoveImage: _removeImage,
+                                    onSubmit: _submitComment,
+                                    enabled: canWrite,
+                                    onDisabledTap: () => _showVerificationRequiredDialog(context, authState),
+                                    hintText: canWrite
+                                      ? '댓글을 입력하세요...'
+                                      : '댓글 작성은 공직자 메일 인증 후 가능합니다',
+                                  );
+                                },
                               ),
                               const Gap(16),
                             ],
@@ -1104,5 +1114,38 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Show verification required dialog when user tries to comment without verification
+  void _showVerificationRequiredDialog(BuildContext context, AuthState authState) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, size: 24),
+            SizedBox(width: 8),
+            Text('인증 필요'),
+          ],
+        ),
+        content: const Text(
+          '댓글을 작성하려면 공직자 메일 인증이 필요합니다.\n\n💡 직렬 인증(급여명세서)을 완료하시면 메일 인증 없이도 바로 이용 가능합니다.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.push('/profile');
+            },
+            child: const Text('지금 인증하기'),
+          ),
+        ],
+      ),
+    );
   }
 }

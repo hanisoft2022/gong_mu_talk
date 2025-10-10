@@ -135,7 +135,6 @@ class PrivacyPolicyPage extends StatelessWidget {
 
 【 공직자 메일 인증 】
   • 정부기관 재직 확인 (선택 기능)
-  • 인증된 사용자 배지 표시
   • 특정 라운지 접근 권한 부여
 
 【 마케팅 및 광고 】

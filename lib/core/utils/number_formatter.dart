@@ -1,6 +1,9 @@
 // Number formatting utilities
 //
 // Provides compact number formatting for UI display to prevent overflow
+// Combines manual implementation and intl package for flexibility
+
+import 'package:intl/intl.dart';
 
 /// Format large numbers into compact form (1K, 1M, etc.)
 ///
@@ -33,8 +36,24 @@ String formatCompactNumber(int number) {
 }
 
 /// NumberFormatter class providing static formatting methods
+///
+/// This class consolidates all number formatting functionality,
+/// combining manual implementation and intl package for optimal flexibility.
+///
+/// Replaces the deprecated CurrencyFormatter (lib/common/utils/currency_formatter.dart)
 class NumberFormatter {
+  // Private formatters for intl-based formatting
+  static final NumberFormat _wonFormatter = NumberFormat.currency(
+    locale: 'ko_KR',
+    symbol: '₩',
+    decimalDigits: 0,
+  );
+
+  static final NumberFormat _numberFormatter = NumberFormat.decimalPattern('ko_KR');
+
   /// Format number with thousands separators (e.g., 1,234,567)
+  ///
+  /// Manual implementation for lightweight formatting without intl package.
   static String format(int? number) {
     if (number == null) return '-';
 
@@ -52,22 +71,42 @@ class NumberFormatter {
     return result.toString();
   }
 
-  /// Format number as currency with won symbol (e.g., ₩1,234,567원)
+  /// Format number as currency with won symbol (e.g., 1,234,567원)
+  ///
+  /// This is the primary currency formatting method used throughout the app.
   static String formatCurrency(int? number) {
     if (number == null) return '-';
     return '${format(number)}원';
   }
 
   /// Format number with won currency symbol (e.g., ₩1,234,567)
+  ///
+  /// Uses intl package for localized formatting.
   static String formatWon(int? number) {
     if (number == null) return '-';
-    return '₩${format(number)}';
+    return _wonFormatter.format(number);
+  }
+
+  /// Format number with thousands separator (e.g., 1,234,567)
+  ///
+  /// Uses intl package for localized formatting.
+  /// Alternative to format() method.
+  static String formatNumber(num value) {
+    return _numberFormatter.format(value);
   }
 
   /// Format number as percentage (e.g., 15.5%)
   static String formatPercent(double? number, {int decimals = 1}) {
     if (number == null) return '-';
     return '${number.toStringAsFixed(decimals)}%';
+  }
+
+  /// Format number as percentage from decimal (e.g., 0.155 → 15.5%)
+  ///
+  /// Multiplies by 100 before formatting.
+  static String formatPercentFromDecimal(double value, {int decimals = 1}) {
+    final double percent = value * 100;
+    return '${percent.toStringAsFixed(decimals)}%';
   }
 
   /// Format compact number (delegates to formatCompactNumber)

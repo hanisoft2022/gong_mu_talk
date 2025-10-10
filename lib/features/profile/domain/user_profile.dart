@@ -6,8 +6,6 @@ import 'career_hierarchy.dart';
 
 enum UserRole { member, moderator, admin }
 
-enum PremiumTier { none, supporter, premium }
-
 class UserProfile extends Equatable {
   const UserProfile({
     required this.uid,
@@ -22,11 +20,6 @@ class UserProfile extends Equatable {
     required this.createdAt,
     this.updatedAt,
     this.blockedUntil,
-    this.supporterLevel = 0,
-    this.premiumTier = PremiumTier.none,
-    this.points = 0,
-    this.level = 1,
-    this.badges = const <String>[],
     this.careerTrack = CareerTrack.none,
     this.excludedSerials = const <String>{},
     this.excludedDepartments = const <String>{},
@@ -47,10 +40,10 @@ class UserProfile extends Equatable {
     this.followingCount = 0,
     this.postCount = 0,
     this.notificationsEnabled = true,
-    this.supporterBadgeVisible = true,
     this.serialVisible = true,
     this.governmentEmail,
     this.governmentEmailVerifiedAt,
+    this.isCareerTrackVerified = false,
     this.careerHierarchy,
     this.accessibleLoungeIds = const <String>[],
     this.defaultLoungeId,
@@ -69,11 +62,6 @@ class UserProfile extends Equatable {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? blockedUntil;
-  final int supporterLevel;
-  final PremiumTier premiumTier;
-  final int points;
-  final int level;
-  final List<String> badges;
   final CareerTrack careerTrack;
   final Set<String> excludedSerials;
   final Set<String> excludedDepartments;
@@ -93,18 +81,16 @@ class UserProfile extends Equatable {
   final int followingCount;
   final int postCount;
   final bool notificationsEnabled;
-  final bool supporterBadgeVisible;
   final bool serialVisible;
   final String? governmentEmail;
   final DateTime? governmentEmailVerifiedAt;
+  final bool isCareerTrackVerified;
   final CareerHierarchy? careerHierarchy;
   final List<String> accessibleLoungeIds;
   final String? defaultLoungeId;
 
   bool get isBlocked =>
       blockedUntil != null && blockedUntil!.isAfter(DateTime.now());
-
-  bool get isPremium => premiumTier != PremiumTier.none;
 
   bool get hasNicknameTickets => extraNicknameTickets > 0;
 
@@ -135,11 +121,6 @@ class UserProfile extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? blockedUntil,
-    int? supporterLevel,
-    PremiumTier? premiumTier,
-    int? points,
-    int? level,
-    List<String>? badges,
     CareerTrack? careerTrack,
     Set<String>? excludedSerials,
     Set<String>? excludedDepartments,
@@ -159,10 +140,10 @@ class UserProfile extends Equatable {
     int? followingCount,
     int? postCount,
     bool? notificationsEnabled,
-    bool? supporterBadgeVisible,
     bool? serialVisible,
     String? governmentEmail,
     DateTime? governmentEmailVerifiedAt,
+    bool? isCareerTrackVerified,
     CareerHierarchy? careerHierarchy,
     List<String>? accessibleLoungeIds,
     String? defaultLoungeId,
@@ -181,11 +162,6 @@ class UserProfile extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       blockedUntil: blockedUntil ?? this.blockedUntil,
-      supporterLevel: supporterLevel ?? this.supporterLevel,
-      premiumTier: premiumTier ?? this.premiumTier,
-      points: points ?? this.points,
-      level: level ?? this.level,
-      badges: badges ?? this.badges,
       careerTrack: careerTrack ?? this.careerTrack,
       excludedSerials: excludedSerials ?? this.excludedSerials,
       excludedDepartments: excludedDepartments ?? this.excludedDepartments,
@@ -207,12 +183,12 @@ class UserProfile extends Equatable {
       followingCount: followingCount ?? this.followingCount,
       postCount: postCount ?? this.postCount,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      supporterBadgeVisible:
-          supporterBadgeVisible ?? this.supporterBadgeVisible,
       serialVisible: serialVisible ?? this.serialVisible,
       governmentEmail: governmentEmail ?? this.governmentEmail,
       governmentEmailVerifiedAt:
           governmentEmailVerifiedAt ?? this.governmentEmailVerifiedAt,
+      isCareerTrackVerified:
+          isCareerTrackVerified ?? this.isCareerTrackVerified,
       careerHierarchy: careerHierarchy ?? this.careerHierarchy,
       accessibleLoungeIds: accessibleLoungeIds ?? this.accessibleLoungeIds,
       defaultLoungeId: defaultLoungeId ?? this.defaultLoungeId,
@@ -235,11 +211,6 @@ class UserProfile extends Equatable {
       'blockedUntil': blockedUntil != null
           ? Timestamp.fromDate(blockedUntil!)
           : null,
-      'supporterLevel': supporterLevel,
-      'premiumTier': premiumTier.name,
-      'points': points,
-      'level': level,
-      'badges': badges,
       'careerTrack': careerTrack.name,
       'excludedSerials': excludedSerials.toList(growable: false),
       'excludedDepartments': excludedDepartments.toList(growable: false),
@@ -265,12 +236,12 @@ class UserProfile extends Equatable {
       'followingCount': followingCount,
       'postCount': postCount,
       'notificationsEnabled': notificationsEnabled,
-      'supporterBadgeVisible': supporterBadgeVisible,
       'serialVisible': serialVisible,
       'governmentEmail': governmentEmail,
       'governmentEmailVerifiedAt': governmentEmailVerifiedAt != null
           ? Timestamp.fromDate(governmentEmailVerifiedAt!)
           : null,
+      'isCareerTrackVerified': isCareerTrackVerified,
     };
   }
 
@@ -300,11 +271,6 @@ class UserProfile extends Equatable {
       createdAt: _parseTimestamp(data['createdAt']) ?? DateTime.now(),
       updatedAt: _parseTimestamp(data['updatedAt']),
       blockedUntil: _parseTimestamp(data['blockedUntil']),
-      supporterLevel: (data['supporterLevel'] as num?)?.toInt() ?? 0,
-      premiumTier: _parsePremium(data['premiumTier']),
-      points: (data['points'] as num?)?.toInt() ?? 0,
-      level: (data['level'] as num?)?.toInt() ?? 1,
-      badges: _parseStringList(data['badges']),
       careerTrack: _parseCareerTrack(data['careerTrack']),
       excludedSerials: _parseStringSet(data['excludedSerials']),
       excludedDepartments: _parseStringSet(data['excludedDepartments']),
@@ -326,12 +292,12 @@ class UserProfile extends Equatable {
       followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
       postCount: (data['postCount'] as num?)?.toInt() ?? 0,
       notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
-      supporterBadgeVisible: data['supporterBadgeVisible'] as bool? ?? true,
       serialVisible: data['serialVisible'] as bool? ?? true,
       governmentEmail: data['governmentEmail'] as String?,
       governmentEmailVerifiedAt: _parseTimestamp(
         data['governmentEmailVerifiedAt'],
       ),
+      isCareerTrackVerified: data['isCareerTrackVerified'] as bool? ?? false,
       careerHierarchy: _parseCareerHierarchy(data['careerHierarchy']),
       accessibleLoungeIds: _parseStringList(data['accessibleLoungeIds']),
       defaultLoungeId: data['defaultLoungeId'] as String?,
@@ -346,16 +312,6 @@ class UserProfile extends Equatable {
       );
     }
     return UserRole.member;
-  }
-
-  static PremiumTier _parsePremium(Object? raw) {
-    if (raw is String) {
-      return PremiumTier.values.firstWhere(
-        (PremiumTier element) => element.name == raw,
-        orElse: () => PremiumTier.none,
-      );
-    }
-    return PremiumTier.none;
   }
 
   static CareerTrack _parseCareerTrack(Object? raw) {
@@ -422,11 +378,6 @@ class UserProfile extends Equatable {
     createdAt,
     updatedAt,
     blockedUntil,
-    supporterLevel,
-    premiumTier,
-    points,
-    level,
-    badges,
     careerTrack,
     excludedSerials,
     excludedDepartments,
@@ -446,10 +397,10 @@ class UserProfile extends Equatable {
     followingCount,
     postCount,
     notificationsEnabled,
-    supporterBadgeVisible,
     serialVisible,
     governmentEmail,
     governmentEmailVerifiedAt,
+    isCareerTrackVerified,
     careerHierarchy,
     accessibleLoungeIds,
     defaultLoungeId,

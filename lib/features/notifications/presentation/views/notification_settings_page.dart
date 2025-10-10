@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../di/di.dart';
 import '../../data/notification_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -16,6 +17,7 @@ class NotificationSettingsPage extends StatefulWidget {
 
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   late final NotificationRepository _repository;
+  late final AuthCubit _authCubit;
   Map<String, bool> _settings = {};
   bool _isLoading = true;
 
@@ -51,12 +53,17 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   void initState() {
     super.initState();
     _repository = getIt<NotificationRepository>();
+    _authCubit = getIt<AuthCubit>();
     _loadSettings();
   }
 
+  String? get _userId => _authCubit.state.userId;
+
   Future<void> _loadSettings() async {
     try {
-      final settings = await _repository.getNotificationSettings();
+      final settings = await _repository.getNotificationSettings(
+        userId: _userId,
+      );
       setState(() {
         _settings = settings;
         _isLoading = false;
@@ -79,7 +86,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     });
 
     try {
-      await _repository.setNotificationEnabled(key, value);
+      await _repository.setNotificationEnabled(key, value, userId: _userId);
     } catch (e) {
       // 실패 시 되돌리기
       setState(() {

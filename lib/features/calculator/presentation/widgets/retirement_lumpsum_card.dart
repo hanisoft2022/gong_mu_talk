@@ -5,6 +5,9 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/retirement_bene
 import 'package:gong_mu_talk/features/calculator/domain/entities/early_retirement_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/retirement_lumpsum_detail_page.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
+import 'package:gong_mu_talk/features/calculator/presentation/widgets/common/feature_button.dart';
+import 'package:gong_mu_talk/core/theme/app_color_extension.dart';
 
 /// 퇴직 시 일시금 총액 카드 (퇴직급여 + 명예퇴직금 통합)
 class RetirementLumpsumCard extends StatelessWidget {
@@ -23,6 +26,8 @@ class RetirementLumpsumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     // 총 일시금 계산
     final totalLumpsum =
         (retirementBenefit?.totalBenefit ?? 0) + (earlyRetirementBonus?.totalAmount ?? 0);
@@ -41,11 +46,11 @@ class RetirementLumpsumCard extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.lock_outline, size: 48, color: Colors.grey[400]),
+                      Icon(Icons.lock_outline, size: 48, color: colorScheme.outline),
                       const Gap(8),
                       Text(
                         '정보 입력 후 이용 가능',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
                       ),
                     ],
                   ),
@@ -61,21 +66,21 @@ class RetirementLumpsumCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.orange.withValues(alpha: 0.2),
-                            Colors.orange.withValues(alpha: 0.1),
+                            context.appColors.highlightLight.withValues(alpha: 0.2),
+                            context.appColors.highlightLight.withValues(alpha: 0.1),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.withValues(alpha: 0.4), width: 2),
+                        border: Border.all(color: context.appColors.highlight.withValues(alpha: 0.4), width: 2),
                       ),
                       child: Column(
                         children: [
                           Text(
                             '퇴직 시 수령 총액',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.orange[900],
+                              color: context.appColors.highlightDark,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -84,7 +89,7 @@ class RetirementLumpsumCard extends StatelessWidget {
                             NumberFormatter.formatCurrency(totalLumpsum),
                             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange[900],
+                              color: context.appColors.highlightDark,
                             ),
                           ),
                         ],
@@ -93,10 +98,13 @@ class RetirementLumpsumCard extends StatelessWidget {
 
                     const Gap(20),
 
-                    // 상세 페이지 버튼
+                    // 상세 페이지 버튼 (Level 2: emailVerified 이상)
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
+                      child: FeatureButton(
+                        requiredLevel: FeatureAccessLevel.emailVerified,
+                        featureName: '퇴직 일시금 상세 분석',
+                        icon: const Icon(Icons.analytics, size: 18),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -108,11 +116,10 @@ class RetirementLumpsumCard extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.analytics, size: 18),
-                        label: const Text('상세 분석'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
+                        child: const Text('상세 분석'),
                       ),
                     ),
                   ],

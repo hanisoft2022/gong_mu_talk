@@ -15,6 +15,8 @@ class SkeletonPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: Padding(
@@ -34,7 +36,7 @@ class SkeletonPostCard extends StatelessWidget {
                 // Timestamp (will be skeletonized)
                 Text(
                   '방금 전',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -70,12 +72,12 @@ class SkeletonPostCard extends StatelessWidget {
                     Icon(
                       Icons.favorite_outline,
                       size: 20,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const Gap(4),
                     Text(
                       '42',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -86,12 +88,12 @@ class SkeletonPostCard extends StatelessWidget {
                     Icon(
                       Icons.mode_comment_outlined,
                       size: 20,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const Gap(4),
                     Text(
                       '8',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -102,12 +104,12 @@ class SkeletonPostCard extends StatelessWidget {
                     Icon(
                       Icons.visibility_outlined,
                       size: 20,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const Gap(4),
                     Text(
                       '120',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),

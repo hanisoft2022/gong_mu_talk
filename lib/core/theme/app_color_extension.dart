@@ -81,36 +81,36 @@ class AppColorExtension extends ThemeExtension<AppColorExtension> {
   final Color neutralLight;
   final Color neutralDark;
 
-  /// Light theme colors
+  /// Light theme colors (using darker shades for better contrast)
   static const light = AppColorExtension(
-    success: AppColors.success,
-    successLight: AppColors.successLight,
+    success: AppColors.successDark, // #059669 (darker green)
+    successLight: AppColors.success,
     successDark: AppColors.successDark,
-    warning: AppColors.warning,
-    warningLight: AppColors.warningLight,
+    warning: AppColors.warningDark, // #D97706 (darker amber)
+    warningLight: AppColors.warning,
     warningDark: AppColors.warningDark,
-    error: AppColors.error,
-    errorLight: AppColors.errorLight,
+    error: AppColors.errorDark, // #DC2626 (darker red)
+    errorLight: AppColors.error,
     errorDark: AppColors.errorDark,
-    info: AppColors.info,
-    infoLight: AppColors.infoLight,
+    info: AppColors.infoDark, // #2563EB (darker blue)
+    infoLight: AppColors.info,
     infoDark: AppColors.infoDark,
-    like: AppColors.like,
-    likeLight: AppColors.likeLight,
+    like: AppColors.likeDark, // #DB2777 (darker pink)
+    likeLight: AppColors.like,
     likeDark: AppColors.likeDark,
-    highlight: AppColors.highlight,
-    highlightLight: AppColors.highlightLight,
+    highlight: AppColors.highlightDark, // #EA580C (darker orange)
+    highlightLight: AppColors.highlight,
     highlightDark: AppColors.highlightDark,
     highlightBg: AppColors.highlightBgLight,
     highlightBorder: AppColors.highlightBorderLight,
-    positive: AppColors.positive,
-    positiveLight: AppColors.positiveLight,
+    positive: AppColors.positiveDark, // #047857 (darker green)
+    positiveLight: AppColors.positive,
     positiveDark: AppColors.positiveDark,
-    negative: AppColors.negative,
-    negativeLight: AppColors.negativeLight,
+    negative: AppColors.negativeDark, // #B91C1C (darker red)
+    negativeLight: AppColors.negative,
     negativeDark: AppColors.negativeDark,
-    neutral: AppColors.neutral,
-    neutralLight: AppColors.neutralLight,
+    neutral: AppColors.neutralDark, // #4B5563 (darker gray)
+    neutralLight: AppColors.neutral,
     neutralDark: AppColors.neutralDark,
   );
 
