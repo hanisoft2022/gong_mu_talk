@@ -12,6 +12,14 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile
 import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 
+/// 가족수당 계산 결과 클래스
+class FamilyAllowanceResult {
+  final int total; // 총 가족수당
+  final int nonTaxable; // 비과세 대상 가족수당
+
+  FamilyAllowanceResult({required this.total, required this.nonTaxable});
+}
+
 /// 급여 계산 서비스
 class SalaryCalculationService {
   final TaxCalculationService _taxService;
@@ -44,7 +52,15 @@ class SalaryCalculationService {
       // 2. 수당 계산
       final positionAllowance = _calculatePositionAllowance(profile.position);
       final homeroomAllowance = profile.allowances.homeroom;
-      final familyAllowance = profile.allowances.family;
+
+      // 가족수당 계산 (개편된 로직, UI 미구현으로 youngChildrenBirthDates는 빈 목록 전달)
+      final familyAllowanceResult = calculateFamilyAllowance(
+        numberOfChildren: profile.allowances.family, // UI상 가족수당 총액이 자녀 수처럼 사용되고 있음
+        youngChildrenBirthDates: profile.youngChildrenBirthDates,
+        currentYear: year,
+      );
+      final familyAllowance = familyAllowanceResult.total;
+
       final otherAllowances =
           profile.allowances.headTeacher +
           profile.allowances.veteran +
@@ -83,8 +99,8 @@ class SalaryCalculationService {
           familyAllowance: familyAllowance,
           otherAllowances: otherAllowances,
           performanceBonus: performanceBonus,
-          incomeTax: incomeTax + localTax,
-          insurance: insurance,
+          incomeTax: (incomeTax + localTax).round(),
+          insurance: insurance.round(),
           netPay: netPay,
           annualTotalPay: annualTotalPay,
         ),
@@ -197,10 +213,11 @@ class SalaryCalculationService {
   /// Returns: 정근수당 가산금 (월 3~13만원)
   int calculateLongevityMonthlyAllowance(int serviceYears) {
     if (serviceYears < 5) return 30000; // 5년 미만: 3만원
-    if (serviceYears < 10) return 100000; // 5년 이상 10년 미만: 10만원
-    if (serviceYears < 20) return 100000; // 10년 이상 20년 미만: 10만원
-    if (serviceYears < 25) return 110000; // 20년 이상 25년 미만: 11만원
-    return 130000; // 25년 이상: 13만원
+    if (serviceYears < 10) return 50000; // 5년 이상 10년 미만: 5만원
+    if (serviceYears < 15) return 60000; // 10년 이상 15년 미만: 6만원
+    if (serviceYears < 20) return 80000; // 15년 이상 20년 미만: 8만원
+    if (serviceYears < 25) return 110000; // 20년 이상 25년 미만: 11만원 (10만원 + 가산금 1만원)
+    return 130000; // 25년 이상: 13만원 (10만원 + 가산금 3만원)
   }
 
   /// 교원연구비 계산 (2023.3.1 개정 기준)
@@ -306,28 +323,66 @@ class SalaryCalculationService {
 
   /// 가족수당 계산
   ///
-  /// [hasSpouse] 배우자 유무
-  /// [numberOfChildren] 자녀 수
+  /// [numberOfChildren] 총 자녀 수
+  /// [youngChildrenBirthDates] 만 6세 이하 자녀 생년월일 목록
+  /// [currentYear] 현재 연도
   ///
-  /// Returns: 가족수당 (배우자 4만 + 첫째 5만 + 둘째 8만 + 셋째이상 각12만)
-  int calculateFamilyAllowance({required bool hasSpouse, required int numberOfChildren}) {
+  /// Returns: 총 가족수당과 비과세 가족수당
+  FamilyAllowanceResult calculateFamilyAllowance({
+    required int numberOfChildren,
+    required List<DateTime> youngChildrenBirthDates,
+    required int currentYear,
+    bool hasSpouse = false, // 배우자 유무 추가
+    int numberOfParents = 0, // 부양 부모 수 추가
+  }) {
     int total = 0;
 
     // 배우자: 4만원
     if (hasSpouse) total += 40000;
 
-    // 첫째: 5만원
+    // 첫째: 5만원 (2025년 기준)
     if (numberOfChildren >= 1) total += 50000;
 
-    // 둘째: 8만원
+    // 둘째: 8만원 (2025년 기준)
     if (numberOfChildren >= 2) total += 80000;
 
-    // 셋째 이상: 각 12만원
+    // 셋째 이상: 각 12만원 (2025년 기준)
     if (numberOfChildren >= 3) {
       total += (numberOfChildren - 2) * 120000;
     }
 
-    return total;
+    // 부양 부모: 1인당 2만원
+    total += numberOfParents * 20000;
+
+    // 비과세 수당 계산 (만 6세 이하 자녀 대상)
+    // 과세기간 개시일(1월 1일) 기준으로 만 6세 이하인지 판단
+    // 예: 2025년 → 2019년 1월 1일 이후 출생자 적용
+    int nonTaxable = 0;
+    final youngChildren = youngChildrenBirthDates
+        .where((dob) => currentYear - dob.year <= 6)
+        .toList();
+
+    // 자녀 수에 따른 비과세 금액 계산 (2025년 기준)
+    if (youngChildren.isNotEmpty) {
+      if (youngChildren.length >= 3) {
+        // 셋째 이상은 12만원씩 비과세
+        nonTaxable += (youngChildren.length - 2) * 120000;
+        nonTaxable += 80000; // 둘째분
+        nonTaxable += 50000; // 첫째분
+      } else if (youngChildren.length == 2) {
+        nonTaxable += 80000; // 둘째분
+        nonTaxable += 50000; // 첫째분
+      } else if (youngChildren.length == 1) {
+        nonTaxable += 50000; // 첫째분
+      }
+    }
+
+    // 월 20만원 한도 (2025년 기준, 2024년까지는 10만원)
+    if (nonTaxable > 200000) {
+      nonTaxable = 200000;
+    }
+
+    return FamilyAllowanceResult(total: total, nonTaxable: nonTaxable);
   }
 
   /// 교직수당 가산금 계산 (담임/보직 제외)
@@ -407,6 +462,13 @@ class SalaryCalculationService {
         : 0;
   }
 
+  /// 급식비 공제 추정치 계산
+  ///
+  /// Returns: 월별 급식비 공제 추정치 (고정값)
+  int calculateMealDeduction() {
+    return AllowanceTable.mealCostPerDay * AllowanceTable.averageMealDaysPerMonth;
+  }
+
   /// 월별 급여명세서 계산 (12개월)
   ///
   /// [profile] 교사 프로필
@@ -483,10 +545,13 @@ class SalaryCalculationService {
     );
 
     // 6. 가족수당
-    final familyAllowance = calculateFamilyAllowance(
-      hasSpouse: hasSpouse,
+    final familyAllowanceResult = calculateFamilyAllowance(
       numberOfChildren: numberOfChildren,
+      youngChildrenBirthDates: profile.youngChildrenBirthDates,
+      currentYear: currentYear,
+      hasSpouse: hasSpouse,
     );
+    final familyAllowance = familyAllowanceResult.total;
 
     // 7. 교원연구비 (교육경력 기준)
     final researchAllowance = calculateResearchAllowance(
@@ -569,3 +634,4 @@ class SalaryCalculationService {
     return monthlyDetails;
   }
 }
+

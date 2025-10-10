@@ -38,6 +38,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
   bool _hasSpouse = false;
   int _numberOfChildren = 0;
   int _numberOfParents = 0; // 60세 이상 직계존속
+  List<DateTime?> _childrenBirthDates = []; // 자녀 생년월일 목록 (만 6세 이하 비과세용)
   Set<TeachingAllowanceBonus> _teachingAllowanceBonuses = {};
 
   // 교육경력 관련
@@ -108,6 +109,17 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
     _hasSpouse = widget.initialProfile?.hasSpouse ?? false;
     _numberOfChildren = widget.initialProfile?.numberOfChildren ?? 0;
     _numberOfParents = widget.initialProfile?.numberOfParents ?? 0;
+
+    // 자녀 생년월일 초기화 (만 6세 이하 비과세용)
+    if (widget.initialProfile != null) {
+      _childrenBirthDates = List.from(widget.initialProfile!.youngChildrenBirthDates);
+      // 자녀 수만큼 리스트 크기 조정 (부족한 경우 null로 채움)
+      while (_childrenBirthDates.length < _numberOfChildren) {
+        _childrenBirthDates.add(null);
+      }
+    } else {
+      _childrenBirthDates = List.filled(_numberOfChildren, null);
+    }
 
     // 교육경력 필드 초기화
     _hasFirstGradeCertificate = widget.initialProfile?.hasFirstGradeCertificate ?? true;
@@ -906,6 +918,26 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
                                 '첫째 5만원, 둘째 8만원, 셋째 이상 각 12만원',
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                               ),
+                              // 자녀 생년월일 입력 버튼 (조건부 표시)
+                              if (_numberOfChildren >= 1) ...[
+                                const Gap(12),
+                                OutlinedButton.icon(
+                                  onPressed: _showChildrenBirthDatesDialog,
+                                  icon: const Icon(Icons.child_care, size: 18),
+                                  label: const Text('만 6세 이하 자녀 정보 입력 (비과세 혜택)'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const Gap(4),
+                                Text(
+                                  '생년월일 입력 시 월 20만원 한도 내 비과세 적용',
+                                  style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                                ),
+                              ],
                               const Gap(16),
                               const Text(
                                 '부양 가족 수',
@@ -1365,7 +1397,19 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
 
     if (selectedChildren != null) {
       setState(() {
+        final oldCount = _numberOfChildren;
         _numberOfChildren = selectedChildren;
+
+        // 자녀 생년월일 리스트 크기 동적 조정
+        if (_numberOfChildren > oldCount) {
+          // 자녀 수 증가: null로 추가
+          while (_childrenBirthDates.length < _numberOfChildren) {
+            _childrenBirthDates.add(null);
+          }
+        } else if (_numberOfChildren < oldCount) {
+          // 자녀 수 감소: 뒤에서부터 제거
+          _childrenBirthDates = _childrenBirthDates.sublist(0, _numberOfChildren);
+        }
       });
     }
   }
@@ -1482,6 +1526,7 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
       hasSpouse: _hasSpouse,
       numberOfChildren: _numberOfChildren,
       numberOfParents: _numberOfParents,
+      youngChildrenBirthDates: _childrenBirthDates.whereType<DateTime>().toList(), // null 제외하고 전달
       isHomeroom: isHomeroom,
       hasPosition: hasPosition,
       teachingAllowanceBonuses: _teachingAllowanceBonuses,
@@ -1826,6 +1871,238 @@ class _QuickInputBottomSheetState extends State<QuickInputBottomSheet> {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  /// 자녀 서수 헬퍼 함수
+  String _getChildOrdinal(int index) {
+    const ordinals = ['첫째', '둘째', '셋째', '넷째', '다섯째'];
+    if (index < ordinals.length) {
+      return ordinals[index];
+    }
+    return '${index + 1}번째';
+  }
+
+  /// 자녀 생년월일 입력 다이얼로그
+  Future<void> _showChildrenBirthDatesDialog() async {
+    // 임시 리스트 (다이얼로그 내에서만 사용)
+    final List<DateTime?> tempBirthDates = List.from(_childrenBirthDates);
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.child_care, color: Theme.of(context).primaryColor),
+                  const Gap(8),
+                  const Expanded(
+                    child: Text(
+                      '자녀 생년월일 입력',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '만 6세 이하 자녀만 입력하시면 비과세 혜택을 받을 수 있습니다.',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                    ),
+                    const Gap(16),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _numberOfChildren,
+                        itemBuilder: (context, index) {
+                          final ordinal = _getChildOrdinal(index);
+                          final birthDate = tempBirthDates[index];
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.teal.shade100,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal.shade700,
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                '$ordinal 생년월일',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: birthDate != null
+                                  ? Text(
+                                      '${birthDate.year}년 ${birthDate.month}월 ${birthDate.day}일',
+                                      style: const TextStyle(color: Colors.black87),
+                                    )
+                                  : const Text(
+                                      '선택 안 함 (만 6세 초과)',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (birthDate != null)
+                                    IconButton(
+                                      icon: const Icon(Icons.clear, size: 20),
+                                      onPressed: () {
+                                        setDialogState(() {
+                                          tempBirthDates[index] = null;
+                                        });
+                                      },
+                                      tooltip: '삭제',
+                                    ),
+                                  Icon(Icons.calendar_today, color: Theme.of(context).primaryColor),
+                                ],
+                              ),
+                              onTap: () async {
+                                DateTime tempDate = birthDate ?? DateTime.now();
+
+                                await showCupertinoModalPopup(
+                                  context: context,
+                                  builder: (BuildContext pickerContext) {
+                                    return DefaultTextStyle(
+                                      style: GoogleFonts.notoSansKr(color: Colors.black87),
+                                      child: Container(
+                                        height: 300,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(16),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            // Header
+                                            Container(
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                border: Border(
+                                                  bottom: BorderSide(
+                                                    color: Colors.grey.shade300,
+                                                    width: 0.5,
+                                                  ),
+                                                ),
+                                                borderRadius: const BorderRadius.vertical(
+                                                  top: Radius.circular(16),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  CupertinoButton(
+                                                    minimumSize: Size.zero,
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                                    child: Text(
+                                                      '취소',
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade600,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
+                                                    onPressed: () => Navigator.pop(pickerContext),
+                                                  ),
+                                                  Text(
+                                                    '$ordinal 생년월일',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 16,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  CupertinoButton(
+                                                    minimumSize: Size.zero,
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                                    child: Text(
+                                                      '완료',
+                                                      style: TextStyle(
+                                                        color: Theme.of(context).primaryColor,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    onPressed: () {
+                                                      HapticFeedback.mediumImpact();
+                                                      setDialogState(() {
+                                                        tempBirthDates[index] = tempDate;
+                                                      });
+                                                      Navigator.pop(pickerContext);
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Date Picker
+                                            Expanded(
+                                              child: CupertinoTheme(
+                                                data: CupertinoThemeData(
+                                                  textTheme: CupertinoTextThemeData(
+                                                    dateTimePickerTextStyle: GoogleFonts.notoSansKr(
+                                                      color: Colors.black87,
+                                                      fontSize: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: CupertinoDatePicker(
+                                                  mode: CupertinoDatePickerMode.date,
+                                                  backgroundColor: Colors.white,
+                                                  initialDateTime: tempDate,
+                                                  minimumYear: 2015,
+                                                  maximumDate: DateTime.now(),
+                                                  onDateTimeChanged: (DateTime picked) {
+                                                    HapticFeedback.selectionClick();
+                                                    tempDate = picked;
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _childrenBirthDates = tempBirthDates;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('완료'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

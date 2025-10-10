@@ -1,9 +1,7 @@
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/performance_grade.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowance_bonus.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/salary_table.dart';
-import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bonus_constants.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/tax_calculation_service.dart';
 import 'package:gong_mu_talk/features/calculator/domain/services/salary_calculation_service.dart';
 
@@ -77,28 +75,37 @@ class MonthlyBreakdownService {
     );
 
     // 원로교사수당 (30년 이상 + 55세 이상)
-    final veteranAllowance = _calculateVeteranAllowance(
+    final veteranAllowance = _salaryService.calculateVeteranAllowance(
       bonuses: profile.teachingAllowanceBonuses,
       serviceYears: serviceYears,
       birthYear: profile.birthYear,
+      birthMonth: profile.birthMonth,
       currentYear: year,
+      currentMonth: 1, // 월별로 큰 차이 없으므로 1로 고정
     );
 
-    // 가족수당
-    final familyAllowance = _calculateFamilyAllowance(
-      hasSpouse: hasSpouse,
+    final familyAllowanceResult = _salaryService.calculateFamilyAllowance(
       numberOfChildren: numberOfChildren,
+      youngChildrenBirthDates: profile.youngChildrenBirthDates, // 현재는 UI가 없어 빈 목록 전달
+      currentYear: year,
+      hasSpouse: hasSpouse,
       numberOfParents: profile.numberOfParents,
     );
+    final familyAllowance = familyAllowanceResult.total;
+    final nonTaxableFamilyAllowance = familyAllowanceResult.nonTaxable;
 
     // 연구비
-    final researchAllowance = _calculateResearchAllowance(serviceYears);
+    final researchAllowance = _salaryService.calculateResearchAllowance(
+      position: profile.position,
+      schoolType: profile.schoolType,
+      teachingExperienceYears: serviceYears, // 교육경력 대신 재직년수 사용
+    );
 
     // 시간외근무수당 정액분
-    final overtimeAllowance = AllowanceTable.getOvertimeAllowance(profile.currentGrade);
+    final overtimeAllowance = _salaryService.calculateOvertimeAllowance(profile.currentGrade);
 
     // 정근수당 가산금 (매월)
-    final longevityMonthly = _calculateLongevityMonthlyAllowance(serviceYears);
+    final longevityMonthly = _salaryService.calculateLongevityMonthlyAllowance(serviceYears);
 
     // 월별 계산
     for (int month = 1; month <= 12; month++) {
@@ -121,9 +128,9 @@ class MonthlyBreakdownService {
           longevityMonthly;
 
       // 정근수당 (1월/7월만)
-      final longevityBonus = _calculateLongevityBonus(
+      final longevityBonus = _salaryService.calculateLongevityBonus(
         serviceYears: serviceYears,
-        monthlySalary: baseSalary + totalAllowances,
+        monthlySalary: baseSalary + totalAllowances, // 월급 기준
         month: month,
       );
 
@@ -131,17 +138,23 @@ class MonthlyBreakdownService {
       final holidayBonus = _calculateHolidayBonus(baseSalary: baseSalary, month: month, year: year);
 
       // 성과상여금 (3월만)
-      final performanceBonus = _calculatePerformanceBonus(grade: performanceGrade, month: month);
+      final performanceBonus = _salaryService.calculatePerformanceBonus(
+        grade: performanceGrade,
+        month: month,
+      );
 
       // 총 지급액 (세전)
       final grossSalary =
           baseSalary + totalAllowances + longevityBonus + holidayBonus + performanceBonus;
 
+      // 과세 대상 소득 (소득세 계산용)
+      final taxableIncome = grossSalary - researchAllowance - nonTaxableFamilyAllowance;
+
       // 부양가족 수 계산 (본인 제외)
       final dependents = (hasSpouse ? 1 : 0) + numberOfChildren + profile.numberOfParents;
 
-      // 소득세 (부양가족 수 반영)
-      final incomeTax = _taxService.calculateIncomeTax(grossSalary, dependents: dependents);
+      // 소득세 (과세 대상 소득 기준)
+      final incomeTax = _taxService.calculateIncomeTax(taxableIncome, dependents: dependents);
 
       // 지방소득세 (소득세의 10%)
       final localTax = _taxService.calculateLocalIncomeTax(incomeTax);
@@ -151,15 +164,15 @@ class MonthlyBreakdownService {
 
       // 공무원연금 기여금 계산 (9%)
       // 기준소득월액 = 본봉 + 정기수당 + 정근수당 + 명절휴가비
-      // 제외: 시간외근무수당(정액분), 성과상여금
+      // 제외: 시간외근무수당(정액분), 성과상여금, 비과세수당
       final pensionBaseIncome =
           baseSalary +
           teachingAllowance +
           homeroomAllowance +
           positionAllowance +
           veteranAllowance +
-          familyAllowance +
-          researchAllowance +
+          familyAllowance -
+          nonTaxableFamilyAllowance +
           longevityMonthly +
           longevityBonus +
           holidayBonus;
@@ -167,13 +180,18 @@ class MonthlyBreakdownService {
       final pensionContribution = (pensionBaseIncome * 0.09).round();
 
       // 건강보험 (2025년 요율: 7.09%)
-      final healthInsurance = (grossSalary * 0.03545).round(); // 본인부담 3.545%
+      // 보수월액 = 총 급여 - 비과세 수당 (교원연구비, 6세이하 자녀수당)
+      final monthlyPayroll = grossSalary - researchAllowance - nonTaxableFamilyAllowance;
+      final healthInsurance = (monthlyPayroll * 0.03545).round(); // 본인부담 3.545%
 
       // 장기요양보험 (건강보험료의 12.95%, 2025년 요율)
       final longTermCareInsurance = (healthInsurance * 0.1295).round();
 
       // 고용보험 (공무원 제외)
       const employmentInsurance = 0; // 공무원은 고용보험 적용 제외
+
+      // 급식비 공제 (추정치)
+      final mealDeduction = _salaryService.calculateMealDeduction();
 
       // 총 공제액
       final totalDeductions =
@@ -182,7 +200,8 @@ class MonthlyBreakdownService {
           pensionContribution +
           healthInsurance +
           longTermCareInsurance +
-          employmentInsurance;
+          employmentInsurance +
+          mealDeduction;
 
       // 실수령액
       final netIncome = grossSalary - totalDeductions;
@@ -227,131 +246,6 @@ class MonthlyBreakdownService {
     return monthlyIncomes;
   }
 
-  /// 정근수당 계산 (1월/7월만)
-  ///
-  /// [serviceYears] 재직 년수
-  /// [monthlySalary] 월급
-  /// [month] 월
-  ///
-  /// Returns: 정근수당
-  int _calculateLongevityBonus({
-    required int serviceYears,
-    required int monthlySalary,
-    required int month,
-  }) {
-    // 1월/7월만 지급
-    if (month != 1 && month != 7) return 0;
-
-    // 재직 년수별 지급률 (공무원 수당 등에 관한 규정)
-    double rate;
-    if (serviceYears < 2) {
-      rate = 0.10; // 2년 미만: 10%
-    } else if (serviceYears < 5) {
-      rate = 0.20; // 2~5년: 20%
-    } else if (serviceYears < 6) {
-      rate = 0.25; // 5~6년: 25%
-    } else if (serviceYears < 7) {
-      rate = 0.30; // 6~7년: 30%
-    } else if (serviceYears < 8) {
-      rate = 0.35; // 7~8년: 35%
-    } else if (serviceYears < 9) {
-      rate = 0.40; // 8~9년: 40%
-    } else if (serviceYears < 10) {
-      rate = 0.45; // 9~10년: 45%
-    } else {
-      rate = 0.50; // 10년 이상: 50%
-    }
-
-    return (monthlySalary * rate).round();
-  }
-
-  /// 정근수당 가산금 계산 (매월)
-  ///
-  /// [serviceYears] 재직 년수
-  ///
-  /// Returns: 정근수당 가산금
-  int _calculateLongevityMonthlyAllowance(int serviceYears) {
-    if (serviceYears < 5) return 30000; // 5년 미만: 3만원
-    if (serviceYears < 10) return 50000; // 5년 이상 10년 미만: 5만원
-    if (serviceYears < 15) return 60000; // 10년 이상 15년 미만: 6만원
-    if (serviceYears < 20) return 80000; // 15년 이상 20년 미만: 8만원
-    if (serviceYears < 25) return 110000; // 20년 이상 25년 미만: 11만원 (10만원 + 가산금 1만원)
-    return 130000; // 25년 이상: 13만원 (10만원 + 가산금 3만원)
-  }
-
-  /// 원로교사수당 계산
-  ///
-  /// [bonuses] 선택된 교직수당 가산금 목록
-  /// [serviceYears] 재직 년수
-  /// [birthYear] 출생 년도
-  /// [currentYear] 현재 년도
-  ///
-  /// Returns: 원로교사수당
-  int _calculateVeteranAllowance({
-    required Set<TeachingAllowanceBonus> bonuses,
-    required int serviceYears,
-    required int birthYear,
-    required int currentYear,
-  }) {
-    // 원로교사 가산금을 선택하지 않았으면 0원
-    if (!bonuses.contains(TeachingAllowanceBonus.veteranTeacher)) {
-      return 0;
-    }
-
-    final age = currentYear - birthYear;
-
-    // 30년 이상 재직 + 55세 이상
-    if (serviceYears >= 30 && age >= 55) {
-      return AllowanceTable.veteranAllowance;
-    }
-
-    return 0;
-  }
-
-  /// 가족수당 계산
-  ///
-  /// [hasSpouse] 배우자 유무
-  /// [numberOfChildren] 자녀 수
-  /// [numberOfParents] 60세 이상 직계존속 수
-  ///
-  /// Returns: 가족수당
-  int _calculateFamilyAllowance({
-    required bool hasSpouse,
-    required int numberOfChildren,
-    required int numberOfParents,
-  }) {
-    int total = 0;
-
-    // 배우자: 4만원
-    if (hasSpouse) total += 40000;
-
-    // 첫째: 5만원
-    if (numberOfChildren >= 1) total += 50000;
-
-    // 둘째: 8만원
-    if (numberOfChildren >= 2) total += 80000;
-
-    // 셋째 이상: 각 12만원
-    if (numberOfChildren >= 3) {
-      total += (numberOfChildren - 2) * 120000;
-    }
-
-    // 60세 이상 직계존속: 1인당 2만원 (최대 4명)
-    final parentsCount = numberOfParents > 4 ? 4 : numberOfParents;
-    total += parentsCount * 20000;
-
-    return total;
-  }
-
-  /// 연구비 계산
-  ///
-  /// [serviceYears] 재직 년수
-  ///
-  /// Returns: 연구비
-  int _calculateResearchAllowance(int serviceYears) {
-    return serviceYears < 5 ? 70000 : 60000;
-  }
-
   /// 명절상여금 계산 (설날/추석, 음력 기준)
   ///
   /// [baseSalary] 본봉
@@ -376,20 +270,6 @@ class MonthlyBreakdownService {
     }
 
     return 0;
-  }
-
-  /// 성과상여금 계산 (교육공무원 기준)
-  ///
-  /// [grade] 성과등급 (S/A/B)
-  /// [month] 현재 월
-  ///
-  /// Returns: 성과상여금 (3월만 지급, 그 외 0)
-  int _calculatePerformanceBonus({required PerformanceGrade grade, required int month}) {
-    // 성과상여금은 지정된 월에만 지급
-    if (month != PerformanceBonusConstants.paymentMonth) return 0;
-
-    // 2025년 교육공무원 성과상여금 (차등지급률 50% 기준)
-    return grade.amount;
   }
 
   /// 연간 총 실수령액 계산

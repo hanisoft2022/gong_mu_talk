@@ -572,106 +572,6 @@ int calculateHealthInsurance({
 
 ---
 
-### 8. 연말정산 로직 누락 ⚠️ **HIGH**
-
-**실제 데이터 (2025년 2월)**:
-
-```
-연말정산소득세: -575,520원 (환급)
-연말정산지방소득세: -57,490원 (환급)
-총 환급: -633,010원
-```
-
-**실제 데이터 (2025년 4월)**:
-
-```
-건강보험연말정산: -8,400원 (환급)
-장기요양연말정산: -1,100원 (환급)
-```
-
-**현재 코드**:
-
-```dart
-// ❌ 연말정산 로직 전혀 없음
-```
-
-**필요 추가**:
-
-```dart
-/// 연말정산 환급/추가징수 계산
-///
-/// [annualIncome] 연간 총 급여
-/// [totalTaxPaid] 연간 총 납부 세액
-/// [deductions] 소득공제 항목
-///
-/// Returns: 환급액 (음수면 환급, 양수면 추가징수)
-int calculateYearEndTaxSettlement({
-  required int annualIncome,
-  required int totalTaxPaid,
-  required Map<String, int> deductions,
-}) {
-  // 1. 과세표준 계산
-  final totalDeductions = deductions.values.fold<int>(0, (a, b) => a + b);
-  final taxableIncome = annualIncome - totalDeductions;
-
-  // 2. 산출세액 계산 (소득세법 기본세율)
-  final calculatedTax = _calculateIncomeTaxByBracket(taxableIncome);
-
-  // 3. 세액공제 적용
-  final taxCredits = _calculateTaxCredits(deductions);
-
-  // 4. 결정세액
-  final finalTax = calculatedTax - taxCredits;
-
-  // 5. 환급/추가징수액
-  return totalTaxPaid - finalTax; // 양수면 환급, 음수면 추징
-}
-
-/// 소득세 구간별 세액 계산
-int _calculateIncomeTaxByBracket(int taxableIncome) {
-  // 2024년 소득세 기본세율
-  if (taxableIncome <= 14000000) {
-    return (taxableIncome * 0.06).round();
-  } else if (taxableIncome <= 50000000) {
-    return 840000 + ((taxableIncome - 14000000) * 0.15).round();
-  } else if (taxableIncome <= 88000000) {
-    return 6240000 + ((taxableIncome - 50000000) * 0.24).round();
-  } else if (taxableIncome <= 150000000) {
-    return 15360000 + ((taxableIncome - 88000000) * 0.35).round();
-  } else if (taxableIncome <= 300000000) {
-    return 37060000 + ((taxableIncome - 150000000) * 0.38).round();
-  } else if (taxableIncome <= 500000000) {
-    return 94060000 + ((taxableIncome - 300000000) * 0.40).round();
-  } else {
-    return 174060000 + ((taxableIncome - 500000000) * 0.42).round();
-  }
-}
-
-/// 세액공제 계산
-int _calculateTaxCredits(Map<String, int> deductions) {
-  int credits = 0;
-
-  // 근로소득세액공제 (산출세액의 일정 비율)
-  // 보험료 세액공제
-  // 의료비 세액공제
-  // 교육비 세액공제
-  // 기부금 세액공제
-
-  // 실제 구현 시 상세 계산 필요
-
-  return credits;
-}
-```
-
-**지급 시기**:
-
-- 소득세/주민세 정산: 2월 급여
-- 건강보험 정산: 3-4월 급여
-
-**새 파일 필요**: `lib/features/calculator/domain/services/tax_settlement_service.dart`
-
----
-
 ### 9. 급식비 공제 누락 ⚠️ **MEDIUM**
 
 **실제 데이터**:
@@ -888,11 +788,6 @@ class AllowanceTable {
 ### Phase 2: High Priority (2주 내)
 
 **목표**: 연말정산 및 세부 정확도 개선
-
-1. **연말정산 로직 추가** (영향: 정확도)
-
-   - 신규 파일: `tax_settlement_service.dart`
-   - 작업시간: 4시간
 
 2. **정근수당 가산금 수정** (영향: 48만원/년)
 

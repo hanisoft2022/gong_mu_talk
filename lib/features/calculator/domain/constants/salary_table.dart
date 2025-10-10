@@ -128,6 +128,10 @@ class AllowanceTable {
   /// 정액급식비
   static const int mealAllowance = 140000;
 
+  /// 급식비 공제 추정치 계산용 상수
+  static const int mealCostPerDay = 4500; // 1일 평균 급식 단가
+  static const int averageMealDaysPerMonth = 20; // 월 평균 급식일
+
   /// 시간외근무수당 정액분 (호봉별, 2025년 기준)
   /// 시간당 단가 × 10시간 = 월 정액분
   static const Map<int, int> overtimeAllowanceByGrade = {

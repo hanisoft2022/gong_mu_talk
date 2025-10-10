@@ -6,31 +6,6 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/teaching_allowa
 
 /// 교사 프로필 정보
 class TeacherProfile extends Equatable {
-  const TeacherProfile({
-    required this.birthYear,
-    required this.birthMonth,
-    required this.currentGrade,
-    required this.position,
-    required this.employmentStartDate,
-    this.expectedRetirementDate,
-    this.retirementAge = 62,
-    this.gradePromotionMonth = 3,
-    this.schoolType = SchoolType.elementary,
-    this.allowances = const Allowance(),
-    this.baseIncomeMonthly,
-    this.hasSpouse = false,
-    this.numberOfChildren = 0,
-    this.numberOfParents = 0,
-    this.isHomeroom = false,
-    this.hasPosition = false,
-    this.teachingAllowanceBonuses = const {},
-    this.teacherAssociationFee = 0,
-    this.otherDeductions = 0,
-    this.hasFirstGradeCertificate = true,
-    this.additionalTeachingMonths = 0,
-    this.excludedTeachingMonths = 0,
-  });
-
   /// 출생 년도
   final int birthYear;
 
@@ -52,7 +27,7 @@ class TeacherProfile extends Equatable {
   /// 예상 퇴직일 (nullable: 미정일 수 있음)
   final DateTime? expectedRetirementDate;
 
-  /// 퇴직 예정 연령 (65세 기본)
+  /// 퇴직 예정 연령 (62세 기본)
   final int retirementAge;
 
   /// 호봉 승급월 (1-12월, 기본 3월)
@@ -72,6 +47,9 @@ class TeacherProfile extends Equatable {
 
   /// 60세 이상 직계존속 수
   final int numberOfParents;
+
+  /// 6세 이하 자녀 생년월일 목록
+  final List<DateTime> youngChildrenBirthDates;
 
   /// 담임 여부
   final bool isHomeroom;
@@ -96,6 +74,32 @@ class TeacherProfile extends Equatable {
 
   /// 제외할 교육경력 (개월, 기본 0)
   final int excludedTeachingMonths;
+
+  const TeacherProfile({
+    required this.birthYear,
+    required this.birthMonth,
+    required this.currentGrade,
+    required this.position,
+    required this.employmentStartDate,
+    this.expectedRetirementDate,
+    this.retirementAge = 62,
+    this.gradePromotionMonth = 3,
+    this.schoolType = SchoolType.elementary,
+    this.allowances = const Allowance(),
+    this.baseIncomeMonthly,
+    this.hasSpouse = false,
+    this.numberOfChildren = 0,
+    this.numberOfParents = 0,
+    this.youngChildrenBirthDates = const [],
+    this.isHomeroom = false,
+    this.hasPosition = false,
+    this.teachingAllowanceBonuses = const {},
+    this.teacherAssociationFee = 0,
+    this.otherDeductions = 0,
+    this.hasFirstGradeCertificate = true,
+    this.additionalTeachingMonths = 0,
+    this.excludedTeachingMonths = 0,
+  });
 
   /// 정년퇴직일 자동 계산
   DateTime calculateRetirementDate() {
@@ -161,29 +165,30 @@ class TeacherProfile extends Equatable {
 
   @override
   List<Object?> get props => [
-    birthYear,
-    birthMonth,
-    currentGrade,
-    position,
-    schoolType,
-    employmentStartDate,
-    expectedRetirementDate,
-    retirementAge,
-    gradePromotionMonth,
-    allowances,
-    baseIncomeMonthly,
-    hasSpouse,
-    numberOfChildren,
-    numberOfParents,
-    isHomeroom,
-    hasPosition,
-    teachingAllowanceBonuses,
-    teacherAssociationFee,
-    otherDeductions,
-    hasFirstGradeCertificate,
-    additionalTeachingMonths,
-    excludedTeachingMonths,
-  ];
+        birthYear,
+        birthMonth,
+        currentGrade,
+        position,
+        schoolType,
+        employmentStartDate,
+        expectedRetirementDate,
+        retirementAge,
+        gradePromotionMonth,
+        allowances,
+        baseIncomeMonthly,
+        hasSpouse,
+        numberOfChildren,
+        numberOfParents,
+        youngChildrenBirthDates,
+        isHomeroom,
+        hasPosition,
+        teachingAllowanceBonuses,
+        teacherAssociationFee,
+        otherDeductions,
+        hasFirstGradeCertificate,
+        additionalTeachingMonths,
+        excludedTeachingMonths,
+      ];
 
   TeacherProfile copyWith({
     int? birthYear,
@@ -200,6 +205,7 @@ class TeacherProfile extends Equatable {
     bool? hasSpouse,
     int? numberOfChildren,
     int? numberOfParents,
+    List<DateTime>? youngChildrenBirthDates,
     bool? isHomeroom,
     bool? hasPosition,
     Set<TeachingAllowanceBonus>? teachingAllowanceBonuses,
@@ -216,8 +222,7 @@ class TeacherProfile extends Equatable {
       position: position ?? this.position,
       schoolType: schoolType ?? this.schoolType,
       employmentStartDate: employmentStartDate ?? this.employmentStartDate,
-      expectedRetirementDate:
-          expectedRetirementDate ?? this.expectedRetirementDate,
+      expectedRetirementDate: expectedRetirementDate ?? this.expectedRetirementDate,
       retirementAge: retirementAge ?? this.retirementAge,
       gradePromotionMonth: gradePromotionMonth ?? this.gradePromotionMonth,
       allowances: allowances ?? this.allowances,
@@ -225,19 +230,15 @@ class TeacherProfile extends Equatable {
       hasSpouse: hasSpouse ?? this.hasSpouse,
       numberOfChildren: numberOfChildren ?? this.numberOfChildren,
       numberOfParents: numberOfParents ?? this.numberOfParents,
+      youngChildrenBirthDates: youngChildrenBirthDates ?? this.youngChildrenBirthDates,
       isHomeroom: isHomeroom ?? this.isHomeroom,
       hasPosition: hasPosition ?? this.hasPosition,
-      teachingAllowanceBonuses:
-          teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
-      teacherAssociationFee:
-          teacherAssociationFee ?? this.teacherAssociationFee,
+      teachingAllowanceBonuses: teachingAllowanceBonuses ?? this.teachingAllowanceBonuses,
+      teacherAssociationFee: teacherAssociationFee ?? this.teacherAssociationFee,
       otherDeductions: otherDeductions ?? this.otherDeductions,
-      hasFirstGradeCertificate:
-          hasFirstGradeCertificate ?? this.hasFirstGradeCertificate,
-      additionalTeachingMonths:
-          additionalTeachingMonths ?? this.additionalTeachingMonths,
-      excludedTeachingMonths:
-          excludedTeachingMonths ?? this.excludedTeachingMonths,
+      hasFirstGradeCertificate: hasFirstGradeCertificate ?? this.hasFirstGradeCertificate,
+      additionalTeachingMonths: additionalTeachingMonths ?? this.additionalTeachingMonths,
+      excludedTeachingMonths: excludedTeachingMonths ?? this.excludedTeachingMonths,
     );
   }
 
@@ -263,6 +264,7 @@ class TeacherProfile extends Equatable {
       'hasSpouse': hasSpouse,
       'numberOfChildren': numberOfChildren,
       'numberOfParents': numberOfParents,
+      'youngChildrenBirthDates': youngChildrenBirthDates.map((d) => d.toIso8601String()).toList(),
       'isHomeroom': isHomeroom,
       'hasPosition': hasPosition,
       'teachingAllowanceBonuses':
@@ -285,6 +287,7 @@ class TeacherProfile extends Equatable {
                 ))
             .toSet() ??
         <TeachingAllowanceBonus>{};
+    final youngChildrenDatesList = json['youngChildrenBirthDates'] as List<dynamic>?;
 
     return TeacherProfile(
       birthYear: json['birthYear'] as int,
@@ -314,6 +317,7 @@ class TeacherProfile extends Equatable {
       hasSpouse: json['hasSpouse'] as bool? ?? false,
       numberOfChildren: json['numberOfChildren'] as int? ?? 0,
       numberOfParents: json['numberOfParents'] as int? ?? 0,
+      youngChildrenBirthDates: youngChildrenDatesList?.map((d) => DateTime.parse(d as String)).toList() ?? [],
       isHomeroom: json['isHomeroom'] as bool? ?? false,
       hasPosition: json['hasPosition'] as bool? ?? false,
       teachingAllowanceBonuses: bonuses,
