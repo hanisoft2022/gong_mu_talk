@@ -178,7 +178,9 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
                   const Gap(10),
                   // 인증 안내 카드 (글쓰기 권한 없을 때)
                   if (!authState.hasLoungeWriteAccess) ...[
-                    _buildVerificationPromptCard(context, authState),
+                    const GovernmentEmailVerificationCard(
+                      variant: EmailVerificationCardVariant.compact,
+                    ),
                     const Gap(10),
                   ],
                   TextField(
@@ -349,62 +351,6 @@ class _InlinePostComposerState extends State<InlinePostComposer> {
             child: const Text('지금 인증하기'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildVerificationPromptCard(BuildContext context, AuthState authState) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      child: InkWell(
-        onTap: () => context.push(GovernmentEmailVerificationCard.verificationRoute),
-        borderRadius: BorderRadius.circular(12),
-        child: Row(
-          children: [
-            Icon(
-              Icons.lock_outline,
-              color: colorScheme.primary,
-              size: 20,
-            ),
-            const Gap(10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '공직자 메일 인증이 필요합니다',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const Gap(2),
-                  Text(
-                    '지금 인증하고 라운지에 글을 남겨보세요',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
-        ),
       ),
     );
   }

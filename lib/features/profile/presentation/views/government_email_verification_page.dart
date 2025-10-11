@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 
@@ -17,12 +18,10 @@ class GovernmentEmailVerificationPage extends StatefulWidget {
   const GovernmentEmailVerificationPage({super.key});
 
   @override
-  State<GovernmentEmailVerificationPage> createState() =>
-      _GovernmentEmailVerificationPageState();
+  State<GovernmentEmailVerificationPage> createState() => _GovernmentEmailVerificationPageState();
 }
 
-class _GovernmentEmailVerificationPageState
-    extends State<GovernmentEmailVerificationPage> {
+class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerificationPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
@@ -48,13 +47,10 @@ class _GovernmentEmailVerificationPageState
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('공직자 통합 메일 인증'),
-      ),
+      appBar: AppBar(title: const Text('공직자 통합 메일 인증')),
       body: BlocConsumer<AuthCubit, AuthState>(
         listenWhen: (previous, current) =>
-            previous.lastMessage != current.lastMessage &&
-            current.lastMessage != null,
+            previous.lastMessage != current.lastMessage && current.lastMessage != null,
         listener: (context, authState) {
           final String? message = authState.lastMessage;
           if (message == null || message.isEmpty) {
@@ -75,11 +71,7 @@ class _GovernmentEmailVerificationPageState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.verified_user,
-                      size: 80,
-                      color: colorScheme.primary,
-                    ),
+                    const Text('✅', style: TextStyle(fontSize: 80)),
                     const Gap(24),
                     Text(
                       '공직자 통합 메일 인증 완료',
@@ -116,20 +108,12 @@ class _GovernmentEmailVerificationPageState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 헤더 섹션
-                  Center(
-                    child: Icon(
-                      Icons.mark_email_read_outlined,
-                      size: 64,
-                      color: colorScheme.primary,
-                    ),
-                  ),
+                  const Center(child: Text('✉️', style: TextStyle(fontSize: 64))),
                   const Gap(16),
                   Center(
                     child: Text(
                       '공직자 통합 메일 인증',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   const Gap(8),
@@ -158,9 +142,7 @@ class _GovernmentEmailVerificationPageState
                   // 이메일 입력 폼
                   Text(
                     '이메일 주소 입력',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const Gap(12),
                   TextFormField(
@@ -225,31 +207,29 @@ class _GovernmentEmailVerificationPageState
           children: [
             Row(
               children: [
-                Icon(Icons.stars_outlined, color: colorScheme.primary),
+                const Text('⭐', style: TextStyle(fontSize: 20)),
                 const Gap(8),
                 Text(
                   '인증 시 이용 가능한 기능',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const Gap(12),
             _buildBenefitItem(
-              icon: Icons.forum_outlined,
+              emoji: '💬',
               title: '라운지 글/댓글 작성',
               description: '전체 라운지와 직렬별 라운지에서 자유롭게 소통',
             ),
             const Gap(8),
             _buildBenefitItem(
-              icon: Icons.analytics_outlined,
+              emoji: '📊',
               title: '급여 계산기 상세 분석',
               description: '월별/연별 분석, 5-10년 시뮬레이션 이용 가능',
             ),
             const Gap(8),
             _buildBenefitItem(
-              icon: Icons.people_outline,
+              emoji: '👥',
               title: '커뮤니티 확장 기능',
               description: '프로필, 팔로우, 매칭 등 다양한 커뮤니티 기능',
             ),
@@ -260,7 +240,7 @@ class _GovernmentEmailVerificationPageState
   }
 
   Widget _buildBenefitItem({
-    required IconData icon,
+    required String emoji,
     required String title,
     required String description,
   }) {
@@ -270,23 +250,17 @@ class _GovernmentEmailVerificationPageState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: colorScheme.primary),
+        Text(emoji, style: const TextStyle(fontSize: 20)),
         const Gap(12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              const Gap(4),
               Text(
                 description,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -305,13 +279,11 @@ class _GovernmentEmailVerificationPageState
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, color: colorScheme.primary),
+                const Text('ℹ️', style: TextStyle(fontSize: 20)),
                 const Gap(8),
                 Text(
                   '인증 가능한 이메일',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -340,45 +312,41 @@ class _GovernmentEmailVerificationPageState
   }
 
   Widget _buildCareerTrackHintCard(ThemeData theme, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+    return Card(
+      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.2),
-        ),
+        side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lightbulb_outline,
-            color: colorScheme.primary,
-            size: 24,
-          ),
-          const Gap(12),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
+      child: InkWell(
+        onTap: () => context.push('/profile/verify-paystub'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Text('💡', style: TextStyle(fontSize: 24)),
+              const Gap(12),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
+                    children: [
+                      TextSpan(
+                        text: '직렬 인증',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary),
+                      ),
+                      const TextSpan(text: '을 완료하시면\n메일 인증 없이도 바로 커뮤니티를 이용하실 수 있습니다.'),
+                    ],
+                  ),
                 ),
-                children: [
-                  TextSpan(
-                    text: '직렬 인증',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const TextSpan(
-                    text: '을 완료하시면\n메일 인증 없이도 바로 커뮤니티를 이용하실 수 있습니다.',
-                  ),
-                ],
               ),
-            ),
+              const Gap(8),
+              Icon(Icons.arrow_forward_ios, size: 16, color: colorScheme.onSurfaceVariant),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -395,7 +363,7 @@ class _GovernmentEmailVerificationPageState
         children: [
           Row(
             children: [
-              Icon(Icons.privacy_tip_outlined, color: colorScheme.onSurfaceVariant, size: 20),
+              const Text('🔒', style: TextStyle(fontSize: 20)),
               const Gap(8),
               Text(
                 '안내사항',

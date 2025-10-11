@@ -130,7 +130,10 @@
       "mcp__serena__read_memory",
       "WebFetch(domain:www.ilsok.com)",
       "WebFetch(domain:info.smartjj.co.kr)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "mcp__firebase__firebase_get_environment",
+      "mcp__firebase__firebase_get_project",
+      "mcp__memory__create_entities"
     ],
     "deny": [
       "Read(./node_modules/**)",
