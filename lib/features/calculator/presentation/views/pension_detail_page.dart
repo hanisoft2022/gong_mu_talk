@@ -1,85 +1,145 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/pension_estimate.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/after_tax_pension.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
+import 'package:gong_mu_talk/common/widgets/blurred_content.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
+import 'package:gong_mu_talk/features/auth/presentation/cubit/auth_cubit.dart';
 
 /// 예상 연금 수령액 상세 페이지 (세후 실수령액 중심)
 class PensionDetailPage extends StatelessWidget {
   final PensionEstimate pensionEstimate;
   final AfterTaxPension? afterTaxPension;
 
-  const PensionDetailPage({
-    super.key,
-    required this.pensionEstimate,
-    this.afterTaxPension,
-  });
+  const PensionDetailPage({super.key, required this.pensionEstimate, this.afterTaxPension});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('연금 실수령액 상세'), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 세후 실수령액 메인 카드 (있는 경우)
-            if (afterTaxPension != null) ...[
-              Card(
-                elevation: 4,
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 32,
-                            color: Colors.green[800],
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        final currentLevel = authState.currentAccessLevel;
+        final canView = currentLevel >= FeatureAccessLevel.careerVerified;
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('연금 실수령액 상세'), centerTitle: true),
+          body: canView
+              ? _buildContent(context)
+              : BlurredContent(
+                  isBlurred: true,
+                  blurIntensity: 15.0,
+                  onCardTap: () {
+                    if (currentLevel == FeatureAccessLevel.guest) {
+                      context.push('/login');
+                    } else {
+                      context.push('/profile');
+                    }
+                  },
+                  lockMessage: currentLevel == FeatureAccessLevel.guest
+                      ? '로그인 + 직렬 인증 후 이용 가능합니다.'
+                      : '직렬 인증 후 이용 가능합니다.',
+                  actionButtonText: currentLevel == FeatureAccessLevel.guest ? '로그인하기' : '인증하기',
+                  onActionPressed: () {
+                    if (currentLevel == FeatureAccessLevel.guest) {
+                      context.push('/login');
+                    } else {
+                      context.push('/profile');
+                    }
+                  },
+                  child: _buildContent(context),
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 세후 실수령액 메인 카드 (있는 경우)
+          if (afterTaxPension != null) ...[
+            Card(
+              elevation: 4,
+              color: Colors.green.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle, size: 32, color: Colors.green[800]),
+                        const SizedBox(width: 12),
+                        Text(
+                          '월 실수령액 (세후)',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[900],
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '월 실수령액 (세후)',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[900],
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        NumberFormatter.formatCurrency(
-                          afterTaxPension!.monthlyPensionAfterTax,
                         ),
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green[900],
-                            ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      NumberFormatter.formatCurrency(afterTaxPension!.monthlyPensionAfterTax),
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[900],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '연간 ${NumberFormatter.formatCurrency(afterTaxPension!.annualPensionAfterTax)} (13개월 기준)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '연간 ${NumberFormatter.formatCurrency(afterTaxPension!.annualPensionAfterTax)} (13개월 기준)',
+                      style: TextStyle(fontSize: 14, color: Colors.green[700]),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-            // 연금 계산 결과 카드
+            ),
+            const SizedBox(height: 24),
+          ],
+          // 연금 계산 결과 카드
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '💰 연금 계산 결과',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoRow(context, '📅 퇴직 예정 연령', '${pensionEstimate.retirementAge}세'),
+                  _buildInfoRow(context, '📊 재직 기간', '${pensionEstimate.serviceYears}년'),
+                  _buildInfoRow(
+                    context,
+                    '💵 평균 기준소득',
+                    NumberFormatter.formatCurrency(pensionEstimate.avgBaseIncome),
+                  ),
+                  _buildInfoRow(
+                    context,
+                    '📈 연금 지급률',
+                    NumberFormatter.formatPercent(pensionEstimate.pensionRate),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 세전/공제 상세 (afterTaxPension이 있는 경우)
+          if (afterTaxPension != null) ...[
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -87,205 +147,101 @@ class PensionDetailPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '💰 연금 계산 결과',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      '💰 세전/공제 상세',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    _buildInfoRow(
+
+                    // 세전 월 연금
+                    _buildTaxDetailRow(
                       context,
-                      '📅 퇴직 예정 연령',
-                      '${pensionEstimate.retirementAge}세',
+                      '세전 월 연금액',
+                      NumberFormatter.formatCurrency(afterTaxPension!.monthlyPensionBeforeTax),
                     ),
-                    _buildInfoRow(
-                      context,
-                      '📊 재직 기간',
-                      '${pensionEstimate.serviceYears}년',
+
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 16),
+
+                    // 공제 항목
+                    Text(
+                      '공제 내역',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    _buildInfoRow(
-                      context,
-                      '💵 평균 기준소득',
-                      NumberFormatter.formatCurrency(
-                        pensionEstimate.avgBaseIncome,
+                    const SizedBox(height: 12),
+
+                    _buildDeductionRow(context, '소득세', afterTaxPension!.incomeTax),
+                    const SizedBox(height: 8),
+                    _buildDeductionRow(context, '지방세', afterTaxPension!.localTax),
+                    const SizedBox(height: 8),
+                    _buildDeductionRow(context, '건강보험', afterTaxPension!.healthInsurance),
+                    const SizedBox(height: 8),
+                    _buildDeductionRow(context, '장기요양보험', afterTaxPension!.longTermCareInsurance),
+
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 16),
+
+                    // 총 공제액
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                    _buildInfoRow(
-                      context,
-                      '📈 연금 지급률',
-                      NumberFormatter.formatPercent(
-                        pensionEstimate.pensionRate,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '총 공제액 (${afterTaxPension!.deductionRate.toStringAsFixed(1)}%)',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '- ${NumberFormatter.formatCurrency(afterTaxPension!.totalDeductions)}',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[700],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // 세전/공제 상세 (afterTaxPension이 있는 경우)
-            if (afterTaxPension != null) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '💰 세전/공제 상세',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 세전 월 연금
-                      _buildTaxDetailRow(
-                        context,
-                        '세전 월 연금액',
-                        NumberFormatter.formatCurrency(
-                          afterTaxPension!.monthlyPensionBeforeTax,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 16),
-
-                      // 공제 항목
-                      Text(
-                        '공제 내역',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildDeductionRow(
-                        context,
-                        '소득세',
-                        afterTaxPension!.incomeTax,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDeductionRow(
-                        context,
-                        '지방세',
-                        afterTaxPension!.localTax,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDeductionRow(
-                        context,
-                        '건강보험',
-                        afterTaxPension!.healthInsurance,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDeductionRow(
-                        context,
-                        '장기요양보험',
-                        afterTaxPension!.longTermCareInsurance,
-                      ),
-
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 16),
-
-                      // 총 공제액
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '총 공제액 (${afterTaxPension!.deductionRate.toStringAsFixed(1)}%)',
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              '- ${NumberFormatter.formatCurrency(afterTaxPension!.totalDeductions)}',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.red[700],
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ] else ...[
-              // afterTaxPension이 없으면 기존 세전 카드만 표시
-              Card(
-                color: Colors.blue[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Text(
-                        '💎 월 수령액 (세전)',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        NumberFormatter.formatCurrency(
-                          pensionEstimate.monthlyPension,
-                        ),
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[900],
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '연간 ${NumberFormatter.formatCurrency(pensionEstimate.annualPension)} (13개월 기준)',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // 총 수령 예상액 카드
+          ] else ...[
+            // afterTaxPension이 없으면 기존 세전 카드만 표시
             Card(
-              color: Colors.green[50],
+              color: Colors.blue[50],
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     Text(
-                      '📊 총 수령 예상액',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      '💎 월 수령액 (세전)',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      NumberFormatter.formatCurrency(
-                        pensionEstimate.totalPension,
+                      NumberFormatter.formatCurrency(pensionEstimate.monthlyPension),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[900],
                       ),
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[900],
-                          ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${pensionEstimate.retirementAge}세~${pensionEstimate.lifeExpectancy}세 (${pensionEstimate.receivingYears}년 수령)',
+                      '연간 ${NumberFormatter.formatCurrency(pensionEstimate.annualPension)} (13개월 기준)',
                       style: Theme.of(
                         context,
                       ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
@@ -294,91 +250,115 @@ class PensionDetailPage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // 소득 공백 경고 (62세 정년인 경우)
-            if (pensionEstimate.retirementAge == 62)
-              _buildIncomeGapWarning(context),
-
-            const SizedBox(height: 24),
-
-            // 연금 수령 시뮬레이션 차트
-            _buildPensionSimulationChart(context),
-
-            const SizedBox(height: 24),
-
-            // 상세 분석
-            Text(
-              '🔍 상세 분석',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-
-            Card(
-              child: ExpansionTile(
-                title: const Text('기여금 납부 내역'),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildDetailRow(
-                          '총 납부액',
-                          NumberFormatter.formatCurrency(
-                            pensionEstimate.totalContribution,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildDetailRow(
-                          '총 수령액',
-                          NumberFormatter.formatCurrency(
-                            pensionEstimate.totalPension,
-                          ),
-                        ),
-                        const Divider(height: 24),
-                        _buildDetailRow(
-                          '투자 수익률',
-                          NumberFormatter.formatPercent(
-                            pensionEstimate.returnRate,
-                            decimals: 0,
-                          ),
-                          isHighlight: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // 안내 메시지
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue[700]),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '* 실제 연금액은 개정된 법률 및 개인별 상황에 따라 달라질 수 있습니다.',
-                      style: TextStyle(fontSize: 12, color: Colors.blue[900]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
-        ),
+
+          // 총 수령 예상액 카드
+          Card(
+            color: Colors.green[50],
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text(
+                    '📊 총 수령 예상액',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    NumberFormatter.formatCurrency(pensionEstimate.totalPension),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[900],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${pensionEstimate.retirementAge}세~${pensionEstimate.lifeExpectancy}세 (${pensionEstimate.receivingYears}년 수령)',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 소득 공백 경고 (62세 정년인 경우)
+          if (pensionEstimate.retirementAge == 62) _buildIncomeGapWarning(context),
+
+          const SizedBox(height: 24),
+
+          // 연금 수령 시뮬레이션 차트
+          _buildPensionSimulationChart(context),
+
+          const SizedBox(height: 24),
+
+          // 상세 분석
+          Text(
+            '🔍 상세 분석',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          Card(
+            child: ExpansionTile(
+              title: const Text('기여금 납부 내역'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        '총 납부액',
+                        NumberFormatter.formatCurrency(pensionEstimate.totalContribution),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        '총 수령액',
+                        NumberFormatter.formatCurrency(pensionEstimate.totalPension),
+                      ),
+                      const Divider(height: 24),
+                      _buildDetailRow(
+                        '투자 수익률',
+                        NumberFormatter.formatPercent(pensionEstimate.returnRate, decimals: 0),
+                        isHighlight: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // 안내 메시지
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '* 실제 연금액은 개정된 법률 및 개인별 상황에 따라 달라질 수 있습니다.',
+                    style: TextStyle(fontSize: 12, color: Colors.blue[900]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -462,9 +442,7 @@ class PensionDetailPage extends StatelessWidget {
             ),
             Text(
               value,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -472,19 +450,13 @@ class PensionDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(
-    String label,
-    String value, {
-    bool isHighlight = false,
-  }) {
+  Widget _buildDetailRow(String label, String value, {bool isHighlight = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
-          ),
+          style: TextStyle(fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal),
         ),
         Text(
           value,
@@ -505,9 +477,7 @@ class PensionDetailPage extends StatelessWidget {
       children: [
         Text(
           '📊 연금 누적 수령액 시뮬레이션',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Card(
@@ -532,9 +502,7 @@ class PensionDetailPage extends StatelessWidget {
       cumulativeData.add(FlSpot(i.toDouble(), cumulative.toDouble()));
 
       // 기여금 총액 (비교용)
-      contributionLineData.add(
-        FlSpot(i.toDouble(), pensionEstimate.totalContribution.toDouble()),
-      );
+      contributionLineData.add(FlSpot(i.toDouble(), pensionEstimate.totalContribution.toDouble()));
     }
 
     final maxValue = pensionEstimate.totalPension.toDouble();
@@ -546,10 +514,7 @@ class PensionDetailPage extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxValue / 5,
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              strokeWidth: 1,
-            );
+            return FlLine(color: theme.colorScheme.outline.withValues(alpha: 0.2), strokeWidth: 1);
           },
         ),
         titlesData: FlTitlesData(
@@ -577,12 +542,8 @@ class PensionDetailPage extends StatelessWidget {
               },
             ),
           ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -683,11 +644,7 @@ class PensionDetailPage extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange.shade700,
-              size: 28,
-            ),
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -704,11 +661,7 @@ class PensionDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '정년 퇴직 후 ${pensionEstimate.retirementAge}세~$pensionStartAge세 사이 $gapYears년간 연금 수령이 불가능합니다.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.orange.shade900,
-                      height: 1.5,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.orange.shade900, height: 1.5),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -755,15 +708,9 @@ class PensionDetailPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '• ',
-            style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
-          ),
+          Text('• ', style: TextStyle(fontSize: 13, color: Colors.orange.shade700)),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
-            ),
+            child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
           ),
         ],
       ),
@@ -784,9 +731,7 @@ class PensionDetailPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
                 ),
                 const SizedBox(width: 4),
                 Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
@@ -819,9 +764,7 @@ class PensionDetailPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
                 ),
                 const SizedBox(width: 4),
                 Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
@@ -829,10 +772,9 @@ class PensionDetailPage extends StatelessWidget {
             ),
             Text(
               '- ${NumberFormatter.formatCurrency(amount)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.red[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: Colors.red[600]),
             ),
           ],
         ),

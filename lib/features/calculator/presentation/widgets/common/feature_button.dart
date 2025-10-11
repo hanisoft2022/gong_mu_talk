@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../domain/entities/feature_access_level.dart';
@@ -84,15 +85,21 @@ class FeatureButton extends StatelessWidget {
 
   /// 접근 불가 다이얼로그 표시
   void _showAccessDeniedDialog(BuildContext context, AuthState authState) {
-    final message = _generateMessage();
-    final buttonText = _getButtonText();
-    final route = requiredLevel.verificationRoute;
+    final currentLevel = authState.currentAccessLevel;
+    final dialogTitle = _getDialogTitle(currentLevel);
+    final message = _generateMessage(currentLevel);
+    final buttonText = _getButtonText(currentLevel);
+
+    // 현재 레벨이 guest/member이면 로그인 페이지로, 아니면 인증 페이지로
+    final route = currentLevel <= FeatureAccessLevel.member
+        ? '/login'
+        : requiredLevel.verificationRoute;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Row(
-          children: [Icon(Icons.lock_outline, size: 24), SizedBox(width: 8), Text('인증 필요')],
+        title: Row(
+          children: [const Icon(Icons.lock_outline, size: 24), const Gap(8), Text(dialogTitle)],
         ),
         content: Text(message, style: const TextStyle(height: 1.5)),
         actions: [
@@ -110,22 +117,48 @@ class FeatureButton extends StatelessWidget {
     );
   }
 
+  /// 다이얼로그 타이틀 생성
+  String _getDialogTitle(FeatureAccessLevel currentLevel) {
+    // 현재 레벨이 guest/member인 경우, 무조건 로그인 유도
+    if (currentLevel <= FeatureAccessLevel.member) {
+      return '로그인이 필요해요';
+    }
+
+    // 이미 로그인했으면 required level에 맞는 타이틀
+    return switch (requiredLevel) {
+      FeatureAccessLevel.guest || FeatureAccessLevel.member => '로그인이 필요해요',
+      FeatureAccessLevel.emailVerified => '인증 필요',
+      FeatureAccessLevel.careerVerified => '인증 필요',
+    };
+  }
+
   /// 레벨별 메시지 자동 생성
-  String _generateMessage() {
+  String _generateMessage(FeatureAccessLevel currentLevel) {
     final name = featureName ?? '이 기능';
 
+    // 현재 레벨이 guest/member인 경우, 무조건 로그인 유도
+    if (currentLevel <= FeatureAccessLevel.member) {
+      return '로그인하시면 $name을 비롯한 다양한 기능을 이용하실 수 있습니다.';
+    }
+
+    // 이미 로그인했으면 required level에 맞는 메시지
     return switch (requiredLevel) {
-      FeatureAccessLevel.guest || FeatureAccessLevel.member =>
-        '$name 기능은 회원만 이용할 수 있습니다.',
+      FeatureAccessLevel.guest ||
+      FeatureAccessLevel.member => '로그인하시면 $name을 비롯한 다양한 기능을 이용하실 수 있습니다.',
       FeatureAccessLevel.emailVerified =>
         '$name 기능은 공직자 메일 인증 후 이용할 수 있습니다.\n\n💡 직렬 인증(급여명세서)을 완료하시면 메일 인증 없이도 바로 이용 가능합니다.',
-      FeatureAccessLevel.careerVerified =>
-        '$name 기능은 직렬 인증(급여명세서) 후 이용할 수 있습니다.',
+      FeatureAccessLevel.careerVerified => '$name 기능은 직렬 인증(급여명세서) 후 이용할 수 있습니다.',
     };
   }
 
   /// 버튼 텍스트 생성
-  String _getButtonText() {
+  String _getButtonText(FeatureAccessLevel currentLevel) {
+    // 현재 레벨이 guest/member인 경우, 무조건 로그인 버튼
+    if (currentLevel <= FeatureAccessLevel.member) {
+      return '로그인하기';
+    }
+
+    // 이미 로그인했으면 required level에 맞는 버튼
     return switch (requiredLevel) {
       FeatureAccessLevel.guest || FeatureAccessLevel.member => '로그인하기',
       FeatureAccessLevel.emailVerified => '지금 인증하기',

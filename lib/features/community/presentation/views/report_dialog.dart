@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../data/community_repository.dart';
 import '../../domain/models/report.dart';
 
@@ -146,9 +147,7 @@ class _ReportDialogState extends State<ReportDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('신고 접수 중 오류가 발생했습니다. 다시 시도해주세요.')),
-        );
+        SnackbarHelpers.showError(context, '신고 접수 중 오류가 발생했습니다. 다시 시도해주세요.');
         setState(() {
           _isSubmitting = false;
         });

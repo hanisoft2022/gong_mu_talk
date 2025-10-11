@@ -24,14 +24,21 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../domain/user_profile.dart';
 import '../../cubit/profile_relations_cubit.dart';
+import '../../../../community/presentation/widgets/author_display_widget.dart';
 
 /// Shows modal bottom sheet with follower/following list
-void showProfileRelationsSheet(BuildContext context, ProfileRelationType type) {
+/// [targetUid] - The user whose followers/following to display. If null, shows current user's.
+void showProfileRelationsSheet(
+  BuildContext context,
+  ProfileRelationType type, {
+  String? targetUid,
+}) {
   final ProfileRelationsCubit cubit = context.read<ProfileRelationsCubit>();
-  cubit.load(type);
+  cubit.load(type, targetUid: targetUid);
 
   showModalBottomSheet<void>(
     context: context,
@@ -67,11 +74,10 @@ void showProfileRelationsSheet(BuildContext context, ProfileRelationType type) {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            state.type == ProfileRelationType.followers
-                                ? '팔로워'
-                                : '팔로잉',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                            state.type == ProfileRelationType.followers ? '팔로워' : '팔로잉',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(context).pop(),
@@ -82,9 +88,7 @@ void showProfileRelationsSheet(BuildContext context, ProfileRelationType type) {
                     ),
 
                     // Content
-                    Expanded(
-                      child: _buildContent(context, state, cubit, controller),
-                    ),
+                    Expanded(child: _buildContent(context, state, cubit, controller)),
                   ],
                 );
               },
@@ -117,10 +121,7 @@ Widget _buildContent(
         children: [
           Text(state.errorMessage ?? '목록을 불러오지 못했습니다.'),
           const Gap(12),
-          OutlinedButton(
-            onPressed: () => cubit.load(state.type),
-            child: const Text('다시 시도'),
-          ),
+          OutlinedButton(onPressed: () => cubit.load(state.type), child: const Text('다시 시도')),
         ],
       ),
     );
@@ -140,8 +141,7 @@ Widget _buildContent(
   // User list
   return NotificationListener<ScrollNotification>(
     onNotification: (ScrollNotification notification) {
-      if (notification.metrics.pixels >=
-              notification.metrics.maxScrollExtent - 120 &&
+      if (notification.metrics.pixels >= notification.metrics.maxScrollExtent - 120 &&
           !state.isLoadingMore &&
           state.hasMore) {
         cubit.loadMore();
@@ -152,24 +152,19 @@ Widget _buildContent(
       controller: controller,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       itemBuilder: (BuildContext context, int index) {
-        final ThemeData theme = Theme.of(context);
         final UserProfile profile = state.users[index];
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(Icons.person_outline, color: theme.colorScheme.primary),
-          title: Text(profile.nickname),
-          subtitle: profile.bio != null && profile.bio!.isNotEmpty
-              ? Text(profile.bio!, maxLines: 1, overflow: TextOverflow.ellipsis)
-              : null,
+        return AuthorDisplayWidget(
+          nickname: profile.nickname,
+          track: profile.careerTrack,
+          specificCareer: profile.careerHierarchy?.specificCareer,
+          serialVisible: profile.serialVisible,
           onTap: () {
             Navigator.of(context).pop();
-            // Navigate to user profile
-            // context.push('/profile/${profile.userId}');
+            context.push('/profile/user/${profile.uid}');
           },
         );
       },
-      separatorBuilder: (BuildContext context, int index) =>
-          const Divider(height: 1),
+      separatorBuilder: (BuildContext context, int index) => const Gap(8),
       itemCount: state.users.length,
     ),
   );

@@ -663,6 +663,28 @@ class CommunityFeedCubit extends Cubit<CommunityFeedState> {
     }
   }
 
+  /// 클라이언트 측에서 차단된 사용자 게시글 즉시 필터링 (Hybrid 방식)
+  ///
+  /// 네트워크 요청 없이 현재 로드된 posts에서만 제거하여
+  /// 즉각적인 피드백과 비용 최적화를 동시에 달성
+  ///
+  /// 다음 새로고침 시 서버에서도 자동으로 필터링되어 일관성 유지
+  void hideBlockedUserPosts(String userId) {
+    // 차단 목록에 추가
+    final updatedBlockedIds = Set<String>.from(_blockedUserIds)..add(userId);
+    _blockedUserIds = updatedBlockedIds;
+
+    // 현재 로드된 posts에서 차단된 사용자 게시글 제거
+    final filteredPosts = state.posts
+        .where((post) => post.authorUid != userId)
+        .toList();
+
+    debugPrint('🚫 CommunityFeedCubit: Hiding posts from blocked user $userId');
+    debugPrint('   Before: ${state.posts.length} posts → After: ${filteredPosts.length} posts');
+
+    emit(state.copyWith(posts: filteredPosts));
+  }
+
   /// 사용자 차단 후 피드 새로고침
   Future<void> refreshAfterBlock() async {
     await _loadBlockedUsers();

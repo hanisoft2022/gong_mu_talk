@@ -38,19 +38,26 @@ class FollowRepository {
     }
 
     await _firestore.runTransaction((Transaction transaction) async {
+      // ⚠️ Firestore transaction rule: All reads must happen before any writes
+      // Step 1: Perform ALL reads first
       final DocumentReference<JsonMap> followerDoc = _followersRef(
         targetUid,
       ).doc(followerUid);
-      final DocumentSnapshot<JsonMap> followerSnapshot = await transaction.get(
-        followerDoc,
-      );
-      if (followerSnapshot.exists) {
-        return;
-      }
-
       final DocumentReference<JsonMap> followingDoc = _followingRef(
         followerUid,
       ).doc(targetUid);
+      final DocumentReference<JsonMap> targetUserDoc = _userDoc(targetUid);
+      final DocumentReference<JsonMap> followerUserDoc = _userDoc(followerUid);
+
+      final DocumentSnapshot<JsonMap> followerSnapshot = await transaction.get(followerDoc);
+      if (followerSnapshot.exists) {
+        return; // Already following
+      }
+
+      final DocumentSnapshot<JsonMap> targetUserSnapshot = await transaction.get(targetUserDoc);
+      final DocumentSnapshot<JsonMap> followerUserSnapshot = await transaction.get(followerUserDoc);
+
+      // Step 2: Perform ALL writes
       final DateTime now = DateTime.now();
 
       transaction.set(followerDoc, <String, Object?>{
@@ -60,11 +67,34 @@ class FollowRepository {
         'followedAt': Timestamp.fromDate(now),
       });
 
-      transaction.update(_userDoc(targetUid), <String, Object?>{
+      // Initialize followerCount/followingCount fields if they don't exist (for legacy users)
+      if (targetUserSnapshot.exists) {
+        final Map<String, dynamic>? targetData = targetUserSnapshot.data();
+        if (targetData != null && !targetData.containsKey('followerCount')) {
+          transaction.set(
+            targetUserDoc,
+            <String, Object?>{'followerCount': 0, 'followingCount': 0},
+            SetOptions(merge: true),
+          );
+        }
+      }
+
+      if (followerUserSnapshot.exists) {
+        final Map<String, dynamic>? followerData = followerUserSnapshot.data();
+        if (followerData != null && !followerData.containsKey('followingCount')) {
+          transaction.set(
+            followerUserDoc,
+            <String, Object?>{'followerCount': 0, 'followingCount': 0},
+            SetOptions(merge: true),
+          );
+        }
+      }
+
+      transaction.update(targetUserDoc, <String, Object?>{
         'followerCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
-      transaction.update(_userDoc(followerUid), <String, Object?>{
+      transaction.update(followerUserDoc, <String, Object?>{
         'followingCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
@@ -80,29 +110,59 @@ class FollowRepository {
     }
 
     await _firestore.runTransaction((Transaction transaction) async {
+      // ⚠️ Firestore transaction rule: All reads must happen before any writes
+      // Step 1: Perform ALL reads first
       final DocumentReference<JsonMap> followerDoc = _followersRef(
         targetUid,
       ).doc(followerUid);
-      final DocumentSnapshot<JsonMap> followerSnapshot = await transaction.get(
-        followerDoc,
-      );
-      if (!followerSnapshot.exists) {
-        return;
-      }
-
       final DocumentReference<JsonMap> followingDoc = _followingRef(
         followerUid,
       ).doc(targetUid);
+      final DocumentReference<JsonMap> targetUserDoc = _userDoc(targetUid);
+      final DocumentReference<JsonMap> followerUserDoc = _userDoc(followerUid);
+
+      final DocumentSnapshot<JsonMap> followerSnapshot = await transaction.get(followerDoc);
+      if (!followerSnapshot.exists) {
+        return; // Not following
+      }
+
+      final DocumentSnapshot<JsonMap> targetUserSnapshot = await transaction.get(targetUserDoc);
+      final DocumentSnapshot<JsonMap> followerUserSnapshot = await transaction.get(followerUserDoc);
+
+      // Step 2: Perform ALL writes
       final DateTime now = DateTime.now();
 
       transaction.delete(followerDoc);
       transaction.delete(followingDoc);
 
-      transaction.update(_userDoc(targetUid), <String, Object?>{
+      // Initialize followerCount/followingCount fields if they don't exist (for legacy users)
+      if (targetUserSnapshot.exists) {
+        final Map<String, dynamic>? targetData = targetUserSnapshot.data();
+        if (targetData != null && !targetData.containsKey('followerCount')) {
+          transaction.set(
+            targetUserDoc,
+            <String, Object?>{'followerCount': 0, 'followingCount': 0},
+            SetOptions(merge: true),
+          );
+        }
+      }
+
+      if (followerUserSnapshot.exists) {
+        final Map<String, dynamic>? followerData = followerUserSnapshot.data();
+        if (followerData != null && !followerData.containsKey('followingCount')) {
+          transaction.set(
+            followerUserDoc,
+            <String, Object?>{'followerCount': 0, 'followingCount': 0},
+            SetOptions(merge: true),
+          );
+        }
+      }
+
+      transaction.update(targetUserDoc, <String, Object?>{
         'followerCount': FieldValue.increment(-1),
         'updatedAt': Timestamp.fromDate(now),
       });
-      transaction.update(_userDoc(followerUid), <String, Object?>{
+      transaction.update(followerUserDoc, <String, Object?>{
         'followingCount': FieldValue.increment(-1),
         'updatedAt': Timestamp.fromDate(now),
       });

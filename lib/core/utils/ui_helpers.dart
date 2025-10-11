@@ -1,78 +1,24 @@
 import 'package:flutter/material.dart';
 
 /// UI 관련 공통 유틸리티 함수들
+///
+/// Snackbar 관련 함수는 snackbar_helpers.dart로 이동되었습니다.
 class UiHelpers {
   UiHelpers._();
-
-  /// ScaffoldMessenger를 사용한 스낵바 표시
-  static void showSnackBar(
-    BuildContext context,
-    String message, {
-    Duration duration = const Duration(seconds: 2),
-    SnackBarBehavior behavior = SnackBarBehavior.floating,
-    Color? backgroundColor,
-    SnackBarAction? action,
-  }) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: duration,
-          behavior: behavior,
-          backgroundColor: backgroundColor,
-          action: action,
-        ),
-      );
-  }
-
-  /// 에러 스낵바 표시
-  static void showErrorSnackBar(
-    BuildContext context,
-    String message, {
-    Duration duration = const Duration(seconds: 3),
-  }) {
-    showSnackBar(
-      context,
-      message,
-      duration: duration,
-      backgroundColor: Theme.of(context).colorScheme.error,
-    );
-  }
-
-  /// 성공 스낵바 표시
-  static void showSuccessSnackBar(
-    BuildContext context,
-    String message, {
-    Duration duration = const Duration(seconds: 2),
-  }) {
-    showSnackBar(
-      context,
-      message,
-      duration: duration,
-      backgroundColor: Colors.green,
-    );
-  }
 
   /// Theme.of(context) 접근을 위한 헬퍼
   static ThemeData getTheme(BuildContext context) => Theme.of(context);
 
   /// ColorScheme 접근을 위한 헬퍼
-  static ColorScheme getColorScheme(BuildContext context) =>
-      Theme.of(context).colorScheme;
+  static ColorScheme getColorScheme(BuildContext context) => Theme.of(context).colorScheme;
 
   /// TextTheme 접근을 위한 헬퍼
-  static TextTheme getTextTheme(BuildContext context) =>
-      Theme.of(context).textTheme;
+  static TextTheme getTextTheme(BuildContext context) => Theme.of(context).textTheme;
 
   /// 표준 패딩 값들
   static const EdgeInsets standardPadding = EdgeInsets.all(16.0);
-  static const EdgeInsets horizontalPadding = EdgeInsets.symmetric(
-    horizontal: 16.0,
-  );
-  static const EdgeInsets verticalPadding = EdgeInsets.symmetric(
-    vertical: 16.0,
-  );
+  static const EdgeInsets horizontalPadding = EdgeInsets.symmetric(horizontal: 16.0);
+  static const EdgeInsets verticalPadding = EdgeInsets.symmetric(vertical: 16.0);
   static const EdgeInsets cardPadding = EdgeInsets.all(20.0);
   static const EdgeInsets smallPadding = EdgeInsets.all(8.0);
   static const EdgeInsets largePadding = EdgeInsets.all(24.0);

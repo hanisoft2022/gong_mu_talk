@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
+import '../../core/utils/snackbar_helpers.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 
 // 허용되는 공무원 메일 도메인 목록
@@ -79,16 +80,12 @@ class _AuthRequiredViewState extends State<AuthRequiredView> {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state.lastMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(state.lastMessage!),
-                backgroundColor: state.authError != null
-                    ? Theme.of(context).colorScheme.error
-                    : null,
-              ),
-            );
+          // Use SnackbarHelpers for consistent styling
+          if (state.authError != null) {
+            SnackbarHelpers.showError(context, state.lastMessage!);
+          } else {
+            SnackbarHelpers.showSuccess(context, state.lastMessage!);
+          }
         }
       },
       child: Center(

@@ -27,10 +27,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:gong_mu_talk/di/di.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import '../../../../core/utils/date_time_helpers.dart';
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../../routing/app_router.dart';
 
 import '../../data/community_repository.dart';
@@ -38,6 +40,8 @@ import '../../domain/models/comment.dart';
 import '../../domain/models/feed_filters.dart';
 import '../../domain/models/post.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../profile/data/follow_repository.dart';
+import '../cubit/community_feed_cubit.dart';
 import '../cubit/post_card_cubit.dart';
 import '../cubit/post_card_state.dart';
 
@@ -66,6 +70,7 @@ class PostCard extends StatefulWidget {
     this.showShare = true,
     this.showScrap = true,
     this.highlightCommentId,
+    this.onUnblockUser,
   });
 
   final Post post;
@@ -76,6 +81,7 @@ class PostCard extends StatefulWidget {
   final bool showShare;
   final bool showScrap;
   final String? highlightCommentId;
+  final VoidCallback? onUnblockUser;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -131,6 +137,17 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   String? _deletedCommentId;
   String? _deletedCommentText;
 
+  // Block Undo State
+  Timer? _blockUndoTimer;
+  String? _blockedUserId;
+  String? _blockedUserNickname;
+
+  // Follow Undo State
+  Timer? _followUndoTimer;
+  String? _followTargetUid;
+  String? _followTargetNickname;
+  bool? _wasFollowing;
+
   // Highlight State (Phase 3)
   String? _highlightedCommentId;
   Timer? _highlightTimer;
@@ -140,6 +157,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late final CommunityRepository _repository;
   late final AuthCubit _authCubit;
   late final PostCardCubit _postCardCubit;
+  late final FollowRepository _followRepository;
 
   // ==================== Lifecycle Methods ====================
 
@@ -148,17 +166,18 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     super.initState();
     _repository = context.read<CommunityRepository>();
     _authCubit = context.read<AuthCubit>();
+    _followRepository = getIt<FollowRepository>();
 
     // Initialize PostCardCubit
     _postCardCubit = PostCardCubit(
       repository: _repository,
       postId: widget.post.id,
       initialCommentCount: widget.post.commentCount,
+      currentUid: _authCubit.state.userId,
     );
 
     _commentCount = widget.post.commentCount;
-    _commentController = TextEditingController()
-      ..addListener(_handleCommentInputChanged);
+    _commentController = TextEditingController()..addListener(_handleCommentInputChanged);
     _commentFocusNode = FocusNode();
     _isExpandedNotifier = ValueNotifier<bool>(false);
     _showCommentsNotifier = ValueNotifier<bool>(false);
@@ -186,6 +205,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       }
     }
     _deleteUndoTimer?.cancel();
+    _blockUndoTimer?.cancel();
+    _followUndoTimer?.cancel();
     _highlightTimer?.cancel();
     _commentController
       ..removeListener(_handleCommentInputChanged)
@@ -248,17 +269,13 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           });
 
           // Phase 3: Scroll to highlighted comment when loading completes
-          if (wasLoading &&
-              !state.isLoadingComments &&
-              _highlightedCommentId != null) {
+          if (wasLoading && !state.isLoadingComments && _highlightedCommentId != null) {
             _scrollToHighlightedComment();
           }
 
           // Show error if any
           if (state.error != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.error!)));
+            SnackbarHelpers.showError(context, state.error!);
             _postCardCubit.clearError();
           }
         }
@@ -289,8 +306,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                       valueListenable: _isExpandedNotifier,
                       builder: (context, isExpanded, _) {
                         final bool showMoreButton =
-                            !isExpanded &&
-                            content.shouldShowMore(post.text, context);
+                            !isExpanded && content.shouldShowMore(post.text, context);
                         return content.PostContent(
                           post: post,
                           isExpanded: isExpanded,
@@ -301,19 +317,27 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                     ),
                   ),
                   const Gap(16),
-                  PostActionsBar(
-                    post: post,
-                    onLikeTap: _handleLikeTap,
-                    onCommentTap: _handleCommentButton,
-                    trailingActions: PostTrailingActions(
-                      post: post,
-                      onScrapTap: _handleScrapTap,
-                      onShareTap: () => _handleShare(post),
-                      showShare: widget.showShare,
-                      showScrap: widget.showScrap,
-                      customTrailing: widget.trailing,
-                      onReportTap: _handleReport,
-                    ),
+                  BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, authState) {
+                      final bool canLike = authState.hasLoungeWriteAccess;
+                      return PostActionsBar(
+                        post: post,
+                        onLikeTap: _handleLikeTap,
+                        onCommentTap: _handleCommentButton,
+                        canLike: canLike,
+                        onDisabledLikeTap: () =>
+                            _showVerificationRequiredDialog(context, authState, actionType: 'like'),
+                        trailingActions: PostTrailingActions(
+                          post: post,
+                          onScrapTap: _handleScrapTap,
+                          onShareTap: () => _handleShare(post),
+                          showShare: widget.showShare,
+                          showScrap: widget.showScrap,
+                          customTrailing: widget.trailing,
+                          onReportTap: _handleReport,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -349,10 +373,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                     onRemoveImage: _removeImage,
                                     onSubmit: _submitComment,
                                     enabled: canWrite,
-                                    onDisabledTap: () => _showVerificationRequiredDialog(context, authState),
-                                    hintText: canWrite
-                                      ? '댓글을 입력하세요...'
-                                      : '댓글 작성은 공직자 메일 인증 후 가능합니다',
+                                    onDisabledTap: () =>
+                                        _showVerificationRequiredDialog(context, authState),
+                                    hintText: canWrite ? '댓글을 입력하세요.' : '댓글 작성은 공직자 메일 인증 후 가능합니다.',
                                   );
                                 },
                               ),
@@ -379,18 +402,28 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                           curve: Curves.easeOutCubic,
                           alignment: Alignment.topCenter,
                           child: RepaintBoundary(
-                            child: PostCommentsSection(
-                              isLoading: _isLoadingComments,
-                              timelineComments: _visibleTimelineComments,
-                              featuredComments: _featuredComments,
-                              onToggleCommentLike: _handleCommentLike,
-                              onReplyTap: _handleReplyTap,
-                              onOpenCommentAuthorProfile:
-                                  _showCommentAuthorMenu,
-                              onDeleteComment: _handleDeleteComment,
-                              currentUserId: _authCubit.state.userId,
-                              highlightedCommentId: _highlightedCommentId,
-                              commentKeys: _commentKeys,
+                            child: BlocBuilder<AuthCubit, AuthState>(
+                              builder: (context, authState) {
+                                final bool canLike = authState.hasLoungeWriteAccess;
+                                return PostCommentsSection(
+                                  isLoading: _isLoadingComments,
+                                  timelineComments: _visibleTimelineComments,
+                                  featuredComments: _featuredComments,
+                                  onToggleCommentLike: _handleCommentLike,
+                                  onReplyTap: _handleReplyTap,
+                                  onOpenCommentAuthorProfile: _showCommentAuthorMenu,
+                                  onDeleteComment: _handleDeleteComment,
+                                  currentUserId: _authCubit.state.userId,
+                                  highlightedCommentId: _highlightedCommentId,
+                                  commentKeys: _commentKeys,
+                                  canLike: canLike,
+                                  onDisabledLikeTap: () => _showVerificationRequiredDialog(
+                                    context,
+                                    authState,
+                                    actionType: 'like',
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -430,7 +463,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   Future<void> _handleReport() async {
-
     if (_isSynthetic(widget.post)) {
       _showSnack('프리뷰 게시물은 신고할 수 없어요.');
       return;
@@ -444,15 +476,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('신고가 접수되었습니다. 검토 후 조치하겠습니다.'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    SnackbarHelpers.showInfo(context, '신고가 접수되었습니다. 검토 후 조치하겠습니다.');
   }
 
   void _handleAuthorMenuTap() {
@@ -460,22 +484,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     final AuthState authState = _authCubit.state;
     final String? currentUid = authState.userId;
-    final bool isSelf =
-        currentUid != null && currentUid == widget.post.authorUid;
-    final bool canFollow = _canFollowUser(
-      authState,
-      currentUid,
-      isSelf,
-      widget.post.authorUid,
-    );
+    final bool isSelf = currentUid != null && currentUid == widget.post.authorUid;
+    final bool canFollow = _canFollowUser(authState, currentUid, isSelf, widget.post.authorUid);
     const bool isFollowing = false; // Social graph feature not yet implemented
 
     _showAuthorMenuAtPosition(canFollow: canFollow, isFollowing: isFollowing);
   }
 
   void _handleCommentInputChanged() {
-    final bool canSubmit =
-        _commentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
+    final bool canSubmit = _commentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
     if (canSubmit != _canSubmitComment) {
       setState(() {
         _canSubmitComment = canSubmit;
@@ -485,10 +502,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   // ==================== Author Menu ====================
 
-  void _showAuthorMenuAtPosition({
-    required bool canFollow,
-    required bool isFollowing,
-  }) {
+  void _showAuthorMenuAtPosition({required bool canFollow, required bool isFollowing}) {
     if (_menuOverlayEntry != null) {
       _closeAuthorMenu();
       return;
@@ -499,18 +513,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorButtonKey: _authorButtonKey,
       canFollow: canFollow,
       isFollowing: isFollowing,
-      onViewProfile: () => _handleAuthorAction(
-        AuthorMenuAction.viewProfile,
-        isFollowing: isFollowing,
-      ),
-      onToggleFollow: () => _handleAuthorAction(
-        AuthorMenuAction.toggleFollow,
-        isFollowing: isFollowing,
-      ),
-      onBlockUser: () => _handleAuthorAction(
-        AuthorMenuAction.blockUser,
-        isFollowing: isFollowing,
-      ),
+      onViewProfile: () =>
+          _handleAuthorAction(AuthorMenuAction.viewProfile, isFollowing: isFollowing),
+      onToggleFollow: () =>
+          _handleAuthorAction(AuthorMenuAction.toggleFollow, isFollowing: isFollowing),
+      onBlockUser: () => _handleAuthorAction(AuthorMenuAction.blockUser, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -558,11 +565,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         AuthorMenuAction.toggleFollow,
         isFollowing: isFollowing,
       ),
-      onBlockUser: () => _handleCommentAuthorAction(
-        comment,
-        AuthorMenuAction.blockUser,
-        isFollowing: isFollowing,
-      ),
+      onBlockUser: () =>
+          _handleCommentAuthorAction(comment, AuthorMenuAction.blockUser, isFollowing: isFollowing),
       onClose: _closeAuthorMenu,
     );
 
@@ -588,24 +592,17 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleAuthorAction(
-    AuthorMenuAction action, {
-    required bool isFollowing,
-  }) async {
+  Future<void> _handleAuthorAction(AuthorMenuAction action, {required bool isFollowing}) async {
     _closeAuthorMenu();
     if (!mounted) return;
 
     switch (action) {
       case AuthorMenuAction.viewProfile:
-        if (widget.post.authorUid.isEmpty ||
-            widget.post.authorUid == 'preview') {
+        if (widget.post.authorUid.isEmpty || widget.post.authorUid == 'preview') {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(
-          uid: widget.post.authorUid,
-          nickname: widget.post.authorNickname,
-        );
+        _openMockProfile(uid: widget.post.authorUid, nickname: widget.post.authorNickname);
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -637,10 +634,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           _showSnack('프리뷰 데이터라 프로필을 열 수 없어요.');
           return;
         }
-        _openMockProfile(
-          uid: comment.authorUid,
-          nickname: comment.authorNickname,
-        );
+        _openMockProfile(uid: comment.authorUid, nickname: comment.authorNickname);
         break;
       case AuthorMenuAction.toggleFollow:
         await _toggleFollow(
@@ -650,10 +644,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
         break;
       case AuthorMenuAction.blockUser:
-        await _handleBlockUser(
-          targetUid: comment.authorUid,
-          nickname: comment.authorNickname,
-        );
+        await _handleBlockUser(targetUid: comment.authorUid, nickname: comment.authorNickname);
         break;
     }
   }
@@ -674,8 +665,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _deleteUndoTimer?.cancel();
 
     // Delete comment via Cubit
-    final String? originalText =
-        await _postCardCubit.deleteComment(comment, currentUid);
+    final String? originalText = await _postCardCubit.deleteComment(comment, currentUid);
 
     if (originalText == null || !mounted) {
       return; // Failed to delete
@@ -686,22 +676,14 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _deletedCommentText = originalText;
 
     // Show SnackBar with undo option
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('댓글이 삭제되었습니다'),
-          duration: const Duration(seconds: 5),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '실행 취소',
-            onPressed: () {
-              _deleteUndoTimer?.cancel();
-              _handleUndoDelete();
-            },
-          ),
-        ),
-      );
+    SnackbarHelpers.showUndo(
+      context,
+      message: '댓글이 삭제되었습니다',
+      onUndo: () {
+        _deleteUndoTimer?.cancel();
+        _handleUndoDelete();
+      },
+    );
 
     // Set timer to clear undo data after 5 seconds
     _deleteUndoTimer = Timer(const Duration(seconds: 5), () {
@@ -730,23 +712,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _deletedCommentText = null;
 
     // Restore comment via Cubit
-    await _postCardCubit.undoDeleteComment(
-      commentId,
-      currentUid,
-      originalText,
-    );
+    await _postCardCubit.undoDeleteComment(commentId, currentUid, originalText);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('댓글이 복구되었습니다'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    SnackbarHelpers.showSuccess(context, '댓글이 복구되었습니다');
   }
 
   // ==================== Comments ====================
@@ -825,15 +795,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     if (_isSynthetic(widget.post)) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('프리뷰 게시물에는 댓글을 작성할 수 없습니다.'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        SnackbarHelpers.showWarning(context, '프리뷰 게시물에는 댓글을 작성할 수 없습니다.');
       }
       return;
     }
@@ -867,11 +829,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       _showCommentsNotifier.value = true;
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
-          );
+        SnackbarHelpers.showError(context, '댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.');
         setState(() => _isSubmittingComment = false);
       }
     }
@@ -979,47 +937,186 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     required bool isFollowing,
   }) async {
     if (!mounted) return;
-    _showSnack('팔로우 기능은 곧 제공될 예정입니다.');
+
+    final AuthState authState = _authCubit.state;
+    final String? currentUid = authState.userId;
+
+    if (currentUid == null || currentUid.isEmpty) {
+      _showSnack('로그인이 필요합니다.');
+      return;
+    }
+
+    // Check verification status
+    if (!authState.hasLoungeWriteAccess) {
+      _showVerificationRequiredDialog(context, authState, actionType: 'follow');
+      return;
+    }
+
+    // Cancel any existing undo timer
+    _followUndoTimer?.cancel();
+
+    // Store for undo
+    _followTargetUid = targetUid;
+    _followTargetNickname = nickname;
+    _wasFollowing = isFollowing;
+
+    try {
+      // Toggle follow state
+      if (isFollowing) {
+        await _followRepository.unfollow(followerUid: currentUid, targetUid: targetUid);
+      } else {
+        await _followRepository.follow(followerUid: currentUid, targetUid: targetUid);
+      }
+
+      if (!mounted) return;
+
+      // Show undo snackbar
+      SnackbarHelpers.showUndo(
+        context,
+        message: isFollowing ? '팔로우를 취소했어요.' : '새로운 동료를 팔로우했어요.',
+        onUndo: () {
+          _followUndoTimer?.cancel();
+          _handleUndoFollow();
+        },
+      );
+
+      // Set timer to clear undo data after 5 seconds
+      _followUndoTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) {
+          _followTargetUid = null;
+          _followTargetNickname = null;
+          _wasFollowing = null;
+        }
+      });
+    } catch (e, stackTrace) {
+      if (!mounted) return;
+      debugPrint('❌ Follow toggle failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _showSnack('팔로우 상태를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
   }
 
-  Future<void> _handleBlockUser({
-    required String targetUid,
-    required String nickname,
-  }) async {
+  Future<void> _handleUndoFollow() async {
+    if (_followTargetUid == null || _wasFollowing == null) {
+      return;
+    }
+
+    final String? currentUid = _authCubit.state.userId;
+    if (currentUid == null) {
+      return;
+    }
+
+    final String targetUid = _followTargetUid!;
+    final String nickname = _followTargetNickname ?? '사용자';
+    final bool wasFollowing = _wasFollowing!;
+
+    // Clear undo data
+    _followTargetUid = null;
+    _followTargetNickname = null;
+    _wasFollowing = null;
+
+    try {
+      // Restore previous follow state
+      if (wasFollowing) {
+        await _followRepository.follow(followerUid: currentUid, targetUid: targetUid);
+      } else {
+        await _followRepository.unfollow(followerUid: currentUid, targetUid: targetUid);
+      }
+
+      if (!mounted) return;
+
+      SnackbarHelpers.showSuccess(context, '$nickname님에 대한 팔로우 상태를 복구했습니다');
+    } catch (e) {
+      if (!mounted) return;
+
+      SnackbarHelpers.showError(context, '팔로우 상태 복구에 실패했습니다');
+    }
+  }
+
+  Future<void> _handleBlockUser({required String targetUid, required String nickname}) async {
     if (!mounted) return;
 
     // Show confirmation dialog
-    final bool? confirmed = await BlockUserDialog.show(
-      context,
-      nickname: nickname,
-    );
+    final bool? confirmed = await BlockUserDialog.show(context, nickname: nickname);
 
     if (confirmed != true || !mounted) return;
 
-    // Use Cubit for blocking
+    // Cancel any existing block undo timer
+    _blockUndoTimer?.cancel();
+
+    // Store for undo
+    _blockedUserId = targetUid;
+    _blockedUserNickname = nickname;
+
+    // Block user via Cubit
     await _postCardCubit.blockUser(targetUid);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('$nickname님을 차단했습니다'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    // 즉시 피드에서 제거 (클라이언트 필터링)
+    try {
+      context.read<CommunityFeedCubit>().hideBlockedUserPosts(targetUid);
+    } catch (e) {
+      debugPrint('CommunityFeedCubit not found: $e');
+    }
+
+    // Show SnackBar with undo option
+    SnackbarHelpers.showUndo(
+      context,
+      message: '$nickname님을 차단했습니다',
+      onUndo: () {
+        _blockUndoTimer?.cancel();
+        _handleUndoBlock();
+      },
+    );
+
+    // Set timer to clear undo data after 5 seconds
+    _blockUndoTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _blockedUserId = null;
+        _blockedUserNickname = null;
+      }
+    });
+  }
+
+  Future<void> _handleUndoBlock() async {
+    if (_blockedUserId == null || _blockedUserNickname == null) {
+      return;
+    }
+
+    final String userId = _blockedUserId!;
+    final String nickname = _blockedUserNickname!;
+
+    // Clear undo data
+    _blockedUserId = null;
+    _blockedUserNickname = null;
+
+    // Unblock user via repository
+    try {
+      await _repository.unblockUser(userId);
+
+      // IMPORTANT: Call refresh callback BEFORE mounted check
+      // The callback operates on feed-level cubit, so it's safe even if PostCard is unmounted
+      // This ensures the feed refreshes even if this PostCard was removed from tree during blocking
+      widget.onUnblockUser?.call();
+
+      // Only show SnackBar if widget is still mounted (requires valid context)
+      if (!mounted) return;
+
+      SnackbarHelpers.showSuccess(context, '$nickname님에 대한 차단을 해제했습니다');
+    } catch (e) {
+      debugPrint('❌ Error unblocking user: $e');
+      if (!mounted) return;
+
+      SnackbarHelpers.showError(context, '차단 해제에 실패했습니다');
+    }
   }
 
   void _openMockProfile({required String uid, required String nickname}) {
     if (uid.isEmpty || uid == 'dummy_user') {
       return;
     }
-    context.pushNamed(
-      MemberProfileRoute.name,
-      pathParameters: <String, String>{'uid': uid},
-    );
+    context.pushNamed(MemberProfileRoute.name, pathParameters: <String, String>{'uid': uid});
   }
 
   // ==================== Helper Methods ====================
@@ -1082,9 +1179,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       authorSerialVisible: cached.authorSerialVisible,
       text: cached.text,
       likeCount: cached.likeCount,
-      createdAt: (post.updatedAt ?? post.createdAt).add(
-        Duration(minutes: index),
-      ),
+      createdAt: (post.updatedAt ?? post.createdAt).add(Duration(minutes: index)),
     );
   }
 
@@ -1092,12 +1187,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return createdAt.relativeTime;
   }
 
-  bool _canFollowUser(
-    AuthState authState,
-    String? currentUid,
-    bool isSelf,
-    String targetUid,
-  ) {
+  bool _canFollowUser(AuthState authState, String? currentUid, bool isSelf, String targetUid) {
     return authState.isLoggedIn &&
         currentUid != null &&
         currentUid.isNotEmpty &&
@@ -1111,32 +1201,39 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    SnackbarHelpers.showInfo(context, message);
   }
 
-  /// Show verification required dialog when user tries to comment without verification
-  void _showVerificationRequiredDialog(BuildContext context, AuthState authState) {
+  /// Show verification required dialog when user tries to interact without verification
+  void _showVerificationRequiredDialog(
+    BuildContext context,
+    AuthState authState, {
+    String? actionType,
+  }) {
+    final String action;
+    switch (actionType) {
+      case 'like':
+        action = '좋아요를 누르려면';
+        break;
+      case 'follow':
+        action = '팔로우하려면';
+        break;
+      default:  // 'comment' or null
+        action = '댓글을 작성하려면';
+        break;
+    }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Row(
-          children: [
-            Icon(Icons.lock_outline, size: 24),
-            SizedBox(width: 8),
-            Text('인증 필요'),
-          ],
+          children: [Icon(Icons.lock_outline, size: 24), SizedBox(width: 8), Text('인증 필요')],
         ),
-        content: const Text(
-          '댓글을 작성하려면 공직자 메일 인증이 필요합니다.\n\n💡 직렬 인증(급여명세서)을 완료하시면 메일 인증 없이도 바로 이용 가능합니다.',
-          style: TextStyle(height: 1.5),
+        content: Text(
+          '$action 공직자 메일 인증이 필요합니다.\n\n💡 직렬 인증(급여명세서)을 완료하시면 메일 인증 없이도 바로 이용 가능합니다.',
+          style: const TextStyle(height: 1.5),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('취소'),
-          ),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('취소')),
           FilledButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();

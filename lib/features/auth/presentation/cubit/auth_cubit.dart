@@ -47,9 +47,7 @@ class AuthCubit extends Cubit<AuthState> {
          notificationRepository: notificationRepository,
        ),
        super(const AuthState()) {
-    _authSubscription = _authRepository.authStateChanges().listen(
-      _onAuthUserChanged,
-    );
+    _authSubscription = _authRepository.authStateChanges().listen(_onAuthUserChanged);
   }
 
   final FirebaseAuthRepository _authRepository;
@@ -67,20 +65,14 @@ class AuthCubit extends Cubit<AuthState> {
   // Authentication operations
   Future<void> signIn({required String email, required String password}) async {
     return _runAuthOperation(
-      () => _authRepository.signIn(
-        email: email.trim(),
-        password: password.trim(),
-      ),
+      () => _authRepository.signIn(email: email.trim(), password: password.trim()),
       fallbackMessage: '로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
     );
   }
 
   Future<void> signUp({required String email, required String password}) async {
     return _runAuthOperation(
-      () => _authRepository.signUp(
-        email: email.trim(),
-        password: password.trim(),
-      ),
+      () => _authRepository.signUp(email: email.trim(), password: password.trim()),
       fallbackMessage: '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.',
     );
   }
@@ -103,9 +95,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   // Government email verification
-  Future<void> requestGovernmentEmailVerification({
-    required String email,
-  }) async {
+  Future<void> requestGovernmentEmailVerification({required String email}) async {
     final String trimmedEmail = email.trim();
     emit(
       state.copyWith(
@@ -116,25 +106,16 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     try {
-      final String token = await _authRepository
-          .requestGovernmentEmailVerification(trimmedEmail);
+      final String token = await _authRepository.requestGovernmentEmailVerification(trimmedEmail);
 
       final String message = trimmedEmail.endsWith('@naver.com')
           ? '$trimmedEmail 로 인증 메일을 전송했습니다. 메일함을 확인하여 인증 링크를 클릭해주세요.'
           : '$trimmedEmail 인증 요청이 완료되었습니다.\n\n개발/테스트 모드 토큰: $token\n\n실제 메일 발송은 현재 해당 도메인에서 지원되지 않습니다.';
 
-      emit(
-        state.copyWith(
-          isGovernmentEmailVerificationInProgress: false,
-          lastMessage: message,
-        ),
-      );
+      emit(state.copyWith(isGovernmentEmailVerificationInProgress: false, lastMessage: message));
     } on AuthException catch (error) {
       emit(
-        state.copyWith(
-          isGovernmentEmailVerificationInProgress: false,
-          lastMessage: error.message,
-        ),
+        state.copyWith(isGovernmentEmailVerificationInProgress: false, lastMessage: error.message),
       );
     } catch (_) {
       emit(
@@ -148,9 +129,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> verifyGovernmentEmailToken(String token) async {
     try {
-      final bool isValid = await _authRepository.verifyGovernmentEmailToken(
-        token,
-      );
+      final bool isValid = await _authRepository.verifyGovernmentEmailToken(token);
       if (isValid) {
         emit(state.copyWith(lastMessage: '공직자 메일 인증이 완료되었습니다!'));
         await refreshAuthStatus();
@@ -163,12 +142,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void clearGovernmentEmailVerificationForTesting() {
-    emit(
-      state.copyWith(
-        isEmailVerified: false,
-        lastMessage: '개발용 인증 상태가 초기화되었습니다.',
-      ),
-    );
+    emit(state.copyWith(isEmailVerified: false, lastMessage: '개발용 인증 상태가 초기화되었습니다.'));
   }
 
   Future<void> refreshAuthStatus() async {
@@ -187,8 +161,11 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       final String serial = track == CareerTrack.none ? 'unknown' : track.name;
-      final UserProfile profile = await _userProfileRepository
-          .updateProfileFields(uid: uid, careerTrack: track, serial: serial);
+      final UserProfile profile = await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        careerTrack: track,
+        serial: serial,
+      );
 
       _profileManager.applyProfile(profile, emit: emit, currentState: state);
 
@@ -233,12 +210,7 @@ class AuthCubit extends Cubit<AuthState> {
     } on ArgumentError catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
     } catch (error) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '닉네임 변경 중 오류가 발생했습니다: $error',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '닉네임 변경 중 오류가 발생했습니다: $error'));
     }
   }
 
@@ -252,17 +224,14 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isProcessing: true, lastMessage: null));
     try {
       final String trimmed = bio.trim();
-      final UserProfile profile = await _userProfileRepository
-          .updateProfileFields(uid: uid, bio: trimmed.isEmpty ? null : trimmed);
+      final UserProfile profile = await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        bio: trimmed.isEmpty ? null : trimmed,
+      );
       _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트했습니다.'));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '자기소개를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '자기소개를 업데이트하지 못했습니다. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -274,8 +243,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     try {
-      final UserProfile profile =
-          await _userProfileRepository.resetNicknameChangeLimit(uid: uid);
+      final UserProfile profile = await _userProfileRepository.resetNicknameChangeLimit(uid: uid);
       _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(lastMessage: '닉네임 변경 제한이 초기화되었습니다.'));
     } catch (_) {
@@ -291,8 +259,10 @@ class AuthCubit extends Cubit<AuthState> {
 
     emit(state.copyWith(isProcessing: true, lastMessage: null));
     try {
-      final UserProfile profile = await _userProfileRepository
-          .updateProfileFields(uid: uid, notificationsEnabled: enabled);
+      final UserProfile profile = await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        notificationsEnabled: enabled,
+      );
       _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
@@ -308,8 +278,10 @@ class AuthCubit extends Cubit<AuthState> {
 
     emit(state.copyWith(isProcessing: true, lastMessage: null));
     try {
-      final UserProfile profile = await _userProfileRepository
-          .updateProfileFields(uid: uid, serialVisible: visible);
+      final UserProfile profile = await _userProfileRepository.updateProfileFields(
+        uid: uid,
+        serialVisible: visible,
+      );
       _profileManager.applyProfile(profile, emit: emit, currentState: state);
       emit(state.copyWith(isProcessing: false));
     } catch (_) {
@@ -331,12 +303,7 @@ class AuthCubit extends Cubit<AuthState> {
     } on AuthException catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -350,74 +317,11 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isProcessing: true, lastMessage: null));
     try {
       await _authRepository.deleteAccount(currentPassword: currentPassword);
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '계정을 삭제했습니다. 다시 만나길 바랄게요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '계정을 삭제했습니다. 다시 만나길 바랄게요.'));
     } on AuthException catch (error) {
       emit(state.copyWith(isProcessing: false, lastMessage: error.message));
     } catch (_) {
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          lastMessage: '회원 탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
-    }
-  }
-
-  Future<void> toggleExcludedTrack(CareerTrack track) async {
-    final Set<CareerTrack> updated = Set<CareerTrack>.from(
-      state.excludedTracks,
-    );
-    if (!updated.remove(track)) {
-      updated.add(track);
-    }
-
-    emit(
-      state.copyWith(
-        excludedTracks: updated,
-        excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
-      ),
-    );
-
-    final String? uid = state.userId;
-    if (uid == null) {
-      emit(
-        state.copyWith(
-          excludedTracks: updated,
-          lastMessage: '로그인 후 제외 직렬을 설정할 수 있습니다.',
-        ),
-      );
-      return;
-    }
-
-    try {
-      await _userProfileRepository.updateExclusionSettings(
-        uid: uid,
-        excludedSerials: updated.map((CareerTrack track) => track.name).toSet(),
-      );
-      emit(
-        state.copyWith(
-          excludedTracks: updated,
-          excludedSerials: updated
-              .map((CareerTrack track) => track.name)
-              .toSet(),
-          lastMessage: '매칭 제외 직렬 설정이 업데이트되었습니다.',
-        ),
-      );
-    } catch (_) {
-      emit(
-        state.copyWith(
-          excludedTracks: updated,
-          excludedSerials: updated
-              .map((CareerTrack track) => track.name)
-              .toSet(),
-          lastMessage: '매칭 제외 직렬 설정에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isProcessing: false, lastMessage: '회원 탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -486,9 +390,7 @@ class AuthCubit extends Cubit<AuthState> {
     final String? previousEmail = state.email;
     final String? newEmail = user.email;
     if (newEmail != null && newEmail.isNotEmpty) {
-      if (previousEmail != null &&
-          previousEmail.isNotEmpty &&
-          previousEmail != newEmail) {
+      if (previousEmail != null && previousEmail.isNotEmpty && previousEmail != newEmail) {
         unawaited(
           _authRepository.handlePrimaryEmailUpdated(
             userId: user.uid,
@@ -548,10 +450,7 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      await _userProfileRepository.updateProfileFields(
-        uid: uid,
-        fcmToken: token,
-      );
+      await _userProfileRepository.updateProfileFields(uid: uid, fcmToken: token);
       debugPrint('FCM token saved successfully for user: $uid');
     } catch (error, stackTrace) {
       debugPrint('Failed to save FCM token: $error\n$stackTrace');
@@ -606,16 +505,12 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(lastMessage: null));
   }
 
-  Future<void> _refreshPrimaryEmail(
-    String userId,
-    String governmentEmail,
-  ) async {
+  Future<void> _refreshPrimaryEmail(String userId, String governmentEmail) async {
     try {
-      final String? legacyEmail = await _authRepository
-          .findLegacyEmailForGovernmentEmail(
-            userId: userId,
-            governmentEmail: governmentEmail,
-          );
+      final String? legacyEmail = await _authRepository.findLegacyEmailForGovernmentEmail(
+        userId: userId,
+        governmentEmail: governmentEmail,
+      );
 
       if (legacyEmail == null || legacyEmail.isEmpty) {
         return;
@@ -631,9 +526,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       emit(state.copyWith(primaryEmail: legacyEmail));
     } catch (error, stackTrace) {
-      debugPrint(
-        'Failed to resolve primary email for $governmentEmail: $error\n$stackTrace',
-      );
+      debugPrint('Failed to resolve primary email for $governmentEmail: $error\n$stackTrace');
     }
   }
 }

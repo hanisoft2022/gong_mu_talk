@@ -72,15 +72,15 @@ class ProfileCommentsTabContent extends StatelessWidget {
           children: [
             Icon(
               Icons.comment_outlined,
-              size: 64,
+              size: 56,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const Gap(16),
+            const Gap(12),
             Text(
               '작성한 댓글이 없습니다',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const Gap(8),
+            const Gap(6),
             Text(
               '커뮤니티 게시글에 댓글을 남겨보세요.',
               style: Theme.of(context).textTheme.bodyMedium,

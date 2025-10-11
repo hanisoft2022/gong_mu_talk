@@ -7,8 +7,6 @@ import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_salary_
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/views/salary_analysis_page.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
-import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/common/feature_button.dart';
 
 /// 현재 급여 카드 (재직 중)
 ///
@@ -225,13 +223,10 @@ class CurrentSalaryCard extends StatelessWidget {
 
                     const Gap(20),
 
-                    // 액션 버튼 (Level 2: emailVerified 이상)
+                    // 액션 버튼 (모든 레벨 접근 가능, 페이지 내부에서 블러 처리)
                     SizedBox(
                       width: double.infinity,
-                      child: FeatureButton(
-                        requiredLevel: FeatureAccessLevel.emailVerified,
-                        featureName: '상세 분석',
-                        icon: const Icon(Icons.analytics, size: 18),
+                      child: ElevatedButton.icon(
                         onPressed: lifetimeSalary != null
                             ? () {
                                 Navigator.push(
@@ -246,11 +241,12 @@ class CurrentSalaryCard extends StatelessWidget {
                                   ),
                                 );
                               }
-                            : () {},
+                            : null,
+                        icon: const Icon(Icons.analytics, size: 18),
+                        label: const Text('상세 분석'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('상세 분석'),
                       ),
                     ),
                   ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../../di/di.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/community_repository.dart';
@@ -152,9 +153,7 @@ class _PostDetailViewState extends State<PostDetailView> {
                         : _post!.likeCount - 1,
                   );
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('좋아요 처리 중 오류가 발생했습니다')),
-                );
+                SnackbarHelpers.showError(context, '좋아요 처리 중 오류가 발생했습니다');
               }
             }
           },
@@ -172,9 +171,7 @@ class _PostDetailViewState extends State<PostDetailView> {
                 setState(() {
                   _post = _post!.copyWith(isScrapped: !_post!.isScrapped);
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('스크랩 처리 중 오류가 발생했습니다')),
-                );
+                SnackbarHelpers.showError(context, '스크랩 처리 중 오류가 발생했습니다');
               }
             }
           },

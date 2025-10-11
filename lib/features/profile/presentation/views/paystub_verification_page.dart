@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/core/constants/app_colors.dart';
 
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../../di/di.dart';
 import '../../data/paystub_verification_repository.dart';
 
@@ -20,9 +21,15 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
   bool _agreedToTerms = false;
   File? _selectedFile;
   bool _isUploading = false;
+  bool _securityExpanded = false;
+  bool _faqExpanded = false;
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      allowMultiple: false,
+    );
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -45,22 +52,22 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       final bytes = await _selectedFile!.readAsBytes();
       final fileName = _selectedFile!.path.split('/').last;
 
-      await repository.uploadPaystub(bytes: bytes, fileName: fileName, contentType: 'image/jpeg');
+      await repository.uploadPaystub(
+        bytes: bytes,
+        fileName: fileName,
+        contentType: 'application/pdf',
+      );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('직렬 인증이 신청되었습니다. 검토까지 1-2일 소요됩니다.'),
-            backgroundColor: AppColors.success,
-          ),
+        SnackbarHelpers.showSuccess(
+          context,
+          '직렬 인증이 신청되었습니다. 자동 검증 중입니다.',
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('인증 신청 실패: ${e.toString()}'), backgroundColor: AppColors.error),
-        );
+        SnackbarHelpers.showError(context, '인증 신청 실패: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -76,29 +83,40 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('📃급여명세서로 직렬 인증하기'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('급여명세서로 직렬 인증하기'),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 안내 섹션
-            _buildInfoSection(theme),
+            // Trust Badge Header
+            _buildTrustBadgeHeader(theme),
             const Gap(24),
 
-            // 왜 급여 명세서인가요?
-            _buildWhyPaystubSection(theme),
-            const Gap(32),
+            // NEIS Download Guide
+            _buildNeisGuideSection(theme),
+            const Gap(20),
 
-            // 개인정보 동의
-            _buildConsentSection(theme),
-            const Gap(32),
+            // Security Explanation (Expandable)
+            _buildSecuritySection(theme),
+            const Gap(20),
 
-            // 업로드 섹션
+            // PDF Upload Section
             _buildUploadSection(theme),
-            const Gap(40),
+            const Gap(20),
 
-            // 제출 버튼
+            // Privacy Consent
+            _buildConsentSection(theme),
+            const Gap(20),
+
+            // FAQ Section
+            _buildFaqSection(theme),
+            const Gap(20),
+
+            // Submit Button
             _buildSubmitButton(theme),
           ],
         ),
@@ -106,49 +124,296 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     );
   }
 
-  Widget _buildInfoSection(ThemeData theme) {
+  Widget _buildTrustBadgeHeader(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.verified_user,
+              size: 32,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const Gap(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '신뢰할 수 있는 인증',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  '나이스(NEIS) 원본 PDF로\n위조 방지 검증을 진행합니다',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNeisGuideSection(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 24),
+              Icon(
+                Icons.download_outlined,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
               const Gap(8),
               Text(
-                '직렬 인증이 필요한 이유',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                '나이스(NEIS)에서 급여명세서 다운로드',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
           const Gap(16),
-          _buildInfoItem(theme, '🏛️', '전문 라운지 접근', '같은 직렬의 공무원들과 소통할 수 있는 전용 라운지를 이용할 수 있습니다.'),
-          const Gap(12),
-          _buildInfoItem(theme, '💬', '맞춤형 콘텐츠', '직렬별 맞춤 정보와 같은 고민을 하는 동료들의 이야기를 만나보세요.'),
-          const Gap(12),
-          _buildInfoItem(theme, '🔒', '안전한 커뮤니티', '검증된 공무원만 참여하여 더욱 신뢰할 수 있는 커뮤니티입니다.'),
+          _buildGuideStep(theme, '1', '나이스(NEIS) 접속', 'https://neis.go.kr'),
+          _buildGuideStep(theme, '2', '로그인 후 "급여" 메뉴 선택', null),
+          _buildGuideStep(theme, '3', '"급여명세서 조회" 클릭', null),
+          _buildGuideStep(theme, '4', '최근 월 선택 후 조회', null),
+          _buildGuideStep(
+            theme,
+            '5',
+            '"PDF 저장" 버튼으로 다운로드',
+            '⚠️ 스크린샷이나 인쇄는 불가합니다',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoItem(ThemeData theme, String emoji, String title, String description) {
+  Widget _buildGuideStep(
+    ThemeData theme,
+    String step,
+    String title,
+    String? subtitle,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                step,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const Gap(2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontStyle: subtitle.startsWith('⚠️')
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.tertiary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _securityExpanded = !_securityExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.security,
+                    color: theme.colorScheme.tertiary,
+                    size: 24,
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Text(
+                      '어떻게 위조를 방지하나요?',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _securityExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_securityExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const Gap(12),
+                  _buildSecurityItem(
+                    theme,
+                    '✅ PDF 원본 검증',
+                    '나이스에서 생성된 PDF인지 자동으로 확인합니다',
+                  ),
+                  const Gap(12),
+                  _buildSecurityItem(
+                    theme,
+                    '✅ 수정 여부 검증',
+                    'PDF가 편집되지 않은 원본인지 확인합니다',
+                  ),
+                  const Gap(12),
+                  _buildSecurityItem(
+                    theme,
+                    '✅ 워터마크 검증',
+                    '나이스 워터마크(기관명, 일시, IP, 성명)를 확인합니다',
+                  ),
+                  const Gap(12),
+                  _buildSecurityItem(
+                    theme,
+                    '✅ 생성시간 교차검증',
+                    'PDF 다운로드 시간과 워터마크 시간을 비교합니다',
+                  ),
+                  const Gap(16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            '5회 실패 시 24시간 동안 재시도가 제한됩니다.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityItem(ThemeData theme, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const Gap(12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const Gap(4),
               Text(
                 description,
@@ -163,86 +428,121 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     );
   }
 
-  Widget _buildWhyPaystubSection(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.help_outline, color: theme.colorScheme.primary, size: 24),
-              const Gap(8),
-              Text(
-                '왜 급여 명세서인가요?',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-          _buildWhyPaystubItem(
-            theme,
-            '📋',
-            '가장 정확한 직렬 정보',
-            '급여 명세서에는 "초등교사 2급 정교사", "행정직 7급" 등 정확한 직렬과 계급이 명시되어 있습니다.',
-          ),
-          const Gap(12),
-          _buildWhyPaystubItem(
-            theme,
-            '❌',
-            '다른 방법은 불충분합니다',
-            '재직증명서나 신분증은 직렬 정보가 불명확하거나 없는 경우가 많습니다.',
-          ),
-          const Gap(12),
-          _buildWhyPaystubItem(
-            theme,
-            '🔒',
-            '민감 정보는 가려도 됩니다',
-            '급여액이나 계좌번호 등 민감한 정보는 가린 후 업로드하셔도 됩니다. 직렬과 계급만 확인 가능하면 됩니다.',
-          ),
-          const Gap(12),
-          _buildWhyPaystubItem(theme, '🗑️', '인증 후 즉시 삭제', '업로드된 파일은 직렬 인증 완료 후 자동으로 삭제됩니다.'),
-          const Gap(12),
-          _buildWhyPaystubItem(
-            theme,
-            '⚡',
-            '필요한 정보만 추출',
-            '직렬, 계급, 소속 기관 정보만 추출하며 다른 용도로 사용하지 않습니다.',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWhyPaystubItem(ThemeData theme, String emoji, String title, String description) {
-    return Row(
+  Widget _buildUploadSection(ThemeData theme) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const Gap(12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-              const Gap(4),
-              Text(
-                description,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        Text(
+          '급여명세서 업로드',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
+        const Gap(8),
+        Text(
+          '나이스에서 다운로드한 원본 PDF 파일만 업로드해주세요.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const Gap(16),
+        if (_selectedFile == null)
+          InkWell(
+            onTap: _pickFile,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                  width: 2,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.picture_as_pdf_outlined,
+                    size: 48,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const Gap(12),
+                  Text(
+                    'PDF 파일 선택하기',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'PDF 형식만 지원',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.picture_as_pdf,
+                  size: 40,
+                  color: theme.colorScheme.primary,
+                ),
+                const Gap(16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedFile!.path.split('/').last,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Gap(4),
+                      Text(
+                        'PDF 파일 준비됨',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedFile = null;
+                    });
+                  },
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -253,14 +553,20 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.security, color: AppColors.successDark, size: 20),
+              const Icon(
+                Icons.security,
+                color: AppColors.successDark,
+                size: 20,
+              ),
               const Gap(8),
               Text(
                 '개인정보 처리 안내',
@@ -305,7 +611,9 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
                   Expanded(
                     child: Text(
                       '개인정보 수집 및 이용에 동의합니다',
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -317,96 +625,109 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
     );
   }
 
-  Widget _buildUploadSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '급여명세서 업로드',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+  Widget _buildFaqSection(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
-        const Gap(8),
-        Text(
-          '최근 3개월 이내의 급여명세서를 업로드해주세요.',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        const Gap(16),
-
-        if (_selectedFile == null)
+      ),
+      child: Column(
+        children: [
           InkWell(
-            onTap: _pickFile,
+            onTap: () {
+              setState(() {
+                _faqExpanded = !_faqExpanded;
+              });
+            },
             borderRadius: BorderRadius.circular(16),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: Column(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
                 children: [
-                  Icon(Icons.cloud_upload_outlined, size: 48, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.help_outline,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
                   const Gap(12),
-                  Text(
-                    '파일 선택하기',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
+                  Expanded(
+                    child: Text(
+                      '자주 묻는 질문',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  const Gap(4),
-                  Text(
-                    'JPG, PNG 형식 지원',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  Icon(
+                    _faqExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
             ),
-          )
-        else
-          Stack(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 300,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(_selectedFile!, fit: BoxFit.contain),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedFile = null;
-                    });
-                  },
-                  icon: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.blackAlpha50,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.close, color: AppColors.white, size: 20),
-                  ),
-                ),
-              ),
-            ],
           ),
+          if (_faqExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const Gap(12),
+                  _buildFaqItem(
+                    theme,
+                    'Q. 왜 PDF만 가능한가요?',
+                    'A. 스크린샷이나 편집된 이미지는 위조가 가능합니다. 나이스에서 생성한 원본 PDF만 메타데이터 검증이 가능합니다.',
+                  ),
+                  const Gap(16),
+                  _buildFaqItem(
+                    theme,
+                    'Q. 인증이 실패하면 어떻게 하나요?',
+                    'A. 오류 메시지를 확인하고 나이스에서 다시 다운로드한 원본 PDF를 제출해주세요. 5회 실패 시 24시간 후 재시도 가능합니다.',
+                  ),
+                  const Gap(16),
+                  _buildFaqItem(
+                    theme,
+                    'Q. 급여액이 표시되나요?',
+                    'A. 아니요. 직렬과 계급 정보만 추출되며 급여액은 추출되지 않습니다.',
+                  ),
+                  const Gap(16),
+                  _buildFaqItem(
+                    theme,
+                    'Q. 파일은 얼마나 보관되나요?',
+                    'A. 인증 완료 후 자동으로 삭제됩니다.',
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFaqItem(ThemeData theme, String question, String answer) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          question,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Gap(6),
+        Text(
+          answer,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
+        ),
       ],
     );
   }
@@ -423,13 +744,18 @@ class _PaystubVerificationPageState extends State<PaystubVerificationPage> {
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: theme.colorScheme.onPrimary,
           disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: _isUploading
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
               )
             : Text(
                 '인증 신청하기',

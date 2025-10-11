@@ -117,7 +117,7 @@ Future<void> configureDependencies() async {
       () => CommunityRepositoryImpl(getIt()),
     )
     ..registerLazySingleton<SearchCommunity>(() => SearchCommunity(getIt()))
-    ..registerFactory<CommunityFeedCubit>(
+    ..registerLazySingleton<CommunityFeedCubit>(
       () => CommunityFeedCubit(
         repository: getIt(),
         authCubit: getIt(),

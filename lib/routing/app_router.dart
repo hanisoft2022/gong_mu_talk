@@ -31,6 +31,7 @@ import '../features/community/presentation/views/search_page.dart';
 import '../features/profile/presentation/views/profile_page.dart';
 import '../features/profile/presentation/views/member_profile_page.dart';
 import '../features/profile/presentation/views/paystub_verification_page.dart';
+import '../features/profile/presentation/views/paystub_verification_success_page.dart';
 import '../features/profile/presentation/views/government_email_verification_page.dart';
 import '../features/profile/presentation/views/blocked_users_page.dart';
 import '../features/profile/presentation/views/profile_settings_page.dart';
@@ -53,17 +54,40 @@ GoRouter createRouter() {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: CommunityRoute.path,
+    // No initialLocation - let redirect logic determine the correct starting screen
     refreshListenable: GoRouterRefreshStream(authCubit.stream),
     redirect: (context, state) {
       final bool loggedIn = authCubit.state.isLoggedIn;
-      final bool loggingIn = state.matchedLocation == LoginRoute.path;
+      final String location = state.matchedLocation;
 
-      if (!loggedIn) {
-        if (loggingIn) {
-          return null;
+      // ✅ 1. App initial entry: redirect to appropriate starting screen
+      // Only applies to root paths, not to tab switches or direct navigation
+      if (location == '/' || location.isEmpty || location == '/_shell') {
+        return loggedIn ? CommunityRoute.path : CalculatorRoute.path;
+      }
+
+      // ✅ 2. Community & Calculator: Level 0 features (guest access allowed)
+      // - Calculator: Summary data for guests, detailed analysis for verified users
+      // - Community: Read-only for guests with in-page login prompt for write actions
+      if (location.startsWith(CalculatorRoute.path) ||
+          location.startsWith(CommunityRoute.path)) {
+        return null; // Allow access
+      }
+
+      // ✅ 3. Login page: always accessible
+      if (location == LoginRoute.path) {
+        // If already logged in, redirect to target or community
+        if (loggedIn) {
+          final String from = _sanitizeRedirectTarget(
+            state.uri.queryParameters['from'],
+          );
+          return from;
         }
+        return null; // Allow login page access
+      }
 
+      // ✅ 4. Other routes: require login
+      if (!loggedIn) {
         final String target = _resolveRequestedPath(state);
         return Uri(
           path: LoginRoute.path,
@@ -71,13 +95,7 @@ GoRouter createRouter() {
         ).toString();
       }
 
-      if (loggingIn) {
-        final String from = _sanitizeRedirectTarget(
-          state.uri.queryParameters['from'],
-        );
-        return from;
-      }
-
+      // ✅ 5. All checks passed
       return null;
     },
     routes: [
@@ -128,6 +146,12 @@ GoRouter createRouter() {
         path: '${ProfileRoute.path}/verify-paystub',
         name: PaystubVerificationRoute.name,
         builder: (context, state) => const PaystubVerificationPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: '${ProfileRoute.path}/verify-paystub/success',
+        name: PaystubVerificationSuccessRoute.name,
+        builder: (context, state) => const PaystubVerificationSuccessPage(),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
@@ -366,6 +390,13 @@ class PaystubVerificationRoute {
 
   static const String name = 'paystub-verification';
   static const String path = '${ProfileRoute.path}/verify-paystub';
+}
+
+class PaystubVerificationSuccessRoute {
+  const PaystubVerificationSuccessRoute._();
+
+  static const String name = 'paystub-verification-success';
+  static const String path = '${ProfileRoute.path}/verify-paystub/success';
 }
 
 class GovernmentEmailVerificationRoute {

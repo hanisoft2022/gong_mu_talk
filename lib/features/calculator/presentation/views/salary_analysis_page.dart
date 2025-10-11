@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
+import 'package:gong_mu_talk/common/widgets/blurred_content.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/lifetime_salary.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
@@ -9,7 +12,7 @@ import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:gong_mu_talk/features/calculator/presentation/widgets/salary_breakdown_widget.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
-import 'package:gong_mu_talk/features/calculator/presentation/widgets/common/feature_card.dart';
+import 'package:gong_mu_talk/features/auth/presentation/cubit/auth_cubit.dart';
 
 /// 급여 분석 통합 페이지
 ///
@@ -30,44 +33,132 @@ class SalaryAnalysisPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('급여 분석'),
-          centerTitle: true,
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(icon: Icon(Icons.calendar_month), text: '월별 명세'),
-              Tab(icon: Icon(Icons.receipt_long), text: '연봉 명세'),
-              Tab(icon: Icon(Icons.trending_up), text: '연도별 증가'),
-              Tab(icon: Icon(Icons.timeline), text: '생애 시뮬레이션'),
-            ],
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        final currentLevel = authState.currentAccessLevel;
+
+        return DefaultTabController(
+          length: 4,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('급여 분석'),
+              centerTitle: true,
+              bottom: const TabBar(
+                isScrollable: true,
+                tabs: [
+                  Tab(icon: Icon(Icons.calendar_month), text: '월별 명세'),
+                  Tab(icon: Icon(Icons.receipt_long), text: '연봉 명세'),
+                  Tab(icon: Icon(Icons.trending_up), text: '연도별 증가'),
+                  Tab(icon: Icon(Icons.timeline), text: '생애 시뮬레이션'),
+                ],
+              ),
+            ),
+            body: _buildTabBarView(context, currentLevel),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabBarView(BuildContext context, FeatureAccessLevel currentLevel) {
+    return TabBarView(
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        // 탭 1: 월별 급여명세 (Guest: 로그인 필요)
+        _buildMonthlyBreakdownWithAccessControl(context, currentLevel),
+        // 탭 2: 연봉 명세 (Guest: 로그인 필요)
+        _buildAnnualBreakdownWithAccessControl(context, currentLevel),
+        // 탭 3: 연도별 급여 증가 (Guest: 로그인 필요)
+        _buildAnnualGrowthWithAccessControl(context, currentLevel),
+        // 탭 4: 생애 시뮬레이션 (Guest: 로그인+메일, Member: 메일, Email+: 공개)
+        _buildLifetimeSimulationTabWithAccessControl(context, currentLevel),
+      ],
+    );
+  }
+
+  Widget _buildMonthlyBreakdownWithAccessControl(
+    BuildContext context,
+    FeatureAccessLevel currentLevel,
+  ) {
+    if (currentLevel == FeatureAccessLevel.guest) {
+      return BlurredContent(
+        isBlurred: true,
+        blurIntensity: 15.0,
+        onCardTap: () => context.push('/login'),
+        lockMessage: '로그인 후 이용 가능',
+        actionButtonText: '로그인하기',
+        onActionPressed: () => context.push('/login'),
+        child: _MonthlyBreakdownTab(monthlyBreakdown: monthlyBreakdown),
+      );
+    }
+    return _MonthlyBreakdownTab(monthlyBreakdown: monthlyBreakdown);
+  }
+
+  Widget _buildAnnualBreakdownWithAccessControl(
+    BuildContext context,
+    FeatureAccessLevel currentLevel,
+  ) {
+    if (currentLevel == FeatureAccessLevel.guest) {
+      return BlurredContent(
+        isBlurred: true,
+        blurIntensity: 15.0,
+        onCardTap: () => context.push('/login'),
+        lockMessage: '로그인 후 이용 가능',
+        actionButtonText: '로그인하기',
+        onActionPressed: () => context.push('/login'),
+        child: _AnnualBreakdownTab(
+          monthlyBreakdown: monthlyBreakdown,
+          profile: profile,
+          nickname: nickname,
         ),
-        body: TabBarView(
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            // 탭 1: 월별 급여명세
-            _MonthlyBreakdownTab(monthlyBreakdown: monthlyBreakdown),
-            // 탭 2: 연봉 명세 (연간 계산 내역)
-            _AnnualBreakdownTab(
-              monthlyBreakdown: monthlyBreakdown,
-              profile: profile,
-              nickname: nickname,
-            ),
-            // 탭 3: 연도별 급여 증가
-            _AnnualGrowthTab(lifetimeSalary: lifetimeSalary),
-            // 탭 4: 생애 시뮬레이션 (Level 3: careerVerified 필요)
-            FeatureCard(
-              requiredLevel: FeatureAccessLevel.careerVerified,
-              featureName: '30년 생애 시뮬레이션',
-              child: _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary),
-            ),
-          ],
-        ),
-      ),
+      );
+    }
+    return _AnnualBreakdownTab(
+      monthlyBreakdown: monthlyBreakdown,
+      profile: profile,
+      nickname: nickname,
+    );
+  }
+
+  Widget _buildAnnualGrowthWithAccessControl(
+    BuildContext context,
+    FeatureAccessLevel currentLevel,
+  ) {
+    if (currentLevel == FeatureAccessLevel.guest) {
+      return BlurredContent(
+        isBlurred: true,
+        blurIntensity: 15.0,
+        onCardTap: () => context.push('/login'),
+        lockMessage: '로그인 후 이용 가능',
+        actionButtonText: '로그인하기',
+        onActionPressed: () => context.push('/login'),
+        child: _AnnualGrowthTab(lifetimeSalary: lifetimeSalary),
+      );
+    }
+    return _AnnualGrowthTab(lifetimeSalary: lifetimeSalary);
+  }
+
+  Widget _buildLifetimeSimulationTabWithAccessControl(
+    BuildContext context,
+    FeatureAccessLevel currentLevel,
+  ) {
+    final canView = currentLevel >= FeatureAccessLevel.emailVerified;
+
+    if (canView) {
+      return _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary);
+    }
+
+    // Guest와 Member 구분
+    final isGuest = currentLevel == FeatureAccessLevel.guest;
+
+    return BlurredContent(
+      isBlurred: true,
+      blurIntensity: 15.0,
+      onCardTap: () => context.push(isGuest ? '/login' : '/profile'),
+      lockMessage: isGuest ? '로그인 + 공직자 메일 인증 후 이용 가능' : '공직자 메일 인증 또는\n직렬 인증 후 이용 가능합니다',
+      actionButtonText: isGuest ? '로그인하기' : '인증하기',
+      onActionPressed: () => context.push(isGuest ? '/login' : '/profile'),
+      child: _LifetimeSimulationTab(lifetimeSalary: lifetimeSalary),
     );
   }
 }
@@ -1171,11 +1262,7 @@ class _AnnualBreakdownTab extends StatelessWidget {
   final TeacherProfile? profile;
   final String? nickname;
 
-  const _AnnualBreakdownTab({
-    this.monthlyBreakdown,
-    this.profile,
-    this.nickname,
-  });
+  const _AnnualBreakdownTab({this.monthlyBreakdown, this.profile, this.nickname});
 
   @override
   Widget build(BuildContext context) {

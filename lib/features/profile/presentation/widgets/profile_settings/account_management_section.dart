@@ -32,8 +32,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../../core/utils/snackbar_helpers.dart';
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../../routing/app_router.dart';
 import 'settings_section.dart';
 
 /// Account management section with deletion functionality
@@ -83,7 +86,15 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
     );
 
     if (confirmed == true && context.mounted) {
-      await context.read<AuthCubit>().logOut();
+      // Navigate first, before logout (calculator allows guest access)
+      // This prevents GoRouter redirect race condition during auth state change
+      context.go(CalculatorRoute.path);
+
+      // Then perform logout
+      final AuthCubit authCubit = context.read<AuthCubit>();
+      await authCubit.logOut();
+
+      // Note: Logout confirmation message is shown by app_shell.dart's BlocListener
     }
   }
 
@@ -189,12 +200,7 @@ class _AccountManagementSectionState extends State<AccountManagementSection> {
                 final String password = _deletePasswordController.text.trim();
 
                 if (password.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('비밀번호를 입력해주세요.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  SnackbarHelpers.showWarning(context, '비밀번호를 입력해주세요.');
                   return;
                 }
 

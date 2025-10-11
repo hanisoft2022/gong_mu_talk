@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/retirement_benefit.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/early_retirement_bonus.dart';
 import 'package:gong_mu_talk/common/widgets/info_dialog.dart';
+import 'package:gong_mu_talk/common/widgets/blurred_content.dart';
+import 'package:gong_mu_talk/features/calculator/domain/entities/feature_access_level.dart';
+import 'package:gong_mu_talk/features/auth/presentation/cubit/auth_cubit.dart';
 
 /// 퇴직 시 일시금 상세 페이지
 ///
@@ -23,50 +28,227 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
     final totalLumpsum = retirementBenefit.totalBenefit + (earlyRetirementBonus?.totalAmount ?? 0);
     final hasEarlyBonus = earlyRetirementBonus != null && earlyRetirementBonus!.totalAmount > 0;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('퇴직 시 일시금 상세'), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 총액 카드
-            Card(
-              elevation: 4,
-              color: Colors.orange.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        final currentLevel = authState.currentAccessLevel;
+        final canView = currentLevel >= FeatureAccessLevel.emailVerified;
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('퇴직 시 일시금 상세'), centerTitle: true),
+          body: canView
+              ? _buildContent(context, totalLumpsum, hasEarlyBonus)
+              : BlurredContent(
+                  isBlurred: true,
+                  blurIntensity: 12.0,
+                  onCardTap: () {
+                    context.push(currentLevel == FeatureAccessLevel.guest ? '/login' : '/profile');
+                  },
+                  lockMessage: currentLevel == FeatureAccessLevel.guest
+                      ? '로그인 + 공직자 메일 인증 후 이용 가능'
+                      : '공직자 메일 인증 또는\n직렬 인증 후 이용 가능합니다',
+                  actionButtonText: currentLevel == FeatureAccessLevel.guest ? '로그인하기' : '인증하기',
+                  onActionPressed: () {
+                    context.push(currentLevel == FeatureAccessLevel.guest ? '/login' : '/profile');
+                  },
+                  child: _buildContent(context, totalLumpsum, hasEarlyBonus),
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, int totalLumpsum, bool hasEarlyBonus) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 총액 카드
+          Card(
+            elevation: 4,
+            color: Colors.orange.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.diamond, size: 32, color: Colors.orange[800]),
+                      const SizedBox(width: 12),
+                      Text(
+                        '퇴직 시 수령 총액',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[900],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    NumberFormatter.formatCurrency(totalLumpsum),
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[900],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(20),
+          // 퇴직급여 상세
+          _buildSectionHeader(context, '📋 퇴직급여', Colors.orange),
+          const SizedBox(height: 12),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 기간별 퇴직급여
+                  Text(
+                    '기간별 퇴직급여',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (retirementBenefit.period1Years > 0) ...[
+                    _buildPeriodCard(
+                      context,
+                      period: '1기간',
+                      dateRange: '~2009.12.31',
+                      years: retirementBenefit.period1Years,
+                      amount: retirementBenefit.period1Benefit,
+                      baseIncome: retirementBenefit.period1BaseIncome,
+                      explanation: '재직 기간 × 월 보수액',
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  if (retirementBenefit.period2Years > 0) ...[
+                    _buildPeriodCard(
+                      context,
+                      period: '2기간',
+                      dateRange: '2010.1.1~2015.12.31',
+                      years: retirementBenefit.period2Years,
+                      amount: retirementBenefit.period2Benefit,
+                      baseIncome: retirementBenefit.period23BaseIncome,
+                      explanation: '재직 기간 × 월 보수액 × 1/12',
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  if (retirementBenefit.period3Years > 0) ...[
+                    _buildPeriodCard(
+                      context,
+                      period: '3기간',
+                      dateRange: '2016.1.1~',
+                      years: retirementBenefit.period3Years,
+                      amount: retirementBenefit.period3Benefit,
+                      baseIncome: retirementBenefit.period23BaseIncome,
+                      explanation: '재직 기간 × 월 보수액 × 1/12',
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  const Divider(height: 32),
+
+                  // 퇴직수당
+                  InkWell(
+                    onTap: () =>
+                        _showDetailDialog(context, '퇴직수당', retirementBenefit.retirementAllowance),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '퇴직수당',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[900],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.info_outline, size: 16, color: Colors.orange[700]),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '1기간 + (2기간 + 3기간) × 0.6',
+                            style: TextStyle(fontSize: 13, color: Colors.orange[800]),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('금액'),
+                              Text(
+                                NumberFormatter.formatCurrency(
+                                  retirementBenefit.retirementAllowance,
+                                ),
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange[900],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 퇴직급여 총액
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade300, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.diamond, size: 32, color: Colors.orange[800]),
-                        const SizedBox(width: 12),
                         Text(
-                          '퇴직 시 수령 총액',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          '퇴직급여 총액',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          NumberFormatter.formatCurrency(retirementBenefit.totalBenefit),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.orange[900],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      NumberFormatter.formatCurrency(totalLumpsum),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange[900],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const Gap(20),
-            // 퇴직급여 상세
-            _buildSectionHeader(context, '📋 퇴직급여', Colors.orange),
+          ),
+
+          // 명예퇴직금 (있는 경우만)
+          if (hasEarlyBonus) ...[
+            const SizedBox(height: 24),
+            _buildSectionHeader(context, '🎁 명예퇴직금', Colors.purple),
             const SizedBox(height: 12),
 
             Card(
@@ -75,69 +257,42 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 기간별 퇴직급여
-                    Text(
-                      '기간별 퇴직급여',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    _buildInfoRow(context, '명퇴 시점 연령', '${earlyRetirementBonus!.retirementAge}세'),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      context,
+                      '정년까지 잔여기간',
+                      '${earlyRetirementBonus!.remainingYears}년 ${earlyRetirementBonus!.remainingMonths}개월',
                     ),
-                    const SizedBox(height: 16),
-
-                    if (retirementBenefit.period1Years > 0) ...[
-                      _buildPeriodCard(
-                        context,
-                        period: '1기간',
-                        dateRange: '~2009.12.31',
-                        years: retirementBenefit.period1Years,
-                        amount: retirementBenefit.period1Benefit,
-                        baseIncome: retirementBenefit.period1BaseIncome,
-                        explanation: '재직 기간 × 월 보수액',
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    if (retirementBenefit.period2Years > 0) ...[
-                      _buildPeriodCard(
-                        context,
-                        period: '2기간',
-                        dateRange: '2010.1.1~2015.12.31',
-                        years: retirementBenefit.period2Years,
-                        amount: retirementBenefit.period2Benefit,
-                        baseIncome: retirementBenefit.period23BaseIncome,
-                        explanation: '재직 기간 × 월 보수액 × 1/12',
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    if (retirementBenefit.period3Years > 0) ...[
-                      _buildPeriodCard(
-                        context,
-                        period: '3기간',
-                        dateRange: '2016.1.1~',
-                        years: retirementBenefit.period3Years,
-                        amount: retirementBenefit.period3Benefit,
-                        baseIncome: retirementBenefit.period23BaseIncome,
-                        explanation: '재직 기간 × 월 보수액 × 1/12',
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                    const SizedBox(height: 12),
+                    _buildInfoRow(context, '현재 호봉', '${earlyRetirementBonus!.currentGrade}호봉'),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      context,
+                      '기본급',
+                      NumberFormatter.formatCurrency(earlyRetirementBonus!.baseSalary),
+                    ),
 
                     const Divider(height: 32),
 
-                    // 퇴직수당
-                    InkWell(
-                      onTap: () => _showDetailDialog(
+                    // 계산 상세
+                    Text(
+                      '계산 방식',
+                      style: Theme.of(
                         context,
-                        '퇴직수당',
-                        retirementBenefit.retirementAllowance,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
+                      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+
+                    InkWell(
+                      onTap: () =>
+                          _showDetailDialog(context, '기본 명퇴금', earlyRetirementBonus!.baseAmount),
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,34 +300,21 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  '퇴직수당',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
-                                  ),
+                                  '기본 명퇴금 = 기본급 × 잔여기간(개월)',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                                 ),
                                 const SizedBox(width: 4),
-                                Icon(Icons.info_outline, size: 16, color: Colors.orange[700]),
+                                Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '1기간 + (2기간 + 3기간) × 0.6',
-                              style: TextStyle(fontSize: 13, color: Colors.orange[800]),
-                            ),
-                            const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('금액'),
+                                const Text('기본 명퇴금'),
                                 Text(
-                                  NumberFormatter.formatCurrency(
-                                    retirementBenefit.retirementAllowance,
-                                  ),
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
-                                  ),
+                                  NumberFormatter.formatCurrency(earlyRetirementBonus!.baseAmount),
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -181,30 +323,84 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                       ),
                     ),
 
+                    if (earlyRetirementBonus!.bonusAmount > 0) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () => _showDetailDialog(
+                          context,
+                          '가산금 (10% 추가)',
+                          earlyRetirementBonus!.bonusAmount,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '가산금 (55세 이상 10% 추가)',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.purple[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.info_outline, size: 14, color: Colors.purple[600]),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('가산금'),
+                                  Text(
+                                    NumberFormatter.formatCurrency(
+                                      earlyRetirementBonus!.bonusAmount,
+                                    ),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.purple[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 16),
 
-                    // 퇴직급여 총액
+                    // 명예퇴직금 총액
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
+                        color: Colors.purple.shade100,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade300, width: 2),
+                        border: Border.all(color: Colors.purple.shade300, width: 2),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '퇴직급여 총액',
+                            '명예퇴직금 총액',
                             style: Theme.of(
                               context,
                             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            NumberFormatter.formatCurrency(retirementBenefit.totalBenefit),
+                            NumberFormatter.formatCurrency(earlyRetirementBonus!.totalAmount),
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange[900],
+                              color: Colors.purple[900],
                             ),
                           ),
                         ],
@@ -214,215 +410,45 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+          ],
 
-            // 명예퇴직금 (있는 경우만)
-            if (hasEarlyBonus) ...[
-              const SizedBox(height: 24),
-              _buildSectionHeader(context, '🎁 명예퇴직금', Colors.purple),
-              const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+          // 안내 메시지
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoRow(context, '명퇴 시점 연령', '${earlyRetirementBonus!.retirementAge}세'),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(
-                        context,
-                        '정년까지 잔여기간',
-                        '${earlyRetirementBonus!.remainingYears}년 ${earlyRetirementBonus!.remainingMonths}개월',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(context, '현재 호봉', '${earlyRetirementBonus!.currentGrade}호봉'),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(
-                        context,
-                        '기본급',
-                        NumberFormatter.formatCurrency(earlyRetirementBonus!.baseSalary),
-                      ),
-
-                      const Divider(height: 32),
-
-                      // 계산 상세
                       Text(
-                        '계산 방식',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        '안내사항',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[900]),
                       ),
-                      const SizedBox(height: 12),
-
-                      InkWell(
-                        onTap: () => _showDetailDialog(
-                          context,
-                          '기본 명퇴금',
-                          earlyRetirementBonus!.baseAmount,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    '기본 명퇴금 = 기본급 × 잔여기간(개월)',
-                                    style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('기본 명퇴금'),
-                                  Text(
-                                    NumberFormatter.formatCurrency(earlyRetirementBonus!.baseAmount),
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      if (earlyRetirementBonus!.bonusAmount > 0) ...[
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: () => _showDetailDialog(
-                            context,
-                            '가산금 (10% 추가)',
-                            earlyRetirementBonus!.bonusAmount,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '가산금 (55세 이상 10% 추가)',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.purple[700],
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(Icons.info_outline, size: 14, color: Colors.purple[600]),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text('가산금'),
-                                    Text(
-                                      NumberFormatter.formatCurrency(
-                                        earlyRetirementBonus!.bonusAmount,
-                                      ),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.purple[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 16),
-
-                      // 명예퇴직금 총액
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.purple.shade300, width: 2),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '명예퇴직금 총액',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              NumberFormatter.formatCurrency(earlyRetirementBonus!.totalAmount),
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.purple[900],
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• 퇴직급여는 재직 기간에 따라 1~3기간으로 구분되어 계산됩니다.\n'
+                        '• 명예퇴직금은 정년 전 조기 퇴직 시 지급됩니다.\n'
+                        '• 실제 금액은 개인별 상황에 따라 달라질 수 있습니다.',
+                        style: TextStyle(fontSize: 13, color: Colors.blue[800], height: 1.5),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // 안내 메시지
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '안내사항',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[900]),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '• 퇴직급여는 재직 기간에 따라 1~3기간으로 구분되어 계산됩니다.\n'
-                          '• 명예퇴직금은 정년 전 조기 퇴직 시 지급됩니다.\n'
-                          '• 실제 금액은 개인별 상황에 따라 달라질 수 있습니다.',
-                          style: TextStyle(fontSize: 13, color: Colors.blue[800], height: 1.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -540,8 +566,7 @@ class RetirementLumpsumDetailPage extends StatelessWidget {
     if (label.contains('1기간')) {
       description = '2009년 12월 31일 이전 재직 기간에 대한 퇴직급여입니다.\n\n평균보수 × 재직월수 ÷ 12로 계산됩니다.';
     } else if (label.contains('2기간')) {
-      description =
-          '2010년 1월 1일 ~ 2015년 12월 31일 재직 기간에 대한 퇴직급여입니다.\n\n평균보수 × 재직월수 ÷ 12로 계산됩니다.';
+      description = '2010년 1월 1일 ~ 2015년 12월 31일 재직 기간에 대한 퇴직급여입니다.\n\n평균보수 × 재직월수 ÷ 12로 계산됩니다.';
     } else if (label.contains('3기간')) {
       description = '2016년 1월 1일 이후 재직 기간에 대한 퇴직급여입니다.\n\n평균보수 × 재직월수 ÷ 12로 계산됩니다.';
     } else if (label.contains('퇴직수당')) {

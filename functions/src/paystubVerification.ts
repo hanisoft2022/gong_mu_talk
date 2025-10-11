@@ -19,6 +19,13 @@ type VerificationResult = {
   errorMessage?: string;
 };
 
+type PdfValidationResult = {
+  isValid: boolean;
+  confidence: number;
+  errors: string[];
+  warnings: string[];
+};
+
 // 계층적 직렬 키워드 매칭 시스템
 const ENHANCED_TRACK_KEYWORDS: Array<{
   track: string;
@@ -799,6 +806,35 @@ export const handlePaystubUpload = onObjectFinalized(
 
     try {
       console.log(`Processing paystub upload for ${uid}: ${filePath}`);
+
+      // Check failure counter before processing
+      const db = getFirestore();
+      const verificationDoc = await db.doc(docPath).get();
+      const verificationData = verificationDoc.data();
+      const failureCount = verificationData?.failureCount || 0;
+      const lastFailedAt = verificationData?.lastFailedAt?.toDate();
+
+      if (failureCount >= 5 && lastFailedAt) {
+        const hoursSinceLastFail =
+          (Date.now() - lastFailedAt.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceLastFail < 24) {
+          await markVerification(docPath, {
+            status: "failed",
+            detectedKeywords: [],
+            errorMessage: `인증 실패 횟수 초과(5회). ${Math.ceil(
+              24 - hoursSinceLastFail
+            )}시간 후 다시 시도해주세요.`,
+          });
+          return;
+        }
+        // Reset counter after 24 hours
+        await db.doc(docPath).update({
+          failureCount: 0,
+          lastFailedAt: null,
+        });
+      }
+
       const [buffer] = await file.download();
       const text = await extractTextFromFile(
         buffer,
@@ -811,6 +847,32 @@ export const handlePaystubUpload = onObjectFinalized(
           errorMessage: "문서에서 텍스트를 추출하지 못했습니다.",
         });
         return;
+      }
+
+      // Validate NEIS PDF
+      const pdfValidation = await validateNeisPdf(buffer, text);
+      if (!pdfValidation.isValid) {
+        const errorMsg = pdfValidation.errors.join(" ");
+        console.log("PDF validation failed", {
+          confidence: pdfValidation.confidence,
+          errors: pdfValidation.errors,
+          warnings: pdfValidation.warnings,
+        });
+
+        await markVerification(docPath, {
+          status: "failed",
+          detectedKeywords: [],
+          errorMessage: errorMsg,
+        });
+        return;
+      }
+
+      // Log validation success with warnings if any
+      if (pdfValidation.warnings.length > 0) {
+        console.log("PDF validation passed with warnings", {
+          confidence: pdfValidation.confidence,
+          warnings: pdfValidation.warnings,
+        });
       }
 
       const result = detectCareerTrack(text);
@@ -826,11 +888,123 @@ export const handlePaystubUpload = onObjectFinalized(
       await markVerification(docPath, {
         status: "failed",
         detectedKeywords: [],
-        errorMessage: "문서를 분석하는 중 오류가 발생했습니다.",
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "문서를 분석하는 중 오류가 발생했습니다.",
       });
     }
   }
 );
+
+/**
+ * Validate NEIS PDF with score-based multi-layer verification
+ *
+ * @param {Buffer} buffer PDF file buffer
+ * @param {string} text Extracted text from PDF
+ * @return {Promise<PdfValidationResult>} Validation result with confidence score
+ */
+async function validateNeisPdf(
+  buffer: Buffer,
+  text: string
+): Promise<PdfValidationResult> {
+  let confidence = 0;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  try {
+    const pdfData = await pdfParse(buffer);
+
+    // 1. Producer Check (40 points) - Required
+    const producer = pdfData.info?.Producer || "";
+    if (producer === "iText 4.2.0 by 1T3XT") {
+      confidence += 40;
+    } else if (producer.includes("iText")) {
+      confidence += 20;
+      warnings.push(`iText 버전 불일치: ${producer}`);
+    } else {
+      errors.push("나이스(NEIS)에서 다운로드한 원본 PDF만 제출 가능합니다.");
+      return {isValid: false, confidence: 0, errors, warnings};
+    }
+
+    // 2. CreationDate == ModDate (30 points) - Required
+    const creationDate = pdfData.info?.CreationDate || "";
+    const modDate = pdfData.info?.ModDate || "";
+
+    if (creationDate && modDate && creationDate === modDate) {
+      confidence += 30;
+    } else {
+      errors.push(
+        "PDF가 수정되었습니다. 편집하지 않은 원본을 제출해주세요."
+      );
+      return {isValid: false, confidence, errors, warnings};
+    }
+
+    // 3. Watermark Pattern (20 points) - Required
+    // Pattern: {기관명}/{날짜} {시각}/{IP}/{성명}
+    const watermarkPattern =
+      /^(.+?)\/(\d{4}\.\d{2}\.\d{2})\s+(\d{2}:\d{2})\/(.+?)\/(.+)$/m;
+    const watermarkMatch = text.match(watermarkPattern);
+
+    if (watermarkMatch) {
+      confidence += 20;
+
+      // 4. Time Cross-Validation (10 points bonus)
+      try {
+        // Parse watermark time
+        const watermarkDateStr = watermarkMatch[2]; // YYYY.MM.DD
+        const watermarkTimeStr = watermarkMatch[3]; // HH:MM
+        const [year, month, day] = watermarkDateStr.split(".").map(Number);
+        const [hour, minute] = watermarkTimeStr.split(":").map(Number);
+        const watermarkTime = new Date(year, month - 1, day, hour, minute);
+
+        // Parse PDF creation time (D:YYYYMMDDHHmmss+TZ)
+        const pdfTimeMatch = creationDate.match(
+          /D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/
+        );
+        if (pdfTimeMatch) {
+          const pdfTime = new Date(
+            parseInt(pdfTimeMatch[1]), // year
+            parseInt(pdfTimeMatch[2]) - 1, // month (0-indexed)
+            parseInt(pdfTimeMatch[3]), // day
+            parseInt(pdfTimeMatch[4]), // hour
+            parseInt(pdfTimeMatch[5]), // minute
+            parseInt(pdfTimeMatch[6]) // second
+          );
+
+          const timeDiffMinutes = Math.abs(
+            (pdfTime.getTime() - watermarkTime.getTime()) / (1000 * 60)
+          );
+
+          if (timeDiffMinutes <= 60) {
+            // Within 1 hour
+            confidence += 10;
+          } else if (timeDiffMinutes <= 180) {
+            // Within 3 hours
+            confidence += 5;
+            warnings.push(
+              `다운로드까지 ${Math.floor(timeDiffMinutes)}분 소요되었습니다.`
+            );
+          }
+          // Beyond 3 hours: no bonus points, but still valid
+        }
+      } catch (timeError) {
+        // Time validation error doesn't fail the entire check
+        warnings.push("시간 검증 중 오류 발생 (선택 검증 항목)");
+      }
+    } else {
+      errors.push("나이스(NEIS) 워터마크가 없습니다.");
+      return {isValid: false, confidence, errors, warnings};
+    }
+
+    // Pass threshold: 70+ points
+    const isValid = confidence >= 70 && errors.length === 0;
+    return {isValid, confidence, errors, warnings};
+  } catch (error) {
+    errors.push("PDF 메타데이터를 읽을 수 없습니다.");
+    return {isValid: false, confidence: 0, errors, warnings};
+  }
+}
 
 /**
  * Extract raw text from a PDF or image buffer.
@@ -843,15 +1017,13 @@ async function extractTextFromFile(
   buffer: Buffer,
   contentType: string
 ): Promise<string> {
-  if (contentType.includes("pdf")) {
-    const data = await pdfParse(buffer);
-    return (data && data.text) || "";
+  // PDF-only validation
+  if (!contentType.includes("pdf")) {
+    throw new Error("PDF 파일만 업로드 가능합니다.");
   }
 
-  const [result] = await visionClient.textDetection({
-    image: {content: buffer},
-  });
-  return result.fullTextAnnotation?.text ?? "";
+  const data = await pdfParse(buffer);
+  return (data && data.text) || "";
 }
 
 /**
@@ -1585,17 +1757,26 @@ async function markVerification(
 ) {
   const db = getFirestore();
 
-  await db.doc(path).set(
-    {
-      status: result.status,
-      detectedTrack:
-        result.status === "verified" ? result.detectedTrack ?? null : null,
-      detectedKeywords: result.detectedKeywords,
-      errorMessage: result.errorMessage ?? null,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
+  const updateData: any = {
+    status: result.status,
+    detectedTrack:
+      result.status === "verified" ? result.detectedTrack ?? null : null,
+    detectedKeywords: result.detectedKeywords,
+    errorMessage: result.errorMessage ?? null,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+
+  // Handle failure counter
+  if (result.status === "failed") {
+    updateData.failureCount = FieldValue.increment(1);
+    updateData.lastFailedAt = FieldValue.serverTimestamp();
+  } else if (result.status === "verified") {
+    // Reset counter on success
+    updateData.failureCount = 0;
+    updateData.lastFailedAt = null;
+  }
+
+  await db.doc(path).set(updateData, {merge: true});
 
   // 인증 성공 시 사용자 프로필 업데이트
   if (result.status === "verified" && result.detectedTrack) {

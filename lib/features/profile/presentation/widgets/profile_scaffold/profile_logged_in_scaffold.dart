@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/utils/snackbar_helpers.dart';
 import '../../../../../routing/app_router.dart';
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../profile_overview/profile_overview_tab.dart';
@@ -30,7 +31,7 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
   DateTime? _lastMessageTime;
 
   /// Shows message with debouncing to prevent duplicate snackbars
-  void _showMessageIfDifferent(BuildContext context, String message) {
+  void _showMessageIfDifferent(BuildContext context, String message, {bool isError = false}) {
     final now = DateTime.now();
 
     // 같은 메시지를 1초 이내에 연속으로 표시하지 않음
@@ -40,17 +41,12 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
       return;
     }
 
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    scaffoldMessenger.clearSnackBars(); // 큐의 모든 스낵바 제거
-    scaffoldMessenger.removeCurrentSnackBar(); // 현재 스낵바도 제거
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Use SnackbarHelpers for consistent styling
+    if (isError) {
+      SnackbarHelpers.showError(context, message);
+    } else {
+      SnackbarHelpers.showSuccess(context, message);
+    }
 
     _lastShownMessage = message;
     _lastMessageTime = now;
@@ -67,7 +63,7 @@ class _ProfileLoggedInScaffoldState extends State<ProfileLoggedInScaffold> {
         if (message == null) {
           return;
         }
-        _showMessageIfDifferent(context, message);
+        _showMessageIfDifferent(context, message, isError: state.authError != null);
         context.read<AuthCubit>().clearLastMessage();
       },
       child: Scaffold(

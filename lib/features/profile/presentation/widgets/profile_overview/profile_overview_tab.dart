@@ -110,10 +110,10 @@ class _ProfileOverviewTabState extends State<ProfileOverviewTab>
                         if (hasUserId) ...[
                           // Show email verification card only if neither email nor career is verified
                           if (!state.isGovernmentEmailVerified && !state.isCareerTrackVerified) ...[
-                            const Gap(16),
+                            const Gap(8),
                             const GovernmentEmailVerificationCard(),
                           ],
-                          const Gap(16),
+                          const Gap(8),
                           PaystubVerificationCard(uid: state.userId!),
                         ],
                       ],
@@ -166,15 +166,8 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: _tabBar,
-    );
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: Theme.of(context).scaffoldBackgroundColor, child: _tabBar);
   }
 
   @override

@@ -39,7 +39,11 @@ class LockedFeatureView extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final message = customMessage ?? _generateMessage();
     final buttonText = _getButtonText();
-    final route = requiredLevel.verificationRoute;
+
+    // 현재 레벨이 guest/member이면 로그인 페이지로, 아니면 인증 페이지로
+    final route = currentLevel <= FeatureAccessLevel.member
+        ? '/login'
+        : requiredLevel.verificationRoute;
 
     return Center(
       child: Padding(
@@ -83,9 +87,15 @@ class LockedFeatureView extends StatelessWidget {
 
   /// 레벨별 메시지 자동 생성
   String _generateMessage() {
+    // 현재 레벨이 guest/member인 경우, 무조건 로그인 유도
+    if (currentLevel <= FeatureAccessLevel.member) {
+      return '로그인하시면 $featureName을 비롯한\n다양한 기능을 이용하실 수 있습니다';
+    }
+
+    // 이미 로그인했으면 required level에 맞는 메시지
     return switch (requiredLevel) {
       FeatureAccessLevel.guest || FeatureAccessLevel.member =>
-        '$featureName 기능은\n회원만 이용할 수 있습니다',
+        '로그인하시면 $featureName을 비롯한\n다양한 기능을 이용하실 수 있습니다',
       FeatureAccessLevel.emailVerified =>
         '$featureName 기능은\n공직자 메일 인증 후 이용할 수 있습니다\n\n💡 직렬 인증(급여명세서)을 완료하시면\n메일 인증 없이도 바로 이용 가능합니다',
       FeatureAccessLevel.careerVerified =>
@@ -95,6 +105,12 @@ class LockedFeatureView extends StatelessWidget {
 
   /// 버튼 텍스트 생성
   String _getButtonText() {
+    // 현재 레벨이 guest/member인 경우, 무조건 로그인 버튼
+    if (currentLevel <= FeatureAccessLevel.member) {
+      return '로그인하기';
+    }
+
+    // 이미 로그인했으면 required level에 맞는 버튼
     return switch (requiredLevel) {
       FeatureAccessLevel.guest || FeatureAccessLevel.member => '로그인하기',
       FeatureAccessLevel.emailVerified => '지금 인증하기',

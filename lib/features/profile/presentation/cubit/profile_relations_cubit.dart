@@ -74,16 +74,18 @@ class ProfileRelationsCubit extends Cubit<ProfileRelationsState> {
   QueryDocumentSnapshotJson? _cursor;
   bool _isFetching = false;
   ProfileRelationType _currentType = ProfileRelationType.followers;
+  String? _targetUid; // Track which user's relations we're viewing
   static const int _pageSize = 20;
 
-  Future<void> load(ProfileRelationType type) async {
+  Future<void> load(ProfileRelationType type, {String? targetUid}) async {
     if (_isFetching) {
       return;
     }
     _currentType = type;
     _cursor = null;
 
-    final String? uid = _authCubit.state.userId;
+    // Use targetUid if provided, otherwise use current user's uid
+    final String? uid = targetUid ?? _authCubit.state.userId;
     if (uid == null) {
       emit(
         state.copyWith(
@@ -98,6 +100,7 @@ class ProfileRelationsCubit extends Cubit<ProfileRelationsState> {
       return;
     }
 
+    _targetUid = uid; // Store target uid for pagination
     _isFetching = true;
     emit(
       state.copyWith(
@@ -147,7 +150,8 @@ class ProfileRelationsCubit extends Cubit<ProfileRelationsState> {
       return;
     }
 
-    final String? uid = _authCubit.state.userId;
+    // Use stored target uid for refresh
+    final String? uid = _targetUid ?? _authCubit.state.userId;
     if (uid == null) {
       emit(
         state.copyWith(
@@ -197,7 +201,8 @@ class ProfileRelationsCubit extends Cubit<ProfileRelationsState> {
       return;
     }
 
-    final String? uid = _authCubit.state.userId;
+    // Use stored target uid for loadMore
+    final String? uid = _targetUid ?? _authCubit.state.userId;
     if (uid == null) {
       return;
     }

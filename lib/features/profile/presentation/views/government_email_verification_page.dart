@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class GovernmentEmailVerificationPage extends StatefulWidget {
@@ -26,13 +27,7 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
   final TextEditingController _emailController = TextEditingController();
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackbarHelpers.showInfo(context, message);
   }
 
   @override
@@ -71,7 +66,7 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('✅', style: TextStyle(fontSize: 80)),
+                    const Text('🎉', style: TextStyle(fontSize: 80)),
                     const Gap(24),
                     Text(
                       '공직자 통합 메일 인증 완료',
@@ -80,14 +75,7 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
                         color: colorScheme.primary,
                       ),
                     ),
-                    const Gap(12),
-                    Text(
-                      '확장 기능을 모두 이용할 수 있습니다.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+
                     const Gap(32),
                     FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
@@ -107,9 +95,11 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 직렬 인증 안내 카드
+                  _buildCareerTrackHintCard(theme, colorScheme),
                   // 헤더 섹션
                   const Center(child: Text('✉️', style: TextStyle(fontSize: 64))),
-                  const Gap(16),
+                  const Gap(8),
                   Center(
                     child: Text(
                       '공직자 통합 메일 인증',
@@ -119,25 +109,21 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
                   const Gap(8),
                   Center(
                     child: Text(
-                      '커뮤니티, 매칭 등 확장 기능을 이용하세요',
+                      '커뮤니티, 계산기 상세 분석 등 확장 기능을 이용하세요',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
-                  const Gap(32),
+                  const Gap(8),
 
                   // 혜택 안내 카드
                   _buildBenefitsCard(theme, colorScheme),
-                  const Gap(24),
+                  const Gap(8),
 
                   // 인증 방법 안내 카드
                   _buildMethodsCard(theme, colorScheme),
-                  const Gap(24),
-
-                  // 직렬 인증 안내 카드
-                  _buildCareerTrackHintCard(theme, colorScheme),
-                  const Gap(32),
+                  const Gap(8),
 
                   // 이메일 입력 폼
                   Text(
@@ -216,11 +202,7 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
               ],
             ),
             const Gap(12),
-            _buildBenefitItem(
-              emoji: '💬',
-              title: '라운지 글/댓글 작성',
-              description: '전체 라운지와 직렬별 라운지에서 자유롭게 소통',
-            ),
+            _buildBenefitItem(emoji: '💬', title: '라운지 글/댓글 작성', description: '전체 라운지에서 자유롭게 소통'),
             const Gap(8),
             _buildBenefitItem(
               emoji: '📊',
@@ -231,7 +213,7 @@ class _GovernmentEmailVerificationPageState extends State<GovernmentEmailVerific
             _buildBenefitItem(
               emoji: '👥',
               title: '커뮤니티 확장 기능',
-              description: '프로필, 팔로우, 매칭 등 다양한 커뮤니티 기능',
+              description: '프로필, 팔로우 등 다양한 커뮤니티 기능',
             ),
           ],
         ),

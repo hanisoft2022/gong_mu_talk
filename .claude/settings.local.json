@@ -133,7 +133,16 @@
       "Bash(wc:*)",
       "mcp__firebase__firebase_get_environment",
       "mcp__firebase__firebase_get_project",
-      "mcp__memory__create_entities"
+      "mcp__memory__create_entities",
+      "mcp__serena__write_memory",
+      "mcp__memory__read_graph",
+      "mcp__memory__open_nodes",
+      "mcp__memory__delete_observations",
+      "Bash(firebase firestore:rules:*)",
+      "Bash(firebase firestore:rules:list:*)",
+      "mcp__firebase__firestore_get_documents",
+      "mcp__firebase__firestore_query_collection",
+      "mcp__firebase__firebase_get_security_rules"
     ],
     "deny": [
       "Read(./node_modules/**)",

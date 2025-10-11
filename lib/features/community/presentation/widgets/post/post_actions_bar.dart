@@ -22,12 +22,16 @@ class PostActionsBar extends StatelessWidget {
     required this.onLikeTap,
     required this.onCommentTap,
     required this.trailingActions,
+    this.canLike = true,
+    this.onDisabledLikeTap,
   });
 
   final Post post;
   final VoidCallback onLikeTap;
   final VoidCallback onCommentTap;
   final Widget? trailingActions;
+  final bool canLike;
+  final VoidCallback? onDisabledLikeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +42,9 @@ class PostActionsBar extends StatelessWidget {
           icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
           label: formatCompactNumber(post.likeCount),
           isHighlighted: post.isLiked,
-          onPressed: onLikeTap,
+          onPressed: canLike ? onLikeTap : onDisabledLikeTap,
           highlightColor: Colors.pink[400],
+          isDisabled: !canLike,
         ),
         const Gap(12),
 
@@ -69,6 +74,7 @@ class PostActionButton extends StatelessWidget {
     this.isHighlighted = false,
     this.highlightColor,
     this.alwaysGray = false,
+    this.isDisabled = false,
   });
 
   final IconData icon;
@@ -77,6 +83,7 @@ class PostActionButton extends StatelessWidget {
   final bool isHighlighted;
   final Color? highlightColor;
   final bool alwaysGray;
+  final bool isDisabled;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +91,9 @@ class PostActionButton extends StatelessWidget {
 
     // Determine color based on state and value
     final Color iconColor;
-    if (alwaysGray) {
+    if (isDisabled) {
+      iconColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+    } else if (alwaysGray) {
       iconColor = colorScheme.onSurfaceVariant;
     } else if (isHighlighted) {
       iconColor = highlightColor ?? colorScheme.primary;

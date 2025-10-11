@@ -9,7 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gap/gap.dart';
+
 import 'package:go_router/go_router.dart';
 
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
@@ -62,11 +62,7 @@ class GovernmentEmailVerificationCard extends StatelessWidget {
             title: '공직자 메일 인증 필요',
             subtitle: '커뮤니티 기능 이용을 위해 인증하세요',
             onTap: () => context.push(verificationRoute),
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            trailing: Icon(Icons.arrow_forward_ios, size: 16, color: colorScheme.onSurfaceVariant),
           );
         }
 
@@ -110,29 +106,6 @@ class GovernmentEmailVerificationCard extends StatelessWidget {
                 Icons.arrow_forward_ios,
                 size: 16,
                 color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Gap(12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Text('💡', style: TextStyle(fontSize: 18)),
-                  const Gap(8),
-                  Expanded(
-                    child: Text(
-                      '직렬 인증을 완료하시면 메일 인증 없이도 바로 커뮤니티를 이용하실 수 있습니다',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

@@ -72,12 +72,10 @@ service cloud.firestore {
     // 4-Level Access Control: Lounge Write Access
     // Level 2+ required (emailVerified OR careerTrackVerified)
     function hasLoungeWriteAccess() {
-      if (!isSignedIn()) {
-        return false;
-      }
-      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return userData.get('emailVerified', false) == true ||
-             userData.get('careerTrackVerified', false) == true;
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('emailVerified', false) == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('careerTrackVerified', false) == true
+      );
     }
 
     function isValidPaystubClientWrite(data) {
@@ -110,15 +108,26 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();       // 개별 사용자 조회 허용
       allow list: if false;             // 🔒 전체 목록 조회 차단 (대량 수집 방지)
-      allow create, update: if isOwner(userId);
+      allow create: if isOwner(userId);
       allow delete: if isOwner(userId);
+
+      // 본인 문서 전체 업데이트
+      allow update: if isOwner(userId);
+
+      // 팔로우 시스템: 다른 사용자가 followerCount 업데이트 가능 (팔로우 받을 때)
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'updatedAt']);
+
+      // 팔로우 시스템: 다른 사용자가 followingCount 업데이트 가능 (언팔로우할 때)
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount', 'updatedAt']);
 
       match /badges/{badgeId} {
         allow read: if isSignedIn();
         allow create, update, delete: if isOwner(userId);
       }
 
-match /notifications/{notificationId} {
+      match /notifications/{notificationId} {
         allow read: if isOwner(userId);
         allow create: if isSignedIn() &&
           isValidNotificationCreate(request.resource.data);
@@ -173,7 +182,7 @@ match /notifications/{notificationId} {
       allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
-match /government_email_index/{docId} {
+    match /government_email_index/{docId} {
       allow get: if isSignedIn();
       allow list: if false;  // 🔒 대량 조회 차단
       allow create, update: if isSignedIn() &&
@@ -201,6 +210,13 @@ match /government_email_index/{docId} {
       allow get, list, read: if isSignedIn();
       allow create: if hasLoungeWriteAccess();  // Level 2+ (emailVerified or careerTrackVerified)
       allow update: if isSignedIn() && resource.data.authorUid == request.auth.uid;  // 본인 글만 수정 가능
+      // Allow anyone to update likeCount, commentCount, viewCount, and updatedAt (for interactions)
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'updatedAt']);
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'updatedAt']);
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'updatedAt']);
       allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;  // 본인 글만 삭제 가능 (authorId → authorUid 수정)
 
       match /comments/{commentId} {
@@ -213,16 +229,14 @@ match /government_email_index/{docId} {
       match /comment_likes/{docId} {
         allow read: if isSignedIn();
         // docId format: {commentId}_{uid}
-        allow create: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
-        allow update, delete: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
+        allow write: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
       }
     }
 
     match /likes/{docId} {
       allow read: if isSignedIn();
       // docId format: {postId}_{uid}
-      allow create: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
-      allow update, delete: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
+      allow write: if isSignedIn() && docId.matches('.*_' + request.auth.uid + '$');
     }
 
     match /post_counters/{postId} {

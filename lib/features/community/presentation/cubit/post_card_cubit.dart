@@ -22,16 +22,20 @@ class PostCardCubit extends Cubit<PostCardState> {
     required CommunityRepository repository,
     required String postId,
     required int initialCommentCount,
+    String? currentUid,
   }) : _repository = repository,
        _postId = postId,
+       _currentUid = currentUid,
        super(PostCardState.initial(commentCount: initialCommentCount));
 
   final CommunityRepository _repository;
   final String _postId;
+  final String? _currentUid;
 
   /// Load comments for the post
   ///
   /// Loads both featured (top) and timeline comments.
+  /// Filters out comments from blocked users.
   /// Featured comment criteria:
   /// - Total comments >= 3
   /// - Top comment likeCount >= 3
@@ -46,14 +50,30 @@ class PostCardCubit extends Cubit<PostCardState> {
     emit(state.copyWith(isLoadingComments: true, clearError: true));
 
     try {
+      // Get blocked user IDs if logged in
+      Set<String> blockedUserIds = {};
+      if (_currentUid != null) {
+        try {
+          blockedUserIds = await _repository.getBlockedUserIds(_currentUid);
+        } catch (e) {
+          debugPrint('⚠️ Failed to load blocked users: $e');
+          // Continue without filtering if blocked list fails
+        }
+      }
+
       // Fetch featured (top) and timeline comments in parallel
       final results = await Future.wait([
         _repository.getTopComments(_postId, limit: 1),
         _repository.getComments(_postId),
       ]);
 
-      final List<Comment> featured = results[0];
-      final List<Comment> timeline = results[1];
+      // Filter out comments from blocked users
+      final List<Comment> featured = results[0]
+          .where((c) => !blockedUserIds.contains(c.authorUid))
+          .toList();
+      final List<Comment> timeline = results[1]
+          .where((c) => !blockedUserIds.contains(c.authorUid))
+          .toList();
 
       // Merge featured comments into timeline to ensure consistency
       final Set<String> featuredIds = featured.map((c) => c.id).toSet();
@@ -69,9 +89,7 @@ class PostCardCubit extends Cubit<PostCardState> {
 
       // Apply featured comment criteria
       final bool canShowFeatured =
-          timeline.length >= 3 &&
-          featured.isNotEmpty &&
-          featured.first.likeCount >= 3;
+          timeline.length >= 3 && featured.isNotEmpty && featured.first.likeCount >= 3;
 
       emit(
         state.copyWith(
@@ -86,12 +104,7 @@ class PostCardCubit extends Cubit<PostCardState> {
       debugPrint('❌ Error loading comments for post $_postId: $e');
       debugPrint('Stack trace: $stackTrace');
 
-      emit(
-        state.copyWith(
-          isLoadingComments: false,
-          error: '댓글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isLoadingComments: false, error: '댓글을 불러오지 못했어요. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -103,10 +116,7 @@ class PostCardCubit extends Cubit<PostCardState> {
   /// After successful submission:
   /// - Increments comment count
   /// - Reloads comments automatically
-  Future<void> submitComment(
-    String text, {
-    List<String> imageUrls = const [],
-  }) async {
+  Future<void> submitComment(String text, {List<String> imageUrls = const []}) async {
     final String trimmedText = text.trim();
 
     // Validate comment content
@@ -134,12 +144,7 @@ class PostCardCubit extends Cubit<PostCardState> {
       debugPrint('❌ Error submitting comment for post $_postId: $e');
 
       // Don't reload comments on error
-      emit(
-        state.copyWith(
-          isSubmittingComment: false,
-          error: '댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.',
-        ),
-      );
+      emit(state.copyWith(isSubmittingComment: false, error: '댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요.'));
     }
   }
 
@@ -154,10 +159,7 @@ class PostCardCubit extends Cubit<PostCardState> {
     final int nextCount = max(0, comment.likeCount + (willLike ? 1 : -1));
 
     // Optimistic update - immediately reflect in UI
-    _updateCommentInLists(
-      comment.id,
-      comment.copyWith(isLiked: willLike, likeCount: nextCount),
-    );
+    _updateCommentInLists(comment.id, comment.copyWith(isLiked: willLike, likeCount: nextCount));
 
     try {
       await _repository.toggleCommentLikeById(_postId, comment.id);
@@ -204,10 +206,7 @@ class PostCardCubit extends Cubit<PostCardState> {
       final String originalText = comment.text;
 
       // Optimistic UI update - mark as deleted immediately
-      _updateCommentInLists(
-        comment.id,
-        comment.copyWith(deleted: true, text: '[삭제된 댓글]'),
-      );
+      _updateCommentInLists(comment.id, comment.copyWith(deleted: true, text: '[삭제된 댓글]'));
 
       // Call repository to soft delete
       await _repository.deleteComment(
@@ -225,9 +224,7 @@ class PostCardCubit extends Cubit<PostCardState> {
 
       // Rollback optimistic update on error
       _updateCommentInLists(comment.id, comment);
-      emit(state.copyWith(
-        error: '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      ));
+      emit(state.copyWith(error: '댓글 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.'));
 
       return null;
     }
@@ -236,18 +233,12 @@ class PostCardCubit extends Cubit<PostCardState> {
   /// Undo comment deletion (restore)
   ///
   /// Restores a deleted comment. Firebase Functions will handle commentCount increment.
-  Future<void> undoDeleteComment(
-    String commentId,
-    String requesterUid,
-    String originalText,
-  ) async {
+  Future<void> undoDeleteComment(String commentId, String requesterUid, String originalText) async {
     try {
       // Find the deleted comment
       Comment? deletedComment;
       try {
-        deletedComment = state.timelineComments.firstWhere(
-          (c) => c.id == commentId,
-        );
+        deletedComment = state.timelineComments.firstWhere((c) => c.id == commentId);
       } catch (e) {
         deletedComment = null;
       }
@@ -258,10 +249,7 @@ class PostCardCubit extends Cubit<PostCardState> {
       }
 
       // Optimistic UI update - restore immediately
-      _updateCommentInLists(
-        commentId,
-        deletedComment.copyWith(deleted: false, text: originalText),
-      );
+      _updateCommentInLists(commentId, deletedComment.copyWith(deleted: false, text: originalText));
 
       // Call repository to restore
       await _repository.undoDeleteComment(
@@ -279,20 +267,13 @@ class PostCardCubit extends Cubit<PostCardState> {
       // Rollback - mark as deleted again
       Comment? comment;
       try {
-        comment = state.timelineComments.firstWhere(
-          (c) => c.id == commentId,
-        );
-        _updateCommentInLists(
-          commentId,
-          comment.copyWith(deleted: true, text: '[삭제된 댓글]'),
-        );
+        comment = state.timelineComments.firstWhere((c) => c.id == commentId);
+        _updateCommentInLists(commentId, comment.copyWith(deleted: true, text: '[삭제된 댓글]'));
       } catch (e) {
         // Comment not found in list, ignore rollback
       }
 
-      emit(state.copyWith(
-        error: '댓글 복구에 실패했습니다.',
-      ));
+      emit(state.copyWith(error: '댓글 복구에 실패했습니다.'));
     }
   }
 
@@ -311,11 +292,6 @@ class PostCardCubit extends Cubit<PostCardState> {
         .map((c) => c.id == commentId ? updatedComment : c)
         .toList();
 
-    emit(
-      state.copyWith(
-        timelineComments: updatedTimeline,
-        featuredComments: updatedFeatured,
-      ),
-    );
+    emit(state.copyWith(timelineComments: updatedTimeline, featuredComments: updatedFeatured));
   }
 }

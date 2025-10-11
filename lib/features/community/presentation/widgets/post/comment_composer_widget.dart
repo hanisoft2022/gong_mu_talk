@@ -78,10 +78,7 @@ class CommentComposer extends StatelessWidget {
                   onPressed: enabled ? onPickImages : onDisabledTap,
                   tooltip: '이미지 첨부',
                   padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(
-                    minHeight: 32,
-                    minWidth: 32,
-                  ),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
                   visualDensity: VisualDensity.compact,
                 ),
                 // Submit button
@@ -93,13 +90,12 @@ class CommentComposer extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send_rounded, size: 20),
-                  onPressed: enabled && canSubmit && !isSubmitting ? onSubmit : (!enabled ? onDisabledTap : null),
+                  onPressed: enabled && canSubmit && !isSubmitting
+                      ? onSubmit
+                      : (!enabled ? onDisabledTap : null),
                   tooltip: '댓글 등록',
                   padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(
-                    minHeight: 32,
-                    minWidth: 32,
-                  ),
+                  constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
                   visualDensity: VisualDensity.compact,
                 ),
               ],
@@ -117,9 +113,7 @@ class CommentComposer extends StatelessWidget {
               itemCount: selectedImages.length,
               itemBuilder: (context, index) {
                 return Container(
-                  margin: EdgeInsets.only(
-                    right: index < selectedImages.length - 1 ? 8 : 0,
-                  ),
+                  margin: EdgeInsets.only(right: index < selectedImages.length - 1 ? 8 : 0),
                   width: 72,
                   height: 72,
                   child: Stack(
@@ -145,11 +139,7 @@ class CommentComposer extends StatelessWidget {
                               color: Colors.black.withValues(alpha: 0.7),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 12,
-                            ),
+                            child: const Icon(Icons.close, color: Colors.white, size: 12),
                           ),
                         ),
                       ),
@@ -169,10 +159,7 @@ class CommentComposer extends StatelessWidget {
               SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: uploadProgress,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, value: uploadProgress),
               ),
               const Gap(8),
               Text('업로드 중... ${(uploadProgress * 100).toInt()}%'),
@@ -181,12 +168,8 @@ class CommentComposer extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: uploadProgress,
                   minHeight: 2,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary,
-                  ),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                 ),
               ),
             ],

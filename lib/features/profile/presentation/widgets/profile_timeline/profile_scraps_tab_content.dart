@@ -5,7 +5,7 @@ import 'package:gap/gap.dart';
 import '../../../../community/domain/models/post.dart';
 import '../../../../community/presentation/cubit/scrap_cubit.dart';
 import '../../../../community/presentation/widgets/post_card.dart';
-import '../../../../../common/widgets/scrap_undo_snackbar.dart';
+import '../../../../../core/utils/snackbar_helpers.dart';
 
 /// Tab content for user's scrapped posts.
 ///
@@ -23,9 +23,9 @@ class ProfileScrapsTabContent extends StatelessWidget {
       },
       listener: (context, state) {
         // 마이페이지 스크랩 리스트에서는 항상 스크랩 해제
-        showScrapUndoSnackBar(
-          context: context,
-          wasAdded: false,
+        SnackbarHelpers.showUndo(
+          context,
+          message: '스크랩이 해제되었습니다.',
           onUndo: () {
             context.read<ScrapCubit>().undoRemoveScrap();
           },
@@ -87,15 +87,15 @@ class ProfileScrapsTabContent extends StatelessWidget {
           children: [
             Icon(
               Icons.bookmark_outline,
-              size: 64,
+              size: 56,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const Gap(16),
+            const Gap(12),
             Text(
               '저장된 스크랩이 없습니다',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const Gap(8),
+            const Gap(6),
             Text(
               '관심 있는 게시글을 스크랩해보세요.',
               style: Theme.of(context).textTheme.bodyMedium,

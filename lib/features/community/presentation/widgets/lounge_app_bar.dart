@@ -17,6 +17,7 @@ import '../../../../core/theme/theme_cubit.dart';
 import '../../../../common/widgets/global_app_bar_actions.dart';
 import '../../../../common/widgets/app_logo_button.dart';
 import '../../../../routing/app_router.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 /// Custom SliverAppBar for lounge/community feed
 class LoungeSliverAppBar extends StatelessWidget {
@@ -80,12 +81,19 @@ class LoungeSliverAppBar extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       actions: [
-        BlocBuilder<ThemeCubit, ThemeMode>(
-          builder: (context, themeMode) {
-            return GlobalAppBarActions(
-              compact: true,
-              opacity: isElevated ? 1 : 0.92,
-              onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+        BlocSelector<AuthCubit, AuthState, bool>(
+          selector: (state) => state.isLoggedIn,
+          builder: (context, isLoggedIn) {
+            if (!isLoggedIn) return const SizedBox.shrink();
+
+            return BlocBuilder<ThemeCubit, ThemeMode>(
+              builder: (context, themeMode) {
+                return GlobalAppBarActions(
+                  compact: true,
+                  opacity: isElevated ? 1 : 0.92,
+                  onProfileTap: () => GoRouter.of(context).push(ProfileRoute.path),
+                );
+              },
             );
           },
         ),

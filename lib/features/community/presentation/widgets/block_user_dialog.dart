@@ -54,12 +54,6 @@ class BlockUserDialog extends StatelessWidget {
           const Gap(6),
           _buildInfoItem(
             context,
-            icon: Icons.chat_bubble_outline,
-            text: '이 사용자가 회원님의 게시글에 댓글을 남길 수 없습니다',
-          ),
-          const Gap(6),
-          _buildInfoItem(
-            context,
             icon: Icons.undo_outlined,
             text: '프로필 > 설정에서 언제든 차단을 해제할 수 있습니다',
           ),

@@ -20,8 +20,8 @@ import '../widgets/search_results_widgets.dart';
 import '../widgets/lounge_app_bar.dart';
 import '../../../../di/di.dart';
 import '../../../../core/utils/performance_optimizations.dart';
-import '../../../../common/widgets/auth_required_view.dart';
-import '../../../../common/widgets/scrap_undo_snackbar.dart';
+import '../../../../core/utils/snackbar_helpers.dart';
+import '../../../../common/widgets/login_required_view.dart';
 
 class CommunityFeedPage extends StatefulWidget {
   const CommunityFeedPage({super.key});
@@ -224,9 +224,9 @@ class _CommunityFeedPageState extends State<CommunityFeedPage>
         listener: (context, state) {
           debugPrint('📢 CommunityFeedPage: Showing scrap undo SnackBar');
           if (state.lastScrapWasAdded != null) {
-            showScrapUndoSnackBar(
-              context: context,
-              wasAdded: state.lastScrapWasAdded!,
+            SnackbarHelpers.showUndo(
+              context,
+              message: state.lastScrapWasAdded! ? '스크랩이 완료되었습니다.' : '스크랩이 해제되었습니다.',
               onUndo: () {
                 debugPrint('↩️ CommunityFeedPage: Undo button pressed');
                 context.read<CommunityFeedCubit>().undoScrapToggle();
@@ -321,7 +321,11 @@ class _CommunityFeedPageState extends State<CommunityFeedPage>
             onLogoTap: _scrollToTop,
           ),
         ],
-        body: const AuthRequiredView(message: '라운지를 이용하려면\n로그인이 필요합니다.'),
+        body: const LoginRequiredView(
+          title: '로그인이 필요합니다',
+          message: '라운지를 이용하려면\n로그인이 필요합니다.',
+          icon: Icons.forum_outlined,
+        ),
       ),
     );
   }

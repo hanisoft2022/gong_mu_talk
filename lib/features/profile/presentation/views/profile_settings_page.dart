@@ -41,6 +41,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/profile_settings/notification_settings_section.dart';
 import '../widgets/profile_settings/blocked_users_section.dart';
@@ -80,27 +81,16 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   /// Shows a SnackBar message with timer-based overlap prevention
   ///
   /// This prevents multiple SnackBars from appearing simultaneously
-  /// by canceling any existing timer and removing current SnackBar
-  /// before showing a new one.
+  /// by canceling any existing timer before showing a new one.
   void _showMessage(BuildContext context, String message) {
     // 이전 타이머 취소
     _snackBarTimer?.cancel();
 
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // 즉시 이전 스낵바 제거
-    scaffoldMessenger.removeCurrentSnackBar();
-
     // 짧은 지연 후 새 스낵바 표시 (연속 호출 방지)
     _snackBarTimer = Timer(const Duration(milliseconds: 100), () {
       if (context.mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Use SnackbarHelpers for consistent styling
+        SnackbarHelpers.showSuccess(context, message);
       }
     });
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:gong_mu_talk/core/utils/number_formatter.dart';
+import 'package:gong_mu_talk/core/utils/snackbar_helpers.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/monthly_net_income.dart';
 import 'package:gong_mu_talk/features/calculator/domain/entities/teacher_profile.dart';
 import 'package:gong_mu_talk/features/calculator/domain/constants/performance_bonus_constants.dart';
@@ -299,10 +300,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '🏛️ 담임수당',
           amount: annualHomeroomAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('담임수당: 월 200,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '담임수당: 월 200,000원');
           },
         ),
       if (profile?.hasPosition ?? false)
@@ -310,10 +308,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '👔 보직교사수당',
           amount: annualHeadTeacherAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('보직교사수당: 월 150,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '보직교사수당: 월 150,000원');
           },
         ),
       if (annualSpecialEducationAllowance > 0)
@@ -321,10 +316,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '🎓 특수교사수당',
           amount: annualSpecialEducationAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('특수교사수당: 월 120,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '특수교사수당: 월 120,000원');
           },
         ),
       if (annualVocationalEducationAllowance > 0)
@@ -390,10 +382,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '⚕️ 보건교사수당',
           amount: annualHealthTeacherAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('보건교사수당: 월 40,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '보건교사수당: 월 40,000원');
           },
         ),
       if (annualConcurrentPositionAllowance > 0)
@@ -438,10 +427,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '🍽️ 영양교사수당',
           amount: annualNutritionTeacherAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('영양교사수당: 월 40,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '영양교사수당: 월 40,000원');
           },
         ),
       if (annualLibrarianAllowance > 0)
@@ -449,10 +435,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '📚 사서교사수당',
           amount: annualLibrarianAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('사서교사수당: 월 30,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '사서교사수당: 월 30,000원');
           },
         ),
       if (annualCounselorAllowance > 0)
@@ -460,10 +443,7 @@ class SalaryBreakdownWidget extends StatelessWidget {
           label: '💬 전문상담교사수당',
           amount: annualCounselorAllowance,
           onTap: () {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('전문상담교사수당: 월 30,000원'), duration: Duration(seconds: 2)),
-            );
+            SnackbarHelpers.showInfo(context, '전문상담교사수당: 월 30,000원');
           },
         ),
       if (annualVeteranAllowance > 0)

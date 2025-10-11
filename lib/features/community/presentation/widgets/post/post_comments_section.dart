@@ -31,6 +31,8 @@ class PostCommentsSection extends StatelessWidget {
     this.currentUserId,
     this.highlightedCommentId,
     this.commentKeys,
+    this.canLike = true,
+    this.onDisabledLikeTap,
   });
 
   final bool isLoading;
@@ -43,6 +45,8 @@ class PostCommentsSection extends StatelessWidget {
   final String? currentUserId;
   final String? highlightedCommentId;
   final Map<String, GlobalKey>? commentKeys;
+  final bool canLike;
+  final VoidCallback? onDisabledLikeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +134,8 @@ class PostCommentsSection extends StatelessWidget {
                   authorKey: commentAuthorKey,
                   onOpenProfile: () =>
                       onOpenCommentAuthorProfile(comment, commentAuthorKey),
+                  canLike: canLike,
+                  onDisabledLikeTap: onDisabledLikeTap,
                 ),
 
                 // Reply comments (indented)
@@ -163,6 +169,8 @@ class PostCommentsSection extends StatelessWidget {
                                     reply,
                                     replyAuthorKey,
                                   ),
+                                  canLike: canLike,
+                                  onDisabledLikeTap: onDisabledLikeTap,
                                 ),
                               ],
                             );

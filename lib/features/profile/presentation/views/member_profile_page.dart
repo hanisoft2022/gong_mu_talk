@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -5,12 +7,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../di/di.dart';
 import '../../../../routing/app_router.dart';
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../community/presentation/cubit/user_comments_cubit.dart';
 import '../../data/follow_repository.dart';
 import '../../data/user_profile_repository.dart';
 import '../../domain/user_profile.dart';
 import '../cubit/profile_timeline_cubit.dart';
+import '../cubit/profile_relations_cubit.dart';
 import '../widgets/profile_overview/profile_header.dart';
 import '../widgets/profile_timeline/profile_comments_tab_content.dart';
 import '../widgets/profile_timeline/profile_posts_tab_content.dart';
@@ -24,14 +28,20 @@ class MemberProfilePage extends StatefulWidget {
   State<MemberProfilePage> createState() => _MemberProfilePageState();
 }
 
-class _MemberProfilePageState extends State<MemberProfilePage>
-    with SingleTickerProviderStateMixin {
+class _MemberProfilePageState extends State<MemberProfilePage> with SingleTickerProviderStateMixin {
   late final ProfileTimelineCubit _timelineCubit;
   late final UserCommentsCubit _commentsCubit;
+  late final ProfileRelationsCubit _relationsCubit;
   late final UserProfileRepository _profileRepository;
   late final FollowRepository _followRepository;
   late TabController _tabController;
   bool _isFollowActionPending = false;
+
+  // Follow Undo State
+  Timer? _followUndoTimer;
+  String? _followTargetUid;
+
+  bool? _wasFollowing;
 
   @override
   void initState() {
@@ -44,16 +54,20 @@ class _MemberProfilePageState extends State<MemberProfilePage>
       authCubit: getIt<AuthCubit>(),
       targetUserId: widget.uid,
     )..loadInitial();
-    _commentsCubit = UserCommentsCubit(
-      getIt(),
-    )..loadInitial(widget.uid);
+    _commentsCubit = UserCommentsCubit(getIt())..loadInitial(widget.uid);
+    _relationsCubit = ProfileRelationsCubit(
+      followRepository: getIt<FollowRepository>(),
+      authCubit: getIt<AuthCubit>(),
+    );
   }
 
   @override
   void dispose() {
+    _followUndoTimer?.cancel();
     _tabController.dispose();
     _timelineCubit.close();
     _commentsCubit.close();
+    _relationsCubit.close();
     super.dispose();
   }
 
@@ -64,6 +78,7 @@ class _MemberProfilePageState extends State<MemberProfilePage>
       providers: [
         BlocProvider<ProfileTimelineCubit>.value(value: _timelineCubit),
         BlocProvider<UserCommentsCubit>.value(value: _commentsCubit),
+        BlocProvider<ProfileRelationsCubit>.value(value: _relationsCubit),
       ],
       child: Scaffold(
         appBar: AppBar(
@@ -148,23 +163,96 @@ class _MemberProfilePageState extends State<MemberProfilePage>
     if (_isFollowActionPending) {
       return;
     }
+
+    final AuthState authState = context.read<AuthCubit>().state;
+
+    // Check verification status
+    if (!authState.hasLoungeWriteAccess) {
+      _showVerificationRequiredDialog(authState, actionType: 'follow');
+      return;
+    }
+
     setState(() => _isFollowActionPending = true);
+
+    // Cancel any existing undo timer
+    _followUndoTimer?.cancel();
+
+    // Store for undo
+    _followTargetUid = targetUid;
+    _wasFollowing = isFollowing;
+
     try {
       if (isFollowing) {
-        await _followRepository.unfollow(
-          followerUid: followerUid,
-          targetUid: targetUid,
-        );
-        _showSnackBar('팔로우를 취소했어요.');
+        await _followRepository.unfollow(followerUid: followerUid, targetUid: targetUid);
       } else {
-        await _followRepository.follow(
-          followerUid: followerUid,
-          targetUid: targetUid,
-        );
-        _showSnackBar('새로운 동료를 팔로우했어요.');
+        await _followRepository.follow(followerUid: followerUid, targetUid: targetUid);
       }
+
+      if (!mounted) return;
+
+      // Show undo snackbar
+      SnackbarHelpers.showUndo(
+        context,
+        message: isFollowing ? '팔로우를 취소했어요.' : '새로운 동료를 팔로우했어요.',
+        onUndo: () {
+          _followUndoTimer?.cancel();
+          _handleUndoFollow();
+        },
+      );
+
+      // Set timer to clear undo data after 5 seconds
+      _followUndoTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) {
+          _followTargetUid = null;
+          _wasFollowing = null;
+        }
+      });
     } catch (_) {
-      _showSnackBar('팔로우 상태를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      if (!mounted) return;
+      SnackbarHelpers.showError(context, '팔로우 상태를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally{
+      if (mounted) {
+        setState(() => _isFollowActionPending = false);
+      }
+    }
+  }
+
+  Future<void> _handleUndoFollow() async {
+    if (_followTargetUid == null || _wasFollowing == null) {
+      return;
+    }
+
+    final AuthState authState = context.read<AuthCubit>().state;
+    final String? currentUid = authState.userId;
+    if (currentUid == null) {
+      return;
+    }
+
+    final String targetUid = _followTargetUid!;
+    final bool wasFollowing = _wasFollowing!;
+
+    // Clear undo data
+    _followTargetUid = null;
+
+    _wasFollowing = null;
+
+    setState(() => _isFollowActionPending = true);
+
+    try {
+      // Restore previous follow state
+      if (wasFollowing) {
+        await _followRepository.follow(followerUid: currentUid, targetUid: targetUid);
+      } else {
+        await _followRepository.unfollow(followerUid: currentUid, targetUid: targetUid);
+      }
+
+      if (!mounted) return;
+
+      SnackbarHelpers.showSuccess(context, '팔로우 상태를 복구했습니다');
+    } catch (_) {
+      if (!mounted) return;
+
+      SnackbarHelpers.showError(context, '팔로우 상태 복구에 실패했습니다');
     } finally {
       if (mounted) {
         setState(() => _isFollowActionPending = false);
@@ -172,13 +260,40 @@ class _MemberProfilePageState extends State<MemberProfilePage>
     }
   }
 
-  void _showSnackBar(String message) {
-    if (!mounted) {
-      return;
+  /// Show verification required dialog when user tries to interact without verification
+  void _showVerificationRequiredDialog(AuthState authState, {String? actionType}) {
+    final String action;
+    switch (actionType) {
+      case 'follow':
+        action = '팔로우하려면';
+        break;
+      default:
+        action = '작업을 수행하려면';
+        break;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [Icon(Icons.lock_outline, size: 24), SizedBox(width: 8), Text('인증 필요')],
+        ),
+        content: Text(
+          '$action 공직자 메일 인증이 필요합니다.\n\n💡 직렬 인증(급여명세서)을 완료하시면 메일 인증 없이도 바로 이용 가능합니다.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('취소')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.push('/profile');
+            },
+            child: const Text('지금 인증하기'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -195,10 +310,7 @@ class _ProfileNotFoundView extends StatelessWidget {
           children: [
             const Icon(Icons.person_off_outlined, size: 48),
             const Gap(12),
-            Text(
-              '해당 사용자를 찾을 수 없습니다.',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('해당 사용자를 찾을 수 없습니다.', style: Theme.of(context).textTheme.titleMedium),
           ],
         ),
       ),
@@ -234,10 +346,7 @@ class _FollowButton extends StatelessWidget {
     }
 
     return StreamBuilder<bool>(
-      stream: followRepository.watchIsFollowing(
-        followerUid: currentUid,
-        targetUid: targetUid,
-      ),
+      stream: followRepository.watchIsFollowing(followerUid: currentUid, targetUid: targetUid),
       builder: (context, snapshot) {
         final bool isFollowing = snapshot.data ?? false;
         return FilledButton.tonal(
@@ -271,15 +380,8 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: _tabBar,
-    );
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: Theme.of(context).scaffoldBackgroundColor, child: _tabBar);
   }
 
   @override

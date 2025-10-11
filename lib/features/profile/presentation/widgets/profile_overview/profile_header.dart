@@ -226,19 +226,11 @@ class ProfileHeader extends StatelessWidget {
         ),
         // Followers count
         InkWell(
-          onTap: isOwnProfile
-              ? () => showProfileRelationsSheet(
-                  context,
-                  ProfileRelationType.followers,
-                )
-              : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('다른 사용자의 팔로워 목록은 곧 제공될 예정입니다.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
+          onTap: () => showProfileRelationsSheet(
+            context,
+            ProfileRelationType.followers,
+            targetUid: isOwnProfile ? null : profile.uid,
+          ),
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -267,19 +259,11 @@ class ProfileHeader extends StatelessWidget {
         ),
         // Following count
         InkWell(
-          onTap: isOwnProfile
-              ? () => showProfileRelationsSheet(
-                  context,
-                  ProfileRelationType.following,
-                )
-              : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('다른 사용자의 팔로잉 목록은 곧 제공될 예정입니다.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
+          onTap: () => showProfileRelationsSheet(
+            context,
+            ProfileRelationType.following,
+            targetUid: isOwnProfile ? null : profile.uid,
+          ),
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

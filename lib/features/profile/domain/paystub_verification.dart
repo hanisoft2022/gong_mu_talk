@@ -12,6 +12,8 @@ class PaystubVerification extends Equatable {
     this.detectedKeywords = const <String>[],
     this.errorMessage,
     this.updatedAt,
+    this.failureCount = 0,
+    this.lastFailedAt,
   });
 
   final PaystubVerificationStatus status;
@@ -19,6 +21,8 @@ class PaystubVerification extends Equatable {
   final List<String> detectedKeywords;
   final String? errorMessage;
   final DateTime? updatedAt;
+  final int failureCount;
+  final DateTime? lastFailedAt;
 
   bool get isVerified => status == PaystubVerificationStatus.verified;
 
@@ -28,6 +32,8 @@ class PaystubVerification extends Equatable {
     List<String>? detectedKeywords,
     String? errorMessage,
     DateTime? updatedAt,
+    int? failureCount,
+    DateTime? lastFailedAt,
   }) {
     return PaystubVerification(
       status: status ?? this.status,
@@ -35,6 +41,8 @@ class PaystubVerification extends Equatable {
       detectedKeywords: detectedKeywords ?? this.detectedKeywords,
       errorMessage: errorMessage ?? this.errorMessage,
       updatedAt: updatedAt ?? this.updatedAt,
+      failureCount: failureCount ?? this.failureCount,
+      lastFailedAt: lastFailedAt ?? this.lastFailedAt,
     );
   }
 
@@ -67,6 +75,8 @@ class PaystubVerification extends Equatable {
 
     final Timestamp? updatedAtRaw = data['updatedAt'] as Timestamp?;
     final String? error = data['errorMessage'] as String?;
+    final int failureCount = (data['failureCount'] as int?) ?? 0;
+    final Timestamp? lastFailedAtRaw = data['lastFailedAt'] as Timestamp?;
 
     return PaystubVerification(
       status: status,
@@ -74,6 +84,8 @@ class PaystubVerification extends Equatable {
       detectedKeywords: keywords,
       errorMessage: error,
       updatedAt: updatedAtRaw?.toDate(),
+      failureCount: failureCount,
+      lastFailedAt: lastFailedAtRaw?.toDate(),
     );
   }
 
@@ -88,5 +100,7 @@ class PaystubVerification extends Equatable {
     detectedKeywords,
     errorMessage,
     updatedAt,
+    failureCount,
+    lastFailedAt,
   ];
 }

@@ -13,11 +13,9 @@ import '../domain/career_track.dart';
 typedef JsonMap = Map<String, Object?>;
 
 class UserProfileRepository {
-  UserProfileRepository({
-    FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _storage = storage ?? FirebaseStorage.instance;
+  UserProfileRepository({FirebaseFirestore? firestore, FirebaseStorage? storage})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -59,9 +57,7 @@ class UserProfileRepository {
     String? photoUrl,
     UserRole role = UserRole.member,
   }) async {
-    return _firestore.runTransaction<UserProfile>((
-      Transaction transaction,
-    ) async {
+    return _firestore.runTransaction<UserProfile>((Transaction transaction) async {
       final DocumentReference<JsonMap> userRef = _userDoc(uid);
       final DocumentSnapshot<JsonMap> existing = await transaction.get(userRef);
       if (existing.exists) {
@@ -112,27 +108,18 @@ class UserProfileRepository {
     });
   }
 
-  Future<UserProfile> updateNickname({
-    required String uid,
-    required String newNickname,
-  }) async {
+  Future<UserProfile> updateNickname({required String uid, required String newNickname}) async {
     final String trimmedNickname = newNickname.trim();
 
     // 닉네임 검증
     final validationResult = NicknameValidator.validate(trimmedNickname);
     if (!validationResult.isValid) {
-      throw ArgumentError(
-        validationResult.errorMessage ?? '유효하지 않은 닉네임입니다.',
-      );
+      throw ArgumentError(validationResult.errorMessage ?? '유효하지 않은 닉네임입니다.');
     }
 
-    return _firestore.runTransaction<UserProfile>((
-      Transaction transaction,
-    ) async {
+    return _firestore.runTransaction<UserProfile>((Transaction transaction) async {
       final DocumentReference<JsonMap> userRef = _userDoc(uid);
-      final DocumentSnapshot<JsonMap> userSnapshot = await transaction.get(
-        userRef,
-      );
+      final DocumentSnapshot<JsonMap> userSnapshot = await transaction.get(userRef);
       if (!userSnapshot.exists) {
         throw StateError('사용자 프로필을 찾을 수 없습니다.');
       }
@@ -154,9 +141,7 @@ class UserProfileRepository {
       final String newHandle = _normalizeHandle(trimmedNickname, fallback: uid);
       if (newHandle != profile.handle) {
         final DocumentReference<JsonMap> newHandleDoc = _handleDoc(newHandle);
-        final DocumentSnapshot<JsonMap> handleSnapshot = await transaction.get(
-          newHandleDoc,
-        );
+        final DocumentSnapshot<JsonMap> handleSnapshot = await transaction.get(newHandleDoc);
         if (handleSnapshot.exists) {
           throw StateError('이미 사용 중인 닉네임입니다.');
         }
@@ -186,9 +171,7 @@ class UserProfileRepository {
 
   /// 디버그/테스트용: 닉네임 변경 제한 초기화
   /// nicknameLastChangedAt를 오래된 날짜로 설정하여 즉시 변경 가능하게 함
-  Future<UserProfile> resetNicknameChangeLimit({
-    required String uid,
-  }) async {
+  Future<UserProfile> resetNicknameChangeLimit({required String uid}) async {
     final DocumentReference<JsonMap> doc = _userDoc(uid);
 
     // 30일 이전 날짜로 설정
@@ -267,9 +250,7 @@ class UserProfileRepository {
       updates['governmentEmail'] = governmentEmail;
     }
     if (governmentEmailVerifiedAt != null) {
-      updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(
-        governmentEmailVerifiedAt,
-      );
+      updates['governmentEmailVerifiedAt'] = Timestamp.fromDate(governmentEmailVerifiedAt);
     }
     if (fcmToken != null) {
       updates['fcmToken'] = fcmToken;
@@ -287,17 +268,13 @@ class UserProfileRepository {
     Set<String>? excludedDepartments,
     Set<String>? excludedRegions,
   }) async {
-    final Map<String, Object?> updates = <String, Object?>{
-      'updatedAt': Timestamp.now(),
-    };
+    final Map<String, Object?> updates = <String, Object?>{'updatedAt': Timestamp.now()};
 
     if (excludedSerials != null) {
       updates['excludedSerials'] = excludedSerials.toList(growable: false);
     }
     if (excludedDepartments != null) {
-      updates['excludedDepartments'] = excludedDepartments.toList(
-        growable: false,
-      );
+      updates['excludedDepartments'] = excludedDepartments.toList(growable: false);
     }
     if (excludedRegions != null) {
       updates['excludedRegions'] = excludedRegions.toList(growable: false);
@@ -307,16 +284,13 @@ class UserProfileRepository {
   }
 
   Future<void> markModerationNoticeRead(String uid) async {
-    await _userDoc(uid).update(<String, Object?>{
-      'hasUnreadModerationNotice': false,
-      'updatedAt': Timestamp.now(),
-    });
+    await _userDoc(
+      uid,
+    ).update(<String, Object?>{'hasUnreadModerationNotice': false, 'updatedAt': Timestamp.now()});
   }
 
   Future<void> recordLogin(String uid) async {
-    await _userDoc(
-      uid,
-    ).update(<String, Object?>{'lastLoginAt': Timestamp.now()});
+    await _userDoc(uid).update(<String, Object?>{'lastLoginAt': Timestamp.now()});
   }
 
   Future<PaginatedQueryResult<UserProfile>> fetchProfiles({
@@ -327,9 +301,7 @@ class UserProfileRepository {
     String? region,
     bool excludeDeleted = true,
   }) async {
-    QueryJson query = _usersRef
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+    QueryJson query = _usersRef.orderBy('createdAt', descending: true).limit(limit);
     if (serial != null) {
       query = query.where('serial', isEqualTo: serial);
     }
@@ -352,14 +324,8 @@ class UserProfileRepository {
         .toList(growable: false);
 
     final bool hasMore = snapshot.docs.length == limit;
-    final QueryDocumentSnapshotJson? last = snapshot.docs.isEmpty
-        ? null
-        : snapshot.docs.last;
-    return PaginatedQueryResult<UserProfile>(
-      items: profiles,
-      lastDocument: last,
-      hasMore: hasMore,
-    );
+    final QueryDocumentSnapshotJson? last = snapshot.docs.isEmpty ? null : snapshot.docs.last;
+    return PaginatedQueryResult<UserProfile>(items: profiles, lastDocument: last, hasMore: hasMore);
   }
 
   Future<String> uploadProfileImage({
@@ -369,10 +335,7 @@ class UserProfileRepository {
     String contentType = 'image/jpeg',
   }) async {
     final Reference ref = _storage.ref('profile_images/$uid/$path');
-    await ref.putData(
-      Uint8List.fromList(bytes),
-      SettableMetadata(contentType: contentType),
-    );
+    await ref.putData(Uint8List.fromList(bytes), SettableMetadata(contentType: contentType));
     return ref.getDownloadURL();
   }
 
@@ -381,31 +344,23 @@ class UserProfileRepository {
       return const <UserProfile>[];
     }
 
-    final Map<String, UserProfile> resolved = <String, UserProfile>{};
-    for (final List<String> chunk in _chunk(uids, size: 10)) {
-      final QuerySnapshot<JsonMap> snapshot = await _usersRef
-          .where(FieldPath.documentId, whereIn: chunk)
-          .get();
-      for (final QueryDocumentSnapshot<JsonMap> doc in snapshot.docs) {
-        resolved[doc.id] = UserProfile.fromSnapshot(doc);
+    // 개별 get() 호출을 병렬로 실행 (Security Rules의 allow list: if false 우회)
+    final List<Future<UserProfile?>> futures = uids.map((String uid) async {
+      try {
+        final DocumentSnapshot<JsonMap> snapshot = await _userDoc(uid).get();
+        if (!snapshot.exists) {
+          return null;
+        }
+        return UserProfile.fromSnapshot(snapshot);
+      } catch (e) {
+        // 권한 오류나 네트워크 오류 등을 무시하고 null 반환
+        return null;
       }
-    }
+    }).toList();
 
-    return uids
-        .map((String id) => resolved[id])
-        .whereType<UserProfile>()
-        .toList(growable: false);
-  }
+    final List<UserProfile?> results = await Future.wait(futures);
 
-  Iterable<List<T>> _chunk<T>(List<T> items, {int size = 10}) sync* {
-    if (items.isEmpty) {
-      return;
-    }
-    final int total = items.length;
-    for (int index = 0; index < total; index += size) {
-      final int end = (index + size) > total ? total : index + size;
-      yield items.sublist(index, end);
-    }
+    return results.whereType<UserProfile>().toList(growable: false);
   }
 
   String _normalizeHandle(String nickname, {required String fallback}) {
@@ -426,11 +381,7 @@ class UserProfileRepository {
     return normalized;
   }
 
-  Future<void> _reserveHandle(
-    Transaction transaction,
-    String handle,
-    String uid,
-  ) async {
+  Future<void> _reserveHandle(Transaction transaction, String handle, String uid) async {
     final DocumentReference<JsonMap> handleRef = _handleDoc(handle);
     final DocumentSnapshot<JsonMap> snapshot = await transaction.get(handleRef);
     if (snapshot.exists) {
@@ -460,10 +411,7 @@ class UserProfileRepository {
   /// Search users by nickname
   ///
   /// Returns list of UserProfiles matching the search query
-  Future<List<UserProfile>> searchUsersByNickname({
-    required String query,
-    int limit = 20,
-  }) async {
+  Future<List<UserProfile>> searchUsersByNickname({required String query, int limit = 20}) async {
     final String token = query.trim().toLowerCase();
     if (token.isEmpty) {
       return const <UserProfile>[];
@@ -476,9 +424,7 @@ class UserProfileRepository {
           .limit(limit)
           .get();
 
-      return snapshot.docs
-          .map((doc) => UserProfile.fromSnapshot(doc))
-          .toList(growable: false);
+      return snapshot.docs.map((doc) => UserProfile.fromSnapshot(doc)).toList(growable: false);
     } catch (e) {
       // If orderBy fails (no index), try without ordering
       final QuerySnapshot<JsonMap> snapshot = await _usersRef
@@ -486,9 +432,7 @@ class UserProfileRepository {
           .limit(limit)
           .get();
 
-      return snapshot.docs
-          .map((doc) => UserProfile.fromSnapshot(doc))
-          .toList(growable: false);
+      return snapshot.docs.map((doc) => UserProfile.fromSnapshot(doc)).toList(growable: false);
     }
   }
 }

@@ -44,7 +44,7 @@ class AuthorDisplayWidget extends StatelessWidget {
         splashColor: theme.colorScheme.primary.withValues(alpha: 0.1),
         highlightColor: theme.colorScheme.primary.withValues(alpha: 0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
           child: Text(
             displayName,
             style: theme.textTheme.titleSmall?.copyWith(
@@ -64,9 +64,7 @@ class AuthorDisplayWidget extends StatelessWidget {
     final String trackLabel;
     if (serialVisible && specificCareer != null) {
       // Use specific career if available
-      final displayName = CareerDisplayHelper.getCareerDisplayName(
-        specificCareer!,
-      );
+      final displayName = CareerDisplayHelper.getCareerDisplayName(specificCareer!);
       final emoji = CareerDisplayHelper.getCareerEmoji(specificCareer!);
       trackLabel = '$displayName $emoji';
     } else if (serialVisible && track != CareerTrack.none) {

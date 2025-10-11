@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/theme_cubit.dart';
+import '../core/utils/snackbar_helpers.dart';
 import '../features/auth/presentation/cubit/auth_cubit.dart';
 import '../routing/app_router.dart';
 import '../common/widgets/global_app_bar_actions.dart';
@@ -31,9 +32,12 @@ class AppShell extends StatelessWidget {
           return;
         }
 
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(message)));
+        // Use SnackbarHelpers for consistent styling
+        if (state.authError != null) {
+          SnackbarHelpers.showError(context, message);
+        } else {
+          SnackbarHelpers.showSuccess(context, message);
+        }
         context.read<AuthCubit>().clearLastMessage();
       },
       child: BlocBuilder<ThemeCubit, ThemeMode>(

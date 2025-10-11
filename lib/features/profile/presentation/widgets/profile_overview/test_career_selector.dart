@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../../core/utils/snackbar_helpers.dart';
 import '../../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../domain/career_hierarchy.dart';
 import '../../../../community/domain/services/lounge_access_service.dart';
@@ -88,9 +89,7 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
     final String? userId = authCubit.state.userId;
 
     if (userId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다')));
+      SnackbarHelpers.showWarning(context, '로그인이 필요합니다');
       return;
     }
 
@@ -133,18 +132,11 @@ Future<void> updateTestCareer(BuildContext context, String careerId) async {
         (c) => c['id'] == careerId,
         orElse: () => {'name': careerId},
       )['name'];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('테스트 직렬이 "$careerName"(으)로 설정되었습니다'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      SnackbarHelpers.showSuccess(context, '테스트 직렬이 "$careerName"(으)로 설정되었습니다');
     }
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+      SnackbarHelpers.showError(context, '오류가 발생했습니다: $e');
     }
   }
 }

@@ -21,6 +21,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/performance_optimizations.dart';
 import '../../../../core/utils/nickname_validator.dart';
+import '../../../../core/utils/snackbar_helpers.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../widgets/profile_edit/profile_edit_section.dart';
 import '../widgets/profile_edit/theme_settings_section.dart';
@@ -57,16 +58,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     });
   }
 
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   String _getNicknameHelperText(AuthState state) {
     if (state.canChangeNickname) {
       return '닉네임 변경은 30일마다 가능합니다';
@@ -82,7 +73,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
     return '닉네임 변경은 30일마다 가능합니다 • $daysRemaining일 후 변경 가능';
   }
-
 
   @override
   void dispose() {
@@ -128,9 +118,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 itemCount: 7,
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    final int maxLength = NicknameValidator.getMaxLength(
-                      _nicknameController.text,
-                    );
+                    final int maxLength = NicknameValidator.getMaxLength(_nicknameController.text);
 
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -157,12 +145,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 errorMaxLines: 2,
                                 suffixIcon: Icon(
                                   Icons.edit_outlined,
-                                  color: state.canChangeNickname &&
-                                          _nicknameError == null
+                                  color: state.canChangeNickname && _nicknameError == null
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -175,25 +160,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                     : () async {
                                         final cubit = context.read<AuthCubit>();
                                         final messenger = ScaffoldMessenger.of(context);
+                                        final bgColor = Theme.of(context).colorScheme.primaryContainer;
                                         await cubit.resetNicknameChangeLimit();
-                                        if (mounted) {
-                                          messenger.showSnackBar(
-                                            const SnackBar(
-                                              content: Text('테스트 모드: 닉네임 변경 제한이 해제되었습니다.'),
-                                              duration: Duration(seconds: 2),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
+                                        if (!mounted) return;
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: const Text('테스트 모드: 닉네임 변경 제한이 해제되었습니다.'),
+                                            behavior: SnackBarBehavior.floating,
+                                            backgroundColor: bgColor,
+                                          ),
+                                        );
                                       },
                                 icon: const Icon(Icons.bug_report),
                                 label: const Text('테스트: 닉네임 제한 해제'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.error,
-                                  side: BorderSide(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                                  foregroundColor: Theme.of(context).colorScheme.error,
+                                  side: BorderSide(color: Theme.of(context).colorScheme.error),
                                 ),
                               ),
                             ],
@@ -250,31 +232,22 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           children: [
                             SwitchListTile.adaptive(
                               value: state.serialVisible,
-                              onChanged:
-                                  (isProcessing || _isUpdatingSerialVisibility)
+                              onChanged: (isProcessing || _isUpdatingSerialVisibility)
                                   ? null
                                   : (bool value) async {
-                                      setState(
-                                        () =>
-                                            _isUpdatingSerialVisibility = true,
-                                      );
+                                      setState(() => _isUpdatingSerialVisibility = true);
                                       try {
-                                        await context
-                                            .read<AuthCubit>()
-                                            .updateSerialVisibility(value);
+                                        await context.read<AuthCubit>().updateSerialVisibility(
+                                          value,
+                                        );
                                       } finally {
                                         if (mounted) {
-                                          setState(
-                                            () => _isUpdatingSerialVisibility =
-                                                false,
-                                          );
+                                          setState(() => _isUpdatingSerialVisibility = false);
                                         }
                                       }
                                     },
                               title: const Text('직렬 공개'),
-                              subtitle: const Text(
-                                '라운지와 댓글에 내 직렬을 표시할지 선택할 수 있습니다.',
-                              ),
+                              subtitle: const Text('라운지와 댓글에 내 직렬을 표시할지 선택할 수 있습니다.'),
                               contentPadding: EdgeInsets.zero,
                             ),
                           ],
@@ -298,7 +271,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     // 닉네임 검증
     final validationResult = NicknameValidator.validate(nickname);
     if (!validationResult.isValid) {
-      _showMessage(context, validationResult.errorMessage ?? '잘못된 닉네임입니다.');
+      SnackbarHelpers.showWarning(context, validationResult.errorMessage ?? '잘못된 닉네임입니다.');
       return;
     }
 
@@ -317,12 +290,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
 
       if (mounted) {
-        _showMessage(context, '프로필이 저장되었습니다.');
+        SnackbarHelpers.showSuccess(context, '프로필이 저장되었습니다.');
         context.pop();
       }
     } catch (error) {
       if (mounted) {
-        _showMessage(context, '저장 중 오류가 발생했습니다: $error');
+        SnackbarHelpers.showError(context, '저장 중 오류가 발생했습니다: $error');
       }
     }
   }

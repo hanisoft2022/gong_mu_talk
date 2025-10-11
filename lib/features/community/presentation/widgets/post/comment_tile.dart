@@ -19,6 +19,8 @@ class CommentTile extends StatefulWidget {
     required this.onOpenProfile,
     this.authorKey,
     this.currentUserId,
+    this.canLike = true,
+    this.onDisabledLikeTap,
   });
 
   final Comment comment;
@@ -31,6 +33,8 @@ class CommentTile extends StatefulWidget {
   final VoidCallback onOpenProfile;
   final GlobalKey? authorKey;
   final String? currentUserId;
+  final bool canLike;
+  final VoidCallback? onDisabledLikeTap;
 
   @override
   State<CommentTile> createState() => _CommentTileState();
@@ -244,7 +248,9 @@ class _CommentTileState extends State<CommentTile>
                         ),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      onPressed: () => widget.onToggleLike(widget.comment),
+                      onPressed: widget.canLike
+                          ? () => widget.onToggleLike(widget.comment)
+                          : widget.onDisabledLikeTap,
                       icon: AnimatedScale(
                         duration: const Duration(milliseconds: 200),
                         scale: widget.comment.isLiked ? 1.3 : 1,
@@ -254,17 +260,21 @@ class _CommentTileState extends State<CommentTile>
                               ? Icons.favorite
                               : Icons.favorite_border,
                           size: 16,
-                          color: widget.comment.isLiked
-                              ? AppColors.like
-                              : theme.colorScheme.onSurfaceVariant,
+                          color: widget.canLike
+                              ? (widget.comment.isLiked
+                                  ? AppColors.like
+                                  : theme.colorScheme.onSurfaceVariant)
+                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                         ),
                       ),
                       label: Text(
                         '${widget.comment.likeCount}',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: widget.comment.isLiked
-                              ? AppColors.like
-                              : theme.colorScheme.onSurfaceVariant,
+                          color: widget.canLike
+                              ? (widget.comment.isLiked
+                                  ? AppColors.like
+                                  : theme.colorScheme.onSurfaceVariant)
+                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                         ),
                       ),
                     ),

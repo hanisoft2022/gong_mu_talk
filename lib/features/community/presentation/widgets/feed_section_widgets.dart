@@ -139,6 +139,7 @@ class FeedSectionBuilder extends StatelessWidget {
                   cubit.toggleScrap(post);
                   PerformanceProfiler.end('toggle_scrap_feed');
                 },
+                onUnblockUser: () => cubit.refresh(),
                 displayScope: scope,
               ),
             ),
